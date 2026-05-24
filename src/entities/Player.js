@@ -33,6 +33,10 @@ export class Player extends Entity {
     this.weapon = null;
     /** @type {object|null} */
     this.armor = null;
+    /** @type {object|null} headgear — separate slot from torso armor */
+    this.helm = null;
+    /** @type {object|null} accessory ring — small flexible stat bumps */
+    this.ring = null;
 
     // Run-tracking stats (used by Game Over screen + score formula).
     this.runStats = {
@@ -171,39 +175,58 @@ export class Player extends Entity {
   // --- equipment ------------------------------------------------------
   /**
    * Equip an item, swapping anything already in that slot back into inventory.
+   * Supports four slot kinds: weapon, armor, helm, ring.
    * @returns {object|null} the displaced item, or null
    */
   equip(item) {
     if (!item || !item.slot) return null;
     const slot = item.slot;
-    const prev = slot === 'weapon' ? this.weapon : (slot === 'armor' ? this.armor : null);
-    if (slot === 'weapon') this.weapon = item;
-    else if (slot === 'armor') this.armor = item;
+    let prev = null;
+    if      (slot === 'weapon') { prev = this.weapon; this.weapon = item; }
+    else if (slot === 'armor')  { prev = this.armor;  this.armor  = item; }
+    else if (slot === 'helm')   { prev = this.helm;   this.helm   = item; }
+    else if (slot === 'ring')   { prev = this.ring;   this.ring   = item; }
     else return null;
     // Static stat side-effects (e.g. Plated Mail -1 DEX) apply on equip.
     if (item.stats?.dex) this.stats.dex += item.stats.dex;
-    if (prev) {
-      if (prev.stats?.dex) this.stats.dex -= prev.stats.dex;
+    if (prev?.stats?.dex) this.stats.dex -= prev.stats.dex;
+    // Rings can grant +max HP outright (e.g. Ring of Vigor). Apply delta.
+    if (item.stats?.hpMaxBonus) {
+      this.stats.hpMax += item.stats.hpMaxBonus;
+      this.stats.hp += item.stats.hpMaxBonus;
+    }
+    if (prev?.stats?.hpMaxBonus) {
+      this.stats.hpMax = Math.max(1, this.stats.hpMax - prev.stats.hpMaxBonus);
+      this.stats.hp = Math.min(this.stats.hp, this.stats.hpMax);
     }
     return prev;
   }
 
+  /** All four equipment pieces as an array (filters nulls). */
+  equippedPieces() {
+    return [this.weapon, this.armor, this.helm, this.ring].filter(Boolean);
+  }
+
   /** Calculated values used by HUD + tooltips. */
   totalAtk() {
-    return this.stats.atk + (this.weapon?.stats?.atk || 0) + this.modifierAtk();
+    let atk = this.stats.atk + this.modifierAtk();
+    for (const p of this.equippedPieces()) atk += (p.stats?.atk || 0);
+    return atk;
   }
   totalDef() {
-    return this.stats.def + (this.armor?.stats?.def || 0) + this.modifierDef();
+    let def = this.stats.def + this.modifierDef();
+    for (const p of this.equippedPieces()) def += (p.stats?.def || 0);
+    return def;
   }
   totalDex() {
-    // dex bonus from weapon (crit) is treated separately at combat time; here
-    // we just return base dex (effects already applied at equip).
+    // dex bonus already folded into this.stats.dex at equip() time.
     return this.stats.dex;
   }
   critChance() {
     const c = this.balance.combat;
-    const weaponBonus = this.weapon?.stats?.critBonus || 0;
-    return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + weaponBonus);
+    let bonus = 0;
+    for (const p of this.equippedPieces()) bonus += (p.stats?.critBonus || 0);
+    return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + bonus);
   }
 
   /** Effective ranged attack range (weapon range + long_reach skill bonus). */
@@ -213,10 +236,15 @@ export class Player extends Entity {
     return base + (this.skillRangeBonus || 0);
   }
 
-  /** Called by CombatSystem when this player kills an enemy. */
+  /**
+   * Called by CombatSystem when this player kills an enemy.
+   * @returns {number} number of levels gained from the resulting XP grant
+   *   (so the combat system can emit `entity:leveledUp` — without this the
+   *   skill picker never opened on kill-driven level-ups).
+   */
   recordKill(enemy) {
     this.runStats.enemiesDefeated += 1;
-    this.gainXP(enemy.xpReward || 0);
+    const levels = this.gainXP(enemy.xpReward || 0);
     if (enemy.goldDrop) {
       const min = enemy.goldDrop[0] ?? 0;
       const max = enemy.goldDrop[1] ?? min;
@@ -232,5 +260,6 @@ export class Player extends Entity {
         this.runStats.goldCollected += g;
       }
     }
+    return levels;
   }
 }

@@ -75,13 +75,44 @@ export class HUD {
       r.drawRect(chipX, chipY, w, 14, bg);
       r.drawText(label, chipX + 4, chipY + 1, { size: 10 });
       chipX += w + 4;
-      if (chipX > CANVAS_WIDTH - 80) break; // wrap-safe — drop the rest
+      if (chipX > CANVAS_WIDTH - 80) break;
     }
-    // Revive indicator on the right.
     if (p.reviveCharges > 0) {
       r.drawText(`✦ Revive ×${p.reviveCharges}`, CANVAS_WIDTH - 12, chipY + 1,
         { size: 11, color: COLOR.textHeal, align: 'right' });
     }
+    // Skill chips — appear under status chips when the player has skills.
+    // Compact: 4-char abbreviation per skill so multiple fit on one row.
+    if (p.skills && p.skills.length > 0) {
+      let sx = 8;
+      const sy = chipY + 18;
+      r.drawText('SK', sx, sy + 1, { size: 9, color: COLOR.textMuted });
+      sx += 16;
+      for (const id of p.skills) {
+        const abbr = HUD._skillAbbr(id);
+        const w = 6 + abbr.length * 6;
+        r.drawRect(sx, sy, w, 14, '#1e2a3a');
+        r.drawText(abbr, sx + 3, sy + 1, { size: 10, color: '#a0d0ff' });
+        sx += w + 3;
+        if (sx > CANVAS_WIDTH - 8) break;
+      }
+    }
+  }
+
+  static _skillAbbr(id) {
+    const map = {
+      hardened:   'HRD',
+      sharpened:  'SHP',
+      tempered:   'TMP',
+      quickened:  'QCK',
+      eager:      'BAG',
+      studious:   'XP+',
+      bloodthirst:'LFS',
+      stout:      'STT',
+      long_reach: 'RNG',
+      second_wind:'REG'
+    };
+    return map[id] || id.slice(0, 3).toUpperCase();
   }
 
   _drawMessages(r) {

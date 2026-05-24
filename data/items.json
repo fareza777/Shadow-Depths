@@ -278,6 +278,153 @@
     "spawnWeight": 1
   },
 
+  "leather_cap": {
+    "id": "leather_cap",
+    "name": "Leather Cap",
+    "type": "helm",
+    "rarity": "common",
+    "spriteKey": "helm_leather",
+    "slot": "helm",
+    "stats": { "def": 1 },
+    "lore": "Better than the cold scalp of the dead.",
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "iron_helm": {
+    "id": "iron_helm",
+    "name": "Iron Helm",
+    "type": "helm",
+    "rarity": "uncommon",
+    "spriteKey": "helm_iron",
+    "slot": "helm",
+    "stats": { "def": 2 },
+    "lore": "Forged hot. Buried cold.",
+    "floorMin": 2,
+    "spawnWeight": 5
+  },
+  "shadow_hood": {
+    "id": "shadow_hood",
+    "name": "Shadow Hood",
+    "type": "helm",
+    "rarity": "rare",
+    "spriteKey": "helm_hood",
+    "slot": "helm",
+    "stats": { "def": 1, "dex": 2 },
+    "lore": "Worn by those who preferred not to be seen praying.",
+    "floorMin": 3,
+    "spawnWeight": 3
+  },
+  "horned_helm": {
+    "id": "horned_helm",
+    "name": "Horned Helm",
+    "type": "helm",
+    "rarity": "rare",
+    "spriteKey": "helm_horned",
+    "slot": "helm",
+    "stats": { "def": 2, "atk": 1 },
+    "lore": "The horns were already there. The smith just framed them.",
+    "floorMin": 8,
+    "spawnWeight": 2
+  },
+  "crown_of_thorns": {
+    "id": "crown_of_thorns",
+    "name": "Crown of Thorns",
+    "type": "helm",
+    "rarity": "epic",
+    "spriteKey": "helm_crown",
+    "slot": "helm",
+    "stats": { "def": 2, "critBonus": 0.05, "atk": 1 },
+    "lore": "Pierces in. Pierces out.",
+    "floorMin": 25,
+    "spawnWeight": 1
+  },
+  "veiled_circlet": {
+    "id": "veiled_circlet",
+    "name": "Veiled Circlet",
+    "type": "helm",
+    "rarity": "epic",
+    "spriteKey": "helm_circlet",
+    "slot": "helm",
+    "stats": { "def": 1, "dex": 3, "critBonus": 0.05 },
+    "lore": "The wearer hears words. Some of them their own.",
+    "floorMin": 40,
+    "spawnWeight": 1
+  },
+
+  "tin_band": {
+    "id": "tin_band",
+    "name": "Tin Band",
+    "type": "ring",
+    "rarity": "common",
+    "spriteKey": "ring_tin",
+    "slot": "ring",
+    "stats": { "atk": 1 },
+    "lore": "A token. Of what, nobody remembers.",
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "bone_signet": {
+    "id": "bone_signet",
+    "name": "Bone Signet",
+    "type": "ring",
+    "rarity": "uncommon",
+    "spriteKey": "ring_bone",
+    "slot": "ring",
+    "stats": { "atk": 1, "critBonus": 0.05 },
+    "lore": "A family seal. A family that ended here.",
+    "floorMin": 3,
+    "spawnWeight": 4
+  },
+  "ring_of_vigor": {
+    "id": "ring_of_vigor",
+    "name": "Ring of Vigor",
+    "type": "ring",
+    "rarity": "rare",
+    "spriteKey": "ring_vigor",
+    "slot": "ring",
+    "stats": { "hpMaxBonus": 8 },
+    "lore": "Warms the finger. Warms the heart, briefly.",
+    "floorMin": 5,
+    "spawnWeight": 3
+  },
+  "ring_of_speed": {
+    "id": "ring_of_speed",
+    "name": "Ring of Speed",
+    "type": "ring",
+    "rarity": "rare",
+    "spriteKey": "ring_speed",
+    "slot": "ring",
+    "stats": { "dex": 2 },
+    "lore": "The hand wearing it acts a moment before the thought.",
+    "floorMin": 5,
+    "spawnWeight": 3
+  },
+  "ring_of_wards": {
+    "id": "ring_of_wards",
+    "name": "Ring of Wards",
+    "type": "ring",
+    "rarity": "rare",
+    "spriteKey": "ring_wards",
+    "slot": "ring",
+    "stats": { "def": 2 },
+    "lore": "Whispers no in the dark.",
+    "floorMin": 10,
+    "spawnWeight": 3
+  },
+  "ring_of_the_called": {
+    "id": "ring_of_the_called",
+    "name": "Ring of the Called",
+    "type": "ring",
+    "rarity": "epic",
+    "spriteKey": "ring_called",
+    "slot": "ring",
+    "stats": { "atk": 2, "def": 1, "critBonus": 0.05 },
+    "onHit": [{ "type": "lifesteal", "value": 0.10 }],
+    "lore": "Once worn by a king who answered.",
+    "floorMin": 40,
+    "spawnWeight": 1
+  },
+
   "padded_tunic": {
     "id": "padded_tunic",
     "name": "Padded Tunic",

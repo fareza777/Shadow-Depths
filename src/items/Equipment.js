@@ -40,17 +40,27 @@ export const Equipment = {
    * Unequip the item in the given slot. Returns it to inventory if there's
    * room, else fails (no auto-drop in v0.1; we ask the player).
    *
-   * @param {'weapon'|'armor'} slot
+   * @param {'weapon'|'armor'|'helm'|'ring'} slot
    */
   unequip(player, inventory, slot) {
-    const current = slot === 'weapon' ? player.weapon : player.armor;
+    const current = slot === 'weapon' ? player.weapon
+                  : slot === 'armor'  ? player.armor
+                  : slot === 'helm'   ? player.helm
+                  : slot === 'ring'   ? player.ring
+                  : null;
     if (!current) return { ok: false, reason: 'nothing equipped' };
     if (inventory.isFull()) return { ok: false, reason: 'inventory full' };
 
-    // Reverse the stat side-effect that equip() applied.
+    // Reverse the stat side-effects that equip() applied.
     if (current.stats?.dex) player.stats.dex -= current.stats.dex;
+    if (current.stats?.hpMaxBonus) {
+      player.stats.hpMax = Math.max(1, player.stats.hpMax - current.stats.hpMaxBonus);
+      player.stats.hp = Math.min(player.stats.hp, player.stats.hpMax);
+    }
     if (slot === 'weapon') player.weapon = null;
     else if (slot === 'armor') player.armor = null;
+    else if (slot === 'helm') player.helm = null;
+    else if (slot === 'ring') player.ring = null;
     inventory.add(current);
     return { ok: true, unequipped: current };
   }

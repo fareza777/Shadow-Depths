@@ -71,7 +71,10 @@ export const RENDER_HEIGHT = CANVAS_HEIGHT;
 //   │ + │                 │ + │
 //   │MAP│                 │MSG│
 //   └─────────────────────────┘
-export const HUD_HEIGHT         = IS_LANDSCAPE ? 56  : 96;
+// Landscape HUD needs the same vertical real-estate as portrait now that
+// skill chips landed (chip rows live at y~92 inside the strip). Side bars
+// recover that pixel real-estate from the horizontal width budget.
+export const HUD_HEIGHT         = IS_LANDSCAPE ? 96  : 96;
 export const CONTROL_HEIGHT     = IS_LANDSCAPE ? 0   : 200;
 export const SIDE_CONTROL_WIDTH = IS_LANDSCAPE ? 130 : 0;
 

@@ -10,15 +10,20 @@
  * That two-step is intentional. Single-tap-to-use eats valuable items by
  * accident. Two big buttons separated from the slot grid prevent that.
  */
-import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants.js';
+import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE } from '../config/constants.js';
 
-const SLOT_SIZE = 90;
-const SLOT_PADDING = 10;
+// Orientation-aware geometry. Landscape uses smaller slots and a tighter
+// header so the full inventory grid + tooltip + skill list + action row
+// fit inside a 480-tall canvas without overlap.
+const SLOT_SIZE    = IS_LANDSCAPE ? 60 : 90;
+const SLOT_PADDING = IS_LANDSCAPE ? 8  : 10;
 const COLS = 3;
+const GRID_Y       = IS_LANDSCAPE ? 84 : 100;
 
-const BTN_H = 56;
-const BTN_GAP = 8;
-const BTN_PAD = 12;
+const BTN_H        = IS_LANDSCAPE ? 40 : 56;
+const BTN_GAP      = 8;
+const BTN_PAD      = 12;
+const BOTTOM_RESERVED = IS_LANDSCAPE ? 16 : 96;
 
 export class InventoryUI {
   /** @param {{ bus: object }} deps */
@@ -116,7 +121,7 @@ export class InventoryUI {
     const totalW = COLS * SLOT_SIZE + (COLS - 1) * SLOT_PADDING;
     return {
       startX: (CANVAS_WIDTH - totalW) / 2,
-      startY: 100,
+      startY: GRID_Y,
       totalW
     };
   }
@@ -135,10 +140,7 @@ export class InventoryUI {
     const count = 3;
     const totalW = CANVAS_WIDTH - BTN_PAD * 2;
     const w = (totalW - BTN_GAP * (count - 1)) / count;
-    // Sits above the slim mobile-controls reserve (action buttons only,
-    // no D-pad). 96 px clearance keeps the button text well separated
-    // from the DOM action row underneath.
-    const y = CANVAS_HEIGHT - BTN_H - BTN_PAD - 96;
+    const y = CANVAS_HEIGHT - BTN_H - BTN_PAD - BOTTOM_RESERVED;
     return [
       { x: BTN_PAD,                          y, w, h: BTN_H, key: 'use' },
       { x: BTN_PAD + (w + BTN_GAP),          y, w, h: BTN_H, key: 'drop' },
@@ -151,10 +153,19 @@ export class InventoryUI {
     if (!this.open) return;
     renderer.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 'rgba(0,0,0,0.88)');
 
-    renderer.drawText('INVENTORY', CANVAS_WIDTH / 2, 28,
-      { size: 20, bold: true, align: 'center' });
-    renderer.drawText(`gold ${player.gold}    wpn ${player.weapon?.name || '—'}    arm ${player.armor?.name || '—'}`,
-      CANVAS_WIDTH / 2, 60, { size: 11, align: 'center', color: COLOR.textMuted });
+    renderer.drawText('INVENTORY', CANVAS_WIDTH / 2, 22,
+      { size: 18, bold: true, align: 'center' });
+    renderer.drawText(`◈ ${player.gold}    Lv ${player.level}`,
+      CANVAS_WIDTH / 2, 44, { size: 11, align: 'center', color: COLOR.textXP });
+    // All 4 equipment slots on two compact lines.
+    renderer.drawText(`Wpn: ${player.weapon?.name || '—'}`,
+      8, 62, { size: 10, color: COLOR.textMuted });
+    renderer.drawText(`Arm: ${player.armor?.name || '—'}`,
+      CANVAS_WIDTH - 8, 62, { size: 10, color: COLOR.textMuted, align: 'right' });
+    renderer.drawText(`Hlm: ${player.helm?.name || '—'}`,
+      8, 78, { size: 10, color: COLOR.textMuted });
+    renderer.drawText(`Rng: ${player.ring?.name || '—'}`,
+      CANVAS_WIDTH - 8, 78, { size: 10, color: COLOR.textMuted, align: 'right' });
 
     // Slot grid.
     const grid = this._gridGeometry();
@@ -183,14 +194,26 @@ export class InventoryUI {
     const tipY = grid.startY + Math.ceil(player.inventory.size / COLS) * (SLOT_SIZE + SLOT_PADDING) + 16;
     if (sel) {
       renderer.drawText(sel.name, CANVAS_WIDTH / 2, tipY,
-        { size: 16, bold: true, align: 'center' });
-      renderer.drawText(this._statLine(sel), CANVAS_WIDTH / 2, tipY + 22,
-        { size: 11, align: 'center', color: COLOR.textMuted });
-      renderer.drawText(`"${sel.lore}"`, CANVAS_WIDTH / 2, tipY + 40,
-        { size: 11, align: 'center', color: COLOR.textMuted });
+        { size: IS_LANDSCAPE ? 14 : 16, bold: true, align: 'center' });
+      renderer.drawText(this._statLine(sel), CANVAS_WIDTH / 2, tipY + 20,
+        { size: 10, align: 'center', color: COLOR.textMuted });
+      renderer.drawText(`"${sel.lore}"`, CANVAS_WIDTH / 2, tipY + 36,
+        { size: 10, align: 'center', color: COLOR.textMuted });
     } else {
       renderer.drawText('— empty slot —', CANVAS_WIDTH / 2, tipY,
-        { size: 13, align: 'center', color: COLOR.textMuted });
+        { size: 12, align: 'center', color: COLOR.textMuted });
+    }
+
+    // Skill list — visible to the player so they remember what they have.
+    // Sits between the tooltip and the action button row.
+    if (player.skills && player.skills.length > 0) {
+      const buttons = this._buttonLayout();
+      const skillY = Math.min(tipY + 60, buttons[0].y - 24);
+      renderer.drawText(
+        `SKILLS: ${player.skills.map((s) => s.replace(/_/g, ' ')).join('  ·  ')}`,
+        CANVAS_WIDTH / 2, skillY,
+        { size: 10, align: 'center', color: '#a0d0ff' }
+      );
     }
 
     // Action buttons.

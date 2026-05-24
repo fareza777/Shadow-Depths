@@ -187,8 +187,14 @@ export class CombatSystem {
       // Pre-roll gold for deterministic credit.
       const [gMin, gMax] = entity.goldDrop || [0, 0];
       entity._rolledGold = this.rng.randInt(gMin, gMax);
-      killer.recordKill(entity);
+      const levelsGained = killer.recordKill(entity);
       this.bus.emit('entity:xpGained', { entity: killer, amount: entity.xpReward || 0, source: entity });
+      // CRITICAL: without this, the skill picker never opened on the most
+      // common XP path (killing enemies). The picker subscribes to
+      // entity:leveledUp; that event was only fired from grantXP items.
+      if (levelsGained > 0) {
+        this.bus.emit('entity:leveledUp', { entity: killer, levels: levelsGained });
+      }
     }
     if (entity.kind === 'player') {
       entity.runStats.killedBy = killer?.name || killer?.id || 'the dark';
