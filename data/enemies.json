@@ -1,0 +1,61 @@
+{
+  "goblin_scout": {
+    "id": "goblin_scout",
+    "name": "Goblin Scout",
+    "spriteKey": "enemy_goblin",
+    "stats": { "hp": 8, "atk": 3, "def": 0 },
+    "behavior": "chase",
+    "xp": 8,
+    "goldDrop": [1, 4],
+    "floorMin": 1,
+    "spawnWeight": 10
+  },
+  "skeleton_archer": {
+    "id": "skeleton_archer",
+    "name": "Skeleton Archer",
+    "spriteKey": "enemy_skeleton_archer",
+    "stats": { "hp": 6, "atk": 4, "def": 0 },
+    "behavior": "ranged",
+    "behaviorParams": { "preferredDistance": 4, "minDistance": 3, "range": 6 },
+    "xp": 12,
+    "goldDrop": [2, 5],
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "cave_bat": {
+    "id": "cave_bat",
+    "name": "Cave Bat",
+    "spriteKey": "enemy_bat",
+    "stats": { "hp": 4, "atk": 2, "def": 0 },
+    "behavior": "erratic",
+    "behaviorParams": { "missChance": 0.25, "randomMoveChance": 0.40 },
+    "xp": 6,
+    "goldDrop": [0, 2],
+    "floorMin": 1,
+    "spawnWeight": 8
+  },
+  "stone_golem": {
+    "id": "stone_golem",
+    "name": "Stone Golem",
+    "spriteKey": "enemy_golem",
+    "stats": { "hp": 30, "atk": 7, "def": 4 },
+    "behavior": "heavy",
+    "behaviorParams": { "actEveryNTurns": 2 },
+    "xp": 30,
+    "goldDrop": [5, 12],
+    "floorMin": 2,
+    "spawnWeight": 3
+  },
+  "shadow_wraith": {
+    "id": "shadow_wraith",
+    "name": "Shadow Wraith",
+    "spriteKey": "enemy_wraith",
+    "stats": { "hp": 16, "atk": 5, "def": 1 },
+    "behavior": "phase",
+    "onHitPlayer": [{ "type": "drainXP", "value": 5 }],
+    "xp": 25,
+    "goldDrop": [3, 8],
+    "floorMin": 3,
+    "spawnWeight": 4
+  }
+}

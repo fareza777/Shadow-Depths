@@ -1,0 +1,56 @@
+{
+  "player": {
+    "startHP": 30,
+    "startATK": 3,
+    "startDEF": 1,
+    "startDEX": 2,
+    "startGold": 0,
+    "inventorySlots": 9
+  },
+  "progression": {
+    "xpBase": 50,
+    "xpExponent": 1.5,
+    "hpPerLevel": 5,
+    "atkPerLevel": 1,
+    "defPerLevel": 1,
+    "healPctPerLevel": 0.30,
+    "dexEveryNLevels": 3,
+    "dexPerTier": 1
+  },
+  "combat": {
+    "minDamage": 1,
+    "varianceMin": -1,
+    "varianceMax": 1,
+    "baseCritChance": 0.05,
+    "critPerDex": 0.01,
+    "critMultiplier": 2
+  },
+  "vision": {
+    "torchRadius": 5,
+    "perFloor": [5, 5, 4]
+  },
+  "dungeon": {
+    "roomMinSize": 4,
+    "roomMaxSize": 9,
+    "minRoomsPerFloor": 6,
+    "maxRoomsPerFloor": 10,
+    "minStairsDistance": 12,
+    "enemySpawnsPerFloor": [3, 5, 7],
+    "itemSpawnsPerFloor": [5, 5, 6]
+  },
+  "scoring": {
+    "perFloor": 200,
+    "perEnemy": 10,
+    "perGold": 1,
+    "perXP": 0.5,
+    "efficiencyNumerator": 10000,
+    "perfectFloorBonus": 100
+  },
+  "unlocks": [
+    { "id": "worn_dagger",    "threshold": 500,  "effect": "startWeapon" },
+    { "id": "veterans_vigor", "threshold": 1500, "effect": "plus10HP" },
+    { "id": "lucky_charm",    "threshold": 3000, "effect": "startRevive" },
+    { "id": "map_sense",      "threshold": 5000, "effect": "revealFloor1" },
+    { "id": "crimson_cloak",  "threshold": 0,    "effect": "cosmetic", "requireFloorCleared": 3 }
+  ]
+}

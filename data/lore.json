@@ -1,0 +1,76 @@
+{
+  "world": {
+    "premise": "Sebuah kerajaan kuno terkubur oleh wabah bayangan ribuan tahun lalu. Cerita beredar bahwa di kedalaman terdalam, ada sesuatu yang memanggil — relic, kutukan, mungkin tuhan. Kau adalah scavenger, penjelajah, atau penebus dosa yang turun ke dalamnya.",
+    "tone": "Melancholic, atmospheric. Not grim-dark. Tunic-adjacent."
+  },
+  "floors": {
+    "the_forgotten_crypts": "Di sini para penjaga makam masih berjaga, dalam caranya sendiri.",
+    "halls_of_echoes": "Setiap langkah berbalik. Kadang dengan satu langkah lebih.",
+    "the_bone_garden": "Tidak semua yang tumbuh memerlukan tanah."
+  },
+  "enemies": {
+    "goblin_scout": "Pencuri kecil yang tinggal terlalu lama di tempat yang salah.",
+    "skeleton_archer": "Bersumpah setia pada seorang raja yang sudah tidak ada lagi.",
+    "cave_bat": "Tidak buta. Hanya tidak peduli.",
+    "stone_golem": "Dibangun untuk menunggu. Selesai menunggu.",
+    "shadow_wraith": "Pernah punya nama. Lupa, tapi marah."
+  },
+  "items": {
+    "minor_healing_draught": "Watered down. Better than nothing.",
+    "health_potion": "Bitter, but life is bitterer.",
+    "greater_health_potion": "Brewed by a hand that knew loss.",
+    "blood_cordial": "It heals. It also remembers what fed it.",
+
+    "iron_sword": "Forged for someone who never came back.",
+    "rusted_cleaver": "Used for meat. Once.",
+    "bone_hatchet": "Hewn from a femur that disagreed.",
+    "spiked_mace": "Heavy enough to forget elegance.",
+    "hunters_bow": "The string still smells of pine resin and patience.",
+    "vampiric_dagger": "It drinks before you do.",
+    "soulreaper_scythe": "The harvest does not care for season.",
+    "witchfire_brand": "Still warm. Even when set down.",
+    "frostbite_pick": "Pulled from a glacier that no one mapped.",
+    "obsidian_shard": "All edge, no balance. Just like its owner was.",
+    "mythril_blade": "Cold to the touch even in a hot hand.",
+    "heartseeker_rapier": "Finds the gap. Always the gap.",
+
+    "padded_tunic": "More comfortable than it looks. Less useful, too.",
+    "leather_armor": "Stitched by a tailor with no eye for fashion.",
+    "scale_hauberk": "Scales overlapped by patient, dead hands.",
+    "wraithcloak": "Steps fall softer. So does sleep, eventually.",
+    "plated_mail": "Heavier than it looks. The previous wearer is, too, somewhere down here.",
+    "bone_cuirass": "The ribs were not yours. They are now.",
+    "cinder_robe": "Lighter than ash. Older than fire.",
+
+    "sliver_of_the_heart": "Small. Insistent. Yours now.",
+    "ironheart_shard": "A heart that learned to be stone.",
+    "heart_crystal": "Beats in time with something that should not be alive.",
+
+    "crumpled_page": "Half a thought, badly preserved.",
+    "tome_of_wisdom": "The pages turn themselves when no one watches.",
+    "ancient_codex": "You do not read it. You let it read you.",
+
+    "strength_elixir": "Tastes like a brawl you survived.",
+    "iron_skin_tonic": "The skin remembers what the mind forgets.",
+    "berserkers_brew": "Six turns of clarity. Then the bill.",
+    "wardstone_draught": "Drink. Stand. Mean it.",
+    "long_vigil_tea": "The watchers drank it. The watchers stayed.",
+    "phantom_vial": "Slow, quiet, lasting. Like the dead.",
+
+    "poison_vial": "Slow. On purpose.",
+    "plague_flask": "Sealed in a hurry. Whoever sealed it was hopeful.",
+    "caltrop_pouch": "Tiny. Patient. Inevitable.",
+    "concussive_bomb": "Hollow inside. Aren't we all.",
+    "fire_bomb": "Burns whatever it touches. You included.",
+    "voidshard": "A piece of what's underneath. Smaller than expected.",
+    "pyre_capsule": "For when funeral rites can wait.",
+
+    "scroll_of_mapping": "Whoever drew this map did not return for it.",
+    "scroll_of_foresight": "The future, briefly. Then the headache.",
+    "scroll_of_recall": "Remembers a kinder body for you.",
+
+    "revive_charm": "It will let you come back once. Once.",
+    "bone_talisman": "Knuckles, drilled and strung. Yours, now.",
+    "twin_charm": "Two breaths borrowed from a brother who couldn't use them."
+  }
+}

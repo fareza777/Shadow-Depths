@@ -1,0 +1,41 @@
+{
+  "floors": [
+    {
+      "index": 0,
+      "name": "The Forgotten Crypts",
+      "subtitle": "Floor 1",
+      "atmosphere": "Catacomb terabaikan, debu, tulang, sisa-sisa tradisi pemakaman lama.",
+      "enemyPool": ["goblin_scout", "cave_bat", "skeleton_archer"],
+      "enemyCount": 3,
+      "itemCount": 5,
+      "torchRadius": 5,
+      "wallPalette": ["#3a3340", "#1a1820"],
+      "floorPalette": ["#2a2630", "#15131a"]
+    },
+    {
+      "index": 1,
+      "name": "Halls of Echoes",
+      "subtitle": "Floor 2",
+      "atmosphere": "Aula besar pecah, gema langkah kaki sendiri menjadi ancaman.",
+      "enemyPool": ["goblin_scout", "cave_bat", "skeleton_archer", "stone_golem"],
+      "enemyCount": 5,
+      "itemCount": 5,
+      "torchRadius": 5,
+      "wallPalette": ["#3a3548", "#1a1828"],
+      "floorPalette": ["#2c2838", "#16141e"]
+    },
+    {
+      "index": 2,
+      "name": "The Bone Garden",
+      "subtitle": "Floor 3",
+      "atmosphere": "Sesuatu tumbuh di antara tulang. Bukan tanaman.",
+      "enemyPool": ["skeleton_archer", "stone_golem", "shadow_wraith", "cave_bat"],
+      "enemyCount": 7,
+      "itemCount": 6,
+      "torchRadius": 4,
+      "wallPalette": ["#3a3340", "#181420"],
+      "floorPalette": ["#2a2538", "#14101a"],
+      "isFinalFloor": true
+    }
+  ]
+}
