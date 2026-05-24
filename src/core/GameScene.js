@@ -65,6 +65,7 @@ export class GameScene {
     this.renderer = deps.renderer || null; // optional; used for tap→tile
 
     this.seed = deps.seed ?? RNG.newSeed();
+    this.mode = deps.mode || 'normal'; // 'normal' | 'daily'
     this.rng = new RNG(this.seed, 'run');
     this.pathfinding = new Pathfinding();
     this.combat = new CombatSystem({
@@ -471,7 +472,12 @@ export class GameScene {
 
   // --- finalization --------------------------------------------------
   _endRun(victory) {
-    const summary = { ...this.player.runStats, died: !victory };
+    const summary = {
+      ...this.player.runStats,
+      died: !victory,
+      mode: this.mode,
+      seed: this.seed
+    };
     if (victory) this.bus.emit('run:victory', summary);
     else this.bus.emit('run:over', summary);
   }

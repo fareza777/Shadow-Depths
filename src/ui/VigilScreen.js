@@ -173,7 +173,7 @@ export class VigilScreen {
     const portraitX = (CANVAS_WIDTH - portraitSize) / 2;
     r.drawRect(portraitX, portraitY, portraitSize, portraitSize, COLOR.bgCard);
     r.drawStrokedRect(portraitX, portraitY, portraitSize, portraitSize, COLOR.gold, 2);
-    r.sprites.draw('player_idle', r.ctx, portraitX, portraitY, { size: portraitSize });
+    r.sprites.draw('portrait_hero', r.ctx, portraitX, portraitY, { size: portraitSize });
 
     // 5. HP bar.
     const hpY = 270;

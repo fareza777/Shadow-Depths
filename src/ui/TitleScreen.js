@@ -18,10 +18,10 @@ import {
 
 const MENU = [
   { id: 'newRun',   icon: '+', label: 'NEW DESCENT',  sub: 'Permadeath' },
-  { id: 'shop',     icon: '◈', label: 'EMPORIUM',     sub: '— spend coins —' },
-  { id: 'codex',    icon: '✦', label: 'CODEX',        sub: '— locked —' },
+  { id: 'daily',    icon: '☼', label: 'DAILY SEED',   sub: '' },
+  { id: 'shop',     icon: '◈', label: 'EMPORIUM',     sub: '' },
+  { id: 'codex',    icon: '✦', label: 'CODEX',        sub: '' },
   { id: 'meta',     icon: '★', label: 'META-PROGRESS',sub: '' },
-  { id: 'controls', icon: '?', label: 'CONTROLS',     sub: '' },
   { id: 'settings', icon: '⚙', label: 'SETTINGS',     sub: '' }
 ];
 
@@ -167,9 +167,17 @@ export class TitleScreen {
       return runs > 0 ? `${runs} runs` : 'no runs yet';
     }
     if (item.id === 'codex') {
-      const items = Object.keys(this.content.items || {}).length;
-      const enemies = Object.keys(this.content.enemies || {}).length;
-      return `${items + enemies} entries`;
+      const m = this.state.state.meta;
+      const seen = (m.discoveredItems || []).length + (m.discoveredEnemies || []).length;
+      const total = Object.keys(this.content.items || {}).length
+                  + Object.keys(this.content.enemies || {}).length;
+      return `${seen} / ${total} seen`;
+    }
+    if (item.id === 'daily') {
+      const key = TitleScreen.dailyKey();
+      const ds = this.state.state.meta.dailyScores || {};
+      const best = ds[key];
+      return best ? `best ${best}` : 'fresh';
     }
     if (item.id === 'settings') {
       const orient = this.state.state.meta.settings?.orientation || 'portrait';
@@ -187,7 +195,7 @@ export class TitleScreen {
       if (action.type === 'tap') {
         const idx = action.buttonIndex;
         if (idx === 99) { this.modal = null; return; }
-        if (this.modal === 'shop' && typeof idx === 'number' && idx >= 200) {
+        if (this.modal === 'shop' && typeof idx === 'number' && idx >= 200 && idx < 300) {
           const upgrades = this.content.shop?.upgrades || [];
           const u = upgrades[idx - 200];
           if (u) this._tryPurchase(u);
@@ -201,7 +209,18 @@ export class TitleScreen {
           }
           return;
         }
-        if (this.modal !== 'shop' && this.modal !== 'settings' && idx === 98) {
+        // Codex tab change (400 + i) and pagination (410=prev, 411=next).
+        if (this.modal === 'codex') {
+          if (typeof idx === 'number' && idx >= 400 && idx < 410) {
+            const tabs = this._codexTabs();
+            const t = tabs[idx - 400];
+            if (t) { this._codexTab = t.id; this._codexPage = 0; }
+            return;
+          }
+          if (idx === 410) { this._codexPage = Math.max(0, (this._codexPage || 0) - 1); return; }
+          if (idx === 411) { this._codexPage = (this._codexPage || 0) + 1; return; }
+        }
+        if (this.modal !== 'shop' && this.modal !== 'settings' && this.modal !== 'codex' && idx === 98) {
           this.modal = null;
         }
       }
@@ -227,11 +246,32 @@ export class TitleScreen {
 
   _activate(id) {
     if (id === 'newRun') this.bus.emit('request:newRun', {});
+    else if (id === 'daily') {
+      const seed = TitleScreen.dailySeed();
+      this.bus.emit('request:newRun', { seed, mode: 'daily' });
+    }
     else if (id === 'shop') this.modal = 'shop';
     else if (id === 'codex') this.modal = 'codex';
     else if (id === 'meta') this.modal = 'meta';
     else if (id === 'controls') this.modal = 'controls';
     else if (id === 'settings') this.modal = 'settings';
+  }
+
+  /** Daily seed derived from today's YYYY-MM-DD. */
+  static dailySeed() {
+    const d = new Date();
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < key.length; i++) {
+      h ^= key.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  static dailyKey() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
   // --- modal close ---------------------------------------------------
@@ -401,33 +441,164 @@ export class TitleScreen {
     this._renderModalCloseButton(r, closeY);
   }
 
-  // --- Codex modal (stub for v0.4) ----------------------------------
-  _renderCodex(r) {
-    const modalH = IS_LANDSCAPE ? 280 : 360;
-    const modalY = Math.max(16, (CANVAS_HEIGHT - modalH) / 2 - 40);
-    const modalX = IS_LANDSCAPE ? 60 : 40;
-    const modalW = CANVAS_WIDTH - modalX * 2;
-    r.drawRect(modalX, modalY, modalW, modalH, COLOR.bgPanel);
-    r.drawStrokedRect(modalX, modalY, modalW, modalH, COLOR.gold, 1);
-    r.drawText('CODEX', CANVAS_WIDTH / 2, modalY + 24,
-      { size: 20, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
-    r.drawText('a chronicle of what you have seen', CANVAS_WIDTH / 2, modalY + 50,
-      { size: 11, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
-    const items = Object.keys(this.content.items || {}).length;
-    const enemies = Object.keys(this.content.enemies || {}).length;
-    const biomes = (this.content.biomes?.biomes || []).length;
-    r.drawText(`${items} relics  ·  ${enemies} horrors  ·  ${biomes} biomes`,
-      CANVAS_WIDTH / 2, modalY + 90,
-      { size: 13, align: 'center', family: FONT_MONO, color: COLOR.gold });
-    r.drawText('The full codex unlocks in v0.4.',
-      CANVAS_WIDTH / 2, modalY + 130,
-      { size: 11, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
-    r.drawText('For now, you are walking the dark unguided.',
-      CANVAS_WIDTH / 2, modalY + 150,
-      { size: 11, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
+  // --- Codex modal --------------------------------------------------
+  _codexGeometry() {
+    const modalX = 12;
+    const modalY = 16;
+    const modalW = CANVAS_WIDTH - 24;
+    const modalH = CANVAS_HEIGHT - 32;
+    const tabH = IS_LANDSCAPE ? 28 : 32;
+    const tabY = modalY + (IS_LANDSCAPE ? 48 : 56);
+    const listY = tabY + tabH + 8;
     const closeH = IS_LANDSCAPE ? 40 : 48;
     const closeY = modalY + modalH - closeH - 14;
-    this._renderModalCloseButton(r, closeY);
+    return { modalX, modalY, modalW, modalH, tabH, tabY, listY, closeH, closeY };
+  }
+
+  _codexTabs() {
+    const m = this.state.state.meta;
+    const seen = (m.discoveredItems || []).length;
+    const allItems = Object.keys(this.content.items || {}).length;
+    const seenE = (m.discoveredEnemies || []).length;
+    const allE = Object.keys(this.content.enemies || {}).length;
+    const seenB = (m.discoveredBiomes || []).length;
+    const allB = (this.content.biomes?.biomes || []).length;
+    return [
+      { id: 'items',   label: 'ITEMS',   count: `${seen}/${allItems}` },
+      { id: 'enemies', label: 'HORRORS', count: `${seenE}/${allE}` },
+      { id: 'biomes',  label: 'BIOMES',  count: `${seenB}/${allB}` }
+    ];
+  }
+
+  _renderCodex(r) {
+    if (!this._codexTab) this._codexTab = 'items';
+    const g = this._codexGeometry();
+    r.drawRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.bgPanel);
+    r.drawStrokedRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.gold, 2);
+    r.drawText('CODEX', CANVAS_WIDTH / 2, g.modalY + 18,
+      { size: 18, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
+    r.drawText('a chronicle of what you have seen',
+      CANVAS_WIDTH / 2, g.modalY + 38,
+      { size: 10, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
+
+    // Tabs
+    const tabs = this._codexTabs();
+    const tabW = (g.modalW - 16) / tabs.length;
+    for (let i = 0; i < tabs.length; i++) {
+      const t = tabs[i];
+      const active = t.id === this._codexTab;
+      const x = g.modalX + 8 + i * tabW;
+      r.drawRect(x + 2, g.tabY, tabW - 4, g.tabH, active ? COLOR.bgCardHi : COLOR.bgCard);
+      r.drawStrokedRect(x + 2, g.tabY, tabW - 4, g.tabH,
+        active ? COLOR.gold : COLOR.borderSoft, active ? 2 : 1);
+      r.drawText(t.label, x + tabW / 2, g.tabY + g.tabH / 2 - 4,
+        { size: 11, bold: true, align: 'center', baseline: 'middle',
+          family: FONT_DISPLAY, color: active ? COLOR.gold : COLOR.textMuted });
+      r.drawText(t.count, x + tabW / 2, g.tabY + g.tabH - 8,
+        { size: 9, align: 'center', baseline: 'middle',
+          family: FONT_MONO, color: COLOR.textMuted });
+    }
+
+    // List rows.
+    this._renderCodexList(r, g);
+
+    this._renderModalCloseButton(r, g.closeY);
+  }
+
+  _renderCodexList(r, g) {
+    const tab = this._codexTab;
+    const m = this.state.state.meta;
+    let entries = [];
+    if (tab === 'items') {
+      const defs = this.content.items || {};
+      const seen = new Set(m.discoveredItems || []);
+      entries = Object.values(defs).map((d) => ({
+        id: d.id, name: d.name, rarity: d.rarity,
+        lore: d.lore, spriteKey: d.spriteKey,
+        seen: seen.has(d.id)
+      }));
+    } else if (tab === 'enemies') {
+      const defs = this.content.enemies || {};
+      const seen = new Set(m.discoveredEnemies || []);
+      entries = Object.values(defs).map((d) => ({
+        id: d.id, name: d.name, rarity: 'common',
+        lore: '', spriteKey: d.spriteKey, seen: seen.has(d.id)
+      }));
+    } else if (tab === 'biomes') {
+      const defs = this.content.biomes?.biomes || [];
+      const seen = new Set(m.discoveredBiomes || []);
+      entries = defs.map((d) => ({
+        id: d.id, name: d.name, rarity: 'rare',
+        lore: d.atmosphere, spriteKey: null, seen: seen.has(d.id)
+      }));
+    }
+
+    // Pagination — show up to ~10 entries (portrait) / 12 (landscape) per page.
+    const rowH = IS_LANDSCAPE ? 28 : 36;
+    const listX = g.modalX + 8;
+    const listW = g.modalW - 16;
+    const listH = g.closeY - g.listY - 16;
+    const perPage = Math.floor(listH / rowH);
+    const totalPages = Math.max(1, Math.ceil(entries.length / perPage));
+    if (!this._codexPage) this._codexPage = 0;
+    if (this._codexPage >= totalPages) this._codexPage = totalPages - 1;
+    const start = this._codexPage * perPage;
+    const slice = entries.slice(start, start + perPage);
+
+    for (let i = 0; i < slice.length; i++) {
+      const e = slice[i];
+      const ry = g.listY + i * rowH;
+      const bg = i % 2 === 0 ? COLOR.bgPanelAlt : COLOR.bg;
+      r.drawRect(listX, ry, listW, rowH, bg);
+
+      // Icon.
+      const iconSize = rowH - 6;
+      const iconX = listX + 4;
+      const iconY = ry + 3;
+      r.drawRect(iconX, iconY, iconSize, iconSize,
+        e.seen ? COLOR.bgPanel : '#000');
+      if (e.seen && e.spriteKey) {
+        r.sprites.draw(e.spriteKey, r.ctx, iconX, iconY, { size: iconSize });
+      } else if (!e.seen) {
+        r.drawText('?', iconX + iconSize / 2, iconY + iconSize / 2,
+          { size: 16, bold: true, align: 'center', baseline: 'middle',
+            family: FONT_DISPLAY, color: COLOR.textMuted });
+      }
+
+      // Name + lore (or '???' if unseen).
+      const tx = iconX + iconSize + 8;
+      const name = e.seen ? e.name : '???';
+      const nameColor = e.seen ? rarityColor(e.rarity) : COLOR.textMuted;
+      r.drawText(name, tx, ry + 4,
+        { size: 12, bold: true, family: FONT_DISPLAY, color: nameColor });
+      if (e.seen && e.lore) {
+        const lore = e.lore.length > 60 ? e.lore.slice(0, 58) + '…' : e.lore;
+        r.drawText(`"${lore}"`, tx, ry + rowH - 12,
+          { size: 9, italic: true, family: FONT_BODY, color: COLOR.textMuted });
+      } else if (!e.seen) {
+        r.drawText('not yet seen in the depths', tx, ry + rowH - 12,
+          { size: 9, italic: true, family: FONT_BODY, color: COLOR.textMuted });
+      }
+    }
+
+    // Pagination footer.
+    if (totalPages > 1) {
+      const footY = g.listY + perPage * rowH + 2;
+      r.drawText(`Page ${this._codexPage + 1} / ${totalPages}`,
+        CANVAS_WIDTH / 2, footY,
+        { size: 10, align: 'center', family: FONT_MONO, color: COLOR.textMuted });
+      // PREV/NEXT buttons.
+      const btnW = 60, btnH = 24;
+      const prevX = listX + 4, nextX = listX + listW - btnW - 4;
+      r.drawRect(prevX, footY - 4, btnW, btnH, COLOR.bgCard);
+      r.drawStrokedRect(prevX, footY - 4, btnW, btnH, COLOR.borderSoft, 1);
+      r.drawText('◀ PREV', prevX + btnW / 2, footY + btnH / 2 - 4,
+        { size: 9, align: 'center', baseline: 'middle', family: FONT_DISPLAY });
+      r.drawRect(nextX, footY - 4, btnW, btnH, COLOR.bgCard);
+      r.drawStrokedRect(nextX, footY - 4, btnW, btnH, COLOR.borderSoft, 1);
+      r.drawText('NEXT ▶', nextX + btnW / 2, footY + btnH / 2 - 4,
+        { size: 9, align: 'center', baseline: 'middle', family: FONT_DISPLAY });
+    }
   }
 
   // --- Shop modal ---------------------------------------------------
@@ -560,8 +731,36 @@ export class TitleScreen {
       if (TitleScreen._inside(x, y, closeRect)) return 99;
       return 98;
     }
+    if (this.modal === 'codex') {
+      const g = this._codexGeometry();
+      // Tabs.
+      const tabs = this._codexTabs();
+      const tabW = (g.modalW - 16) / tabs.length;
+      if (y >= g.tabY && y <= g.tabY + g.tabH) {
+        for (let i = 0; i < tabs.length; i++) {
+          const tx = g.modalX + 8 + i * tabW;
+          if (x >= tx && x <= tx + tabW) return 400 + i; // 400+i = codex tab i
+        }
+      }
+      // Pagination buttons.
+      const listX = g.modalX + 8;
+      const listW = g.modalW - 16;
+      const rowH = IS_LANDSCAPE ? 28 : 36;
+      const listH = g.closeY - g.listY - 16;
+      const perPage = Math.floor(listH / rowH);
+      const footY = g.listY + perPage * rowH + 2;
+      const btnW = 60, btnH = 24;
+      const prevX = listX + 4, nextX = listX + listW - btnW - 4;
+      if (y >= footY - 4 && y <= footY - 4 + btnH) {
+        if (x >= prevX && x <= prevX + btnW) return 410; // codex prev
+        if (x >= nextX && x <= nextX + btnW) return 411; // codex next
+      }
+      const closeRect = this._modalCloseRect(g.closeY);
+      if (TitleScreen._inside(x, y, closeRect)) return 99;
+      return -1;
+    }
     if (this.modal) {
-      // Generic modal (meta, codex) — close on close-button or outside tap.
+      // Generic modal (meta) — close on close-button or outside tap.
       const closeRect = this._modalCloseRect();
       if (TitleScreen._inside(x, y, closeRect)) return 99;
       return 98;

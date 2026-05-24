@@ -22,6 +22,13 @@ const DEFAULT_META = Object.freeze({
   unlocks: [],
   coins: 0,
   shopUpgrades: {},
+  // Codex: ids of items and enemies the player has encountered across all
+  // runs. Persists across deaths so the chronicle grows over time.
+  discoveredItems: [],
+  discoveredEnemies: [],
+  discoveredBiomes: [],
+  // Daily seed bookkeeping: { 'YYYY-MM-DD': bestScore }
+  dailyScores: {},
   settings: {
     volume: 0.6,
     vibration: true,
@@ -42,6 +49,40 @@ export class MetaProgress {
     this.balance = balance;
     this.bus = eventBus;
     this._state = MetaProgress._clone(DEFAULT_META);
+    this._wireDiscovery();
+  }
+
+  /**
+   * Subscribe to gameplay events that drive codex progress. Discoveries
+   * are appended idempotently — same id seen twice doesn't double-count.
+   */
+  _wireDiscovery() {
+    if (!this.bus) return;
+    this.bus.on('item:pickedUp', ({ item }) => {
+      if (item?.id) this._discover('discoveredItems', item.id);
+    });
+    this.bus.on('entity:died', ({ entity }) => {
+      if (entity?.kind === 'enemy' && entity.defId) {
+        this._discover('discoveredEnemies', entity.defId);
+      }
+    });
+    this.bus.on('floor:entered', ({ index: _i, name }) => {
+      // Map biome name → biome id by slug. Cheap; we want to know which
+      // biomes the player has set foot in.
+      if (typeof name === 'string') {
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+        this._discover('discoveredBiomes', slug);
+      }
+    });
+  }
+
+  _discover(field, id) {
+    if (!this._state[field]) this._state[field] = [];
+    if (this._state[field].includes(id)) return;
+    this._state[field].push(id);
+    // Save lazily — discovery happens often, no need to hit storage on
+    // every single one. We persist on recordRun and setSetting.
+    this.bus?.emit('codex:discovered', { field, id });
   }
 
   /** Load from storage. Returns the meta payload (also stored internally). */
@@ -97,6 +138,19 @@ export class MetaProgress {
     const coinsEarned = Math.floor((score / COINS_PER_SCORE) * coinMult);
     this._state.coins = (this._state.coins || 0) + coinsEarned;
     runSummary.coinsEarned = coinsEarned;
+
+    // Daily seed best score, if the run was a daily mode.
+    if (runSummary.mode === 'daily') {
+      const d = new Date();
+      const pad = (n) => String(n).padStart(2, '0');
+      const key = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      if (!this._state.dailyScores) this._state.dailyScores = {};
+      const prev = this._state.dailyScores[key] || 0;
+      if (score > prev) {
+        this._state.dailyScores[key] = score;
+        runSummary.dailyNewBest = true;
+      }
+    }
 
     // History (most recent first).
     this._state.runHistory.unshift({

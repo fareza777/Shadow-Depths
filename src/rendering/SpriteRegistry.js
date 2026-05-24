@@ -32,6 +32,15 @@ function pixelDraw(ctx, ox, oy, size, pixels) {
   }
 }
 
+// Same helper but on a 64-unit subgrid — for larger detail portraits
+// used in screens like the Vigil character sheet.
+function pixelDraw64(ctx, ox, oy, size, pixels) {
+  const p = size / 64;
+  for (const [px, py, pw, ph, color] of pixels) {
+    fillRect(ctx, ox + px * p, oy + py * p, pw * p, ph * p, color);
+  }
+}
+
 // Palette for the hero (consistent across all hero-related sprites).
 const HERO_HELMET   = '#3e3a48';
 const HERO_HELM_HI  = '#5e5868';
@@ -385,6 +394,73 @@ const PROCEDURAL_SPRITES = {
       [11, 13, 1, 5, '#a09870']
     ]);
   },
+  // --- High-detail hero portrait (for Vigil screen, 64-unit subgrid) ---
+  portrait_hero: (ctx, x, y, s) => {
+    pixelDraw64(ctx, x, y, s, [
+      // Cape behind (drapes outside helmet/shoulders).
+      [16, 24,  4,  3, HERO_CAPE],
+      [44, 24,  4,  3, HERO_CAPE],
+      [14, 27, 36, 22, HERO_CAPE],
+      [12, 49, 40, 12, HERO_CAPE],
+      [14, 29, 36,  2, HERO_CAPE_HI], // cape shoulder highlight
+
+      // Helmet — top dome
+      [22,  4, 20, 10, HERO_HELMET],
+      [21,  6, 22,  2, HERO_HELM_HI], // helm highlight
+      [22, 14, 20,  3, HERO_HELM_HI],
+
+      // Visor band
+      [22, 17, 20,  6, HERO_VISOR],
+
+      // Glowing red eyes — bigger, more menacing
+      [26, 19,  3,  3, HERO_EYE],
+      [35, 19,  3,  3, HERO_EYE],
+      [27, 20,  1,  1, '#ffffff'], // eye sparkle
+      [36, 20,  1,  1, '#ffffff'],
+
+      // Chin / lower jaw guard
+      [24, 23, 16,  3, HERO_HELMET],
+      [26, 26, 12,  1, HERO_HELM_HI],
+
+      // Neck gorget
+      [27, 27, 10,  2, HERO_ARMOR_HI],
+
+      // Pauldrons (shoulder armor) — large and ornate
+      [12, 29,  8,  9, HERO_PAULDRON],
+      [44, 29,  8,  9, HERO_PAULDRON],
+      [13, 30,  6,  1, '#a08850'], // pauldron rim
+      [45, 30,  6,  1, '#a08850'],
+      [14, 32,  4,  2, '#5a4a20'], // pauldron rivet
+      [46, 32,  4,  2, '#5a4a20'],
+
+      // Chest plate
+      [20, 30, 24, 18, HERO_ARMOR],
+      [21, 30, 22,  2, HERO_ARMOR_HI], // chest top trim
+      [20, 47, 24,  1, HERO_BELT],     // belt line below chest
+
+      // Chest emblem — large gold sun/eye
+      [30, 35,  4,  4, HERO_EMBLEM],
+      [29, 36,  1,  2, HERO_EMBLEM],
+      [34, 36,  1,  2, HERO_EMBLEM],
+      [31, 34,  2,  1, HERO_EMBLEM],
+      [31, 39,  2,  1, HERO_EMBLEM],
+
+      // Chest ornament rivets
+      [22, 33,  2,  2, '#1a1018'],
+      [40, 33,  2,  2, '#1a1018'],
+      [22, 42,  2,  2, '#1a1018'],
+      [40, 42,  2,  2, '#1a1018'],
+
+      // Belt + buckle
+      [22, 48, 20,  4, HERO_BELT],
+      [29, 49,  6,  2, HERO_EMBLEM], // belt buckle gold
+      [30, 50,  4,  1, '#3a2e10'],
+
+      // Vignette glow at bottom (subtle frame edge dark)
+      [ 0, 62, 64,  2, '#0a0608']
+    ]);
+  },
+
   weapon_voidbow: (ctx, x, y, s) => {
     pixelDraw(ctx, x, y, s, [
       [13,  4, 1, 3, '#9050c0'], [12,  7, 1, 4, '#9050c0'],

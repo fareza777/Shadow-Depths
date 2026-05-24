@@ -88,7 +88,8 @@ export class Game {
       state: this.state,
       content: this.content,
       balance: this.balance,
-      seed: opts.seed
+      seed: opts.seed,
+      mode: opts.mode || 'normal'
     });
     this.state.setScene('game');
     this.scenes.switch('game', scene, opts);
@@ -107,18 +108,19 @@ export class Game {
   }
 
   _onRunOver(summary) {
-    // recordRun computes score, mutates the copy it receives, and returns
-    // the score + unlock metadata. The original `summary` object that
-    // GameScene emitted does NOT carry the score — we have to enrich it
-    // ourselves before handing it to the GameOver scene factory or the
-    // scene renders "SCORE 0" forever.
-    const result = this.meta.recordRun({ ...summary, died: true });
+    // recordRun mutates the COPY it receives (sets score, coinsEarned,
+    // dailyNewBest if applicable). We need to forward those values into
+    // the scene's summary or the GameOver screen renders zeros.
+    const summaryForRecord = { ...summary, died: true };
+    const result = this.meta.recordRun(summaryForRecord);
     const enriched = {
       ...summary,
       died: true,
       score: result.score,
+      coinsEarned: result.coinsEarned,
       isNewHighScore: result.isNewHighScore,
-      unlocked: result.unlocked
+      unlocked: result.unlocked,
+      dailyNewBest: !!summaryForRecord.dailyNewBest
     };
     const scene = this._sceneFactories.gameover({
       bus: this.bus,
@@ -131,13 +133,16 @@ export class Game {
   }
 
   _onRunVictory(summary) {
-    const result = this.meta.recordRun({ ...summary, died: false });
+    const summaryForRecord = { ...summary, died: false };
+    const result = this.meta.recordRun(summaryForRecord);
     const enriched = {
       ...summary,
       died: false,
       score: result.score,
+      coinsEarned: result.coinsEarned,
       isNewHighScore: result.isNewHighScore,
-      unlocked: result.unlocked
+      unlocked: result.unlocked,
+      dailyNewBest: !!summaryForRecord.dailyNewBest
     };
     const scene = this._sceneFactories.victory({
       bus: this.bus,
