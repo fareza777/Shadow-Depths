@@ -1,16 +1,23 @@
 /**
- * MobileControls — DOM overlay with D-pad + action buttons.
+ * MobileControls — DOM overlay with action verb buttons only.
  *
- * Auto-shows when `'ontouchstart' in window` OR when the viewport is too
- * narrow for comfortable mouse play. Buttons emit semantic input actions via
- * the bus so they share the input pipeline with the keyboard handler.
+ * v0.2 design notes: the D-pad was removed because it covered too much of
+ * the play area on portrait phones. Movement is done by **tap-to-walk** on
+ * the canvas (handled in GameScene._playerTapTile). Action verbs that have
+ * no direction stay as DOM buttons because they're easier to tap than
+ * remembering a gesture vocabulary:
  *
- * Buttons are min 48×48 dp (Android accessibility) per Section 9.3 brief.
+ *   PICK  — pick up item under foot
+ *   DOWN  — descend stairs
+ *   WAIT  — skip a turn (lets DoTs tick, lets buff/debuff expire)
+ *   BAG   — open inventory modal
+ *
+ * Buttons are at min 48 × 48 dp per Android accessibility. Auto-shown when
+ * a touch input is detected; desktop users get them too as redundant UI
+ * (harmless and serves mouse-only laptop testing).
  */
 export class MobileControls {
-  /**
-   * @param {{ bus:object, mount?:HTMLElement }} deps
-   */
+  /** @param {{ bus:object, mount?:HTMLElement }} deps */
   constructor({ bus, mount }) {
     this.bus = bus;
     this.mount = mount || document.getElementById('ui-layer') || document.body;
@@ -18,7 +25,6 @@ export class MobileControls {
     this._root = null;
     this._currentScene = 'title';
 
-    // Auto-detect.
     const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     if (isTouch) this.show();
 
@@ -38,7 +44,7 @@ export class MobileControls {
     this.enabled = false;
   }
 
-  // --- DOM construction ----------------------------------------------
+  // --- DOM construction ---------------------------------------------
   _build() {
     const root = document.createElement('div');
     root.id = 'mobile-controls';
@@ -46,73 +52,50 @@ export class MobileControls {
       position: absolute; inset: 0; pointer-events: none;
       font-family: 'Courier New', monospace;
     `;
-
-    // D-pad bottom-left.
-    const dpad = this._mkDpad();
-    root.appendChild(dpad);
-
-    // Action stack bottom-right.
-    const actions = this._mkActions();
-    root.appendChild(actions);
-
+    root.appendChild(this._mkActionRow());
     this.mount.appendChild(root);
     this._root = root;
   }
 
-  _mkDpad() {
-    const pad = document.createElement('div');
-    pad.style.cssText = `
-      position: absolute; left: 12px; bottom: 12px;
-      display: grid;
-      grid-template-columns: 56px 56px 56px;
-      grid-template-rows: 56px 56px 56px;
-      gap: 4px;
-      pointer-events: auto;
-      opacity: 0.55;
-    `;
-    const empty = () => { const d = document.createElement('div'); return d; };
-    pad.appendChild(empty());
-    pad.appendChild(this._mkBtn('▲', () => this._emit({ type: 'move', dx: 0, dy: -1 })));
-    pad.appendChild(empty());
-    pad.appendChild(this._mkBtn('◀', () => this._emit({ type: 'move', dx: -1, dy: 0 })));
-    pad.appendChild(this._mkBtn('·', () => this._emit({ type: 'wait' })));
-    pad.appendChild(this._mkBtn('▶', () => this._emit({ type: 'move', dx: 1, dy: 0 })));
-    pad.appendChild(empty());
-    pad.appendChild(this._mkBtn('▼', () => this._emit({ type: 'move', dx: 0, dy: 1 })));
-    pad.appendChild(empty());
-    return pad;
-  }
-
-  _mkActions() {
+  _mkActionRow() {
     const wrap = document.createElement('div');
     wrap.style.cssText = `
-      position: absolute; right: 12px; bottom: 12px;
-      display: flex; flex-direction: column; gap: 6px;
-      pointer-events: auto; opacity: 0.85;
+      position: absolute;
+      left: 0; right: 0; bottom: 12px;
+      display: flex; justify-content: center; gap: 8px;
+      padding: 0 12px;
+      pointer-events: auto;
     `;
-    wrap.appendChild(this._mkBtn('PICK', () => this._emit({ type: 'pickup' }), 64));
-    wrap.appendChild(this._mkBtn('DOWN', () => this._emit({ type: 'descend' }), 64));
-    wrap.appendChild(this._mkBtn('BAG', () => this._emit({ type: 'inventory' }), 64));
+    wrap.appendChild(this._mkBtn('WAIT', () => this._emit({ type: 'wait' })));
+    wrap.appendChild(this._mkBtn('PICK', () => this._emit({ type: 'pickup' })));
+    wrap.appendChild(this._mkBtn('DOWN', () => this._emit({ type: 'descend' })));
+    wrap.appendChild(this._mkBtn('BAG',  () => this._emit({ type: 'inventory' })));
     return wrap;
   }
 
-  _mkBtn(label, onTap, w = 56) {
+  _mkBtn(label, onTap) {
     const b = document.createElement('button');
     b.type = 'button';
     b.textContent = label;
     b.style.cssText = `
-      width: ${w}px; height: 48px; min-width: 48px;
-      background: #1a1820; color: #d6d6da;
-      border: 1px solid #3a3340; border-radius: 6px;
-      font: bold 14px "Courier New", monospace;
+      flex: 1 1 auto; max-width: 96px;
+      height: 52px; min-width: 64px;
+      background: rgba(26,24,32,0.88); color: #d6d6da;
+      border: 1px solid #3a3340; border-radius: 8px;
+      font: bold 13px "Courier New", monospace;
+      letter-spacing: 0.5px;
       touch-action: manipulation; user-select: none;
-      transform-origin: center; transition: transform 60ms;
+      transform-origin: center; transition: transform 60ms, background 60ms;
+      backdrop-filter: blur(2px);
     `;
-    // Touch & mouse — fire on press-down, not click, for responsiveness.
     const fire = (ev) => {
       ev.preventDefault();
       b.style.transform = 'scale(0.92)';
-      setTimeout(() => { b.style.transform = ''; }, 80);
+      b.style.background = 'rgba(58,52,64,0.95)';
+      setTimeout(() => {
+        b.style.transform = '';
+        b.style.background = 'rgba(26,24,32,0.88)';
+      }, 100);
       try { onTap(); } catch (err) { console.warn('[MobileControls] btn handler:', err); }
     };
     b.addEventListener('touchstart', fire, { passive: false });
@@ -126,9 +109,9 @@ export class MobileControls {
 
   _applySceneStyling() {
     if (!this._root) return;
-    // On title/gameover/victory, dim the action stack — only D-pad nav matters.
+    // Hide entirely on title / gameover / victory — those scenes have their
+    // own buttons drawn inside the canvas.
     const inGame = this._currentScene === 'game';
-    const actionsEl = this._root.children[1];
-    if (actionsEl) actionsEl.style.opacity = inGame ? '0.85' : '0.25';
+    this._root.style.display = inGame ? 'block' : 'none';
   }
 }

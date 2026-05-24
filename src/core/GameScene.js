@@ -258,19 +258,22 @@ export class GameScene {
   }
 
   _playerTapTile(tx, ty) {
-    // Translate tap-tile into a step or pickup or attack.
-    const dx = Math.sign(tx - this.player.x);
-    const dy = Math.sign(ty - this.player.y);
-    const adjacent = Math.abs(tx - this.player.x) + Math.abs(ty - this.player.y) === 1;
-    if (tx === this.player.x && ty === this.player.y) {
-      // Tap self → pickup if anything here, else wait.
+    // Tap-to-walk (the only mobile movement input now that the D-pad is
+    // gone). 4-directional: pick the axis with the larger delta so the
+    // player advances toward the tapped tile on the most direct cardinal.
+    const dxRaw = tx - this.player.x;
+    const dyRaw = ty - this.player.y;
+    if (dxRaw === 0 && dyRaw === 0) {
+      // Tap on self → pick up under foot if anything, else wait one turn.
       const stack = this.floor.itemsAt(tx, ty);
       if (stack.length > 0) this._playerPickup();
       else this._endPlayerTurn(true);
       return;
     }
-    if (adjacent) this._playerMove(dx, dy);
-    else this._playerMove(dx, dy); // first step in that direction (auto-walk in v0.2)
+    let dx = 0, dy = 0;
+    if (Math.abs(dxRaw) >= Math.abs(dyRaw)) dx = Math.sign(dxRaw);
+    else dy = Math.sign(dyRaw);
+    this._playerMove(dx, dy);
   }
 
   // --- turn management -----------------------------------------------
@@ -280,6 +283,10 @@ export class GameScene {
     this.combat.tickEntity(this.player);
     if (this.player.isDead) { this._endRun(false); return; }
     this._runEnemyTurns();
+    // CRITICAL: enemy turns can kill the player. Without this check the
+    // GameOver scene never triggered and the player was stuck on a dead
+    // body that couldn't input. Bug from v0.2.0 first playtest.
+    if (this.player.isDead) { this._endRun(false); return; }
     this.pathfinding.invalidate();
     this.lighting.compute(this.floor, this.player);
 

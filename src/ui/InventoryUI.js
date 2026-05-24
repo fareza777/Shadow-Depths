@@ -135,7 +135,10 @@ export class InventoryUI {
     const count = 3;
     const totalW = CANVAS_WIDTH - BTN_PAD * 2;
     const w = (totalW - BTN_GAP * (count - 1)) / count;
-    const y = CANVAS_HEIGHT - BTN_H - BTN_PAD - 200; // above mobile-controls reserve
+    // Sits above the slim mobile-controls reserve (action buttons only,
+    // no D-pad). 96 px clearance keeps the button text well separated
+    // from the DOM action row underneath.
+    const y = CANVAS_HEIGHT - BTN_H - BTN_PAD - 96;
     return [
       { x: BTN_PAD,                          y, w, h: BTN_H, key: 'use' },
       { x: BTN_PAD + (w + BTN_GAP),          y, w, h: BTN_H, key: 'drop' },

@@ -76,6 +76,31 @@ export class MessageLog {
     return this.entries.slice(-n);
   }
 
+  /**
+   * Recent messages with an `alpha` field derived from their age. Older
+   * messages fade out; once fully transparent they're filtered out.
+   * Used by the HUD so the message strip doesn't permanently obstruct the
+   * play area.
+   *
+   * @param {number} [n] max returned
+   * @param {number} [visibleSec] full-opacity window
+   * @param {number} [fadeSec]    additional fade-out window
+   */
+  recentWithFade(n = 3, visibleSec = 4.0, fadeSec = 1.0) {
+    const out = [];
+    const now = this._t;
+    const slice = this.entries.slice(-n);
+    for (const e of slice) {
+      const age = Math.max(0, now - e.t);
+      let alpha;
+      if (age < visibleSec) alpha = 1;
+      else if (age < visibleSec + fadeSec) alpha = 1 - (age - visibleSec) / fadeSec;
+      else continue; // fully faded out
+      out.push({ ...e, alpha });
+    }
+    return out;
+  }
+
   clear() { this.entries.length = 0; }
 }
 
