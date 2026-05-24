@@ -8,7 +8,7 @@
  *   Settings — toggle volume (v0.1 minimal)
  *   Controls — modal cheat-sheet
  */
-import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants.js';
+import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE } from '../config/constants.js';
 
 const BUTTONS = [
   { id: 'newRun',   label: 'NEW RUN' },
@@ -16,6 +16,23 @@ const BUTTONS = [
   { id: 'controls', label: 'CONTROLS' },
   { id: 'settings', label: 'SETTINGS' }
 ];
+
+// Layout config — portrait vs landscape. All Y positions and dimensions
+// for the title screen flow through this so a single source change moves
+// everything in lockstep (and hit-tests automatically follow).
+const LAYOUT = IS_LANDSCAPE
+  ? {
+      logoY: 36, logoSize: 28, subY: 60, subSize: 11,
+      hsY: 80, coinY: 100,
+      baseY: 130, btnW: 240, btnH: 44, btnGap: 10,
+      footerY: CANVAS_HEIGHT - 16
+    }
+  : {
+      logoY: 110, logoSize: 36, subY: 150, subSize: 12,
+      hsY: 175, coinY: 195,
+      baseY: 360, btnW: 260, btnH: 52, btnGap: 12,
+      footerY: CANVAS_HEIGHT - 24
+    };
 
 export class TitleScreen {
   /**
@@ -59,35 +76,36 @@ export class TitleScreen {
     }
 
     // Logo
-    renderer.drawText('SHADOW DEPTHS', CANVAS_WIDTH / 2, 110,
-      { size: 36, bold: true, align: 'center' });
-    renderer.drawText('a melancholic descent', CANVAS_WIDTH / 2, 150,
-      { size: 12, align: 'center', color: COLOR.textMuted });
+    renderer.drawText('SHADOW DEPTHS', CANVAS_WIDTH / 2, LAYOUT.logoY,
+      { size: LAYOUT.logoSize, bold: true, align: 'center' });
+    renderer.drawText('a melancholic descent', CANVAS_WIDTH / 2, LAYOUT.subY,
+      { size: LAYOUT.subSize, align: 'center', color: COLOR.textMuted });
 
     // High score + coin balance
     const hs = this.state.state.meta.highscore || 0;
     const coins = this.state.state.meta.coins || 0;
     if (hs > 0) {
-      renderer.drawText(`High score: ${hs}`, CANVAS_WIDTH / 2, 175,
+      renderer.drawText(`High score: ${hs}`, CANVAS_WIDTH / 2, LAYOUT.hsY,
         { size: 11, align: 'center', color: COLOR.textXP });
     }
-    renderer.drawText(`◈ ${coins} coins`, CANVAS_WIDTH / 2, 195,
+    renderer.drawText(`◈ ${coins} coins`, CANVAS_WIDTH / 2, LAYOUT.coinY,
       { size: 13, align: 'center', color: '#d6c87a', bold: true });
 
-    // Buttons — lowered for thumb reach on portrait phones.
-    const baseY = 360;
+    // Buttons — sized to fit current orientation. Hit-test uses the same LAYOUT.
+    const rowH = LAYOUT.btnH + LAYOUT.btnGap;
+    const x = (CANVAS_WIDTH - LAYOUT.btnW) / 2;
     for (let i = 0; i < BUTTONS.length; i++) {
-      const y = baseY + i * 64;
+      const y = LAYOUT.baseY + i * rowH;
       const selected = i === this.selected;
-      const w = 260, h = 52, x = (CANVAS_WIDTH - w) / 2;
-      renderer.drawRect(x, y, w, h, selected ? '#2a2438' : '#16141c');
-      renderer.drawStrokedRect(x, y, w, h, selected ? '#d6c87a' : '#3a3340', selected ? 2 : 1);
-      renderer.drawText(BUTTONS[i].label, CANVAS_WIDTH / 2, y + h / 2,
-        { size: 16, bold: true, align: 'center', baseline: 'middle' });
+      renderer.drawRect(x, y, LAYOUT.btnW, LAYOUT.btnH, selected ? '#2a2438' : '#16141c');
+      renderer.drawStrokedRect(x, y, LAYOUT.btnW, LAYOUT.btnH,
+        selected ? '#d6c87a' : '#3a3340', selected ? 2 : 1);
+      renderer.drawText(BUTTONS[i].label, CANVAS_WIDTH / 2, y + LAYOUT.btnH / 2,
+        { size: 15, bold: true, align: 'center', baseline: 'middle' });
     }
 
     renderer.drawText('tap a button   ·   arrows + enter on keyboard',
-      CANVAS_WIDTH / 2, CANVAS_HEIGHT - 24,
+      CANVAS_WIDTH / 2, LAYOUT.footerY,
       { size: 10, align: 'center', color: COLOR.textMuted });
 
     if (this.modal === 'controls') this._renderControls(renderer);
@@ -154,44 +172,77 @@ export class TitleScreen {
     else if (id === 'shop') this.modal = 'shop';
   }
 
+  /**
+   * Shared shop modal geometry. Returns per-card rects (cards is the array
+   * of {x,y,w,h} for each upgrade) so hitTest and render don't drift.
+   */
+  _shopGeometry() {
+    const upgrades = this.content.shop?.upgrades || [];
+    const cols = IS_LANDSCAPE ? 2 : 1;
+    const rows = Math.ceil(upgrades.length / cols);
+    const rowH = IS_LANDSCAPE ? 64 : 58;
+    const headerH = 56;
+    const closeH = IS_LANDSCAPE ? 40 : 48;
+    const closeMargin = 12;
+    const modalH = headerH + rows * rowH + closeH + closeMargin * 2 + 8;
+    const modalY = Math.max(8, (CANVAS_HEIGHT - modalH) / 2);
+    const modalX = 16;
+    const modalW = CANVAS_WIDTH - modalX * 2;
+    const cardPad = 8;
+    const cardGap = 8;
+    const cardW = (modalW - cardPad * 2 - cardGap * (cols - 1)) / cols;
+    const cardH = rowH - cardGap;
+    const cards = [];
+    for (let i = 0; i < upgrades.length; i++) {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const cx = modalX + cardPad + col * (cardW + cardGap);
+      const cy = modalY + headerH + row * rowH;
+      cards.push({ x: cx, y: cy, w: cardW, h: cardH });
+    }
+    return {
+      modalX, modalY, modalW, modalH,
+      headerH, closeH, closeMargin,
+      closeY: modalY + modalH - closeH - closeMargin,
+      cards
+    };
+  }
+
   _renderShop(r) {
     const upgrades = this.content.shop?.upgrades || [];
-    const rowH = 56;
-    const headerH = 64;
-    const modalH = headerH + upgrades.length * rowH + 80;
-    const modalY = Math.max(20, (CANVAS_HEIGHT - modalH) / 2 - 40);
-
-    r.drawRect(20, modalY, CANVAS_WIDTH - 40, modalH, 'rgba(0,0,0,0.96)');
-    r.drawStrokedRect(20, modalY, CANVAS_WIDTH - 40, modalH, '#d6c87a', 2);
-
-    r.drawText('SHOP', CANVAS_WIDTH / 2, modalY + 22,
-      { size: 20, bold: true, align: 'center', color: '#d6c87a' });
+    const g = this._shopGeometry();
     const coins = this.state.state.meta.coins || 0;
-    r.drawText(`◈ ${coins} coins`, CANVAS_WIDTH / 2, modalY + 46,
-      { size: 12, align: 'center', color: COLOR.textXP });
+
+    r.drawRect(g.modalX, g.modalY, g.modalW, g.modalH, 'rgba(0,0,0,0.96)');
+    r.drawStrokedRect(g.modalX, g.modalY, g.modalW, g.modalH, '#d6c87a', 2);
+
+    r.drawText('SHOP', CANVAS_WIDTH / 2, g.modalY + 18,
+      { size: 18, bold: true, align: 'center', color: '#d6c87a' });
+    r.drawText(`◈ ${coins} coins`, CANVAS_WIDTH / 2, g.modalY + 40,
+      { size: 11, align: 'center', color: COLOR.textXP });
 
     for (let i = 0; i < upgrades.length; i++) {
       const u = upgrades[i];
-      const y = modalY + headerH + i * rowH;
+      const card = g.cards[i];
       const ownedLevel = this.meta?.upgradeLevel(u.id) || 0;
       const maxed = ownedLevel >= (u.maxLevel || 1);
       const cost = TitleScreen._nextCost(u, ownedLevel);
       const canAfford = coins >= cost;
 
-      r.drawRect(28, y, CANVAS_WIDTH - 56, rowH - 6, '#16141c');
-      r.drawStrokedRect(28, y, CANVAS_WIDTH - 56, rowH - 6, '#3a3340', 1);
+      r.drawRect(card.x, card.y, card.w, card.h, '#16141c');
+      r.drawStrokedRect(card.x, card.y, card.w, card.h, '#3a3340', 1);
 
-      // Name + level chip
-      const levelTxt = u.maxLevel > 1 ? `  ${ownedLevel}/${u.maxLevel}` : (ownedLevel > 0 ? '  OWNED' : '');
-      r.drawText(`${u.name}${levelTxt}`, 36, y + 6,
-        { size: 12, bold: true, color: '#e6e0c0' });
-      r.drawText(u.description, 36, y + 24,
-        { size: 10, color: COLOR.textMuted });
+      const levelTxt = u.maxLevel > 1
+        ? `  ${ownedLevel}/${u.maxLevel}`
+        : (ownedLevel > 0 ? '  OWNED' : '');
+      r.drawText(`${u.name}${levelTxt}`, card.x + 8, card.y + 6,
+        { size: 11, bold: true, color: '#e6e0c0' });
+      r.drawText(u.description, card.x + 8, card.y + 22,
+        { size: 9, color: COLOR.textMuted });
 
-      // BUY button on the right
-      const btnW = 80, btnH = 36;
-      const btnX = CANVAS_WIDTH - 36 - btnW;
-      const btnY = y + (rowH - 6 - btnH) / 2;
+      const btnW = 72, btnH = 30;
+      const btnX = card.x + card.w - btnW - 8;
+      const btnY = card.y + card.h - btnH - 6;
       const bgColor = maxed ? '#222028'
                    : canAfford ? '#2e3a2a' : '#3a2e2a';
       const borderColor = maxed ? '#3a3340'
@@ -200,17 +251,17 @@ export class TitleScreen {
       r.drawStrokedRect(btnX, btnY, btnW, btnH, borderColor, 2);
       const label = maxed ? 'MAX' : `${cost} ◈`;
       r.drawText(label, btnX + btnW / 2, btnY + btnH / 2,
-        { size: 12, bold: true, align: 'center', baseline: 'middle',
+        { size: 11, bold: true, align: 'center', baseline: 'middle',
           color: maxed ? COLOR.textMuted : (canAfford ? '#80ff80' : '#ff8080') });
     }
 
     if (this._shopFeedback && this._t < this._shopFeedbackUntil) {
       r.drawText(this._shopFeedback,
-        CANVAS_WIDTH / 2, modalY + modalH - 56,
+        CANVAS_WIDTH / 2, g.closeY - 8,
         { size: 11, align: 'center', color: COLOR.textHeal });
     }
 
-    this._renderModalCloseButton(r);
+    this._renderModalCloseButton(r, g.closeY);
   }
 
   static _nextCost(u, currentLevel) {
@@ -235,21 +286,43 @@ export class TitleScreen {
     Object.assign(this.state.state.meta, this.meta.state);
   }
 
-  _modalCloseRect() {
-    const w = 200, h = 48;
-    return {
-      x: (CANVAS_WIDTH - w) / 2,
-      y: CANVAS_HEIGHT - 120,
-      w, h
-    };
+  /**
+   * Close-button rect for a modal. Optional explicit y to anchor the
+   * button to a known position (e.g. just below a modal box). Default
+   * placement is near the bottom of the screen with enough margin so
+   * mobile UI overlays never cover it.
+   */
+  _modalCloseRect(explicitY) {
+    const w = IS_LANDSCAPE ? 160 : 200;
+    const h = IS_LANDSCAPE ? 40  : 48;
+    const y = typeof explicitY === 'number'
+      ? explicitY
+      : (IS_LANDSCAPE ? CANVAS_HEIGHT - 56 : CANVAS_HEIGHT - 120);
+    return { x: (CANVAS_WIDTH - w) / 2, y, w, h };
   }
 
-  _renderModalCloseButton(r) {
-    const rect = this._modalCloseRect();
+  _renderModalCloseButton(r, explicitY) {
+    const rect = this._modalCloseRect(explicitY);
     r.drawRect(rect.x, rect.y, rect.w, rect.h, '#2a2438');
     r.drawStrokedRect(rect.x, rect.y, rect.w, rect.h, '#d6c87a', 2);
     r.drawText('CLOSE', rect.x + rect.w / 2, rect.y + rect.h / 2,
       { size: 14, bold: true, align: 'center', baseline: 'middle' });
+  }
+
+  /** Compute Controls modal geometry — shared by render + hitTest. */
+  _controlsGeometry() {
+    const totalLines = 16;
+    const lineSpacing = IS_LANDSCAPE ? 16 : 22;
+    const closeH      = IS_LANDSCAPE ? 40 : 48;
+    const closeMargin = 14;
+    const padding     = IS_LANDSCAPE ? 30 : 50;
+    const contentH    = totalLines * lineSpacing + 16;
+    const modalH      = contentH + closeH + closeMargin * 2;
+    const modalY      = Math.max(12, (CANVAS_HEIGHT - modalH) / 2);
+    return {
+      modalY, modalH,
+      closeY: modalY + modalH - closeH - closeMargin
+    };
   }
 
   _renderControls(r) {
@@ -257,82 +330,107 @@ export class TitleScreen {
       'CONTROLS',
       '',
       'Mobile:',
-      '  D-pad bottom-left moves you',
-      '  Center · = wait one turn',
-      '  PICK = item under foot',
-      '  DOWN = descend stairs',
+      '  D-pad moves you  ·  · = wait',
+      '  PICK = grab item under foot',
+      '  DOWN = descend the stairs',
       '  BAG  = open inventory',
-      '  Tap a world tile to walk',
+      '  Tap a world tile to walk to it',
       '',
       'Keyboard (desktop):',
-      '  Arrows / WASD / HJKL move',
-      '  Space / . wait',
-      '  G / Enter pickup',
-      '  > descend, I/Tab inventory',
-      '  M minimap, 1-9 hotkey'
+      '  Arrows / WASD / HJKL  move',
+      '  Space / .  wait',
+      '  G / Enter  pickup',
+      '  >  descend     I/Tab  inventory',
+      '  M  minimap     1-9    hotkeys'
     ];
-    r.drawRect(40, 50, CANVAS_WIDTH - 80, CANVAS_HEIGHT - 200, 'rgba(0,0,0,0.94)');
-    r.drawStrokedRect(40, 50, CANVAS_WIDTH - 80, CANVAS_HEIGHT - 200, '#3a3340', 1);
+    const lineSpacing = IS_LANDSCAPE ? 16 : 22;
+    const lineSize    = IS_LANDSCAPE ? 11 : 12;
+    const headerSize  = IS_LANDSCAPE ? 16 : 18;
+    const closeH      = IS_LANDSCAPE ? 40 : 48;
+    const closeMargin = 14;
+    const padding     = IS_LANDSCAPE ? 30 : 50;
+    const contentH    = lines.length * lineSpacing + 16;
+    const modalH      = contentH + closeH + closeMargin * 2;
+    const modalY      = Math.max(12, (CANVAS_HEIGHT - modalH) / 2);
+    const modalX      = IS_LANDSCAPE ? 60 : 40;
+    const modalW      = CANVAS_WIDTH - modalX * 2;
+
+    r.drawRect(modalX, modalY, modalW, modalH, 'rgba(0,0,0,0.94)');
+    r.drawStrokedRect(modalX, modalY, modalW, modalH, '#3a3340', 1);
+
     for (let i = 0; i < lines.length; i++) {
-      r.drawText(lines[i], CANVAS_WIDTH / 2, 78 + i * 22, {
-        size: i === 0 ? 18 : 12, bold: i === 0, align: 'center',
+      r.drawText(lines[i], CANVAS_WIDTH / 2, modalY + padding + i * lineSpacing, {
+        size: i === 0 ? headerSize : lineSize, bold: i === 0, align: 'center',
         color: i === 0 ? '#d6c87a' : COLOR.textPrimary
       });
     }
-    this._renderModalCloseButton(r);
+    // Close button anchored to modal bottom so it's always reachable.
+    const closeY = modalY + modalH - closeH - closeMargin;
+    this._renderModalCloseButton(r, closeY);
+  }
+
+  /** Single geometry source for both render + hit-test of settings modal. */
+  _settingsGeometry() {
+    const modalH = IS_LANDSCAPE ? 280 : 360;
+    const modalY = Math.max(16, (CANVAS_HEIGHT - modalH) / 2 - (IS_LANDSCAPE ? 20 : 60));
+    const modalX = IS_LANDSCAPE ? 60 : 40;
+    const modalW = CANVAS_WIDTH - modalX * 2;
+    const btnW = IS_LANDSCAPE ? 130 : 140;
+    const btnH = IS_LANDSCAPE ? 40  : 44;
+    const btnGap = 14;
+    const totalW = btnW * 2 + btnGap;
+    const baseX = (CANVAS_WIDTH - totalW) / 2;
+    // Place orientation buttons high enough that they always fit before
+    // the close button. closeY = modalY + modalH - closeH - padding.
+    const closeH = IS_LANDSCAPE ? 40 : 48;
+    const closeY = modalY + modalH - closeH - 14;
+    const btnY   = closeY - btnH - 18;
+    return { modalX, modalY, modalW, modalH, btnW, btnH, btnGap, baseX, btnY, closeY };
   }
 
   _renderSettings(r) {
     const settings = this.state.state.meta.settings || {};
     const vol = Math.round((settings.volume || 0) * 100);
     const orient = settings.orientation || 'portrait';
-    const modalH = 360;
-    const modalY = Math.max(20, (CANVAS_HEIGHT - modalH) / 2 - 60);
-    r.drawRect(40, modalY, CANVAS_WIDTH - 80, modalH, 'rgba(0,0,0,0.94)');
-    r.drawStrokedRect(40, modalY, CANVAS_WIDTH - 80, modalH, '#3a3340', 1);
-    r.drawText('SETTINGS', CANVAS_WIDTH / 2, modalY + 28,
+    const g = this._settingsGeometry();
+
+    r.drawRect(g.modalX, g.modalY, g.modalW, g.modalH, 'rgba(0,0,0,0.94)');
+    r.drawStrokedRect(g.modalX, g.modalY, g.modalW, g.modalH, '#3a3340', 1);
+
+    r.drawText('SETTINGS', CANVAS_WIDTH / 2, g.modalY + 22,
       { size: 18, bold: true, align: 'center', color: '#d6c87a' });
 
-    r.drawText(`Volume: ${vol}%`, CANVAS_WIDTH / 2, modalY + 80,
-      { size: 14, align: 'center' });
-    r.drawText('(slider UI lands in v0.3)', CANVAS_WIDTH / 2, modalY + 100,
-      { size: 10, align: 'center', color: COLOR.textMuted });
+    r.drawText(`Volume: ${vol}%`, CANVAS_WIDTH / 2, g.modalY + 52,
+      { size: 13, align: 'center' });
 
-    // Orientation toggle.
-    r.drawText('Orientation', CANVAS_WIDTH / 2, modalY + 144,
-      { size: 14, align: 'center' });
-    const btnW = 120, btnH = 44, gap = 12;
-    const totalW = btnW * 2 + gap;
-    const baseX = (CANVAS_WIDTH - totalW) / 2;
-    const btnY = modalY + 172;
+    r.drawText('Orientation', CANVAS_WIDTH / 2, g.btnY - 22,
+      { size: 13, align: 'center' });
     for (let i = 0; i < 2; i++) {
       const key = i === 0 ? 'portrait' : 'landscape';
       const label = i === 0 ? 'PORTRAIT' : 'LANDSCAPE';
       const active = orient === key;
-      const bx = baseX + i * (btnW + gap);
-      r.drawRect(bx, btnY, btnW, btnH, active ? '#2a2438' : '#16141c');
-      r.drawStrokedRect(bx, btnY, btnW, btnH, active ? '#d6c87a' : '#3a3340', active ? 2 : 1);
-      r.drawText(label, bx + btnW / 2, btnY + btnH / 2,
+      const bx = g.baseX + i * (g.btnW + g.btnGap);
+      r.drawRect(bx, g.btnY, g.btnW, g.btnH, active ? '#2a2438' : '#16141c');
+      r.drawStrokedRect(bx, g.btnY, g.btnW, g.btnH,
+        active ? '#d6c87a' : '#3a3340', active ? 2 : 1);
+      r.drawText(label, bx + g.btnW / 2, g.btnY + g.btnH / 2,
         { size: 12, bold: true, align: 'center', baseline: 'middle' });
     }
-    r.drawText('change requires reload',
-      CANVAS_WIDTH / 2, btnY + btnH + 16,
-      { size: 10, align: 'center', color: COLOR.textMuted });
+    r.drawText('tap to toggle  ·  reloads game',
+      CANVAS_WIDTH / 2, g.btnY + g.btnH + 6,
+      { size: 9, align: 'center', color: COLOR.textMuted });
 
-    this._renderModalCloseButton(r);
+    // Anchor close button INSIDE the modal so it's always reachable
+    // regardless of canvas height.
+    this._renderModalCloseButton(r, g.closeY);
   }
 
   _settingsOrientationHitTest(x, y) {
     if (this.modal !== 'settings') return null;
-    const modalH = 360;
-    const modalY = Math.max(20, (CANVAS_HEIGHT - modalH) / 2 - 60);
-    const btnW = 120, btnH = 44, gap = 12;
-    const totalW = btnW * 2 + gap;
-    const baseX = (CANVAS_WIDTH - totalW) / 2;
-    const btnY = modalY + 172;
+    const g = this._settingsGeometry();
     for (let i = 0; i < 2; i++) {
-      const bx = baseX + i * (btnW + gap);
-      if (x >= bx && x <= bx + btnW && y >= btnY && y <= btnY + btnH) {
+      const bx = g.baseX + i * (g.btnW + g.btnGap);
+      if (x >= bx && x <= bx + g.btnW && y >= g.btnY && y <= g.btnY + g.btnH) {
         return i === 0 ? 'portrait' : 'landscape';
       }
     }
@@ -348,40 +446,47 @@ export class TitleScreen {
    */
   hitTest(x, y) {
     if (this.modal === 'shop') {
-      // BUY buttons first — they are precise hits.
-      const upgrades = this.content.shop?.upgrades || [];
-      const rowH = 56;
-      const headerH = 64;
-      const modalH = headerH + upgrades.length * rowH + 80;
-      const modalY = Math.max(20, (CANVAS_HEIGHT - modalH) / 2 - 40);
-      const btnW = 80, btnH = 36;
-      const btnX = CANVAS_WIDTH - 36 - btnW;
-      for (let i = 0; i < upgrades.length; i++) {
-        const rowY = modalY + headerH + i * rowH;
-        const btnY = rowY + (rowH - 6 - btnH) / 2;
+      const g = this._shopGeometry();
+      const btnW = 72, btnH = 30;
+      for (let i = 0; i < g.cards.length; i++) {
+        const card = g.cards[i];
+        const btnX = card.x + card.w - btnW - 8;
+        const btnY = card.y + card.h - btnH - 6;
         if (x >= btnX && x <= btnX + btnW &&
             y >= btnY && y <= btnY + btnH) {
           return 200 + i;
         }
       }
-      const closeRect = this._modalCloseRect();
+      const closeRect = this._modalCloseRect(g.closeY);
       if (x >= closeRect.x && x <= closeRect.x + closeRect.w &&
           y >= closeRect.y && y <= closeRect.y + closeRect.h) {
         return 99;
       }
-      return -1; // taps elsewhere on shop do NOT close (don't lose progress)
+      return -1;
     }
 
     if (this.modal === 'settings') {
       const orient = this._settingsOrientationHitTest(x, y);
       if (orient) return orient === 'portrait' ? 300 : 301;
-      const rect = this._modalCloseRect();
+      const g = this._settingsGeometry();
+      const rect = this._modalCloseRect(g.closeY);
       if (x >= rect.x && x <= rect.x + rect.w &&
           y >= rect.y && y <= rect.y + rect.h) {
         return 99;
       }
       return -1; // don't auto-close on outside tap inside settings
     }
+    if (this.modal === 'controls') {
+      const g = this._controlsGeometry();
+      const rect = this._modalCloseRect(g.closeY);
+      if (x >= rect.x && x <= rect.x + rect.w &&
+          y >= rect.y && y <= rect.y + rect.h) {
+        return 99;
+      }
+      // Tap outside controls modal also closes.
+      return 98;
+    }
+
     if (this.modal) {
       const rect = this._modalCloseRect();
       if (x >= rect.x && x <= rect.x + rect.w &&
@@ -390,11 +495,11 @@ export class TitleScreen {
       }
       return 98;
     }
-    const baseY = 360, w = 260, h = 52;
-    const bx = (CANVAS_WIDTH - w) / 2;
+    const rowH = LAYOUT.btnH + LAYOUT.btnGap;
+    const bx = (CANVAS_WIDTH - LAYOUT.btnW) / 2;
     for (let i = 0; i < BUTTONS.length; i++) {
-      const by = baseY + i * 64;
-      if (x >= bx && x <= bx + w && y >= by && y <= by + h) return i;
+      const by = LAYOUT.baseY + i * rowH;
+      if (x >= bx && x <= bx + LAYOUT.btnW && y >= by && y <= by + LAYOUT.btnH) return i;
     }
     return -1;
   }

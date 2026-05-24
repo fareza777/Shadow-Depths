@@ -17,8 +17,27 @@ export const GRID_HEIGHT = 28;          // world height in tiles
 // Orientation is chosen ONCE at module load (synchronous localStorage read)
 // so every component imports the matching geometry constants. Changing the
 // setting requires a page reload — Settings modal calls location.reload().
+//
+// ESCAPE HATCH: a `?orientation=portrait` (or `?orientation=landscape`) URL
+// query overrides the saved setting AND rewrites the saved value, so a
+// player who got stuck in an unusable layout can recover by appending
+// the query to the address bar.
 function _readOrientation() {
   try {
+    const params = new URLSearchParams(window.location.search);
+    const urlOrient = params.get('orientation');
+    if (urlOrient === 'portrait' || urlOrient === 'landscape') {
+      // Persist the override into the meta blob so subsequent reloads
+      // without the query string keep the chosen orientation.
+      try {
+        const raw = localStorage.getItem('shadowdepths_meta');
+        const meta = raw ? JSON.parse(raw) : {};
+        meta.settings = meta.settings || {};
+        meta.settings.orientation = urlOrient;
+        localStorage.setItem('shadowdepths_meta', JSON.stringify(meta));
+      } catch { /* storage blocked — orientation still applies for this load */ }
+      return urlOrient;
+    }
     const raw = localStorage.getItem('shadowdepths_meta');
     if (raw) {
       const meta = JSON.parse(raw);
