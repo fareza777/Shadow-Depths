@@ -121,7 +121,7 @@ async function bootstrap() {
   const sceneFactories = {
     title: (deps) => new TitleScreen(deps),
     game: (deps) => new GameScene({
-      ...deps, hud, minimap, inventoryUI, lighting, renderer
+      ...deps, hud, minimap, inventoryUI, lighting, renderer, mobileControls
     }),
     gameover: (deps) => new GameOverScreen(deps),
     victory: (deps) => new VictoryScreen(deps)

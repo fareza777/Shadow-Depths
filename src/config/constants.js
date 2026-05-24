@@ -15,12 +15,28 @@ export const GRID_WIDTH = 40;           // world width in tiles
 export const GRID_HEIGHT = 28;          // world height in tiles
 
 // Logical canvas — portrait, sized so each tile is a comfortable 32 px on phone.
-// 480 / 32 = 15 visible tiles wide. 800 / 32 = 25 tiles tall. World scrolls.
 export const CANVAS_WIDTH = 480;
 export const CANVAS_HEIGHT = 800;
 
 export const RENDER_WIDTH = CANVAS_WIDTH;
 export const RENDER_HEIGHT = CANVAS_HEIGHT;
+
+// Three-band layout (v0.2.1, mobile-first):
+//   ┌─────────────────────────┐  ← HUD top strip (HP/XP/stats)
+//   ├─────────────────────────┤
+//   │                         │
+//   │       WORLD VIEWPORT    │  ← world is clipped here. Camera centers
+//   │       (camera follow)   │     the player inside this rect. D-pad and
+//   │                         │     minimap LIVE BELOW, so they never sit
+//   ├─────────────────────────┤     on top of the play area.
+//   │  D-PAD   MAP   ACTIONS  │  ← canvas-rendered control band
+//   └─────────────────────────┘
+export const HUD_HEIGHT = 96;
+export const CONTROL_HEIGHT = 200;
+export const VIEWPORT_X = 0;
+export const VIEWPORT_Y = HUD_HEIGHT;
+export const VIEWPORT_W = CANVAS_WIDTH;
+export const VIEWPORT_H = CANVAS_HEIGHT - HUD_HEIGHT - CONTROL_HEIGHT;
 
 // --- Tile types ---------------------------------------------------------
 // Numeric enums (faster to compare and store in 2D arrays than strings).

@@ -1,14 +1,14 @@
 /**
- * Minimap — compact top-right overview. Sized for 480-wide portrait canvas.
+ * Minimap — small floor overview painted INSIDE the control band's center
+ * area, between the D-pad and the action buttons. Never overlaps the world
+ * viewport.
  *
- * 3 px per world tile keeps the full 40 × 28 map within ~120 × 84 px so it
- * never obscures the play area.
+ * Tile pixel size auto-fits whatever space MobileControls leaves; we read
+ * its geometry rather than hard-coding so layout shifts in one place stay
+ * in sync.
  */
-import { COLOR, TILE, CANVAS_WIDTH } from '../config/constants.js';
-
-const MM_TILE = 3;
-const MM_PADDING = 8;
-const MM_TOP_OFFSET = 92; // sits just below the HUD top strip
+import { COLOR, TILE } from '../config/constants.js';
+import { MobileControls } from './MobileControls.js';
 
 export class Minimap {
   constructor() { this.visible = true; }
@@ -22,11 +22,19 @@ export class Minimap {
     if (!this.visible) return;
     const { floor, player } = ctx;
     if (!floor) return;
-    const w = floor.width * MM_TILE;
-    const h = floor.height * MM_TILE;
-    const x = CANVAS_WIDTH - w - MM_PADDING;
-    const y = MM_TOP_OFFSET;
-    renderer.drawRect(x - 2, y - 2, w + 4, h + 4, 'rgba(6,6,10,0.85)');
+
+    const slot = MobileControls.geometry.centerRect;
+    // Fit minimap into the center cutout of the control band. Pick the
+    // largest integer tile size that keeps the whole map inside the slot.
+    const sx = Math.floor(slot.w / floor.width);
+    const sy = Math.floor(slot.h / floor.height);
+    const px = Math.max(1, Math.min(sx, sy));
+    const w = floor.width * px;
+    const h = floor.height * px;
+    const x = slot.x + (slot.w - w) / 2;
+    const y = slot.y + (slot.h - h) / 2;
+
+    renderer.drawRect(x - 2, y - 2, w + 4, h + 4, '#06060a');
     renderer.drawStrokedRect(x - 2, y - 2, w + 4, h + 4, '#3a3340', 1);
 
     for (let ty = 0; ty < floor.height; ty++) {
@@ -40,20 +48,20 @@ export class Minimap {
         else if (t.type === TILE.STAIRS_UP) color = '#a09060';
         else if (t.type === TILE.DOOR) color = COLOR.door;
         else continue;
-        renderer.drawRect(x + tx * MM_TILE, y + ty * MM_TILE, MM_TILE, MM_TILE, color);
+        renderer.drawRect(x + tx * px, y + ty * px, px, px, color);
       }
     }
 
     for (const e of floor.enemies()) {
       const t = floor.tileAt(e.x, e.y);
       if (!t || !t.visible) continue;
-      renderer.drawRect(x + e.x * MM_TILE, y + e.y * MM_TILE, MM_TILE, MM_TILE, COLOR.enemy);
+      renderer.drawRect(x + e.x * px, y + e.y * px, px, px, COLOR.enemy);
     }
 
     renderer.drawRect(
-      x + player.x * MM_TILE - 1,
-      y + player.y * MM_TILE - 1,
-      MM_TILE + 2, MM_TILE + 2, COLOR.player
+      x + player.x * px - 1,
+      y + player.y * px - 1,
+      px + 2, px + 2, COLOR.player
     );
   }
 }

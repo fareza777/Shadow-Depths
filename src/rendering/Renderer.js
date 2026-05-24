@@ -21,6 +21,7 @@
  */
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, GRID_HEIGHT,
+  VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H,
   TILE_SIZE, TILE, COLOR, TIMING
 } from '../config/constants.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
@@ -70,31 +71,44 @@ export class Renderer {
 
   // --- camera ---------------------------------------------------------
   /**
-   * Compute camera so the player is centered. Clamp at world edges so we
-   * never reveal void past the world boundary on screen.
+   * Compute camera so the player is centered WITHIN the world viewport
+   * rect (not the whole canvas). HUD + control band areas are reserved
+   * — the world never paints over them.
    */
   setCameraFor(playerRenderX, playerRenderY) {
     const worldW = GRID_WIDTH * TILE_SIZE;
     const worldH = GRID_HEIGHT * TILE_SIZE;
-    let cx = CANVAS_WIDTH / 2 - (playerRenderX + 0.5) * TILE_SIZE;
-    let cy = CANVAS_HEIGHT / 2 - (playerRenderY + 0.5) * TILE_SIZE;
-    cx = worldW <= CANVAS_WIDTH
-      ? (CANVAS_WIDTH - worldW) / 2
-      : Math.max(CANVAS_WIDTH - worldW, Math.min(0, cx));
-    cy = worldH <= CANVAS_HEIGHT
-      ? (CANVAS_HEIGHT - worldH) / 2
-      : Math.max(CANVAS_HEIGHT - worldH, Math.min(0, cy));
+    let cx = VIEWPORT_X + VIEWPORT_W / 2 - (playerRenderX + 0.5) * TILE_SIZE;
+    let cy = VIEWPORT_Y + VIEWPORT_H / 2 - (playerRenderY + 0.5) * TILE_SIZE;
+    cx = worldW <= VIEWPORT_W
+      ? VIEWPORT_X + (VIEWPORT_W - worldW) / 2
+      : Math.max(VIEWPORT_X + VIEWPORT_W - worldW, Math.min(VIEWPORT_X, cx));
+    cy = worldH <= VIEWPORT_H
+      ? VIEWPORT_Y + (VIEWPORT_H - worldH) / 2
+      : Math.max(VIEWPORT_Y + VIEWPORT_H - worldH, Math.min(VIEWPORT_Y, cy));
     this._camera = { x: Math.round(cx), y: Math.round(cy) };
   }
 
   get camera() { return this._camera; }
 
-  /** Convert canvas pixel coord → world tile coord. Useful for tap-to-walk. */
+  /**
+   * Convert canvas pixel coord → world tile coord. Returns null if the
+   * pixel is outside the world viewport (i.e. user tapped HUD or the
+   * control band — those taps don't count as movement intents).
+   */
   canvasToTile(canvasX, canvasY) {
+    if (canvasX < VIEWPORT_X || canvasX >= VIEWPORT_X + VIEWPORT_W) return null;
+    if (canvasY < VIEWPORT_Y || canvasY >= VIEWPORT_Y + VIEWPORT_H) return null;
     return {
       x: Math.floor((canvasX - this._camera.x) / TILE_SIZE),
       y: Math.floor((canvasY - this._camera.y) / TILE_SIZE)
     };
+  }
+
+  /** True if a canvas pixel sits inside the world viewport rect. */
+  isInViewport(canvasX, canvasY) {
+    return canvasX >= VIEWPORT_X && canvasX < VIEWPORT_X + VIEWPORT_W
+        && canvasY >= VIEWPORT_Y && canvasY < VIEWPORT_Y + VIEWPORT_H;
   }
 
   // --- main entry -----------------------------------------------------
@@ -116,8 +130,14 @@ export class Renderer {
     ctx.save();
     ctx.translate(shake.x, shake.y);
     sceneManager.render(this);
-    // Particles spawn at world coords; apply world camera offset.
+    // Particles spawn at world coords; clip them to the viewport so a
+    // floating damage number can't drift into HUD or control band.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.clip();
     this.particles.render(ctx, this._camera);
+    ctx.restore();
     ctx.restore();
   }
 
@@ -131,13 +151,20 @@ export class Renderer {
     const ctx = this.ctx;
     const cam = this._camera;
     ctx.save();
+    // Clip to viewport rect so world pixels can never spill into HUD or
+    // control band areas. Then translate by camera offset.
+    ctx.beginPath();
+    ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.clip();
     ctx.translate(cam.x, cam.y);
 
-    // Visible tile range.
-    const x0 = Math.max(0, Math.floor(-cam.x / TILE_SIZE));
-    const y0 = Math.max(0, Math.floor(-cam.y / TILE_SIZE));
-    const x1 = Math.min(floor.width - 1, Math.ceil((CANVAS_WIDTH - cam.x) / TILE_SIZE));
-    const y1 = Math.min(floor.height - 1, Math.ceil((CANVAS_HEIGHT - cam.y) / TILE_SIZE));
+    // Visible tile range — derived from viewport rect, not full canvas.
+    const x0 = Math.max(0, Math.floor((VIEWPORT_X - cam.x) / TILE_SIZE));
+    const y0 = Math.max(0, Math.floor((VIEWPORT_Y - cam.y) / TILE_SIZE));
+    const x1 = Math.min(floor.width - 1,
+      Math.ceil((VIEWPORT_X + VIEWPORT_W - cam.x) / TILE_SIZE));
+    const y1 = Math.min(floor.height - 1,
+      Math.ceil((VIEWPORT_Y + VIEWPORT_H - cam.y) / TILE_SIZE));
 
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
@@ -163,11 +190,14 @@ export class Renderer {
     ctx.restore();
   }
 
-  /** Paint items on visible tiles. Applies camera offset. */
+  /** Paint items on visible tiles. Applies camera offset + viewport clip. */
   drawGroundItems(floor) {
     const ctx = this.ctx;
     const cam = this._camera;
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.clip();
     ctx.translate(cam.x, cam.y);
     for (const [key, stack] of floor.items) {
       const [xs, ys] = key.split(',');
@@ -203,6 +233,9 @@ export class Renderer {
 
     const cam = this._camera;
     ctx.save();
+    ctx.beginPath();
+    ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.clip();
     ctx.translate(cam.x, cam.y);
 
     const list = Array.from(floor.entities.values()).sort((a, b) => a.renderY - b.renderY);

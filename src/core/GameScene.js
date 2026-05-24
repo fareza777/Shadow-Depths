@@ -58,6 +58,7 @@ export class GameScene {
     this.hud = deps.hud;
     this.minimap = deps.minimap;
     this.inventoryUI = deps.inventoryUI;
+    this.controls = deps.mobileControls || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
 
@@ -121,7 +122,11 @@ export class GameScene {
       floorIndex: this.dungeon.currentIndex,
       totalFloors: this.dungeon.totalFloors
     });
+    // Control band: solid background + D-pad + action buttons. Minimap
+    // paints inside the band's center cutout (see Minimap.js for offset).
+    if (this.controls) this.controls.render(renderer);
     this.minimap.render(renderer, { floor: this.floor, player: this.player });
+    // Inventory modal goes on top of everything else when open.
     this.inventoryUI.render(renderer, this.player);
   }
 
@@ -149,9 +154,15 @@ export class GameScene {
       case 'minimap':    return this.minimap.toggle();
       case 'useSlot':    return this._playerUseSlot(action.index);
       case 'pointer': {
-        // Canvas tap → tile (camera-offset aware via Renderer).
+        // Canvas tap dispatch order:
+        //   1. Control band buttons (D-pad / actions) — they're painted
+        //      INSIDE the canvas now, so hit-tests are pixel-perfect.
+        //   2. World viewport → tap-to-walk via Renderer.canvasToTile.
+        //   3. HUD area taps fall through (no behavior).
+        if (this.controls && this.controls.handleTap(action.x, action.y, this.state.state.time)) return;
         if (!this.renderer) return;
         const tile = this.renderer.canvasToTile(action.x, action.y);
+        if (!tile) return; // tap fell outside the world viewport
         return this._playerTapTile(tile.x, tile.y);
       }
       case 'tapTile':    return; // legacy; pointer is preferred

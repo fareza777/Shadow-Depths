@@ -7,13 +7,9 @@
  * modal via the BAG button. Number-key hotkeys (1–9) still work on
  * desktop because KeyboardHandler maps them; HUD just doesn't draw the bar.
  */
-import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants.js';
+import { COLOR, CANVAS_WIDTH, HUD_HEIGHT } from '../config/constants.js';
 
 const TOP_PAD = 8;
-// Reserve bottom area for the DOM-overlayed action button row (WAIT/PICK/
-// DOWN/BAG). The row is ~52 px tall + 12 px padding; we leave a little
-// extra so the message strip never visually touches the buttons.
-const BOTTOM_RESERVED = 88;
 
 export class HUD {
   /** @param {{ messageLog: object }} deps */
@@ -32,8 +28,11 @@ export class HUD {
   }
 
   _drawTopStrip(r, p, floor, floorIndex, totalFloors) {
-    // Background strip so text stays readable against bright tiles.
-    r.drawRect(0, 0, CANVAS_WIDTH, 86, 'rgba(6,6,10,0.78)');
+    // Solid background — the world rendering is now clipped out of this
+    // band, so we don't need rgba; opaque looks cleaner and contrasts
+    // well with the world view that sits just below.
+    r.drawRect(0, 0, CANVAS_WIDTH, HUD_HEIGHT, '#08080c');
+    r.drawRect(0, HUD_HEIGHT - 1, CANVAS_WIDTH, 1, '#2a2530'); // hairline divider
 
     // HP bar — full width minus padding.
     const barW = CANVAS_WIDTH - 16;
@@ -89,22 +88,20 @@ export class HUD {
       ? this.messageLog.recentWithFade(3)
       : this.messageLog.recent(3).map((m) => ({ ...m, alpha: 1 }));
     if (lines.length === 0) return;
-    // Sit just above the reserved bottom band. Each line carries its own
-    // alpha (faded older messages) so the strip stops blocking the world
-    // a few seconds after the action that triggered it.
-    const baseY = CANVAS_HEIGHT - BOTTOM_RESERVED - 8 - lines.length * 16;
+    // Float just below the HUD strip, at the top of the world viewport.
+    // Each line carries its own alpha so the band dissolves a few seconds
+    // after the action that produced it — never permanently blocks view.
+    const baseY = HUD_HEIGHT + 4;
     const ctx = r.ctx;
-    // Strip background tinted by the most-opaque line so it dims away with
-    // the text instead of staying as a permanent dark bar.
     const maxAlpha = Math.max(...lines.map((l) => l.alpha));
     ctx.save();
     ctx.globalAlpha = 0.72 * maxAlpha;
-    r.drawRect(0, baseY - 4, CANVAS_WIDTH, lines.length * 16 + 8, '#06060a');
+    r.drawRect(0, baseY, CANVAS_WIDTH, lines.length * 16 + 8, '#06060a');
     ctx.restore();
     for (let i = 0; i < lines.length; i++) {
       ctx.save();
       ctx.globalAlpha = lines[i].alpha;
-      r.drawText(lines[i].text, 8, baseY + i * 16,
+      r.drawText(lines[i].text, 8, baseY + 4 + i * 16,
         { size: 11, color: lines[i].color });
       ctx.restore();
     }
