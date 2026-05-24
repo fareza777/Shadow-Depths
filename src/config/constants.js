@@ -6,14 +6,19 @@
  */
 
 // --- Render / world grid -------------------------------------------------
-export const TILE_SIZE = 24;           // px per tile in source units
-export const GRID_WIDTH = 40;          // tiles per floor (horizontal)
-export const GRID_HEIGHT = 28;         // tiles per floor (vertical)
+// World is 40 × 28 tiles. We do NOT render the entire world into one canvas
+// — that yielded 9 px tiles on a 360-wide phone in v0.1. Instead the canvas
+// is portrait-shaped (mobile-first), tile size is bumped, and the Renderer
+// uses a camera that follows the player. The world is bigger than the view.
+export const TILE_SIZE = 32;            // px per tile (bumped from 24 → 32 for tap targets)
+export const GRID_WIDTH = 40;           // world width in tiles
+export const GRID_HEIGHT = 28;          // world height in tiles
 
-export const CANVAS_WIDTH = TILE_SIZE * GRID_WIDTH;   // 960
-export const CANVAS_HEIGHT = TILE_SIZE * GRID_HEIGHT; // 672
+// Logical canvas — portrait, sized so each tile is a comfortable 32 px on phone.
+// 480 / 32 = 15 visible tiles wide. 800 / 32 = 25 tiles tall. World scrolls.
+export const CANVAS_WIDTH = 480;
+export const CANVAS_HEIGHT = 800;
 
-// Logical render target. Renderer scales this to the actual canvas via CSS.
 export const RENDER_WIDTH = CANVAS_WIDTH;
 export const RENDER_HEIGHT = CANVAS_HEIGHT;
 

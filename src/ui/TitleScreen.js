@@ -66,20 +66,20 @@ export class TitleScreen {
         { size: 11, align: 'center', color: COLOR.textXP });
     }
 
-    // Buttons
-    const baseY = 240;
+    // Buttons — lowered for thumb reach on portrait phones.
+    const baseY = 360;
     for (let i = 0; i < BUTTONS.length; i++) {
-      const y = baseY + i * 48;
+      const y = baseY + i * 64;
       const selected = i === this.selected;
-      const w = 220, h = 36, x = (CANVAS_WIDTH - w) / 2;
+      const w = 260, h = 52, x = (CANVAS_WIDTH - w) / 2;
       renderer.drawRect(x, y, w, h, selected ? '#2a2438' : '#16141c');
       renderer.drawStrokedRect(x, y, w, h, selected ? '#d6c87a' : '#3a3340', selected ? 2 : 1);
-      renderer.drawText(BUTTONS[i].label, CANVAS_WIDTH / 2, y + 18,
-        { size: 14, bold: true, align: 'center', baseline: 'middle' });
+      renderer.drawText(BUTTONS[i].label, CANVAS_WIDTH / 2, y + h / 2,
+        { size: 16, bold: true, align: 'center', baseline: 'middle' });
     }
 
-    renderer.drawText('arrows + enter   ·   tap a button on mobile',
-      CANVAS_WIDTH / 2, CANVAS_HEIGHT - 28,
+    renderer.drawText('tap a button   ·   arrows + enter on keyboard',
+      CANVAS_WIDTH / 2, CANVAS_HEIGHT - 24,
       { size: 10, align: 'center', color: COLOR.textMuted });
 
     if (this.modal === 'controls') this._renderControls(renderer);
@@ -157,10 +157,10 @@ export class TitleScreen {
   /** Hit-test for touch taps. Returns 0-based button index or -1. */
   hitTest(x, y) {
     if (this.modal) return -1;
-    const baseY = 240, w = 220, h = 36;
+    const baseY = 360, w = 260, h = 52;
     const bx = (CANVAS_WIDTH - w) / 2;
     for (let i = 0; i < BUTTONS.length; i++) {
-      const by = baseY + i * 48;
+      const by = baseY + i * 64;
       if (x >= bx && x <= bx + w && y >= by && y <= by + h) return i;
     }
     return -1;

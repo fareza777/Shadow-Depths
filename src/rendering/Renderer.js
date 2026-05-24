@@ -7,15 +7,21 @@
  *   drawEntities(floor, player, time) — paint sprites with renderX/Y interp.
  *   drawText(...), drawRect(...), drawBar(...) — primitives for HUD.
  *
- * The Renderer does NOT know about scenes' internals — it exposes primitives
- * and the scene's `render(renderer)` is responsible for orchestration.
+ * Camera model (v0.2):
+ *   - Canvas is fixed portrait (CANVAS_WIDTH × CANVAS_HEIGHT) for predictable
+ *     HUD layout. CSS scales it to viewport.
+ *   - World (40 × 28 tiles) is BIGGER than the canvas → renderer applies a
+ *     translate so the player is centered on screen and the world scrolls.
+ *   - World-space draws (floor, items, entities, particles) use the camera
+ *     translate. Screen-space draws (HUD primitives) do NOT.
  *
- * Tween: an entity's logical (x, y) snaps on action; renderX/Y interpolates
- * toward it at TIMING.moveTween. Renderer drives that interpolation here so
- * Entity stays pure data.
+ * Tween: entity (x, y) snaps on action; renderX/Y interpolates toward it
+ * at TIMING.moveTween. Renderer drives that interpolation here so Entity
+ * stays pure data.
  */
 import {
-  CANVAS_WIDTH, CANVAS_HEIGHT, TILE_SIZE, TILE, COLOR, TIMING
+  CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, GRID_HEIGHT,
+  TILE_SIZE, TILE, COLOR, TIMING
 } from '../config/constants.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
 
@@ -42,7 +48,10 @@ export class Renderer {
     this.particles = particles;
     this.bus = eventBus;
 
+    /** Camera offset in canvas pixels, applied to world-space draws. */
+    this._camera = { x: 0, y: 0 };
     this._lastTime = 0;
+
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
     this._fitToViewport();
@@ -59,41 +68,82 @@ export class Renderer {
     window.removeEventListener('resize', this._resizeBound);
   }
 
+  // --- camera ---------------------------------------------------------
+  /**
+   * Compute camera so the player is centered. Clamp at world edges so we
+   * never reveal void past the world boundary on screen.
+   */
+  setCameraFor(playerRenderX, playerRenderY) {
+    const worldW = GRID_WIDTH * TILE_SIZE;
+    const worldH = GRID_HEIGHT * TILE_SIZE;
+    let cx = CANVAS_WIDTH / 2 - (playerRenderX + 0.5) * TILE_SIZE;
+    let cy = CANVAS_HEIGHT / 2 - (playerRenderY + 0.5) * TILE_SIZE;
+    cx = worldW <= CANVAS_WIDTH
+      ? (CANVAS_WIDTH - worldW) / 2
+      : Math.max(CANVAS_WIDTH - worldW, Math.min(0, cx));
+    cy = worldH <= CANVAS_HEIGHT
+      ? (CANVAS_HEIGHT - worldH) / 2
+      : Math.max(CANVAS_HEIGHT - worldH, Math.min(0, cy));
+    this._camera = { x: Math.round(cx), y: Math.round(cy) };
+  }
+
+  get camera() { return this._camera; }
+
+  /** Convert canvas pixel coord → world tile coord. Useful for tap-to-walk. */
+  canvasToTile(canvasX, canvasY) {
+    return {
+      x: Math.floor((canvasX - this._camera.x) / TILE_SIZE),
+      y: Math.floor((canvasY - this._camera.y) / TILE_SIZE)
+    };
+  }
+
   // --- main entry -----------------------------------------------------
-  render(sceneManager, stateStore) {
+  render(sceneManager, _stateStore) {
     const now = performance.now();
     const dt = this._lastTime ? (now - this._lastTime) / 1000 : 0;
     this._lastTime = now;
 
     this.cameraShake.update(dt);
     this.particles.update(dt);
-    const offset = this.cameraShake.offset();
+    const shake = this.cameraShake.offset();
 
     // Clear.
     const ctx = this.ctx;
     fillRect(ctx, 0, 0, this.canvas.width, this.canvas.height, COLOR.bg);
 
+    // Apply shake to EVERYTHING. The world camera is applied separately by
+    // each world-space draw method.
     ctx.save();
-    ctx.translate(offset.x, offset.y);
+    ctx.translate(shake.x, shake.y);
     sceneManager.render(this);
+    // Particles spawn at world coords; apply world camera offset.
+    this.particles.render(ctx, this._camera);
     ctx.restore();
-
-    // Particles render in screen space with their own shake-aware translate.
-    this.particles.render(ctx, offset);
   }
 
   // --- world primitives ----------------------------------------------
   /**
-   * Paint the dungeon floor with vision state.
+   * Paint the dungeon floor with vision state. Applies camera offset.
+   * Only iterates tiles inside the visible viewport for perf.
    * @param {import('../world/Floor.js').Floor} floor
    */
   drawFloor(floor) {
     const ctx = this.ctx;
-    for (let y = 0; y < floor.height; y++) {
-      for (let x = 0; x < floor.width; x++) {
+    const cam = this._camera;
+    ctx.save();
+    ctx.translate(cam.x, cam.y);
+
+    // Visible tile range.
+    const x0 = Math.max(0, Math.floor(-cam.x / TILE_SIZE));
+    const y0 = Math.max(0, Math.floor(-cam.y / TILE_SIZE));
+    const x1 = Math.min(floor.width - 1, Math.ceil((CANVAS_WIDTH - cam.x) / TILE_SIZE));
+    const y1 = Math.min(floor.height - 1, Math.ceil((CANVAS_HEIGHT - cam.y) / TILE_SIZE));
+
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
         if (t.type === TILE.VOID) continue;
-        if (!t.explored) continue; // unseen → stay black
+        if (!t.explored) continue;
         const dim = !t.visible;
         switch (t.type) {
           case TILE.WALL:        this.sprites.draw('tile_wall',        ctx, x * TILE_SIZE, y * TILE_SIZE, { dim }); break;
@@ -101,23 +151,24 @@ export class Renderer {
           case TILE.STAIRS_DOWN: this.sprites.draw('tile_stairs_down', ctx, x * TILE_SIZE, y * TILE_SIZE, { dim }); break;
           case TILE.STAIRS_UP:   this.sprites.draw('tile_stairs_up',   ctx, x * TILE_SIZE, y * TILE_SIZE, { dim }); break;
           case TILE.DOOR:        this.sprites.draw('tile_door',        ctx, x * TILE_SIZE, y * TILE_SIZE, { dim }); break;
-          default: /* no-op */ break;
+          default: break;
         }
         if (dim) {
-          // Darken explored-but-not-visible with a translucent black wash.
           ctx.globalAlpha = 0.55;
           fillRect(ctx, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, '#000');
           ctx.globalAlpha = 1;
         }
       }
     }
+    ctx.restore();
   }
 
-  /**
-   * Paint items on the ground (only visible tiles).
-   */
+  /** Paint items on visible tiles. Applies camera offset. */
   drawGroundItems(floor) {
     const ctx = this.ctx;
+    const cam = this._camera;
+    ctx.save();
+    ctx.translate(cam.x, cam.y);
     for (const [key, stack] of floor.items) {
       const [xs, ys] = key.split(',');
       const x = parseInt(xs, 10), y = parseInt(ys, 10);
@@ -126,20 +177,22 @@ export class Renderer {
       const top = stack[stack.length - 1];
       this.sprites.draw(top.spriteKey, ctx, x * TILE_SIZE, y * TILE_SIZE);
       if (stack.length > 1) {
-        this._tinyBadge(ctx, x * TILE_SIZE + TILE_SIZE - 8, y * TILE_SIZE + TILE_SIZE - 8, `${stack.length}`);
+        this._tinyBadge(ctx, x * TILE_SIZE + TILE_SIZE - 10, y * TILE_SIZE + TILE_SIZE - 10, `${stack.length}`);
       }
     }
+    ctx.restore();
   }
 
   /**
-   * Paint entities. Updates renderX/Y toward grid position by lerp.
+   * Paint entities. Updates renderX/Y toward grid position by lerp. Applies
+   * camera offset. Skips dead entities (defensive — they should be removed
+   * from the floor on death, but it's cheap insurance).
    * @param {import('../world/Floor.js').Floor} floor
-   * @param {number} dt seconds
+   * @param {number} dt seconds since last frame
    */
   drawEntities(floor, dt) {
     const ctx = this.ctx;
-    // Step renderX/Y toward (x,y).
-    const speed = 1000 / TIMING.moveTween; // tiles per second
+    const speed = 1000 / TIMING.moveTween;
     for (const e of floor.entities.values()) {
       const dx = e.x - e.renderX;
       const dy = e.y - e.renderY;
@@ -148,31 +201,31 @@ export class Renderer {
       e.renderY += clampMove(dy, maxStep);
     }
 
-    // Draw, sorted so dead-flickering happens before live entities.
+    const cam = this._camera;
+    ctx.save();
+    ctx.translate(cam.x, cam.y);
+
     const list = Array.from(floor.entities.values()).sort((a, b) => a.renderY - b.renderY);
     for (const e of list) {
       if (e.isDead) continue;
       const t = floor.tileAt(e.x, e.y);
-      // Render enemies only on visible tiles; player always renders.
       if (e.kind === 'enemy' && (!t || !t.visible)) continue;
       const px = e.renderX * TILE_SIZE;
       const py = e.renderY * TILE_SIZE;
       const key = e.spriteKey || (e.kind === 'player' ? 'player_idle' : 'enemy_goblin');
       this.sprites.draw(key, ctx, px, py);
 
-      // Tiny HP bar over enemies if damaged.
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {
         const pct = e.stats.hp / e.stats.hpMax;
         const w = TILE_SIZE - 6;
-        fillRect(ctx, px + 3, py - 4, w, 3, COLOR.hpBarBg);
-        fillRect(ctx, px + 3, py - 4, w * pct, 3, COLOR.hpBar);
+        fillRect(ctx, px + 3, py - 5, w, 4, COLOR.hpBarBg);
+        fillRect(ctx, px + 3, py - 5, w * pct, 4, COLOR.hpBar);
       }
-
-      // Intent telegraph above enemy head.
       if (e.kind === 'enemy' && e.intent) {
         this._drawIntentIcon(ctx, e.intent, px, py);
       }
     }
+    ctx.restore();
   }
 
   _drawIntentIcon(ctx, intent, px, py) {
@@ -183,23 +236,23 @@ export class Renderer {
     else if (intent.type === 'move')   { glyph = '·'; color = '#a0a0aa'; }
     else if (intent.type === 'wait')   { glyph = intent.meta?.winding ? '⌛' : '…'; color = '#c0a060'; }
     if (!glyph) return;
-    ctx.font = 'bold 10px "Courier New", monospace';
+    ctx.font = 'bold 12px "Courier New", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillStyle = color;
-    ctx.fillText(glyph, px + TILE_SIZE / 2, py - 6);
+    ctx.fillText(glyph, px + TILE_SIZE / 2, py - 8);
   }
 
   _tinyBadge(ctx, x, y, text) {
-    fillRect(ctx, x - 1, y - 7, 10, 9, '#000');
-    ctx.font = 'bold 9px "Courier New", monospace';
+    fillRect(ctx, x - 1, y - 9, 12, 11, '#000');
+    ctx.font = 'bold 10px "Courier New", monospace';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = COLOR.textPrimary;
-    ctx.fillText(text, x, y - 7);
+    ctx.fillText(text, x, y - 9);
   }
 
-  // --- HUD primitives -------------------------------------------------
+  // --- HUD primitives (screen space — no camera offset) --------------
   drawText(text, x, y, opts = {}) {
     const ctx = this.ctx;
     ctx.font = `${opts.bold ? 'bold ' : ''}${opts.size || 14}px "Courier New", monospace`;

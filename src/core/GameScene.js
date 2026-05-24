@@ -59,6 +59,7 @@ export class GameScene {
     this.minimap = deps.minimap;
     this.inventoryUI = deps.inventoryUI;
     this.lighting = deps.lighting;
+    this.renderer = deps.renderer || null; // optional; used for tap→tile
 
     this.seed = deps.seed ?? RNG.newSeed();
     this.rng = new RNG(this.seed, 'run');
@@ -76,6 +77,7 @@ export class GameScene {
     this.player = null;
     this.floor = null;
     this._wireCommands();
+    this._wireDeathCleanup();
   }
 
   // --- scene contract -------------------------------------------------
@@ -101,16 +103,19 @@ export class GameScene {
 
   render(renderer) {
     if (!this.floor || !this.player) return;
+    // Cache renderer for tap→tile conversion in handleInput.
+    if (!this.renderer) this.renderer = renderer;
+    // Camera follows player; world draws use this offset internally.
+    renderer.setCameraFor(this.player.renderX, this.player.renderY);
+
     renderer.drawFloor(this.floor);
     renderer.drawGroundItems(this.floor);
-    // dt for tween: derived from the renderer's own _lastTime — Renderer.draw
-    // measures it internally, but it doesn't expose dt. Use perf clock here.
     const now = performance.now();
     const dt = this._lastRenderTime ? (now - this._lastRenderTime) / 1000 : 0;
     this._lastRenderTime = now;
     renderer.drawEntities(this.floor, dt);
 
-    // HUD layers (drawn in screen space; camera offset already applied).
+    // HUD layers (drawn in screen space).
     this.hud.render(renderer, {
       player: this.player, floor: this.floor,
       floorIndex: this.dungeon.currentIndex,
@@ -143,11 +148,30 @@ export class GameScene {
       case 'inventory':  return this.inventoryUI.toggle();
       case 'minimap':    return this.minimap.toggle();
       case 'useSlot':    return this._playerUseSlot(action.index);
-      case 'tapTile':    return this._playerTapTile(action.x, action.y);
-      case 'pointer':    return; // already consumed above when relevant
+      case 'pointer': {
+        // Canvas tap → tile (camera-offset aware via Renderer).
+        if (!this.renderer) return;
+        const tile = this.renderer.canvasToTile(action.x, action.y);
+        return this._playerTapTile(tile.x, tile.y);
+      }
+      case 'tapTile':    return; // legacy; pointer is preferred
       case 'escape':     return this.inventoryUI.hide();
       default: break;
     }
+  }
+
+  /**
+   * Subscribe to entity:died so dead enemies are removed from the floor
+   * immediately. Without this they persisted in the spatial index and
+   * blocked movement on their tile (the "invisible corpse" bug).
+   */
+  _wireDeathCleanup() {
+    this.bus.on('entity:died', ({ entity }) => {
+      if (!this.floor) return;
+      if (entity?.kind === 'enemy') {
+        this.floor.removeEntity(entity);
+      }
+    });
   }
 
   // --- player actions -------------------------------------------------

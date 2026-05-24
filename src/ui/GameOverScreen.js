@@ -55,10 +55,11 @@ export class GameOverScreen {
         { size: 11, align: 'center', color: COLOR.textHeal });
     }
 
-    // Buttons
+    // Buttons — sit above the reserved bottom band so the on-screen D-pad
+    // never visually covers them.
     const buttons = ['RESTART', 'TITLE'];
-    const w = 160, h = 36;
-    const by = CANVAS_HEIGHT - 80;
+    const w = 180, h = 48;
+    const by = CANVAS_HEIGHT - 260;
     const totalW = buttons.length * w + (buttons.length - 1) * 20;
     let bx = (CANVAS_WIDTH - totalW) / 2;
     for (let i = 0; i < buttons.length; i++) {
@@ -91,8 +92,8 @@ export class GameOverScreen {
 
   /** Hit-test for tap input. */
   hitTest(x, y) {
-    const buttons = 2, w = 160, h = 36;
-    const by = CANVAS_HEIGHT - 80;
+    const buttons = 2, w = 180, h = 48;
+    const by = CANVAS_HEIGHT - 260;
     const totalW = buttons * w + (buttons - 1) * 20;
     const startX = (CANVAS_WIDTH - totalW) / 2;
     for (let i = 0; i < buttons; i++) {
