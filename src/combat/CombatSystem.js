@@ -121,8 +121,14 @@ export class CombatSystem {
   }
 
   _resolveHit(attacker, target, kind) {
-    const { damage, isCrit } = this.calculateDamage(attacker, target);
-    const dealt = target.takeDamage(damage);
+    const raw = this.calculateDamage(attacker, target);
+    let finalDamage = raw.damage;
+    // Player passive skill: Stout reduces incoming damage.
+    if (target.kind === 'player' && target.damageReduction > 0) {
+      finalDamage = Math.max(1, Math.round(finalDamage * (1 - target.damageReduction)));
+    }
+    const isCrit = raw.isCrit;
+    const dealt = target.takeDamage(finalDamage);
 
     this.bus.emit('entity:attacked', { attacker, target, damage: dealt, isCrit, isMiss: false, kind });
     this.bus.emit('entity:damaged', { entity: target, amount: dealt, source: attacker, isCrit });
@@ -139,13 +145,19 @@ export class CombatSystem {
 
   _applyAttackerOnHit(attacker, target, dealt) {
     // Player weapon onHit (e.g. lifesteal).
+    let totalLifestealPct = 0;
     if (attacker.kind === 'player' && attacker.weapon?.onHit) {
       for (const eff of attacker.weapon.onHit) {
-        if (eff.type === 'lifesteal') {
-          const healed = attacker.heal(Math.ceil(dealt * (eff.value || 0)));
-          if (healed > 0) this.bus.emit('entity:healed', { entity: attacker, amount: healed, source: attacker.weapon });
-        }
+        if (eff.type === 'lifesteal') totalLifestealPct += (eff.value || 0);
       }
+    }
+    // Bloodthirst skill — adds flat lifesteal on every hit.
+    if (attacker.kind === 'player' && attacker.skillLifesteal > 0) {
+      totalLifestealPct += attacker.skillLifesteal;
+    }
+    if (totalLifestealPct > 0) {
+      const healed = attacker.heal(Math.ceil(dealt * totalLifestealPct));
+      if (healed > 0) this.bus.emit('entity:healed', { entity: attacker, amount: healed, source: attacker.weapon || 'skill' });
     }
   }
 

@@ -223,6 +223,9 @@ export class InventoryUI {
     if (item.stats?.def)   parts.push(`+${item.stats.def} DEF`);
     if (item.stats?.dex)   parts.push(`${item.stats.dex >= 0 ? '+' : ''}${item.stats.dex} DEX`);
     if (item.stats?.critBonus) parts.push(`+${Math.round(item.stats.critBonus * 100)}% CRIT`);
+    if (item.stats?.attackRange && item.stats.attackRange > 1) {
+      parts.push(`Range ${item.stats.attackRange}`);
+    }
     if (item.onHit?.[0]?.type === 'lifesteal') parts.push(`Lifesteal ${Math.round(item.onHit[0].value * 100)}%`);
     if (item.effects) {
       for (const e of item.effects) {

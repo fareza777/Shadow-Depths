@@ -204,6 +204,80 @@
     "spawnWeight": 1
   },
 
+  "shortbow": {
+    "id": "shortbow",
+    "name": "Shortbow",
+    "type": "weapon",
+    "rarity": "common",
+    "spriteKey": "weapon_bow",
+    "slot": "weapon",
+    "stats": { "atk": 3, "attackRange": 5 },
+    "lore": "Light wood, lighter draw. The first lesson.",
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "longbow": {
+    "id": "longbow",
+    "name": "Longbow",
+    "type": "weapon",
+    "rarity": "uncommon",
+    "spriteKey": "weapon_longbow",
+    "slot": "weapon",
+    "stats": { "atk": 4, "attackRange": 7 },
+    "lore": "Made for someone with longer patience than arms.",
+    "floorMin": 3,
+    "spawnWeight": 4
+  },
+  "throwing_axe": {
+    "id": "throwing_axe",
+    "name": "Throwing Axe",
+    "type": "weapon",
+    "rarity": "uncommon",
+    "spriteKey": "weapon_throwaxe",
+    "slot": "weapon",
+    "stats": { "atk": 4, "attackRange": 3, "critBonus": 0.05 },
+    "lore": "Comes back. Eventually. Sometimes.",
+    "floorMin": 2,
+    "spawnWeight": 4
+  },
+  "crossbow": {
+    "id": "crossbow",
+    "name": "Crossbow",
+    "type": "weapon",
+    "rarity": "rare",
+    "spriteKey": "weapon_crossbow",
+    "slot": "weapon",
+    "stats": { "atk": 6, "attackRange": 6 },
+    "lore": "Loud as a curse, twice as final.",
+    "floorMin": 5,
+    "spawnWeight": 3
+  },
+  "boomerang_bone": {
+    "id": "boomerang_bone",
+    "name": "Bone Boomerang",
+    "type": "weapon",
+    "rarity": "rare",
+    "spriteKey": "weapon_boomerang",
+    "slot": "weapon",
+    "stats": { "atk": 3, "attackRange": 4 },
+    "onHit": [{ "type": "lifesteal", "value": 0.15 }],
+    "lore": "Carved from something that always returned home.",
+    "floorMin": 4,
+    "spawnWeight": 3
+  },
+  "void_bow": {
+    "id": "void_bow",
+    "name": "Void Bow",
+    "type": "weapon",
+    "rarity": "epic",
+    "spriteKey": "weapon_voidbow",
+    "slot": "weapon",
+    "stats": { "atk": 5, "attackRange": 6, "critBonus": 0.10 },
+    "lore": "Drawn without arrows. Arrives without warning.",
+    "floorMin": 20,
+    "spawnWeight": 1
+  },
+
   "padded_tunic": {
     "id": "padded_tunic",
     "name": "Padded Tunic",

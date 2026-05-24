@@ -1,0 +1,80 @@
+{
+  "upgrades": [
+    {
+      "id": "start_hp",
+      "name": "Veteran's Constitution",
+      "description": "+5 starting max HP. Stackable.",
+      "cost": 25,
+      "costGrowth": 15,
+      "maxLevel": 5
+    },
+    {
+      "id": "start_atk",
+      "name": "Veteran's Edge",
+      "description": "+1 starting ATK. Stackable.",
+      "cost": 40,
+      "costGrowth": 25,
+      "maxLevel": 3
+    },
+    {
+      "id": "start_def",
+      "name": "Veteran's Plate",
+      "description": "+1 starting DEF. Stackable.",
+      "cost": 40,
+      "costGrowth": 25,
+      "maxLevel": 3
+    },
+    {
+      "id": "start_dex",
+      "name": "Steady Hands",
+      "description": "+1 starting DEX. Stackable.",
+      "cost": 35,
+      "costGrowth": 20,
+      "maxLevel": 3
+    },
+    {
+      "id": "extra_slot",
+      "name": "Spacious Pack",
+      "description": "+1 starting inventory slot. Stackable.",
+      "cost": 80,
+      "costGrowth": 40,
+      "maxLevel": 3
+    },
+    {
+      "id": "start_potion",
+      "name": "Provisioner",
+      "description": "Start each run with 1 Health Potion.",
+      "cost": 20,
+      "maxLevel": 1
+    },
+    {
+      "id": "start_bow",
+      "name": "Hunter's Pact",
+      "description": "Start each run with a Shortbow equipped.",
+      "cost": 60,
+      "maxLevel": 1
+    },
+    {
+      "id": "start_revive",
+      "name": "Twin Souls",
+      "description": "Start each run with +1 Revive charge.",
+      "cost": 150,
+      "costGrowth": 100,
+      "maxLevel": 2
+    },
+    {
+      "id": "coin_magnet",
+      "name": "Coin Magnet",
+      "description": "+20% coins earned at end of run.",
+      "cost": 90,
+      "maxLevel": 1
+    },
+    {
+      "id": "scholar_start",
+      "name": "Scholar's Endowment",
+      "description": "Start each run at Level 2.",
+      "cost": 120,
+      "maxLevel": 1
+    }
+  ]
+}

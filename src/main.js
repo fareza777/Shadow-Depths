@@ -31,6 +31,7 @@ import { MessageLog } from './ui/MessageLog.js';
 import { HUD } from './ui/HUD.js';
 import { Minimap } from './ui/Minimap.js';
 import { InventoryUI } from './ui/InventoryUI.js';
+import { SkillPickerUI } from './ui/SkillPickerUI.js';
 import { TitleScreen } from './ui/TitleScreen.js';
 import { GameOverScreen } from './ui/GameOverScreen.js';
 import { VictoryScreen } from './ui/VictoryScreen.js';
@@ -52,6 +53,9 @@ import enemiesData from '../data/enemies.json';
 import floorsData  from '../data/floors.json';
 import loreData    from '../data/lore.json';
 import balanceData from '../data/balance.json';
+import biomesData  from '../data/biomes.json';
+import skillsData  from '../data/skills.json';
+import shopData    from '../data/shop.json';
 
 async function bootstrap() {
   console.log(LOG.CORE, 'Shadow Depths v0.1.0 — bootstrap');
@@ -70,7 +74,10 @@ async function bootstrap() {
     enemies: enemiesData,
     floors: floorsData,
     lore: loreData,
-    balance: balanceData
+    balance: balanceData,
+    biomes: biomesData,
+    skills: skillsData,
+    shop: shopData
   };
   const balance = mergeBalance(content.balance) || DEFAULT_BALANCE;
 
@@ -109,6 +116,7 @@ async function bootstrap() {
   const hud = new HUD({ messageLog });
   const minimap = new Minimap();
   const inventoryUI = new InventoryUI({ bus });
+  const skillPicker = new SkillPickerUI({ bus, content });
   const mobileControls = new MobileControls({ bus });
 
   // --- narrative -----------------------------------------------------
@@ -119,9 +127,9 @@ async function bootstrap() {
 
   // --- scene factories ----------------------------------------------
   const sceneFactories = {
-    title: (deps) => new TitleScreen(deps),
+    title: (deps) => new TitleScreen({ ...deps, metaProgress }),
     game: (deps) => new GameScene({
-      ...deps, hud, minimap, inventoryUI, lighting, renderer, mobileControls
+      ...deps, hud, minimap, inventoryUI, skillPicker, lighting, renderer, mobileControls
     }),
     gameover: (deps) => new GameOverScreen(deps),
     victory: (deps) => new VictoryScreen(deps)

@@ -49,9 +49,14 @@ export class GameOverScreen {
       r.drawText('★ NEW HIGH SCORE ★', CANVAS_WIDTH / 2, startY + lines.length * 24 + 10,
         { size: 14, bold: true, align: 'center', color: COLOR.textXP });
     }
+    if (s.coinsEarned > 0) {
+      r.drawText(`+${s.coinsEarned} ◈ coins (spend in shop)`,
+        CANVAS_WIDTH / 2, startY + lines.length * 24 + 30,
+        { size: 12, bold: true, align: 'center', color: '#d6c87a' });
+    }
     if (Array.isArray(s.unlocked) && s.unlocked.length > 0) {
       r.drawText(`Unlocked: ${s.unlocked.join(', ')}`,
-        CANVAS_WIDTH / 2, startY + lines.length * 24 + 30,
+        CANVAS_WIDTH / 2, startY + lines.length * 24 + 48,
         { size: 11, align: 'center', color: COLOR.textHeal });
     }
 

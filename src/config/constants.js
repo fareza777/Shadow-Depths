@@ -14,28 +14,51 @@ export const TILE_SIZE = 32;            // px per tile (bumped from 24 → 32 fo
 export const GRID_WIDTH = 40;           // world width in tiles
 export const GRID_HEIGHT = 28;          // world height in tiles
 
-// Logical canvas — portrait, sized so each tile is a comfortable 32 px on phone.
-export const CANVAS_WIDTH = 480;
-export const CANVAS_HEIGHT = 800;
+// Orientation is chosen ONCE at module load (synchronous localStorage read)
+// so every component imports the matching geometry constants. Changing the
+// setting requires a page reload — Settings modal calls location.reload().
+function _readOrientation() {
+  try {
+    const raw = localStorage.getItem('shadowdepths_meta');
+    if (raw) {
+      const meta = JSON.parse(raw);
+      if (meta?.settings?.orientation === 'landscape') return 'landscape';
+    }
+  } catch { /* localStorage blocked — fall back */ }
+  return 'portrait';
+}
+export const ORIENTATION_MODE = _readOrientation();
+export const IS_LANDSCAPE = ORIENTATION_MODE === 'landscape';
 
-export const RENDER_WIDTH = CANVAS_WIDTH;
+// Canvas dims swap with orientation.
+export const CANVAS_WIDTH  = IS_LANDSCAPE ? 800 : 480;
+export const CANVAS_HEIGHT = IS_LANDSCAPE ? 480 : 800;
+export const RENDER_WIDTH  = CANVAS_WIDTH;
 export const RENDER_HEIGHT = CANVAS_HEIGHT;
 
-// Three-band layout (v0.2.1, mobile-first):
-//   ┌─────────────────────────┐  ← HUD top strip (HP/XP/stats)
+// Layout zones:
+//
+//   PORTRAIT (default):
+//   ┌─────────────────────────┐  ← HUD strip top
+//   │       WORLD VIEWPORT    │
 //   ├─────────────────────────┤
-//   │                         │
-//   │       WORLD VIEWPORT    │  ← world is clipped here. Camera centers
-//   │       (camera follow)   │     the player inside this rect. D-pad and
-//   │                         │     minimap LIVE BELOW, so they never sit
-//   ├─────────────────────────┤     on top of the play area.
-//   │  D-PAD   MAP   ACTIONS  │  ← canvas-rendered control band
+//   │ DPAD │  MAP  │ ACTIONS  │  ← bottom control band
 //   └─────────────────────────┘
-export const HUD_HEIGHT = 96;
-export const CONTROL_HEIGHT = 200;
-export const VIEWPORT_X = 0;
+//
+//   LANDSCAPE:
+//   ┌─────────────────────────┐  ← HUD strip top (slimmer)
+//   │   │                 │   │
+//   │DPA│   WORLD VIEWPORT│ACT│  ← side control strips
+//   │ + │                 │ + │
+//   │MAP│                 │MSG│
+//   └─────────────────────────┘
+export const HUD_HEIGHT         = IS_LANDSCAPE ? 56  : 96;
+export const CONTROL_HEIGHT     = IS_LANDSCAPE ? 0   : 200;
+export const SIDE_CONTROL_WIDTH = IS_LANDSCAPE ? 130 : 0;
+
+export const VIEWPORT_X = SIDE_CONTROL_WIDTH;
 export const VIEWPORT_Y = HUD_HEIGHT;
-export const VIEWPORT_W = CANVAS_WIDTH;
+export const VIEWPORT_W = CANVAS_WIDTH - SIDE_CONTROL_WIDTH * 2;
 export const VIEWPORT_H = CANVAS_HEIGHT - HUD_HEIGHT - CONTROL_HEIGHT;
 
 // --- Tile types ---------------------------------------------------------

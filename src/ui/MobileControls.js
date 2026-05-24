@@ -1,48 +1,23 @@
 /**
- * MobileControls — canvas-painted control band at the bottom of the canvas.
+ * MobileControls — canvas-painted controls.
  *
- * v0.2.1 design: previously DOM-overlayed (D-pad + action buttons floating
- * absolutely positioned via CSS). That caused two problems:
- *   1. DOM `bottom: 12px` sat at the SCREEN edge, not at the canvas edge,
- *      so on phones where canvas didn't fill the viewport the buttons
- *      floated in body background.
- *   2. When canvas did fill the viewport, buttons covered the play area.
+ * Two layouts share the same hit-test code; the only difference is where
+ * each region (D-pad / actions / center cutout for minimap+messages)
+ * lives. Orientation is fixed at module load (constants.js) so we can
+ * compute the geometry once per session.
  *
- * Painting into the canvas at fixed VIEWPORT coords solves both: the
- * buttons sit pixel-perfect on the control band area which the world
- * rendering is clipped out of.
+ * Portrait — control band at the bottom.
+ *   [ DPAD | MAP | ACTIONS ]
  *
- * Layout (CANVAS_WIDTH × CONTROL_HEIGHT band at the bottom):
- *
- *   ┌──────────┬─────────────┬──────────┐
- *   │  D-PAD   │    MAP      │ ACTIONS  │
- *   │  (4 dir  │  + messages │  PICK    │
- *   │  + wait) │             │  DOWN    │
- *   │          │             │  BAG     │
- *   └──────────┴─────────────┴──────────┘
+ * Landscape — two side strips. D-pad upper-left, map lower-left,
+ *   actions upper-right, run messages lower-right.
+ *   [ DPAD          ]              [ ACTIONS         ]
+ *   [ MAP   |   WORLD VIEWPORT |   MESSAGES          ]
  */
 import {
-  CANVAS_WIDTH, CANVAS_HEIGHT, CONTROL_HEIGHT, COLOR
+  CANVAS_WIDTH, CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
+  SIDE_CONTROL_WIDTH, IS_LANDSCAPE, COLOR
 } from '../config/constants.js';
-
-const BAND_Y = CANVAS_HEIGHT - CONTROL_HEIGHT;
-
-// D-pad: 3×3 grid on the left.
-const DPAD_PAD = 8;
-const DPAD_BTN = 52;
-const DPAD_GAP = 4;
-const DPAD_SIZE = DPAD_BTN * 3 + DPAD_GAP * 2;       // 164
-const DPAD_X = DPAD_PAD;
-const DPAD_Y = BAND_Y + (CONTROL_HEIGHT - DPAD_SIZE) / 2;
-
-// Action stack: 3 buttons stacked on the right.
-const ACT_PAD = 8;
-const ACT_W = 72;
-const ACT_H = 48;
-const ACT_GAP = 6;
-const ACT_STACK_H = ACT_H * 3 + ACT_GAP * 2;         // 156
-const ACT_X = CANVAS_WIDTH - ACT_W - ACT_PAD;
-const ACT_Y = BAND_Y + (CONTROL_HEIGHT - ACT_STACK_H) / 2;
 
 const ACTION_LABELS = [
   { key: 'pickup',    label: 'PICK' },
@@ -50,7 +25,81 @@ const ACTION_LABELS = [
   { key: 'inventory', label: 'BAG'  }
 ];
 
-// D-pad button definitions: {dx, dy, label, action}. 5 buttons (4 dir + wait).
+// Geometry layouts — chosen once per session based on orientation.
+const LAYOUT = (() => {
+  if (IS_LANDSCAPE) {
+    // Left strip = D-pad up top, minimap area below.
+    // Right strip = action buttons up top, message area below.
+    const stripW = SIDE_CONTROL_WIDTH;
+    const dpadBtn = 38;
+    const dpadGap = 4;
+    const dpadSize = dpadBtn * 3 + dpadGap * 2; // 122
+    const dpadX = (stripW - dpadSize) / 2;
+    const dpadY = HUD_HEIGHT + 8;
+
+    const actW = 96;
+    const actH = 44;
+    const actGap = 6;
+    const actStackH = actH * 3 + actGap * 2;
+    const actX = CANVAS_WIDTH - stripW + (stripW - actW) / 2;
+    const actY = HUD_HEIGHT + 8;
+
+    return {
+      isLandscape: true,
+      band: null, // no bottom band
+      dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
+      actW, actH, actGap, actStackH, actX, actY,
+      centerRect: { // minimap slot
+        x: 4,
+        y: dpadY + dpadSize + 8,
+        w: stripW - 8,
+        h: CANVAS_HEIGHT - (dpadY + dpadSize + 8) - 8
+      },
+      msgRect: { // messages strip on right
+        x: CANVAS_WIDTH - stripW + 4,
+        y: actY + actStackH + 8,
+        w: stripW - 8,
+        h: CANVAS_HEIGHT - (actY + actStackH + 8) - 8
+      },
+      // Left + right strip backgrounds.
+      strips: [
+        { x: 0, y: HUD_HEIGHT, w: stripW, h: CANVAS_HEIGHT - HUD_HEIGHT },
+        { x: CANVAS_WIDTH - stripW, y: HUD_HEIGHT, w: stripW, h: CANVAS_HEIGHT - HUD_HEIGHT }
+      ]
+    };
+  }
+  // Portrait.
+  const bandY = CANVAS_HEIGHT - CONTROL_HEIGHT;
+  const dpadBtn = 52;
+  const dpadGap = 4;
+  const dpadSize = dpadBtn * 3 + dpadGap * 2;
+  const dpadX = 8;
+  const dpadY = bandY + (CONTROL_HEIGHT - dpadSize) / 2;
+
+  const actW = 72;
+  const actH = 48;
+  const actGap = 6;
+  const actStackH = actH * 3 + actGap * 2;
+  const actX = CANVAS_WIDTH - actW - 8;
+  const actY = bandY + (CONTROL_HEIGHT - actStackH) / 2;
+
+  return {
+    isLandscape: false,
+    band: { x: 0, y: bandY, w: CANVAS_WIDTH, h: CONTROL_HEIGHT },
+    dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
+    actW, actH, actGap, actStackH, actX, actY,
+    centerRect: {
+      x: dpadX + dpadSize + 12,
+      y: bandY + 8,
+      w: actX - (dpadX + dpadSize) - 24,
+      h: CONTROL_HEIGHT - 16
+    },
+    msgRect: null,
+    strips: []
+  };
+})();
+
+// D-pad button definitions (positions in 3×3 grid).
 const DPAD_BUTTONS = [
   { col: 1, row: 0, label: '▲', emit: { type: 'move', dx: 0, dy: -1 } },
   { col: 0, row: 1, label: '◀', emit: { type: 'move', dx: -1, dy: 0 } },
@@ -65,11 +114,10 @@ export class MobileControls {
     this.bus = bus;
     this.enabled = true;
     this._currentScene = 'title';
-    this._pressedKey = null;       // for tap-flash feedback
+    this._pressedKey = null;
     this._pressedClearedAt = 0;
 
     bus.on('scene:switched', ({ to }) => { this._currentScene = to; });
-    // Clear flash after a short delay each tick.
     bus.on('tick', ({ time }) => {
       if (this._pressedKey && time > this._pressedClearedAt) {
         this._pressedKey = null;
@@ -77,45 +125,35 @@ export class MobileControls {
     });
   }
 
-  /** Called by GameScene each frame. */
   render(renderer) {
     if (this._currentScene !== 'game') return;
-    this._renderBand(renderer);
+    this._renderBackground(renderer);
     this._renderDpad(renderer);
     this._renderActions(renderer);
   }
 
-  /**
-   * Touch / mouse tap. Returns true if a button was hit so the GameScene
-   * doesn't also interpret the tap as a move-to-tile.
-   */
   handleTap(canvasX, canvasY, currentTime) {
     if (this._currentScene !== 'game') return false;
-
-    // D-pad hit-test.
     for (const b of DPAD_BUTTONS) {
-      const bx = DPAD_X + b.col * (DPAD_BTN + DPAD_GAP);
-      const by = DPAD_Y + b.row * (DPAD_BTN + DPAD_GAP);
-      if (canvasX >= bx && canvasX <= bx + DPAD_BTN &&
-          canvasY >= by && canvasY <= by + DPAD_BTN) {
+      const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
+      const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
+      if (canvasX >= bx && canvasX <= bx + LAYOUT.dpadBtn &&
+          canvasY >= by && canvasY <= by + LAYOUT.dpadBtn) {
         this._flash(`dpad:${b.col},${b.row}`, currentTime);
         this.bus.emit('input:action', b.emit);
         return true;
       }
     }
-
-    // Action stack hit-test.
     for (let i = 0; i < ACTION_LABELS.length; i++) {
-      const ax = ACT_X;
-      const ay = ACT_Y + i * (ACT_H + ACT_GAP);
-      if (canvasX >= ax && canvasX <= ax + ACT_W &&
-          canvasY >= ay && canvasY <= ay + ACT_H) {
+      const ax = LAYOUT.actX;
+      const ay = LAYOUT.actY + i * (LAYOUT.actH + LAYOUT.actGap);
+      if (canvasX >= ax && canvasX <= ax + LAYOUT.actW &&
+          canvasY >= ay && canvasY <= ay + LAYOUT.actH) {
         this._flash(`act:${i}`, currentTime);
         this.bus.emit('input:action', { type: ACTION_LABELS[i].key });
         return true;
       }
     }
-
     return false;
   }
 
@@ -125,54 +163,53 @@ export class MobileControls {
   }
 
   // --- canvas drawing ----------------------------------------------
-  _renderBand(r) {
-    // Solid background separates control band from world visually.
-    r.drawRect(0, BAND_Y, CANVAS_WIDTH, CONTROL_HEIGHT, '#08080c');
-    r.drawRect(0, BAND_Y, CANVAS_WIDTH, 1, '#2a2530'); // hairline divider
+  _renderBackground(r) {
+    if (LAYOUT.band) {
+      r.drawRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h, '#08080c');
+      r.drawRect(0, LAYOUT.band.y, CANVAS_WIDTH, 1, '#2a2530');
+    }
+    for (const s of LAYOUT.strips) {
+      r.drawRect(s.x, s.y, s.w, s.h, '#08080c');
+      // hairline borders on inner edges of strips
+      if (s.x === 0) r.drawRect(s.x + s.w - 1, s.y, 1, s.h, '#2a2530');
+      else           r.drawRect(s.x, s.y, 1, s.h, '#2a2530');
+    }
   }
 
   _renderDpad(r) {
     for (const b of DPAD_BUTTONS) {
-      const bx = DPAD_X + b.col * (DPAD_BTN + DPAD_GAP);
-      const by = DPAD_Y + b.row * (DPAD_BTN + DPAD_GAP);
+      const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
+      const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const pressed = this._pressedKey === `dpad:${b.col},${b.row}`;
-      const bg = pressed ? '#3a3548' : '#1a1820';
-      const border = pressed ? '#d6c87a' : '#3a3340';
-      r.drawRect(bx, by, DPAD_BTN, DPAD_BTN, bg);
-      r.drawStrokedRect(bx, by, DPAD_BTN, DPAD_BTN, border, pressed ? 2 : 1);
-      r.drawText(b.label, bx + DPAD_BTN / 2, by + DPAD_BTN / 2,
-        { size: 22, bold: true, align: 'center', baseline: 'middle' });
+      r.drawRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn, pressed ? '#3a3548' : '#1a1820');
+      r.drawStrokedRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn,
+        pressed ? '#d6c87a' : '#3a3340', pressed ? 2 : 1);
+      r.drawText(b.label, bx + LAYOUT.dpadBtn / 2, by + LAYOUT.dpadBtn / 2,
+        { size: LAYOUT.isLandscape ? 18 : 22, bold: true, align: 'center', baseline: 'middle' });
     }
   }
 
   _renderActions(r) {
     for (let i = 0; i < ACTION_LABELS.length; i++) {
-      const ax = ACT_X;
-      const ay = ACT_Y + i * (ACT_H + ACT_GAP);
+      const ax = LAYOUT.actX;
+      const ay = LAYOUT.actY + i * (LAYOUT.actH + LAYOUT.actGap);
       const pressed = this._pressedKey === `act:${i}`;
-      const bg = pressed ? '#3a3548' : '#1a1820';
-      const border = pressed ? '#d6c87a' : '#3a3340';
-      r.drawRect(ax, ay, ACT_W, ACT_H, bg);
-      r.drawStrokedRect(ax, ay, ACT_W, ACT_H, border, pressed ? 2 : 1);
-      r.drawText(ACTION_LABELS[i].label, ax + ACT_W / 2, ay + ACT_H / 2,
-        { size: 14, bold: true, align: 'center', baseline: 'middle',
-          color: COLOR.textPrimary });
+      r.drawRect(ax, ay, LAYOUT.actW, LAYOUT.actH, pressed ? '#3a3548' : '#1a1820');
+      r.drawStrokedRect(ax, ay, LAYOUT.actW, LAYOUT.actH,
+        pressed ? '#d6c87a' : '#3a3340', pressed ? 2 : 1);
+      r.drawText(ACTION_LABELS[i].label, ax + LAYOUT.actW / 2, ay + LAYOUT.actH / 2,
+        { size: 14, bold: true, align: 'center', baseline: 'middle', color: COLOR.textPrimary });
     }
   }
 
-  /** Geometry exposed so siblings (Minimap, MessageLog) can avoid overlap. */
   static get geometry() {
     return {
-      bandY: BAND_Y,
-      bandH: CONTROL_HEIGHT,
-      dpadRect: { x: DPAD_X, y: DPAD_Y, w: DPAD_SIZE, h: DPAD_SIZE },
-      actionRect: { x: ACT_X, y: ACT_Y, w: ACT_W, h: ACT_STACK_H },
-      centerRect: {
-        x: DPAD_X + DPAD_SIZE + 12,
-        y: BAND_Y + 8,
-        w: ACT_X - (DPAD_X + DPAD_SIZE) - 24,
-        h: CONTROL_HEIGHT - 16
-      }
+      isLandscape: LAYOUT.isLandscape,
+      band: LAYOUT.band,
+      dpadRect: { x: LAYOUT.dpadX, y: LAYOUT.dpadY, w: LAYOUT.dpadSize, h: LAYOUT.dpadSize },
+      actionRect: { x: LAYOUT.actX, y: LAYOUT.actY, w: LAYOUT.actW, h: LAYOUT.actStackH },
+      centerRect: LAYOUT.centerRect,
+      msgRect: LAYOUT.msgRect
     };
   }
 }

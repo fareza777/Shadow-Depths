@@ -1,0 +1,74 @@
+{
+  "skills": [
+    {
+      "id": "hardened",
+      "name": "Hardened",
+      "description": "+5 max HP. Heals 5 immediately.",
+      "rarity": "common",
+      "spriteKey": "skill_shield"
+    },
+    {
+      "id": "sharpened",
+      "name": "Sharpened",
+      "description": "+1 permanent ATK.",
+      "rarity": "common",
+      "spriteKey": "skill_sword"
+    },
+    {
+      "id": "tempered",
+      "name": "Tempered",
+      "description": "+1 permanent DEF.",
+      "rarity": "common",
+      "spriteKey": "skill_armor"
+    },
+    {
+      "id": "quickened",
+      "name": "Quickened",
+      "description": "+2 DEX (+2% crit chance).",
+      "rarity": "common",
+      "spriteKey": "skill_speed"
+    },
+    {
+      "id": "eager",
+      "name": "Eager",
+      "description": "+1 inventory slot.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_bag"
+    },
+    {
+      "id": "studious",
+      "name": "Studious",
+      "description": "+25% XP from all sources.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book"
+    },
+    {
+      "id": "bloodthirst",
+      "name": "Bloodthirst",
+      "description": "+10% lifesteal on every hit.",
+      "rarity": "rare",
+      "spriteKey": "skill_blood"
+    },
+    {
+      "id": "stout",
+      "name": "Stout",
+      "description": "-10% damage taken from all sources.",
+      "rarity": "rare",
+      "spriteKey": "skill_stout"
+    },
+    {
+      "id": "long_reach",
+      "name": "Long Reach",
+      "description": "Ranged weapons gain +1 attack range.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_reach"
+    },
+    {
+      "id": "second_wind",
+      "name": "Second Wind",
+      "description": "Heal 3 HP every 5 turns.",
+      "rarity": "rare",
+      "spriteKey": "skill_wind"
+    }
+  ]
+}

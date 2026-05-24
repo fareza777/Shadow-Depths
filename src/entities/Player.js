@@ -48,6 +48,81 @@ export class Player extends Entity {
 
     /** Effective revive charm uses remaining this run. */
     this.reviveCharges = 0;
+
+    /** Skills acquired this run (id strings). Order = acquisition order. */
+    this.skills = [];
+    /** Combat / progression multipliers set by skills. */
+    this.xpMultiplier     = 1;
+    this.skillLifesteal   = 0;   // +fraction healed on every hit
+    this.damageReduction  = 0;   // 0..1 fractional reduction on incoming damage
+    this.skillRangeBonus  = 0;   // +tiles to ranged weapon range
+    this.regenEveryNTurns = 0;   // 5 means heal 3 every 5 turns; 0 disables
+    this.regenAmount      = 0;
+    this._turnsSinceRegen = 0;
+  }
+
+  /**
+   * Apply a skill chosen on level-up. Most skills are simple stat changes;
+   * a few set runtime multipliers read by CombatSystem during resolution.
+   * @param {string} id
+   * @returns {boolean} true if the skill was recognized
+   */
+  applySkill(id) {
+    if (this.skills.includes(id)) return false; // no duplicates this run
+    this.skills.push(id);
+    switch (id) {
+      case 'hardened':
+        this.stats.hpMax += 5;
+        this.heal(5);
+        return true;
+      case 'sharpened':
+        this.stats.atk += 1;
+        return true;
+      case 'tempered':
+        this.stats.def += 1;
+        return true;
+      case 'quickened':
+        this.stats.dex += 2;
+        return true;
+      case 'eager':
+        if (this.inventory) {
+          this.inventory.size += 1;
+          this.inventory.slots.push(null);
+        }
+        return true;
+      case 'studious':
+        this.xpMultiplier += 0.25;
+        return true;
+      case 'bloodthirst':
+        this.skillLifesteal += 0.10;
+        return true;
+      case 'stout':
+        this.damageReduction = Math.min(0.6, this.damageReduction + 0.10);
+        return true;
+      case 'long_reach':
+        this.skillRangeBonus += 1;
+        return true;
+      case 'second_wind':
+        this.regenEveryNTurns = 5;
+        this.regenAmount = 3;
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Called once per player turn by GameScene. Handles passive skill effects
+   * that need a regular tick (currently just Second Wind regen).
+   */
+  passiveTurnTick() {
+    if (this.regenEveryNTurns > 0) {
+      this._turnsSinceRegen += 1;
+      if (this._turnsSinceRegen >= this.regenEveryNTurns) {
+        this._turnsSinceRegen = 0;
+        this.heal(this.regenAmount);
+      }
+    }
   }
 
   // --- progression ----------------------------------------------------
@@ -58,12 +133,14 @@ export class Player extends Entity {
 
   /**
    * Grant XP and apply any resulting level-ups.
+   * Studious skill multiplies the incoming amount before bookkeeping.
    * @returns {number} number of levels gained
    */
   gainXP(amount) {
     if (this.isDead || amount <= 0) return 0;
-    this.xp += amount;
-    this.runStats.xpGained += amount;
+    const adjusted = Math.floor(amount * (this.xpMultiplier || 1));
+    this.xp += adjusted;
+    this.runStats.xpGained += adjusted;
     let gained = 0;
     while (this.xp >= this.xpToNext()) {
       this.xp -= this.xpToNext();
@@ -127,6 +204,13 @@ export class Player extends Entity {
     const c = this.balance.combat;
     const weaponBonus = this.weapon?.stats?.critBonus || 0;
     return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + weaponBonus);
+  }
+
+  /** Effective ranged attack range (weapon range + long_reach skill bonus). */
+  effectiveRange() {
+    const base = this.weapon?.stats?.attackRange || 1;
+    if (base <= 1) return 1;
+    return base + (this.skillRangeBonus || 0);
   }
 
   /** Called by CombatSystem when this player kills an enemy. */

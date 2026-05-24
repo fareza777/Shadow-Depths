@@ -107,26 +107,45 @@ export class Game {
   }
 
   _onRunOver(summary) {
-    this.meta.recordRun({ ...summary, died: true });
+    // recordRun computes score, mutates the copy it receives, and returns
+    // the score + unlock metadata. The original `summary` object that
+    // GameScene emitted does NOT carry the score — we have to enrich it
+    // ourselves before handing it to the GameOver scene factory or the
+    // scene renders "SCORE 0" forever.
+    const result = this.meta.recordRun({ ...summary, died: true });
+    const enriched = {
+      ...summary,
+      died: true,
+      score: result.score,
+      isNewHighScore: result.isNewHighScore,
+      unlocked: result.unlocked
+    };
     const scene = this._sceneFactories.gameover({
       bus: this.bus,
       state: this.state,
       content: this.content,
-      summary
+      summary: enriched
     });
     this.state.setScene('gameover');
-    this.scenes.switch('gameover', scene, summary);
+    this.scenes.switch('gameover', scene, enriched);
   }
 
   _onRunVictory(summary) {
-    this.meta.recordRun({ ...summary, died: false });
+    const result = this.meta.recordRun({ ...summary, died: false });
+    const enriched = {
+      ...summary,
+      died: false,
+      score: result.score,
+      isNewHighScore: result.isNewHighScore,
+      unlocked: result.unlocked
+    };
     const scene = this._sceneFactories.victory({
       bus: this.bus,
       state: this.state,
       content: this.content,
-      summary
+      summary: enriched
     });
     this.state.setScene('victory');
-    this.scenes.switch('victory', scene, summary);
+    this.scenes.switch('victory', scene, enriched);
   }
 }

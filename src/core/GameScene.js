@@ -29,7 +29,7 @@ import { LightingSystem } from '../rendering/LightingSystem.js';
 import { RNG } from './RNG.js';
 
 import { ChaseBehavior } from '../entities/behaviors/ChaseBehavior.js';
-import { RangedBehavior } from '../entities/behaviors/RangedBehavior.js';
+import { RangedBehavior, hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
 import { ErraticBehavior } from '../entities/behaviors/ErraticBehavior.js';
 import { HeavyBehavior } from '../entities/behaviors/HeavyBehavior.js';
 import { PhaseBehavior } from '../entities/behaviors/PhaseBehavior.js';
@@ -58,6 +58,7 @@ export class GameScene {
     this.hud = deps.hud;
     this.minimap = deps.minimap;
     this.inventoryUI = deps.inventoryUI;
+    this.skillPicker = deps.skillPicker || null;
     this.controls = deps.mobileControls || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
@@ -126,13 +127,26 @@ export class GameScene {
     // paints inside the band's center cutout (see Minimap.js for offset).
     if (this.controls) this.controls.render(renderer);
     this.minimap.render(renderer, { floor: this.floor, player: this.player });
-    // Inventory modal goes on top of everything else when open.
+    // Inventory modal on top of HUD.
     this.inventoryUI.render(renderer, this.player);
+    // Skill picker on top of EVERYTHING — it blocks all other input.
+    if (this.skillPicker) this.skillPicker.render(renderer);
   }
 
   // --- input ----------------------------------------------------------
   handleInput(action) {
     if (!action || this.player.isDead) return;
+
+    // Skill picker modal takes highest priority — it pops on level-up and
+    // must resolve before any other input.
+    if (this.skillPicker?.open) {
+      if (action.type === 'pointer') {
+        this.skillPicker.handleCanvasTap(action.x, action.y);
+        return;
+      }
+      if (action.type === 'tapTile') return;
+      if (this.skillPicker.handleInput(action)) return;
+    }
 
     // Inventory modal — handle canvas taps first (mobile-critical), then
     // route every other semantic action through its handler. Both swallow.
@@ -269,9 +283,6 @@ export class GameScene {
   }
 
   _playerTapTile(tx, ty) {
-    // Tap-to-walk (the only mobile movement input now that the D-pad is
-    // gone). 4-directional: pick the axis with the larger delta so the
-    // player advances toward the tapped tile on the most direct cardinal.
     const dxRaw = tx - this.player.x;
     const dyRaw = ty - this.player.y;
     if (dxRaw === 0 && dyRaw === 0) {
@@ -281,6 +292,28 @@ export class GameScene {
       else this._endPlayerTurn(true);
       return;
     }
+
+    // Ranged attack: if the tapped tile holds an enemy AND we have a
+    // ranged weapon equipped AND that enemy is within range AND we have
+    // line of sight, fire instead of walking. Otherwise fall through to
+    // tap-to-walk.
+    const targetEnemy = this.floor.entityAt(tx, ty);
+    if (targetEnemy && targetEnemy.kind === 'enemy') {
+      const range = this.player.effectiveRange();
+      const dist = Math.abs(dxRaw) + Math.abs(dyRaw);
+      if (range > 1 && dist <= range &&
+          hasLineOfSight(this.floor, this.player, targetEnemy)) {
+        this.combat.execute(
+          { type: 'ranged', target: { x: tx, y: ty } },
+          this.player,
+          { floor: this.floor, player: this.player }
+        );
+        this._endPlayerTurn(true);
+        return;
+      }
+    }
+
+    // Cardinal tap-to-walk (4-directional, dominant-axis step).
     let dx = 0, dy = 0;
     if (Math.abs(dxRaw) >= Math.abs(dyRaw)) dx = Math.sign(dxRaw);
     else dy = Math.sign(dyRaw);
@@ -291,6 +324,8 @@ export class GameScene {
   _endPlayerTurn(actionTaken) {
     if (!actionTaken) return;
     this.player.runStats.turnsUsed += 1;
+    // Passive skill tick (Second Wind regen, future passives).
+    if (typeof this.player.passiveTurnTick === 'function') this.player.passiveTurnTick();
     this.combat.tickEntity(this.player);
     if (this.player.isDead) { this._endRun(false); return; }
     this._runEnemyTurns();
@@ -330,12 +365,15 @@ export class GameScene {
 
   // --- spawning -------------------------------------------------------
   _spawnFloorEntities(floor, spawns) {
+    // depthScale comes from the procedurally-built floor definition;
+    // makes deeper floors actually threatening (HP & damage scale).
+    const depthScale = floor.definition?.depthScale || 1;
     for (const s of spawns.enemies) {
       const def = this.content.enemies[s.defId];
       if (!def) { console.warn(LOG.ENTITY, `no enemy def "${s.defId}"`); continue; }
       const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
       const behavior = new BehaviorCls(def.behaviorParams);
-      const enemy = new Enemy(def, behavior, { x: s.x, y: s.y });
+      const enemy = new Enemy(def, behavior, { x: s.x, y: s.y }, depthScale);
       enemy.snapRender();
       floor.addEntity(enemy);
     }
@@ -347,8 +385,10 @@ export class GameScene {
 
   _applyMetaUnlocks() {
     const meta = this.state.state.meta;
-    if (!meta?.unlocks) return;
-    for (const id of meta.unlocks) {
+    if (!meta) return;
+
+    // Score-threshold unlocks (legacy v0.1 system).
+    for (const id of meta.unlocks || []) {
       if (id === 'worn_dagger') {
         const dagger = this.itemFactory.create('rusted_cleaver', 1);
         if (dagger) {
@@ -364,6 +404,42 @@ export class GameScene {
       } else if (id === 'map_sense') {
         if (this.dungeon.currentIndex === 0) this.floor?.revealAll();
       }
+    }
+
+    // Shop-purchased upgrades (coin economy).
+    const ups = meta.shopUpgrades || {};
+    if (ups.start_hp) {
+      const bonus = ups.start_hp * 5;
+      this.player.stats.hpMax += bonus;
+      this.player.stats.hp += bonus;
+    }
+    if (ups.start_atk) this.player.stats.atk += ups.start_atk;
+    if (ups.start_def) this.player.stats.def += ups.start_def;
+    if (ups.start_dex) this.player.stats.dex += ups.start_dex;
+    if (ups.extra_slot) {
+      for (let i = 0; i < ups.extra_slot; i++) {
+        this.player.inventory.size += 1;
+        this.player.inventory.slots.push(null);
+      }
+    }
+    if (ups.start_potion) {
+      const potion = this.itemFactory.create('health_potion', 1);
+      if (potion) this.player.inventory.add(potion);
+    }
+    if (ups.start_bow) {
+      const bow = this.itemFactory.create('shortbow', 1);
+      if (bow) {
+        const swap = this.player.equip(bow);
+        if (swap) this.player.inventory.add(swap);
+      }
+    }
+    if (ups.start_revive) {
+      this.player.reviveCharges += ups.start_revive;
+    }
+    if (ups.scholar_start) {
+      // Grant just enough XP to hit level 2 immediately.
+      const need = this.player.xpToNext();
+      this.player.gainXP(need);
     }
   }
 

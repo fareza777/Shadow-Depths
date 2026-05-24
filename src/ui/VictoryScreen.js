@@ -47,6 +47,11 @@ export class VictoryScreen {
       r.drawText('★ NEW HIGH SCORE ★', CANVAS_WIDTH / 2, startY + lines.length * 24 + 10,
         { size: 14, bold: true, align: 'center', color: COLOR.textXP });
     }
+    if (s.coinsEarned > 0) {
+      r.drawText(`+${s.coinsEarned} ◈ coins`,
+        CANVAS_WIDTH / 2, startY + lines.length * 24 + 30,
+        { size: 12, bold: true, align: 'center', color: '#d6c87a' });
+    }
 
     const buttons = ['NEW RUN', 'TITLE'];
     const w = 180, h = 48;

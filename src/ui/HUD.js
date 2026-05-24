@@ -50,7 +50,9 @@ export class HUD {
     const atk = p.totalAtk();
     const def = p.totalDef();
     const crit = Math.round(p.critChance() * 100);
-    r.drawText(`ATK ${atk}  DEF ${def}  DEX ${p.stats.dex}  CRIT ${crit}%`,
+    const range = p.weapon?.stats?.attackRange || 1;
+    const rangeChip = range > 1 ? `  RNG ${range}` : '';
+    r.drawText(`ATK ${atk}  DEF ${def}  CRIT ${crit}%${rangeChip}`,
       8, TOP_PAD + 34, { size: 11, color: COLOR.textMuted });
     r.drawText(`◈ ${p.gold}`, CANVAS_WIDTH - 12, TOP_PAD + 34,
       { size: 11, color: COLOR.textXP, align: 'right' });

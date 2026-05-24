@@ -20,13 +20,18 @@ const DEFAULT_META = Object.freeze({
   runsCompleted: 0,
   runsDied: 0,
   unlocks: [],
+  coins: 0,
+  shopUpgrades: {},
   settings: {
     volume: 0.6,
     vibration: true,
-    showTutorial: true
+    showTutorial: true,
+    orientation: 'portrait'
   },
   runHistory: []
 });
+
+const COINS_PER_SCORE = 50;
 
 export class MetaProgress {
   /**
@@ -69,10 +74,11 @@ export class MetaProgress {
 
   /**
    * Persist a finished run (victory or death). Updates highscore, unlocks,
-   * counts, history. Emits 'meta:updated' and 'meta:unlocked' if applicable.
+   * counts, history, and coin balance.
+   * Emits 'meta:updated', 'meta:unlocked', 'meta:coins'.
    *
    * @param {object} runSummary
-   * @returns {{ score:number, isNewHighScore:boolean, unlocked:string[] }}
+   * @returns {{ score:number, coinsEarned:number, isNewHighScore:boolean, unlocked:string[] }}
    */
   recordRun(runSummary) {
     const score = this.computeScore(runSummary);
@@ -85,9 +91,17 @@ export class MetaProgress {
     if (runSummary.died) this._state.runsDied += 1;
     else this._state.runsCompleted += 1;
 
+    // Coin reward — convert score to coins. Coin Magnet upgrade adds 20%.
+    const magnetLevels = (this._state.shopUpgrades?.coin_magnet || 0);
+    const coinMult = 1 + magnetLevels * 0.20;
+    const coinsEarned = Math.floor((score / COINS_PER_SCORE) * coinMult);
+    this._state.coins = (this._state.coins || 0) + coinsEarned;
+    runSummary.coinsEarned = coinsEarned;
+
     // History (most recent first).
     this._state.runHistory.unshift({
       score,
+      coinsEarned,
       died: !!runSummary.died,
       floorsCleared: runSummary.floorsCleared || 0,
       killedBy: runSummary.killedBy || null,
@@ -101,9 +115,38 @@ export class MetaProgress {
 
     this.save.saveMeta(this._state);
     this.bus?.emit('meta:updated', { meta: this._state, score, isNewHighScore: wasHigh });
+    if (coinsEarned > 0) this.bus?.emit('meta:coins', { earned: coinsEarned, total: this._state.coins });
     for (const id of newlyUnlocked) this.bus?.emit('meta:unlocked', { id });
 
-    return { score, isNewHighScore: wasHigh, unlocked: newlyUnlocked };
+    return { score, coinsEarned, isNewHighScore: wasHigh, unlocked: newlyUnlocked };
+  }
+
+  /**
+   * Purchase a shop upgrade. Returns true if the purchase succeeded.
+   * @param {object} upgradeDef entry from data/shop.json
+   */
+  purchaseUpgrade(upgradeDef) {
+    if (!upgradeDef || !upgradeDef.id) return false;
+    const currentLevel = this._state.shopUpgrades[upgradeDef.id] || 0;
+    if (currentLevel >= (upgradeDef.maxLevel || 1)) return false;
+    const cost = MetaProgress.nextUpgradeCost(upgradeDef, currentLevel);
+    if (this._state.coins < cost) return false;
+    this._state.coins -= cost;
+    this._state.shopUpgrades[upgradeDef.id] = currentLevel + 1;
+    this.save.saveMeta(this._state);
+    this.bus?.emit('meta:purchased', { id: upgradeDef.id, level: currentLevel + 1, cost });
+    return true;
+  }
+
+  /** Cost to buy the NEXT level of a tiered upgrade. */
+  static nextUpgradeCost(upgradeDef, currentLevel = 0) {
+    const base = upgradeDef.cost ?? 0;
+    const growth = upgradeDef.costGrowth ?? 0;
+    return base + growth * currentLevel;
+  }
+
+  upgradeLevel(id) {
+    return this._state.shopUpgrades[id] || 0;
   }
 
   /**
