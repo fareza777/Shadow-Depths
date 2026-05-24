@@ -22,7 +22,8 @@ import {
 const ACTION_LABELS = [
   { key: 'pickup',    label: 'PICK' },
   { key: 'descend',   label: 'DOWN' },
-  { key: 'inventory', label: 'BAG'  }
+  { key: 'inventory', label: 'BAG'  },
+  { key: 'vigil',     label: 'HERO' }
 ];
 
 // Geometry layouts — chosen once per session based on orientation.
@@ -38,9 +39,10 @@ const LAYOUT = (() => {
     const dpadY = HUD_HEIGHT + 8;
 
     const actW = 96;
-    const actH = 44;
+    const actH = 40;
     const actGap = 6;
-    const actStackH = actH * 3 + actGap * 2;
+    const actCount = ACTION_LABELS.length;
+    const actStackH = actH * actCount + actGap * (actCount - 1);
     const actX = CANVAS_WIDTH - stripW + (stripW - actW) / 2;
     const actY = HUD_HEIGHT + 8;
 
@@ -77,9 +79,10 @@ const LAYOUT = (() => {
   const dpadY = bandY + (CONTROL_HEIGHT - dpadSize) / 2;
 
   const actW = 72;
-  const actH = 48;
-  const actGap = 6;
-  const actStackH = actH * 3 + actGap * 2;
+  const actH = 42;
+  const actGap = 4;
+  const actCount = ACTION_LABELS.length;
+  const actStackH = actH * actCount + actGap * (actCount - 1);
   const actX = CANVAS_WIDTH - actW - 8;
   const actY = bandY + (CONTROL_HEIGHT - actStackH) / 2;
 

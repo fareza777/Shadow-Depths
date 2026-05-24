@@ -7,7 +7,9 @@
  * modal via the BAG button. Number-key hotkeys (1–9) still work on
  * desktop because KeyboardHandler maps them; HUD just doesn't draw the bar.
  */
-import { COLOR, CANVAS_WIDTH, HUD_HEIGHT } from '../config/constants.js';
+import {
+  COLOR, CANVAS_WIDTH, HUD_HEIGHT, FONT_DISPLAY, FONT_BODY, FONT_MONO
+} from '../config/constants.js';
 
 const TOP_PAD = 8;
 
@@ -31,20 +33,22 @@ export class HUD {
     // Solid background — the world rendering is now clipped out of this
     // band, so we don't need rgba; opaque looks cleaner and contrasts
     // well with the world view that sits just below.
-    r.drawRect(0, 0, CANVAS_WIDTH, HUD_HEIGHT, '#08080c');
-    r.drawRect(0, HUD_HEIGHT - 1, CANVAS_WIDTH, 1, '#2a2530'); // hairline divider
+    r.drawRect(0, 0, CANVAS_WIDTH, HUD_HEIGHT, COLOR.bgPanel);
+    r.drawRect(0, HUD_HEIGHT - 1, CANVAS_WIDTH, 1, COLOR.gold);
 
     // HP bar — full width minus padding.
     const barW = CANVAS_WIDTH - 16;
     r.drawBar(8, TOP_PAD, barW, 16, p.stats.hp, p.stats.hpMax, COLOR.hpBar, COLOR.hpBarBg);
-    r.drawText(`HP ${p.stats.hp}/${p.stats.hpMax}`, 12, TOP_PAD + 2, { size: 12, bold: true });
+    r.drawText(`HP ${p.stats.hp}/${p.stats.hpMax}`, 12, TOP_PAD + 2,
+      { size: 12, bold: true, family: FONT_MONO });
 
     // XP bar just below.
     const xpNeed = p.xpToNext();
     r.drawBar(8, TOP_PAD + 20, barW, 8, p.xp, xpNeed, COLOR.xpBar, COLOR.xpBarBg);
-    r.drawText(`Lv ${p.level}`, 12, TOP_PAD + 20, { size: 9, bold: true });
+    r.drawText(`Lv ${p.level}`, 12, TOP_PAD + 20,
+      { size: 9, bold: true, family: FONT_MONO });
     r.drawText(`${p.xp}/${xpNeed} XP`, CANVAS_WIDTH - 12, TOP_PAD + 20,
-      { size: 9, bold: true, align: 'right' });
+      { size: 9, bold: true, align: 'right', family: FONT_MONO });
 
     // Stats line.
     const atk = p.totalAtk();
@@ -53,15 +57,18 @@ export class HUD {
     const range = p.weapon?.stats?.attackRange || 1;
     const rangeChip = range > 1 ? `  RNG ${range}` : '';
     r.drawText(`ATK ${atk}  DEF ${def}  CRIT ${crit}%${rangeChip}`,
-      8, TOP_PAD + 34, { size: 11, color: COLOR.textMuted });
+      8, TOP_PAD + 34, { size: 11, color: COLOR.textMuted, family: FONT_MONO });
     r.drawText(`◈ ${p.gold}`, CANVAS_WIDTH - 12, TOP_PAD + 34,
-      { size: 11, color: COLOR.textXP, align: 'right' });
+      { size: 11, color: COLOR.textXP, align: 'right', family: FONT_MONO });
 
-    // Floor tag.
+    // Floor tag — atmospheric italic flavor.
     if (floor) {
-      const name = `F${floorIndex + 1}/${totalFloors}  ${floor.definition.name}`;
+      const name = `${floor.definition.name}`;
+      const sub = `floor ${floorIndex + 1} / ${totalFloors}`;
       r.drawText(name, CANVAS_WIDTH / 2, TOP_PAD + 50,
-        { size: 11, align: 'center', color: COLOR.textPrimary });
+        { size: 12, bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
+      r.drawText(sub, CANVAS_WIDTH / 2, TOP_PAD + 64,
+        { size: 9, italic: true, align: 'center', color: COLOR.textMuted, family: FONT_BODY });
     }
 
     // Status effect chips (tight row).

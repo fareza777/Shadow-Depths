@@ -95,40 +95,66 @@ export const TILE = Object.freeze({
 });
 
 // --- Color palette ------------------------------------------------------
-// Limited, melancholic palette per narrative tone (Section 11.1 of the brief).
+// Warm dark-fantasy palette — closer to candlelight than deep void. Tuned
+// to match the Shadow Depths mock: charcoal-with-purple backgrounds, aged
+// gold accents, cream text, parchment-like highlights.
 export const COLOR = Object.freeze({
-  bg: '#0a0a0c',
-  void: '#000000',
-  wallLit: '#3a3340',
-  wallDim: '#1a1820',
-  floorLit: '#2a2630',
-  floorDim: '#15131a',
-  stairs: '#c9b27c',
-  door: '#6a4a2a',
+  bg: '#1a1620',              // primary canvas background (warm dark)
+  bgPanel: '#241e2a',          // panel / strip background
+  bgPanelAlt: '#1d1824',       // alternating row tint
+  bgCard: '#2a232e',           // raised card surface
+  bgCardHi: '#352c3a',         // selected card
 
-  player: '#d6d6da',
-  enemy: '#a04050',
-  enemyRanged: '#6a90b0',
-  enemyTank: '#8a7050',
-  enemyErratic: '#7050a0',
-  enemyPhase: '#5a3050',
+  void: '#080610',
+  wallLit: '#3e3548',
+  wallDim: '#1c1822',
+  floorLit: '#2e2734',
+  floorDim: '#181420',
+  stairs: '#d4be7a',
+  door: '#7a5436',
 
-  itemCommon: '#cccccc',
-  itemUncommon: '#5ac06a',
-  itemRare: '#5a8ed8',
-  itemEpic: '#b070d8',
+  player: '#e8e0d0',
+  enemy: '#b85052',
+  enemyRanged: '#7a98c0',
+  enemyTank: '#9a8060',
+  enemyErratic: '#806298',
+  enemyPhase: '#683868',
 
-  textPrimary: '#d6d6da',
-  textMuted: '#7a7884',
-  textCrit: '#ff5050',
-  textHeal: '#60d070',
-  textXP: '#d0c050',
+  // Rarity colors — used by inventory cards and tooltips.
+  itemCommon: '#c8c4b8',
+  itemUncommon: '#6ad07c',
+  itemRare: '#7aa6e8',
+  itemEpic: '#c884e8',
 
-  hpBar: '#a02020',
-  hpBarBg: '#3a0a0a',
-  xpBar: '#d0c050',
-  xpBarBg: '#3a3010'
+  // Gold accent — the signature color of the UI.
+  gold: '#d4be7a',
+  goldHi: '#f0d890',
+  goldDim: '#9a8a4a',
+
+  textPrimary: '#e8e0d0',      // cream
+  textMuted: '#9a8a78',        // weathered parchment
+  textCrit: '#e85a4a',
+  textHeal: '#8fd075',
+  textXP: '#e0c870',
+
+  hpBar: '#a83838',
+  hpBarBg: '#3a1a1a',
+  xpBar: '#d4be7a',
+  xpBarBg: '#3a2e1a',
+
+  borderSoft: '#3a3340',
+  borderAccent: '#d4be7a'
 });
+
+// --- Typography ---------------------------------------------------------
+// All three families are loaded by index.html via Google Fonts so they're
+// already in the document's font cache by the time Canvas2D needs them.
+// Use FONT_BODY for atmospheric flavor text, FONT_DISPLAY for headers and
+// section titles, FONT_MONO for stats and HUD numbers (which need to align
+// in columns and benefit from a true monospace).
+export const FONT_DISPLAY = '"Cinzel", "Times New Roman", serif';
+export const FONT_BODY    = '"IM Fell English", Georgia, serif';
+export const FONT_MONO    = '"Inconsolata", "Courier New", monospace';
 
 // --- Keybinds -----------------------------------------------------------
 // Player can re-bind in v0.4. For now hard-codes are accepted because they

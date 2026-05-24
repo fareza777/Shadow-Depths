@@ -32,6 +32,7 @@ import { HUD } from './ui/HUD.js';
 import { Minimap } from './ui/Minimap.js';
 import { InventoryUI } from './ui/InventoryUI.js';
 import { SkillPickerUI } from './ui/SkillPickerUI.js';
+import { VigilScreen } from './ui/VigilScreen.js';
 import { TitleScreen } from './ui/TitleScreen.js';
 import { GameOverScreen } from './ui/GameOverScreen.js';
 import { VictoryScreen } from './ui/VictoryScreen.js';
@@ -117,6 +118,7 @@ async function bootstrap() {
   const minimap = new Minimap();
   const inventoryUI = new InventoryUI({ bus });
   const skillPicker = new SkillPickerUI({ bus, content });
+  const vigilScreen = new VigilScreen({ bus });
   const mobileControls = new MobileControls({ bus });
 
   // --- narrative -----------------------------------------------------
@@ -129,7 +131,8 @@ async function bootstrap() {
   const sceneFactories = {
     title: (deps) => new TitleScreen({ ...deps, metaProgress }),
     game: (deps) => new GameScene({
-      ...deps, hud, minimap, inventoryUI, skillPicker, lighting, renderer, mobileControls
+      ...deps, hud, minimap, inventoryUI, skillPicker, vigilScreen,
+      lighting, renderer, mobileControls
     }),
     gameover: (deps) => new GameOverScreen(deps),
     victory: (deps) => new VictoryScreen(deps)

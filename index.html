@@ -11,6 +11,21 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Shadow Depths</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IM+Fell+English:ital@0;1&family=Inconsolata:wght@400;700&display=swap"
+      rel="stylesheet">
+    <style>
+      /* Ensure fonts are loaded before canvas first paint. The Renderer
+         draws text via ctx.font, so the font face needs to be available
+         in the document's font cache. The CSS below forces the browser
+         to download all three families on first paint. */
+      .__font-preload {
+        position: absolute; left: -9999px; visibility: hidden;
+        font-family: 'Cinzel', 'IM Fell English', 'Inconsolata';
+      }
+    </style>
     <style>
       /* Reset + full-bleed canvas shell. All in-game UI is drawn by Renderer
          or layered as positioned DOM nodes inside #game-root. */
@@ -63,6 +78,12 @@
     <div id="game-root">
       <canvas id="game-canvas" width="800" height="600"></canvas>
       <div id="ui-layer"></div>
+      <!-- Pre-loads the font families so Canvas ctx.font picks them up. -->
+      <span class="__font-preload">
+        <span style="font-family:'Cinzel',serif">.</span>
+        <span style="font-family:'IM Fell English',serif">.</span>
+        <span style="font-family:'Inconsolata',monospace">.</span>
+      </span>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>

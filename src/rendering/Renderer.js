@@ -286,13 +286,41 @@ export class Renderer {
   }
 
   // --- HUD primitives (screen space — no camera offset) --------------
+  /**
+   * @param {string} text
+   * @param {number} x
+   * @param {number} y
+   * @param {{
+   *   size?: number, bold?: boolean, italic?: boolean,
+   *   align?: 'left'|'center'|'right', baseline?: 'top'|'middle'|'bottom',
+   *   color?: string,
+   *   family?: string  defaults to FONT_MONO; pass FONT_DISPLAY for headers
+   *                    or FONT_BODY for atmospheric flavor text
+   * }} [opts]
+   */
   drawText(text, x, y, opts = {}) {
     const ctx = this.ctx;
-    ctx.font = `${opts.bold ? 'bold ' : ''}${opts.size || 14}px "Courier New", monospace`;
+    const weight = opts.bold ? 'bold ' : '';
+    const style  = opts.italic ? 'italic ' : '';
+    const family = opts.family || '"Inconsolata", "Courier New", monospace';
+    ctx.font = `${style}${weight}${opts.size || 14}px ${family}`;
     ctx.textAlign = opts.align || 'left';
     ctx.textBaseline = opts.baseline || 'top';
     ctx.fillStyle = opts.color || COLOR.textPrimary;
     ctx.fillText(text, x, y);
+  }
+
+  /**
+   * Measure text width using the same font config drawText would use.
+   * Useful for centering composed lines (icon + text).
+   */
+  measureText(text, opts = {}) {
+    const ctx = this.ctx;
+    const weight = opts.bold ? 'bold ' : '';
+    const style  = opts.italic ? 'italic ' : '';
+    const family = opts.family || '"Inconsolata", "Courier New", monospace';
+    ctx.font = `${style}${weight}${opts.size || 14}px ${family}`;
+    return ctx.measureText(text).width;
   }
 
   drawBar(x, y, w, h, value, max, fillColor, bgColor) {

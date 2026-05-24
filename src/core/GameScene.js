@@ -59,6 +59,7 @@ export class GameScene {
     this.minimap = deps.minimap;
     this.inventoryUI = deps.inventoryUI;
     this.skillPicker = deps.skillPicker || null;
+    this.vigil = deps.vigilScreen || null;
     this.controls = deps.mobileControls || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
@@ -129,6 +130,8 @@ export class GameScene {
     this.minimap.render(renderer, { floor: this.floor, player: this.player });
     // Inventory modal on top of HUD.
     this.inventoryUI.render(renderer, this.player);
+    // Vigil character sheet sits above inventory and below skill picker.
+    if (this.vigil) this.vigil.render(renderer, this.player);
     // Skill picker on top of EVERYTHING — it blocks all other input.
     if (this.skillPicker) this.skillPicker.render(renderer);
   }
@@ -148,6 +151,16 @@ export class GameScene {
       if (this.skillPicker.handleInput(action)) return;
     }
 
+    // Vigil (character) screen — full-canvas modal.
+    if (this.vigil?.open) {
+      if (action.type === 'pointer') {
+        this.vigil.handleCanvasTap(action.x, action.y, this.player);
+        return;
+      }
+      if (action.type === 'tapTile') return;
+      if (this.vigil.handleInput(this.player, action)) return;
+    }
+
     // Inventory modal — handle canvas taps first (mobile-critical), then
     // route every other semantic action through its handler. Both swallow.
     if (this.inventoryUI.open) {
@@ -165,6 +178,7 @@ export class GameScene {
       case 'pickup':     return this._playerPickup();
       case 'descend':    return this._playerDescend();
       case 'inventory':  return this.inventoryUI.toggle();
+      case 'vigil':      if (this.vigil) this.vigil.toggle(); return;
       case 'minimap':    return this.minimap.toggle();
       case 'useSlot':    return this._playerUseSlot(action.index);
       case 'pointer': {
@@ -467,6 +481,40 @@ export class GameScene {
     this.bus.on('command:useSlot',  ({ index }) => { this._playerUseSlot(index); this.inventoryUI.hide(); });
     this.bus.on('command:equipSlot',({ index }) => { this._playerUseSlot(index); this.inventoryUI.hide(); });
     this.bus.on('command:dropSlot', ({ index }) => this._dropSlot(index));
+    this.bus.on('command:unequip', ({ slot }) => this._unequipSlot(slot));
+  }
+
+  /**
+   * Unequip a piece from the player and stash it back into the inventory.
+   * Called from VigilScreen when user taps an UNEQUIP card button.
+   */
+  _unequipSlot(slot) {
+    // Lazy import via dynamic — actually we already imported Equipment elsewhere.
+    // Inline the logic to avoid circular import risk.
+    const player = this.player;
+    if (!player) return;
+    const current = slot === 'weapon' ? player.weapon
+                  : slot === 'armor'  ? player.armor
+                  : slot === 'helm'   ? player.helm
+                  : slot === 'ring'   ? player.ring
+                  : null;
+    if (!current) return;
+    if (player.inventory.isFull()) {
+      this.bus.emit('inventory:full');
+      return;
+    }
+    // Reverse stat side-effects.
+    if (current.stats?.dex) player.stats.dex -= current.stats.dex;
+    if (current.stats?.hpMaxBonus) {
+      player.stats.hpMax = Math.max(1, player.stats.hpMax - current.stats.hpMaxBonus);
+      player.stats.hp = Math.min(player.stats.hp, player.stats.hpMax);
+    }
+    if (slot === 'weapon') player.weapon = null;
+    else if (slot === 'armor') player.armor = null;
+    else if (slot === 'helm') player.helm = null;
+    else if (slot === 'ring') player.ring = null;
+    player.inventory.add(current);
+    this.bus.emit('player:unequipped', { item: current, slot });
   }
 
   _dropSlot(index) {
