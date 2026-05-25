@@ -17,7 +17,7 @@ const STEPS = [
   },
   {
     title: 'LOOT & DESCEND',
-    body: 'PICK gathers items. DOWN uses stairs. BAG opens inventory. Tap or press any direction to continue.'
+    body: 'Use QUICK row: PICK, BAG, HERO. DOWN (right) uses stairs. Tap or press any direction to continue.'
   }
 ];
 

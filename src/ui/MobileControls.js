@@ -5,12 +5,10 @@ import { Layout } from '../config/layoutMetrics.js';
 import { COLOR, FONT_DISPLAY, uiSize } from '../config/constants.js';
 import { getDpadLayout } from './controlBandLayout.js';
 
+/** Right strip — MENU + stairs only; PICK/BAG/HERO live on QuickUseBar. */
 const ACTION_LABELS = [
-  { key: 'menu',      label: 'MENU', icon: 'III' },
-  { key: 'pickup',    label: 'PICK', icon: 'GEM' },
-  { key: 'descend',   label: 'DOWN', icon: 'STAIR' },
-  { key: 'inventory', label: 'BAG',  icon: 'BAG' },
-  { key: 'vigil',     label: 'HERO', icon: 'HELM' }
+  { key: 'menu',    label: 'MENU', icon: 'III' },
+  { key: 'descend', label: 'DOWN', icon: 'STAIR' }
 ];
 
 function buildLayout() {
@@ -46,7 +44,7 @@ function buildLayout() {
   const actGap = 4;
   const actStackH = actH * ACTION_LABELS.length + actGap * (ACTION_LABELS.length - 1);
   const actX = Layout.canvasW - actW - 10;
-  const actY = bandY + (Layout.control - actStackH) / 2;
+  const actY = bandY + Layout.control - actStackH - 12;
   return {
     isLandscape: false,
     band: { x: 0, y: bandY, w: Layout.canvasW, h: Layout.control },
