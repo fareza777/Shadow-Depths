@@ -118,6 +118,8 @@ export class TitleScreen {
   }
 
   _renderMenuRows(r) {
+    const ctx = r.ctx;
+    const t = this._t;
     const rowH = LAYOUT.rowH;
     const rowW = LAYOUT.rowW;
     const x = (CANVAS_WIDTH - rowW) / 2;
@@ -125,14 +127,31 @@ export class TitleScreen {
       const item = MENU[i];
       const y = LAYOUT.baseY + i * (rowH + LAYOUT.rowGap);
       const selected = i === this.selected;
-      // Card background.
-      r.drawRect(x, y, rowW, rowH, selected ? COLOR.bgCardHi : COLOR.bgCard);
-      // Subtle gold left edge accent on selected row.
+      ctx.save();
+      const g = ctx.createLinearGradient(x, y, x + rowW, y + rowH);
       if (selected) {
-        r.drawRect(x, y, 3, rowH, COLOR.gold);
+        g.addColorStop(0, '#3a3042');
+        g.addColorStop(0.48, '#2a2330');
+        g.addColorStop(1, '#1b1620');
+      } else {
+        g.addColorStop(0, COLOR.bgCard);
+        g.addColorStop(1, '#211b27');
       }
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, rowW, rowH);
+      if (selected) {
+        const shimmerX = x + 72 + ((Math.sin(t * 2.2) + 1) * 0.5) * (rowW - 184);
+        ctx.globalAlpha = 0.28;
+        r.drawRect(shimmerX, y + rowH - 9, 38, 1, COLOR.goldHi);
+        r.drawRect(shimmerX + 12, y + rowH - 6, 52, 1, COLOR.goldDim);
+        ctx.globalAlpha = 1;
+        r.drawRect(x, y, 3, rowH, COLOR.gold);
+        r.drawRect(x + rowW - 3, y, 3, rowH, COLOR.goldDim);
+      }
+      ctx.restore();
       r.drawStrokedRect(x, y, rowW, rowH,
         selected ? COLOR.gold : COLOR.borderSoft, selected ? 2 : 1);
+      r.drawRect(x + 6, y + 5, rowW - 12, 1, selected ? '#f0d89033' : '#ffffff12');
 
       const iconCx = x + 32;
       r.drawRect(x + 10, y + 8, 44, rowH - 16, selected ? COLOR.bgPanelAlt : COLOR.bgPanel);
@@ -147,6 +166,12 @@ export class TitleScreen {
         r.drawText(sub, x + rowW - 12, y + rowH / 2,
           { size: uiSize(12), italic: true, align: 'right', baseline: 'middle',
             family: FONT_BODY, color: COLOR.textMuted });
+      }
+      if (selected) {
+        r.drawText('>', x + rowW - 31, y + rowH / 2 - 1, {
+          size: uiSize(12), bold: true, align: 'center', baseline: 'middle',
+          family: FONT_MONO, color: COLOR.goldHi
+        });
       }
     }
   }
@@ -887,9 +912,19 @@ export class TitleScreen {
       renderer.drawRect(cx - stepW / 2, stepY + 4, stepW, 1, '#5a4830');
     }
 
+    // Low mist drifting across the empty lower viewport.
+    ctx.globalAlpha = IS_LANDSCAPE ? 0.08 : 0.16;
+    const t = this._t;
+    for (let i = 0; i < 5; i++) {
+      const mistW = 96 + i * 28;
+      const mx = ((t * (10 + i * 3) + i * 91) % (w + mistW)) - mistW;
+      const my = h - 214 + i * 25 + Math.sin(t * 0.8 + i) * 4;
+      renderer.drawRect(mx, my, mistW, 2, i % 2 ? '#d4be7a28' : '#ffffff18');
+      renderer.drawRect(mx + 24, my + 8, mistW * 0.55, 1, '#6a608030');
+    }
+
     // Foreground candle sparks.
     ctx.globalAlpha = 0.44;
-    const t = this._t;
     for (let i = 0; i < 9; i++) {
       const sx = 62 + i * 44;
       const sy = h - 86 - (i % 3) * 11;

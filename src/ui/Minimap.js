@@ -35,24 +35,28 @@ export class Minimap {
 
     const mapTop = innerY + uiSize(12);
     const mapH = innerH - uiSize(12);
-    const sx = Math.floor(innerW / floor.width);
-    const sy = Math.floor(mapH / floor.height);
-    const px = Math.max(2, Math.min(sx, sy));
-    const w = floor.width * px;
-    const h = floor.height * px;
+    const bounds = this._exploredBounds(floor, player);
+    const bw = bounds.x1 - bounds.x0 + 1;
+    const bh = bounds.y1 - bounds.y0 + 1;
+    const sx = Math.floor(innerW / bw);
+    const sy = Math.floor(mapH / bh);
+    const px = Math.max(3, Math.min(9, sx, sy));
+    const w = bw * px;
+    const h = bh * px;
     const x = innerX + (innerW - w) / 2;
     const y = mapTop + (mapH - h) / 2;
 
     renderer.drawRect(x - 2, y - 2, w + 4, h + 4, '#06060a');
     renderer.drawStrokedRect(x - 2, y - 2, w + 4, h + 4, '#4a4258', 1);
+    renderer.drawRect(x, y, w, h, '#09070d');
 
     const wallLit = floor.definition?.wallPalette?.[0] || '#5a5060';
     const wallDim = floor.definition?.wallPalette?.[1] || '#2a2530';
     const floorLit = floor.definition?.floorPalette?.[0] || '#4a4350';
     const floorDim = floor.definition?.floorPalette?.[1] || '#22202a';
 
-    for (let ty = 0; ty < floor.height; ty++) {
-      for (let tx = 0; tx < floor.width; tx++) {
+    for (let ty = bounds.y0; ty <= bounds.y1; ty++) {
+      for (let tx = bounds.x0; tx <= bounds.x1; tx++) {
         const t = floor.tiles[ty][tx];
         if (!t.explored) continue;
         let color;
@@ -62,28 +66,67 @@ export class Minimap {
         else if (t.type === TILE.STAIRS_UP) color = '#a09060';
         else if (t.type === TILE.DOOR) color = COLOR.door;
         else continue;
-        renderer.drawRect(x + tx * px, y + ty * px, px, px, color);
+        renderer.drawRect(x + (tx - bounds.x0) * px, y + (ty - bounds.y0) * px, px, px, color);
       }
     }
 
     for (const e of floor.enemies()) {
       const t = floor.tileAt(e.x, e.y);
       if (!t || !t.visible) continue;
-      renderer.drawRect(x + e.x * px, y + e.y * px, px, px, COLOR.enemy);
+      if (!this._insideBounds(e.x, e.y, bounds)) continue;
+      renderer.drawRect(x + (e.x - bounds.x0) * px, y + (e.y - bounds.y0) * px, px, px, COLOR.enemy);
     }
 
     if (player) {
+      const pxPlayer = x + (player.x - bounds.x0) * px;
+      const pyPlayer = y + (player.y - bounds.y0) * px;
+      const pulse = 0.45 + Math.sin(performance.now() * 0.006) * 0.18;
+      const ctx2 = renderer.ctx;
+      ctx2.save();
+      ctx2.globalAlpha = pulse;
+      renderer.drawStrokedRect(pxPlayer - 3, pyPlayer - 3, px + 6, px + 6, COLOR.goldDim, 1);
+      ctx2.restore();
       renderer.drawRect(
-        x + player.x * px - 1,
-        y + player.y * px - 1,
+        pxPlayer - 1,
+        pyPlayer - 1,
         px + 2, px + 2, COLOR.player
       );
+      renderer.drawStrokedRect(pxPlayer - 1, pyPlayer - 1, px + 2, px + 2, COLOR.gold, 1);
     }
-    renderer.drawStrokedRect(
-      x + player.x * px - 1,
-      y + player.y * px - 1,
-      px + 2, px + 2, COLOR.gold, 1
-    );
+  }
+
+  _exploredBounds(floor, player) {
+    let x0 = floor.width, y0 = floor.height, x1 = 0, y1 = 0;
+    for (let y = 0; y < floor.height; y++) {
+      for (let x = 0; x < floor.width; x++) {
+        if (!floor.tiles[y][x].explored) continue;
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
+    }
+    if (player) {
+      x0 = Math.min(x0, player.x);
+      x1 = Math.max(x1, player.x);
+      y0 = Math.min(y0, player.y);
+      y1 = Math.max(y1, player.y);
+    }
+    if (x0 > x1 || y0 > y1) {
+      x0 = player?.x || 0; x1 = x0;
+      y0 = player?.y || 0; y1 = y0;
+    }
+    const pad = 3;
+    return {
+      x0: Math.max(0, x0 - pad),
+      y0: Math.max(0, y0 - pad),
+      x1: Math.min(floor.width - 1, x1 + pad),
+      y1: Math.min(floor.height - 1, y1 + pad)
+    };
+  }
+
+  _insideBounds(x, y, b) {
+    return x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1;
   }
 
   _drawMapTable(r, slot) {
