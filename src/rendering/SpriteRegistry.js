@@ -14,6 +14,7 @@
 import { TILE_SIZE, COLOR } from '../config/constants.js';
 import { buildItemSprites, defaultTintForKey } from './itemSprites.js';
 import { buildDungeonTileSprites } from './dungeonTiles.js';
+import { buildPlayerSprites } from './playerSprites.js';
 
 const FALLBACK_COLOR = '#9a8a78';
 
@@ -44,67 +45,9 @@ function pixelDraw64(ctx, ox, oy, size, pixels) {
 }
 
 // Palette for the hero (consistent across all hero-related sprites).
-const HERO_HELMET   = '#3e3a48';
-const HERO_HELM_HI  = '#5e5868';
-const HERO_VISOR    = '#0a0810';
-const HERO_EYE      = '#ff5a3a';
-const HERO_ARMOR    = '#5a5468';
-const HERO_ARMOR_HI = '#7a7484';
-const HERO_BELT     = '#1a1820';
-const HERO_PAULDRON = '#7a6a4a';
-const HERO_EMBLEM   = '#d0c050';
-const HERO_LEG      = '#3a3540';
-const HERO_BOOT     = '#161018';
-const HERO_BLADE    = '#d8d8e0';
-const HERO_BLADE_HI = '#ffffff';
-const HERO_HILT     = '#5a3a1e';
-const HERO_GUARD    = '#a07040';
-const HERO_CAPE     = '#7a1a28';
-const HERO_CAPE_HI  = '#a02a30';
-
 const PROCEDURAL_SPRITES = {
-  // --- entities -----------------------------------------------------
-  player_idle: (ctx, x, y, s) => {
-    pixelDraw(ctx, x, y, s, [
-      // Cape behind (wider at bottom).
-      [10, 14, 12, 2, HERO_CAPE],
-      [ 9, 16, 14, 8, HERO_CAPE],
-      [ 8, 24, 16, 4, HERO_CAPE],
-      [10, 16, 12, 1, HERO_CAPE_HI], // cape highlight near shoulder
-      // Helmet.
-      [11,  3, 10, 6, HERO_HELMET],
-      [10,  8, 12, 2, HERO_HELM_HI],
-      // Visor band + glowing red eyes.
-      [11, 10, 10, 3, HERO_VISOR],
-      [13, 11,  2, 2, HERO_EYE],
-      [17, 11,  2, 2, HERO_EYE],
-      // Neck.
-      [14, 13,  4, 1, HERO_HELMET],
-      // Pauldrons + shoulders.
-      [ 7, 14,  4, 4, HERO_PAULDRON],
-      [21, 14,  4, 4, HERO_PAULDRON],
-      [11, 14, 10, 1, HERO_ARMOR_HI],
-      // Chest plate.
-      [10, 15, 12, 8, HERO_ARMOR],
-      [11, 15, 10, 1, HERO_ARMOR_HI],
-      [15, 17,  2, 4, HERO_EMBLEM], // chest emblem
-      [11, 22, 10, 1, HERO_BELT],   // belt
-      // Legs.
-      [11, 23,  4, 6, HERO_LEG],
-      [17, 23,  4, 6, HERO_LEG],
-      [11, 23,  4, 1, HERO_BELT],
-      [17, 23,  4, 1, HERO_BELT],
-      // Boots.
-      [10, 29,  6, 2, HERO_BOOT],
-      [16, 29,  6, 2, HERO_BOOT],
-      // Sword in the right hand (out front of body).
-      [24,  7,  2, 18, HERO_BLADE],
-      [24,  7,  1, 18, HERO_BLADE_HI],
-      [22, 24,  6,  2, HERO_GUARD], // cross-guard
-      [25, 26,  1,  3, HERO_HILT],
-      [24, 29,  3,  1, HERO_HILT]   // pommel
-    ]);
-  },
+  // --- entities (hero variants from playerSprites.js) -----------------
+  ...buildPlayerSprites(pixelDraw),
   enemy_goblin: (ctx, x, y, s) => {
     pixelDraw(ctx, x, y, s, [
       [13,  7,  6, 5, '#4a6a3a'], // head

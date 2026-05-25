@@ -8,6 +8,7 @@
  * equip/unequip a one-line operation and avoids stat-recalculation bugs.
  */
 import { Entity } from './Entity.js';
+import { resolvePlayerSpriteKey } from '../rendering/playerSprites.js';
 
 export class Player extends Entity {
   /**
@@ -205,6 +206,11 @@ export class Player extends Entity {
   /** All four equipment pieces as an array (filters nulls). */
   equippedPieces() {
     return [this.weapon, this.armor, this.helm, this.ring].filter(Boolean);
+  }
+
+  /** Sprite key for dungeon / UI portrait (sword, bow, mace, etc.). */
+  displaySpriteKey() {
+    return resolvePlayerSpriteKey(this.weapon);
   }
 
   /** Calculated values used by HUD + tooltips. */

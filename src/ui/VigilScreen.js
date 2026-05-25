@@ -200,7 +200,7 @@ export class VigilScreen {
     const portraitSize = 80;
     r.drawRect(16, 40, portraitSize, portraitSize, COLOR.bgCard);
     r.drawStrokedRect(16, 40, portraitSize, portraitSize, COLOR.gold, 2);
-    r.sprites.draw('player_idle', r.ctx, 16, 40, { size: portraitSize });
+    r.sprites.draw(p.displaySpriteKey(), r.ctx, 16, 40, { size: portraitSize });
 
     r.drawText(HERO_NAME, 110, 44,
       { size: 22, bold: true, family: FONT_DISPLAY, color: COLOR.gold });

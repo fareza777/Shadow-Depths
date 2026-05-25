@@ -304,7 +304,10 @@ export class Renderer {
       if (e.kind === 'enemy' && (!t || !t.visible)) continue;
       const px = e.renderX * TILE_SIZE;
       const py = e.renderY * TILE_SIZE;
-      const key = e.spriteKey || (e.kind === 'player' ? 'player_idle' : 'enemy_goblin');
+      const key = e.spriteKey
+        || (e.kind === 'player' && typeof e.displaySpriteKey === 'function'
+          ? e.displaySpriteKey()
+          : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
       this.sprites.draw(key, ctx, px, py);
 
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {

@@ -134,18 +134,21 @@ export function drawFloorTile(ctx, x, y, s, opts = {}) {
   const ty = opts.tileY ?? 0;
   const h = hash2(tx, ty, 7);
 
-  const grout = shade(base, -16);
-  const slab = (h % 3 === 0) ? shade(base, 3) : base;
-  const inset = Math.max(2, Math.floor(s * 0.1));
+  // Full-tile slab; thin nat only on south/east so adjacent tiles don't double up.
+  const slab = (h % 4 === 0) ? shade(base, 2) : (h % 4 === 2) ? shade(base, -2) : base;
+  const natW = Math.max(1, Math.round(s / 32));
 
-  fillRect(ctx, x, y, s, s, grout);
-  fillRect(ctx, x + inset, y + inset, s - inset * 2, s - inset * 2, slab);
-  fillRect(ctx, x + inset, y + inset, s - inset * 2, 1, '#ffffff08');
-  fillRect(ctx, x + inset, y + inset, 1, s - inset * 2, '#ffffff05');
+  fillRect(ctx, x, y, s, s, slab);
+  fillRect(ctx, x, y + s - natW, s, natW, shade(base, -14));
+  fillRect(ctx, x + s - natW, y, natW, s, shade(base, -11));
+  fillRect(ctx, x, y, s, 1, '#ffffff07');
+  fillRect(ctx, x, y, 1, s, '#ffffff04');
 
-  // Rare subtle crack — keeps variety without visual noise.
   if ((h >> 5) % 13 === 0) {
-    fillRect(ctx, x + s * 0.45, y + inset + 2, 1, s - inset * 2 - 4, shade(base, -12));
+    fillRect(ctx, x + s * 0.42, y + 3, 1, s - 6, shade(base, -10));
+  }
+  if ((h >> 7) % 11 === 0) {
+    fillRect(ctx, x + 5, y + 8, 2, 1, shade(base, 6));
   }
 }
 
