@@ -5,7 +5,9 @@ import {
   COLOR, FONT_DISPLAY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { findQuickUseSlots } from '../items/quickUse.js';
-import { getQuickUseLayout, QUICK_SLOT_COUNT } from './controlBandLayout.js';
+import {
+  getQuickUseLayout, QUICK_SLOT_COUNT, VIEWPORT_BOTTOM_Y
+} from './controlBandLayout.js';
 
 const LAYOUT = getQuickUseLayout();
 
@@ -119,11 +121,21 @@ export class QuickUseBar {
     ctx.restore();
   }
 
-  hitTest(canvasX, canvasY, time) {
+  /**
+   * @param {number} canvasX
+   * @param {number} canvasY
+   * @param {number} [time]
+   * @param {import('../items/Inventory.js').Inventory} [inventory]
+   */
+  hitTest(canvasX, canvasY, time, inventory) {
+    if (canvasY < VIEWPORT_BOTTOM_Y) return -1;
+
+    const slots = inventory ? findQuickUseSlots(inventory) : [];
     for (let i = 0; i < LAYOUT.quickRects.length; i++) {
       const r = LAYOUT.quickRects[i];
       if (canvasX >= r.x && canvasX <= r.x + r.w &&
           canvasY >= r.y && canvasY <= r.y + r.h) {
+        if (slots[i] === undefined) return -1;
         this._pressed = i;
         this._pressedUntil = (time ?? performance.now() / 1000) + 0.12;
         return i;

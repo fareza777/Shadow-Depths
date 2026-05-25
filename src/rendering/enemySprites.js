@@ -31,7 +31,7 @@ export function drawEnemyBackdrop(ctx, x, y, s, key) {
   const cy = y + s * 0.58;
   const g = ctx.createRadialGradient(cx, cy, s * 0.06, cx, cy, s * 0.5);
   g.addColorStop(0, color);
-  g.addColorStop(0.65, color + '44');
+  g.addColorStop(0.65, 'rgba(0,0,0,0)');
   g.addColorStop(1, 'transparent');
   ctx.fillStyle = g;
   ctx.fillRect(x, y, s, s);

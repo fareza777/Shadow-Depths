@@ -161,6 +161,10 @@ export class GameScene {
     // Skill picker modal takes highest priority — it pops on level-up and
     // must resolve before any other input.
     if (this.skillPicker?.open) {
+      if (action.type === 'escape') {
+        this.skillPicker.hide();
+        return;
+      }
       if (action.type === 'pointer') {
         this.skillPicker.handleCanvasTap(action.x, action.y);
         return;
@@ -218,7 +222,9 @@ export class GameScene {
         //   2. World viewport → tap-to-walk via Renderer.canvasToTile.
         //   3. HUD area taps fall through (no behavior).
         if (this.quickUse) {
-          const quickHit = this.quickUse.hitTest(action.x, action.y, this.state.state.time);
+          const quickHit = this.quickUse.hitTest(
+            action.x, action.y, this.state.state.time, this.player?.inventory
+          );
           if (typeof quickHit === 'number' && quickHit >= 0) {
             this._playerQuickUse(quickHit);
             return;
@@ -352,23 +358,39 @@ export class GameScene {
   _playerTapTile(tx, ty) {
     const dxRaw = tx - this.player.x;
     const dyRaw = ty - this.player.y;
+    const targetEnemy = this.floor.entityAt(tx, ty);
+    const distToTarget = Math.abs(dxRaw) + Math.abs(dyRaw);
+
+    if (targetEnemy && targetEnemy.kind === 'enemy' && distToTarget === 1) {
+      this.combat.execute(
+        { type: 'attack', target: { x: tx, y: ty } },
+        this.player,
+        { floor: this.floor, player: this.player }
+      );
+      this._endPlayerTurn(true);
+      return;
+    }
+
     if (dxRaw === 0 && dyRaw === 0) {
-      // Tap on self → pick up under foot if anything, else wait one turn.
+      const adj = this._adjacentEnemy();
+      if (adj) {
+        this.combat.execute(
+          { type: 'attack', target: { x: adj.x, y: adj.y } },
+          this.player,
+          { floor: this.floor, player: this.player }
+        );
+        this._endPlayerTurn(true);
+        return;
+      }
       const stack = this.floor.itemsAt(tx, ty);
       if (stack.length > 0) this._playerPickup();
       else this._endPlayerTurn(true);
       return;
     }
 
-    // Ranged attack: if the tapped tile holds an enemy AND we have a
-    // ranged weapon equipped AND that enemy is within range AND we have
-    // line of sight, fire instead of walking. Otherwise fall through to
-    // tap-to-walk.
-    const targetEnemy = this.floor.entityAt(tx, ty);
     if (targetEnemy && targetEnemy.kind === 'enemy') {
       const range = this.player.effectiveRange();
-      const dist = Math.abs(dxRaw) + Math.abs(dyRaw);
-      if (range > 1 && dist <= range &&
+      if (range > 1 && distToTarget <= range &&
           hasLineOfSight(this.floor, this.player, targetEnemy)) {
         this.combat.execute(
           { type: 'ranged', target: { x: tx, y: ty } },
@@ -385,6 +407,16 @@ export class GameScene {
     if (Math.abs(dxRaw) >= Math.abs(dyRaw)) dx = Math.sign(dxRaw);
     else dy = Math.sign(dyRaw);
     this._playerMove(dx, dy);
+  }
+
+  /** @returns {import('../entities/Enemy.js').Enemy|null} */
+  _adjacentEnemy() {
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (const [dx, dy] of dirs) {
+      const ent = this.floor.entityAt(this.player.x + dx, this.player.y + dy);
+      if (ent && ent.kind === 'enemy' && !ent.isDead) return ent;
+    }
+    return null;
   }
 
   // --- turn management -----------------------------------------------

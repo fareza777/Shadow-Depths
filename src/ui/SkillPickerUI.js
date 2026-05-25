@@ -47,6 +47,7 @@ export class SkillPickerUI {
   hide() {
     this.open = false;
     this.choices = [];
+    this.pending = 0;
   }
 
   /** Touch / mouse tap. */

@@ -1,5 +1,6 @@
 /**
- * Control-band geometry — D-pad (full size in band) + quick-use above the band edge.
+ * Control-band geometry — quick-use + D-pad live inside the control band
+ * (never overlapping the dungeon viewport).
  */
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
@@ -13,7 +14,27 @@ export const QUICK_ACTIONS = [
   { type: 'pickup', label: 'PICK' }
 ];
 
-/** D-pad only — centered in the control band, original button sizes. */
+/** Bottom edge of the world viewport (pixels). Taps below this are UI-only. */
+export const VIEWPORT_BOTTOM_Y = CANVAS_HEIGHT - CONTROL_HEIGHT;
+
+function portraitBandMetrics() {
+  const bandY = VIEWPORT_BOTTOM_Y;
+  const quickSlot = 44;
+  const quickGap = 4;
+  const quickY = bandY + 6;
+  const quickRowH = quickSlot + 12;
+  const dpadBtn = 50;
+  const dpadGap = 4;
+  const dpadSize = dpadBtn * 3 + dpadGap * 2;
+  const dpadX = 10;
+  const dpadY = quickY + quickRowH + 8;
+  return {
+    bandY, quickSlot, quickGap, quickY, quickRowH,
+    dpadBtn, dpadGap, dpadSize, dpadX, dpadY
+  };
+}
+
+/** D-pad — portrait: below quick-use row inside the control band. */
 export function getDpadLayout() {
   if (IS_LANDSCAPE) {
     const stripW = SIDE_CONTROL_WIDTH;
@@ -30,26 +51,23 @@ export function getDpadLayout() {
       dpadY: HUD_HEIGHT + 10
     };
   }
-  const bandY = CANVAS_HEIGHT - CONTROL_HEIGHT;
-  const dpadBtn = 56;
-  const dpadGap = 5;
-  const dpadSize = dpadBtn * 3 + dpadGap * 2;
+  const m = portraitBandMetrics();
   return {
     isLandscape: false,
-    bandY,
-    dpadBtn,
-    dpadGap,
-    dpadSize,
-    dpadX: 10,
-    dpadY: bandY + (CONTROL_HEIGHT - dpadSize) / 2
+    bandY: m.bandY,
+    dpadBtn: m.dpadBtn,
+    dpadGap: m.dpadGap,
+    dpadSize: m.dpadSize,
+    dpadX: m.dpadX,
+    dpadY: m.dpadY
   };
 }
 
-/** Quick-use row sits above the control band top line (not inside the band). */
+/** Quick-use + action chips — portrait: top of control band (y >= VIEWPORT_BOTTOM_Y). */
 export function getQuickUseLayout() {
   const dpad = getDpadLayout();
-  const quickSlot = IS_LANDSCAPE ? 40 : dpad.dpadBtn;
-  const quickGap = IS_LANDSCAPE ? 6 : dpad.dpadGap;
+  const quickSlot = IS_LANDSCAPE ? 40 : portraitBandMetrics().quickSlot;
+  const quickGap = IS_LANDSCAPE ? 6 : portraitBandMetrics().quickGap;
   const quickRowW = QUICK_SLOT_COUNT * quickSlot + (QUICK_SLOT_COUNT - 1) * quickGap;
 
   if (IS_LANDSCAPE) {
@@ -66,11 +84,12 @@ export function getQuickUseLayout() {
     };
   }
 
-  const quickX = dpad.dpadX + (dpad.dpadSize - quickRowW) / 2;
-  const quickY = dpad.bandY - quickSlot - 10;
+  const m = portraitBandMetrics();
+  const quickX = m.dpadX + (m.dpadSize - quickRowW) / 2;
+  const quickY = m.quickY;
   const actionGap = quickGap;
   const actionX = quickX + quickRowW + actionGap;
-  const actionW = Math.max(48, Math.floor((CANVAS_WIDTH - actionX - 10 - actionGap * 2) / 3));
+  const actionW = Math.max(44, Math.floor((CANVAS_WIDTH - actionX - 10 - actionGap * 2) / 3));
 
   return {
     quickSlot,
@@ -78,7 +97,7 @@ export function getQuickUseLayout() {
     quickX,
     quickY,
     quickRowW,
-    bandTop: dpad.bandY,
+    bandTop: m.bandY,
     quickRects: quickRects(quickX, quickY, quickSlot, quickGap),
     actionRects: quickActionRects(actionX, quickY, actionW, quickSlot, actionGap)
   };
