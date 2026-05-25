@@ -192,7 +192,15 @@ export class GameScene {
       case 'pickup':     return this._playerPickup();
       case 'descend':    return this._playerDescend();
       case 'inventory':  return this.inventoryUI.toggle();
-      case 'vigil':      if (this.vigil) this.vigil.toggle(); return;
+      case 'vigil':
+        if (this.vigil) {
+          if (this.vigil.open) this.vigil.hide();
+          else {
+            this.inventoryUI.hide();
+            this.vigil.show();
+          }
+        }
+        return;
       case 'menu':
         if (this.pause) this.pause.show();
         return;

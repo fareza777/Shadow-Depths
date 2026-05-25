@@ -2,27 +2,27 @@
  * Hero sprites — shared body + weapon overlay per equipped weapon type.
  */
 
-const HERO_HELMET   = '#3e3a48';
-const HERO_HELM_HI  = '#5e5868';
-const HERO_VISOR    = '#0a0810';
-const HERO_EYE      = '#ff5a3a';
-const HERO_ARMOR    = '#5a5468';
-const HERO_ARMOR_HI = '#7a7484';
-const HERO_BELT     = '#1a1820';
-const HERO_PAULDRON = '#7a6a4a';
-const HERO_EMBLEM   = '#d0c050';
-const HERO_LEG      = '#3a3540';
-const HERO_BOOT     = '#161018';
-const HERO_BLADE    = '#d8d8e0';
-const HERO_BLADE_HI = '#ffffff';
-const HERO_HILT     = '#5a3a1e';
-const HERO_GUARD    = '#a07040';
-const HERO_CAPE     = '#7a1a28';
-const HERO_CAPE_HI  = '#a02a30';
-const HERO_WOOD     = '#6a4a28';
-const HERO_STRING   = '#c8b890';
-const HERO_MACE     = '#8a8a94';
-const HERO_MACE_HI  = '#b8b8c8';
+export const HERO_HELMET   = '#3e3a48';
+export const HERO_HELM_HI  = '#5e5868';
+export const HERO_VISOR    = '#0a0810';
+export const HERO_EYE      = '#ff5a3a';
+export const HERO_ARMOR    = '#5a5468';
+export const HERO_ARMOR_HI = '#7a7484';
+export const HERO_BELT     = '#1a1820';
+export const HERO_PAULDRON = '#7a6a4a';
+export const HERO_EMBLEM   = '#d0c050';
+export const HERO_LEG      = '#3a3540';
+export const HERO_BOOT     = '#161018';
+export const HERO_BLADE    = '#d8d8e0';
+export const HERO_BLADE_HI = '#ffffff';
+export const HERO_HILT     = '#5a3a1e';
+export const HERO_GUARD    = '#a07040';
+export const HERO_CAPE     = '#7a1a28';
+export const HERO_CAPE_HI  = '#a02a30';
+export const HERO_WOOD     = '#6a4a28';
+export const HERO_STRING   = '#c8b890';
+export const HERO_MACE     = '#8a8a94';
+export const HERO_MACE_HI  = '#b8b8c8';
 
 /** Body without weapon — 32×32 design grid. */
 export const HERO_BODY = [

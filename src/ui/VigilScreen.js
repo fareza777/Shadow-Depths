@@ -39,7 +39,7 @@ export class VigilScreen {
    */
   handleInput(player, input) {
     if (!this.open) return false;
-    if (input.type === 'inventory' || input.type === 'escape') {
+    if (input.type === 'vigil' || input.type === 'inventory' || input.type === 'escape') {
       this.hide();
       return true;
     }

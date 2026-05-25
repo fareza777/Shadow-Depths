@@ -14,7 +14,11 @@
 import { TILE_SIZE, COLOR } from '../config/constants.js';
 import { buildItemSprites, defaultTintForKey } from './itemSprites.js';
 import { buildDungeonTileSprites } from './dungeonTiles.js';
-import { buildPlayerSprites } from './playerSprites.js';
+import {
+  buildPlayerSprites,
+  HERO_ARMOR, HERO_ARMOR_HI, HERO_BELT, HERO_CAPE, HERO_CAPE_HI,
+  HERO_EMBLEM, HERO_EYE, HERO_HELMET, HERO_HELM_HI, HERO_PAULDRON, HERO_VISOR
+} from './playerSprites.js';
 
 const FALLBACK_COLOR = '#9a8a78';
 
