@@ -231,7 +231,13 @@ export class InventoryUI {
   render(renderer, player) {
     if (!this.open) return;
 
-    renderer.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, COLOR.bg);
+    const ctx = renderer.ctx;
+    const g = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+    g.addColorStop(0, '#1e1828');
+    g.addColorStop(1, '#0e0c14');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    renderer.drawRect(0, 0, CANVAS_WIDTH, 2, COLOR.goldDim);
 
     this._renderHeader(renderer, player);
     this._renderTabs(renderer, player);
@@ -297,27 +303,36 @@ export class InventoryUI {
       const entry = view[i];
       const sel = i === this.selectedFilteredIdx;
       const rarityCol = entry?.item ? rarityColor(entry.item.rarity) : COLOR.borderSoft;
-      r.drawRect(cx, cy, SLOT_SIZE, SLOT_SIZE, sel ? COLOR.bgCardHi : COLOR.bgCard);
-      r.drawStrokedRect(cx, cy, SLOT_SIZE, SLOT_SIZE,
-        sel ? COLOR.gold : rarityCol, sel ? 3 : 1);
-      // Slot number badge in corner.
+      const inset = 2;
+      r.drawRect(cx, cy, SLOT_SIZE, SLOT_SIZE, '#0e0c12');
+      r.drawRect(cx + inset, cy + inset, SLOT_SIZE - inset * 2, SLOT_SIZE - inset * 2,
+        sel ? COLOR.bgCardHi : COLOR.bgCard);
+      r.drawStrokedRect(cx + inset, cy + inset, SLOT_SIZE - inset * 2, SLOT_SIZE - inset * 2,
+        sel ? COLOR.gold : rarityCol, sel ? 2 : 1);
+      if (entry?.item) {
+        r.drawRect(cx + 4, cy + SLOT_SIZE - 6, SLOT_SIZE - 8, 2, '#00000055');
+      }
       if (entry && this.activeTab === 'all') {
-        r.drawText(String(entry.slotIndex + 1), cx + 4, cy + 2,
-          { size: 9, family: FONT_MONO, color: COLOR.textMuted });
+        r.drawText(String(entry.slotIndex + 1), cx + 6, cy + 5,
+          { size: uiSize(10), family: FONT_MONO, color: COLOR.textMuted });
       }
       if (entry?.item) {
-        const icon = SLOT_SIZE - 24;
-        r.sprites.draw(entry.item.spriteKey, r.ctx, cx + 12, cy + 12, { size: icon });
+        const pad = 10;
+        const icon = SLOT_SIZE - pad * 2;
+        r.sprites.draw(entry.item.spriteKey, r.ctx, cx + pad, cy + pad, { size: icon });
         if (entry.item.stackable && entry.item.count > 1) {
-          r.drawText(`×${entry.item.count}`, cx + SLOT_SIZE - 4, cy + SLOT_SIZE - 4,
-            { size: 11, bold: true, align: 'right', baseline: 'bottom',
+          r.drawRect(cx + SLOT_SIZE - 26, cy + SLOT_SIZE - 18, 22, 14, '#0a0810cc');
+          r.drawText(`×${entry.item.count}`, cx + SLOT_SIZE - 8, cy + SLOT_SIZE - 8,
+            { size: uiSize(11), bold: true, align: 'right', baseline: 'bottom',
               family: FONT_MONO, color: COLOR.textPrimary });
         }
-        // Rarity chip in corner.
         const rarity = (entry.item.rarity || 'common').charAt(0).toUpperCase();
-        r.drawRect(cx + SLOT_SIZE - 14, cy + 2, 12, 12, rarityCol);
-        r.drawText(rarity, cx + SLOT_SIZE - 8, cy + 8,
-          { size: 9, bold: true, align: 'center', baseline: 'middle',
+        const badgeX = cx + SLOT_SIZE - 22;
+        const badgeY = cy + 5;
+        r.drawRect(badgeX, badgeY, 16, 14, rarityCol);
+        r.drawStrokedRect(badgeX, badgeY, 16, 14, '#00000066', 1);
+        r.drawText(rarity, badgeX + 8, badgeY + 7,
+          { size: uiSize(10), bold: true, align: 'center', baseline: 'middle',
             family: FONT_DISPLAY, color: '#0a0608' });
       }
     }

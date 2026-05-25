@@ -68,9 +68,8 @@ export class TitleScreen {
   }
 
   render(renderer) {
-    renderer.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, COLOR.bg);
+    this._renderBackdrop(renderer);
 
-    // Drifting atmospheric particles (subtle, like motes in candlelight).
     for (const p of this._particles) {
       const ctx = renderer.ctx;
       ctx.globalAlpha = p.alpha;
@@ -78,9 +77,9 @@ export class TitleScreen {
       ctx.globalAlpha = 1;
     }
 
-    // --- Logo + ornament + tagline ---
+    const titleSize = TitleScreen._fitTitleSize(renderer, 'SHADOW DEPTHS', uiSize(LAYOUT.logoSize));
     renderer.drawText('SHADOW DEPTHS', CANVAS_WIDTH / 2, LAYOUT.logoY,
-      { size: uiSize(LAYOUT.logoSize), bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
+      { size: titleSize, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
     renderer.drawText('✦  ·  ✦', CANVAS_WIDTH / 2, LAYOUT.ornY,
       { size: uiSize(16), align: 'center', color: COLOR.goldDim, family: FONT_DISPLAY });
     renderer.drawText('a melancholic descent', CANVAS_WIDTH / 2, LAYOUT.tagY,
@@ -778,6 +777,50 @@ export class TitleScreen {
   static _inside(x, y, rect) {
     return x >= rect.x && x <= rect.x + rect.w &&
            y >= rect.y && y <= rect.y + rect.h;
+  }
+
+  /** Shrink title until it fits canvas width (fixes clipped "S"). */
+  static _fitTitleSize(renderer, text, startSize) {
+    const maxW = CANVAS_WIDTH - 28;
+    let size = startSize;
+    const opts = { bold: true, family: FONT_DISPLAY };
+    while (size > 22 && renderer.measureText(text, { ...opts, size }) > maxW) {
+      size -= 2;
+    }
+    return size;
+  }
+
+  _renderBackdrop(renderer) {
+    const ctx = renderer.ctx;
+    const w = CANVAS_WIDTH;
+    const h = CANVAS_HEIGHT;
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#221a2e');
+    grad.addColorStop(0.45, '#120e18');
+    grad.addColorStop(1, '#0a0810');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    // Side pillars / arch hints.
+    renderer.drawRect(0, 0, 28, h, '#0c0a12');
+    renderer.drawRect(w - 28, 0, 28, h, '#0c0a12');
+    renderer.drawRect(0, 0, w, 3, COLOR.goldDim);
+    renderer.drawRect(0, h - 4, w, 4, '#1a1420');
+    // Soft vignette corners.
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    renderer.drawRect(0, 0, w, 48, '#000');
+    renderer.drawRect(0, h - 56, w, 56, '#000');
+    ctx.restore();
+    // Center glow behind logo.
+    ctx.save();
+    ctx.globalAlpha = 0.12;
+    const cx = w / 2;
+    const rg = ctx.createRadialGradient(cx, LAYOUT.logoY + 20, 8, cx, LAYOUT.logoY + 20, 140);
+    rg.addColorStop(0, COLOR.gold);
+    rg.addColorStop(1, 'transparent');
+    ctx.fillStyle = rg;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
   }
 
   static _seedParticles() {

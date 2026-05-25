@@ -177,7 +177,12 @@ export class Renderer {
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
-        if (t.type === TILE.VOID) continue;
+        if (t.type === TILE.VOID) {
+          if (t.explored) {
+            fillRect(ctx, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, '#06050a');
+          }
+          continue;
+        }
         if (!t.explored) continue;
         const dim = !t.visible;
         const opts = { dim, tileX: x, tileY: y, ...tileOpts };

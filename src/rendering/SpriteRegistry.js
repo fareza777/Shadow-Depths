@@ -12,8 +12,9 @@
  * to look special. Unknown keys fall back to a magenta box — visible bug.
  */
 import { TILE_SIZE, COLOR } from '../config/constants.js';
+import { buildItemSprites, defaultTintForKey } from './itemSprites.js';
 
-const FALLBACK_COLOR = '#ff00ff';
+const FALLBACK_COLOR = '#9a8a78';
 
 /**
  * Each entry returns how to draw a TILE_SIZE×TILE_SIZE icon. Functions get
@@ -602,7 +603,7 @@ const PROCEDURAL_SPRITES = {
 
 export class SpriteRegistry {
   constructor() {
-    this._sprites = PROCEDURAL_SPRITES;
+    this._sprites = { ...PROCEDURAL_SPRITES, ...buildItemSprites() };
   }
 
   /**
@@ -624,7 +625,7 @@ export class SpriteRegistry {
   }
 
   _drawInferredItem(key, ctx, x, y, s, opts) {
-    const tint = opts.tint || itemTintFromKey(key) || FALLBACK_COLOR;
+    const tint = opts.tint || defaultTintForKey(key) || FALLBACK_COLOR;
     if (key.startsWith('weapon_')) {
       fillRect(ctx, x + s * 0.45, y + s * 0.15, s * 0.1, s * 0.6, tint);
       fillRect(ctx, x + s * 0.35, y + s * 0.7, s * 0.3, s * 0.1, '#5a4a30');
@@ -685,18 +686,3 @@ function shadeColor(hex, amount) {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
-/** Pick a tint for items whose sprite key encodes a hue (e.g. potion_red). */
-function itemTintFromKey(key) {
-  const map = {
-    red: '#c04040', pink: '#e890c0', orange: '#d08040', yellow: '#d0c050',
-    green: '#5ac06a', teal: '#40a0a0', blue: '#5a8ed8', dark_blue: '#3a5a90',
-    dark_green: '#3a7a50', dark_red: '#7a2020', crimson: '#a02020',
-    purple: '#9050c0', silver: '#c8c8d0', white: '#e0e0e8',
-    grey: '#888892', black: '#202028', bone: '#d6c8a0', brown: '#7a5030',
-    twin: '#d8c0d0', torn: '#a09870'
-  };
-  for (const word of key.split('_').reverse()) {
-    if (map[word]) return map[word];
-  }
-  return null;
-}
