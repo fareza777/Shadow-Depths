@@ -27,6 +27,8 @@ import { Dungeon } from '../world/Dungeon.js';
 import { Pathfinding } from '../world/Pathfinding.js';
 import { CombatSystem } from '../combat/CombatSystem.js';
 import { RNG } from './RNG.js';
+import { MobileControls } from '../ui/MobileControls.js';
+import { QuickUseBar } from '../ui/QuickUseBar.js';
 
 import { ChaseBehavior } from '../entities/behaviors/ChaseBehavior.js';
 import { RangedBehavior, hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
@@ -60,8 +62,8 @@ export class GameScene {
     this.inventoryUI = deps.inventoryUI;
     this.skillPicker = deps.skillPicker || null;
     this.vigil = deps.vigilScreen || null;
-    this.controls = deps.mobileControls || null;
-    this.quickUse = deps.quickUseBar || null;
+    this.controls = deps.mobileControls || new MobileControls({ bus: this.bus });
+    this.quickUse = deps.quickUseBar || new QuickUseBar({ bus: this.bus });
     this.pause = deps.pauseOverlay || null;
     this.tutorial = deps.tutorial || null;
     this.lighting = deps.lighting;
@@ -161,18 +163,23 @@ export class GameScene {
   renderUI(renderer) {
     if (!this.floor || !this.player) return;
     if (!this.renderer) this.renderer = renderer;
+    if (!this.controls) this.controls = new MobileControls({ bus: this.bus });
+    if (!this.quickUse) this.quickUse = new QuickUseBar({ bus: this.bus });
 
-    this.hud.render(renderer, {
-      player: this.player, floor: this.floor,
-      floorIndex: this.dungeon.currentIndex,
-      totalFloors: this.dungeon.totalFloors,
-      mode: this.mode
-    });
+    try {
+      this.hud.render(renderer, {
+        player: this.player, floor: this.floor,
+        floorIndex: this.dungeon.currentIndex,
+        totalFloors: this.dungeon.totalFloors,
+        mode: this.mode
+      });
+    } catch (err) {
+      console.error(LOG.CORE, 'HUD render failed:', err);
+    }
 
     if (this.controls) {
       this.controls.renderBackground(renderer);
-      this.minimap.render(renderer, { floor: this.floor, player: this.player });
-      if (this.quickUse) this.quickUse.render(renderer, this.player);
+      this._renderControlBandContent(renderer);
       this.controls.renderControls(renderer);
     }
 
@@ -181,6 +188,19 @@ export class GameScene {
     if (this.skillPicker) this.skillPicker.render(renderer);
     if (this.pause) this.pause.render(renderer);
     if (this.tutorial?.open) this.tutorial.render(renderer);
+  }
+
+  _renderControlBandContent(renderer) {
+    try {
+      this.minimap.render(renderer, { floor: this.floor, player: this.player });
+    } catch (err) {
+      console.error(LOG.CORE, 'minimap render failed:', err);
+    }
+    try {
+      if (this.quickUse) this.quickUse.render(renderer, this.player);
+    } catch (err) {
+      console.error(LOG.CORE, 'quick-use render failed:', err);
+    }
   }
 
   // --- input ----------------------------------------------------------

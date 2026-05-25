@@ -24,11 +24,11 @@ export class HUD {
    */
   render(renderer, ctx) {
     const { player, floor, floorIndex, totalFloors, mode } = ctx;
-    this._drawTopStrip(renderer, player, floor, floorIndex, totalFloors);
+    this._drawTopStrip(renderer, player, floor, floorIndex, totalFloors, mode);
     this._drawMessages(renderer);
   }
 
-  _drawTopStrip(r, p, floor, floorIndex, totalFloors) {
+  _drawTopStrip(r, p, floor, floorIndex, totalFloors, mode) {
     // Solid background — the world rendering is now clipped out of this
     // band, so we don't need rgba; opaque looks cleaner and contrasts
     // well with the world view that sits just below.
