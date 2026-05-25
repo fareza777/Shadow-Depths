@@ -7,7 +7,12 @@
     "spriteKey": "potion_pink",
     "stackable": true,
     "maxStack": 5,
-    "effects": [{ "type": "heal", "value": 15 }],
+    "effects": [
+      {
+        "type": "heal",
+        "value": 15
+      }
+    ],
     "lore": "Watered down. Better than nothing.",
     "floorMin": 1,
     "spawnWeight": 12
@@ -20,7 +25,12 @@
     "spriteKey": "potion_red",
     "stackable": true,
     "maxStack": 5,
-    "effects": [{ "type": "heal", "value": 30 }],
+    "effects": [
+      {
+        "type": "heal",
+        "value": 30
+      }
+    ],
     "lore": "Bitter, but life is bitterer.",
     "floorMin": 1,
     "spawnWeight": 10
@@ -33,7 +43,12 @@
     "spriteKey": "potion_red_large",
     "stackable": true,
     "maxStack": 3,
-    "effects": [{ "type": "heal", "value": 70 }],
+    "effects": [
+      {
+        "type": "heal",
+        "value": 70
+      }
+    ],
     "lore": "Brewed by a hand that knew loss.",
     "floorMin": 2,
     "spawnWeight": 5
@@ -47,14 +62,21 @@
     "stackable": true,
     "maxStack": 2,
     "effects": [
-      { "type": "heal", "value": 50 },
-      { "type": "applyStatus", "status": "atk_buff", "value": 3, "duration": 8 }
+      {
+        "type": "heal",
+        "value": 50
+      },
+      {
+        "type": "applyStatus",
+        "status": "atk_buff",
+        "value": 3,
+        "duration": 8
+      }
     ],
     "lore": "It heals. It also remembers what fed it.",
     "floorMin": 2,
     "spawnWeight": 3
   },
-
   "worn_dagger": {
     "id": "worn_dagger",
     "name": "Worn Dagger",
@@ -62,7 +84,9 @@
     "rarity": "common",
     "spriteKey": "weapon_dagger_red",
     "slot": "weapon",
-    "stats": { "atk": 1 },
+    "stats": {
+      "atk": 1
+    },
     "lore": "A dull edge and a steady grip. Enough for the first steps down.",
     "floorMin": 99,
     "spawnWeight": 0
@@ -74,7 +98,9 @@
     "rarity": "common",
     "spriteKey": "weapon_sword_iron",
     "slot": "weapon",
-    "stats": { "atk": 3 },
+    "stats": {
+      "atk": 3
+    },
     "lore": "Forged for someone who never came back.",
     "floorMin": 1,
     "spawnWeight": 8
@@ -86,7 +112,10 @@
     "rarity": "common",
     "spriteKey": "weapon_cleaver",
     "slot": "weapon",
-    "stats": { "atk": 2, "critBonus": 0.10 },
+    "stats": {
+      "atk": 2,
+      "critBonus": 0.1
+    },
     "lore": "Used for meat. Once.",
     "floorMin": 1,
     "spawnWeight": 7
@@ -98,8 +127,15 @@
     "rarity": "uncommon",
     "spriteKey": "weapon_hatchet_bone",
     "slot": "weapon",
-    "stats": { "atk": 3 },
-    "onHit": [{ "type": "lifesteal", "value": 0.15 }],
+    "stats": {
+      "atk": 3
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.15
+      }
+    ],
     "lore": "Hewn from a femur that disagreed.",
     "floorMin": 1,
     "spawnWeight": 5
@@ -111,7 +147,10 @@
     "rarity": "uncommon",
     "spriteKey": "weapon_mace",
     "slot": "weapon",
-    "stats": { "atk": 4, "critBonus": 0.05 },
+    "stats": {
+      "atk": 4,
+      "critBonus": 0.05
+    },
     "lore": "Heavy enough to forget elegance.",
     "floorMin": 2,
     "spawnWeight": 5
@@ -123,7 +162,9 @@
     "rarity": "uncommon",
     "spriteKey": "weapon_bow",
     "slot": "weapon",
-    "stats": { "atk": 4 },
+    "stats": {
+      "atk": 4
+    },
     "lore": "The string still smells of pine resin and patience.",
     "floorMin": 1,
     "spawnWeight": 4
@@ -135,8 +176,15 @@
     "rarity": "rare",
     "spriteKey": "weapon_dagger_red",
     "slot": "weapon",
-    "stats": { "atk": 2 },
-    "onHit": [{ "type": "lifesteal", "value": 0.30 }],
+    "stats": {
+      "atk": 2
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.3
+      }
+    ],
     "lore": "It drinks before you do.",
     "floorMin": 2,
     "spawnWeight": 3
@@ -148,8 +196,15 @@
     "rarity": "rare",
     "spriteKey": "weapon_scythe",
     "slot": "weapon",
-    "stats": { "atk": 5 },
-    "onHit": [{ "type": "lifesteal", "value": 0.20 }],
+    "stats": {
+      "atk": 5
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.2
+      }
+    ],
     "lore": "The harvest does not care for season.",
     "floorMin": 3,
     "spawnWeight": 2
@@ -161,7 +216,10 @@
     "rarity": "rare",
     "spriteKey": "weapon_brand",
     "slot": "weapon",
-    "stats": { "atk": 5, "critBonus": 0.05 },
+    "stats": {
+      "atk": 5,
+      "critBonus": 0.05
+    },
     "lore": "Still warm. Even when set down.",
     "floorMin": 3,
     "spawnWeight": 2
@@ -173,8 +231,16 @@
     "rarity": "rare",
     "spriteKey": "weapon_pick",
     "slot": "weapon",
-    "stats": { "atk": 4, "critBonus": 0.05 },
-    "onHit": [{ "type": "lifesteal", "value": 0.10 }],
+    "stats": {
+      "atk": 4,
+      "critBonus": 0.05
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.1
+      }
+    ],
     "lore": "Pulled from a glacier that no one mapped.",
     "floorMin": 2,
     "spawnWeight": 2
@@ -186,7 +252,10 @@
     "rarity": "rare",
     "spriteKey": "weapon_shard",
     "slot": "weapon",
-    "stats": { "atk": 6, "dex": -1 },
+    "stats": {
+      "atk": 6,
+      "dex": -1
+    },
     "lore": "All edge, no balance. Just like its owner was.",
     "floorMin": 3,
     "spawnWeight": 2
@@ -198,7 +267,10 @@
     "rarity": "epic",
     "spriteKey": "weapon_sword_mythril",
     "slot": "weapon",
-    "stats": { "atk": 6, "critBonus": 0.05 },
+    "stats": {
+      "atk": 6,
+      "critBonus": 0.05
+    },
     "lore": "Cold to the touch even in a hot hand.",
     "floorMin": 3,
     "spawnWeight": 2
@@ -210,12 +282,14 @@
     "rarity": "epic",
     "spriteKey": "weapon_rapier",
     "slot": "weapon",
-    "stats": { "atk": 5, "critBonus": 0.15 },
+    "stats": {
+      "atk": 5,
+      "critBonus": 0.15
+    },
     "lore": "Finds the gap. Always the gap.",
     "floorMin": 3,
     "spawnWeight": 1
   },
-
   "shortbow": {
     "id": "shortbow",
     "name": "Shortbow",
@@ -223,7 +297,10 @@
     "rarity": "common",
     "spriteKey": "weapon_bow",
     "slot": "weapon",
-    "stats": { "atk": 3, "attackRange": 5 },
+    "stats": {
+      "atk": 3,
+      "attackRange": 5
+    },
     "lore": "Light wood, lighter draw. The first lesson.",
     "floorMin": 1,
     "spawnWeight": 6
@@ -235,7 +312,10 @@
     "rarity": "uncommon",
     "spriteKey": "weapon_longbow",
     "slot": "weapon",
-    "stats": { "atk": 4, "attackRange": 7 },
+    "stats": {
+      "atk": 4,
+      "attackRange": 7
+    },
     "lore": "Made for someone with longer patience than arms.",
     "floorMin": 3,
     "spawnWeight": 4
@@ -247,7 +327,11 @@
     "rarity": "uncommon",
     "spriteKey": "weapon_throwaxe",
     "slot": "weapon",
-    "stats": { "atk": 4, "attackRange": 3, "critBonus": 0.05 },
+    "stats": {
+      "atk": 4,
+      "attackRange": 3,
+      "critBonus": 0.05
+    },
     "lore": "Comes back. Eventually. Sometimes.",
     "floorMin": 2,
     "spawnWeight": 4
@@ -259,7 +343,10 @@
     "rarity": "rare",
     "spriteKey": "weapon_crossbow",
     "slot": "weapon",
-    "stats": { "atk": 6, "attackRange": 6 },
+    "stats": {
+      "atk": 6,
+      "attackRange": 6
+    },
     "lore": "Loud as a curse, twice as final.",
     "floorMin": 5,
     "spawnWeight": 3
@@ -271,8 +358,16 @@
     "rarity": "rare",
     "spriteKey": "weapon_boomerang",
     "slot": "weapon",
-    "stats": { "atk": 3, "attackRange": 4 },
-    "onHit": [{ "type": "lifesteal", "value": 0.15 }],
+    "stats": {
+      "atk": 3,
+      "attackRange": 4
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.15
+      }
+    ],
     "lore": "Carved from something that always returned home.",
     "floorMin": 4,
     "spawnWeight": 3
@@ -284,12 +379,15 @@
     "rarity": "epic",
     "spriteKey": "weapon_voidbow",
     "slot": "weapon",
-    "stats": { "atk": 5, "attackRange": 6, "critBonus": 0.10 },
+    "stats": {
+      "atk": 5,
+      "attackRange": 6,
+      "critBonus": 0.1
+    },
     "lore": "Drawn without arrows. Arrives without warning.",
     "floorMin": 20,
     "spawnWeight": 1
   },
-
   "leather_cap": {
     "id": "leather_cap",
     "name": "Leather Cap",
@@ -297,7 +395,9 @@
     "rarity": "common",
     "spriteKey": "helm_leather",
     "slot": "helm",
-    "stats": { "def": 1 },
+    "stats": {
+      "def": 1
+    },
     "lore": "Better than the cold scalp of the dead.",
     "floorMin": 1,
     "spawnWeight": 6
@@ -309,7 +409,9 @@
     "rarity": "uncommon",
     "spriteKey": "helm_iron",
     "slot": "helm",
-    "stats": { "def": 2 },
+    "stats": {
+      "def": 2
+    },
     "lore": "Forged hot. Buried cold.",
     "floorMin": 2,
     "spawnWeight": 5
@@ -321,7 +423,10 @@
     "rarity": "rare",
     "spriteKey": "helm_hood",
     "slot": "helm",
-    "stats": { "def": 1, "dex": 2 },
+    "stats": {
+      "def": 1,
+      "dex": 2
+    },
     "lore": "Worn by those who preferred not to be seen praying.",
     "floorMin": 3,
     "spawnWeight": 3
@@ -333,7 +438,10 @@
     "rarity": "rare",
     "spriteKey": "helm_horned",
     "slot": "helm",
-    "stats": { "def": 2, "atk": 1 },
+    "stats": {
+      "def": 2,
+      "atk": 1
+    },
     "lore": "The horns were already there. The smith just framed them.",
     "floorMin": 8,
     "spawnWeight": 2
@@ -345,7 +453,11 @@
     "rarity": "epic",
     "spriteKey": "helm_crown",
     "slot": "helm",
-    "stats": { "def": 2, "critBonus": 0.05, "atk": 1 },
+    "stats": {
+      "def": 2,
+      "critBonus": 0.05,
+      "atk": 1
+    },
     "lore": "Pierces in. Pierces out.",
     "floorMin": 25,
     "spawnWeight": 1
@@ -357,12 +469,15 @@
     "rarity": "epic",
     "spriteKey": "helm_circlet",
     "slot": "helm",
-    "stats": { "def": 1, "dex": 3, "critBonus": 0.05 },
+    "stats": {
+      "def": 1,
+      "dex": 3,
+      "critBonus": 0.05
+    },
     "lore": "The wearer hears words. Some of them their own.",
     "floorMin": 40,
     "spawnWeight": 1
   },
-
   "tin_band": {
     "id": "tin_band",
     "name": "Tin Band",
@@ -370,7 +485,9 @@
     "rarity": "common",
     "spriteKey": "ring_tin",
     "slot": "ring",
-    "stats": { "atk": 1 },
+    "stats": {
+      "atk": 1
+    },
     "lore": "A token. Of what, nobody remembers.",
     "floorMin": 1,
     "spawnWeight": 6
@@ -382,7 +499,10 @@
     "rarity": "uncommon",
     "spriteKey": "ring_bone",
     "slot": "ring",
-    "stats": { "atk": 1, "critBonus": 0.05 },
+    "stats": {
+      "atk": 1,
+      "critBonus": 0.05
+    },
     "lore": "A family seal. A family that ended here.",
     "floorMin": 3,
     "spawnWeight": 4
@@ -394,7 +514,9 @@
     "rarity": "rare",
     "spriteKey": "ring_vigor",
     "slot": "ring",
-    "stats": { "hpMaxBonus": 8 },
+    "stats": {
+      "hpMaxBonus": 8
+    },
     "lore": "Warms the finger. Warms the heart, briefly.",
     "floorMin": 5,
     "spawnWeight": 3
@@ -406,7 +528,9 @@
     "rarity": "rare",
     "spriteKey": "ring_speed",
     "slot": "ring",
-    "stats": { "dex": 2 },
+    "stats": {
+      "dex": 2
+    },
     "lore": "The hand wearing it acts a moment before the thought.",
     "floorMin": 5,
     "spawnWeight": 3
@@ -418,7 +542,9 @@
     "rarity": "rare",
     "spriteKey": "ring_wards",
     "slot": "ring",
-    "stats": { "def": 2 },
+    "stats": {
+      "def": 2
+    },
     "lore": "Whispers no in the dark.",
     "floorMin": 10,
     "spawnWeight": 3
@@ -430,13 +556,21 @@
     "rarity": "epic",
     "spriteKey": "ring_called",
     "slot": "ring",
-    "stats": { "atk": 2, "def": 1, "critBonus": 0.05 },
-    "onHit": [{ "type": "lifesteal", "value": 0.10 }],
+    "stats": {
+      "atk": 2,
+      "def": 1,
+      "critBonus": 0.05
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.1
+      }
+    ],
     "lore": "Once worn by a king who answered.",
     "floorMin": 40,
     "spawnWeight": 1
   },
-
   "padded_tunic": {
     "id": "padded_tunic",
     "name": "Padded Tunic",
@@ -444,7 +578,10 @@
     "rarity": "common",
     "spriteKey": "armor_padded",
     "slot": "armor",
-    "stats": { "def": 1, "dex": 1 },
+    "stats": {
+      "def": 1,
+      "dex": 1
+    },
     "lore": "More comfortable than it looks. Less useful, too.",
     "floorMin": 1,
     "spawnWeight": 8
@@ -456,7 +593,9 @@
     "rarity": "common",
     "spriteKey": "armor_leather",
     "slot": "armor",
-    "stats": { "def": 2 },
+    "stats": {
+      "def": 2
+    },
     "lore": "Stitched by a tailor with no eye for fashion.",
     "floorMin": 1,
     "spawnWeight": 8
@@ -468,7 +607,9 @@
     "rarity": "uncommon",
     "spriteKey": "armor_scale",
     "slot": "armor",
-    "stats": { "def": 3 },
+    "stats": {
+      "def": 3
+    },
     "lore": "Scales overlapped by patient, dead hands.",
     "floorMin": 2,
     "spawnWeight": 5
@@ -480,7 +621,10 @@
     "rarity": "rare",
     "spriteKey": "armor_cloak",
     "slot": "armor",
-    "stats": { "def": 2, "dex": 2 },
+    "stats": {
+      "def": 2,
+      "dex": 2
+    },
     "lore": "Steps fall softer. So does sleep, eventually.",
     "floorMin": 2,
     "spawnWeight": 3
@@ -492,7 +636,10 @@
     "rarity": "rare",
     "spriteKey": "armor_plate",
     "slot": "armor",
-    "stats": { "def": 5, "dex": -1 },
+    "stats": {
+      "def": 5,
+      "dex": -1
+    },
     "lore": "Heavier than it looks. The previous wearer is, too, somewhere down here.",
     "floorMin": 2,
     "spawnWeight": 3
@@ -504,7 +651,9 @@
     "rarity": "rare",
     "spriteKey": "armor_bone",
     "slot": "armor",
-    "stats": { "def": 4 },
+    "stats": {
+      "def": 4
+    },
     "lore": "The ribs were not yours. They are now.",
     "floorMin": 3,
     "spawnWeight": 2
@@ -516,12 +665,14 @@
     "rarity": "epic",
     "spriteKey": "armor_robe",
     "slot": "armor",
-    "stats": { "def": 3, "dex": 2 },
+    "stats": {
+      "def": 3,
+      "dex": 2
+    },
     "lore": "Lighter than ash. Older than fire.",
     "floorMin": 3,
     "spawnWeight": 1
   },
-
   "sliver_of_the_heart": {
     "id": "sliver_of_the_heart",
     "name": "Sliver of the Heart",
@@ -529,7 +680,12 @@
     "rarity": "uncommon",
     "spriteKey": "crystal_pink",
     "stackable": false,
-    "effects": [{ "type": "maxHP", "value": 10 }],
+    "effects": [
+      {
+        "type": "maxHP",
+        "value": 10
+      }
+    ],
     "lore": "Small. Insistent. Yours now.",
     "floorMin": 1,
     "spawnWeight": 3
@@ -541,7 +697,12 @@
     "rarity": "rare",
     "spriteKey": "crystal_grey",
     "stackable": false,
-    "effects": [{ "type": "maxHP", "value": 15 }],
+    "effects": [
+      {
+        "type": "maxHP",
+        "value": 15
+      }
+    ],
     "lore": "A heart that learned to be stone.",
     "floorMin": 2,
     "spawnWeight": 2
@@ -553,12 +714,16 @@
     "rarity": "epic",
     "spriteKey": "crystal_red",
     "stackable": false,
-    "effects": [{ "type": "maxHP", "value": 20 }],
+    "effects": [
+      {
+        "type": "maxHP",
+        "value": 20
+      }
+    ],
     "lore": "Beats in time with something that should not be alive.",
     "floorMin": 2,
     "spawnWeight": 1
   },
-
   "crumpled_page": {
     "id": "crumpled_page",
     "name": "Crumpled Page",
@@ -567,7 +732,12 @@
     "spriteKey": "paper_torn",
     "stackable": true,
     "maxStack": 5,
-    "effects": [{ "type": "grantXP", "value": 20 }],
+    "effects": [
+      {
+        "type": "grantXP",
+        "value": 20
+      }
+    ],
     "lore": "Half a thought, badly preserved.",
     "floorMin": 1,
     "spawnWeight": 6
@@ -579,7 +749,12 @@
     "rarity": "rare",
     "spriteKey": "book_blue",
     "stackable": false,
-    "effects": [{ "type": "grantXP", "value": 50 }],
+    "effects": [
+      {
+        "type": "grantXP",
+        "value": 50
+      }
+    ],
     "lore": "The pages turn themselves when no one watches.",
     "floorMin": 1,
     "spawnWeight": 2
@@ -591,12 +766,16 @@
     "rarity": "epic",
     "spriteKey": "book_black",
     "stackable": false,
-    "effects": [{ "type": "grantXP", "value": 120 }],
+    "effects": [
+      {
+        "type": "grantXP",
+        "value": 120
+      }
+    ],
     "lore": "You do not read it. You let it read you.",
     "floorMin": 2,
     "spawnWeight": 1
   },
-
   "strength_elixir": {
     "id": "strength_elixir",
     "name": "Strength Elixir",
@@ -605,7 +784,14 @@
     "spriteKey": "potion_orange",
     "stackable": true,
     "maxStack": 3,
-    "effects": [{ "type": "applyStatus", "status": "atk_buff", "value": 3, "duration": 10 }],
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "atk_buff",
+        "value": 3,
+        "duration": 10
+      }
+    ],
     "lore": "Tastes like a brawl you survived.",
     "floorMin": 1,
     "spawnWeight": 5
@@ -618,7 +804,14 @@
     "spriteKey": "potion_blue",
     "stackable": true,
     "maxStack": 3,
-    "effects": [{ "type": "applyStatus", "status": "def_buff", "value": 3, "duration": 10 }],
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "def_buff",
+        "value": 3,
+        "duration": 10
+      }
+    ],
     "lore": "The skin remembers what the mind forgets.",
     "floorMin": 1,
     "spawnWeight": 5
@@ -631,7 +824,14 @@
     "spriteKey": "potion_dark_red",
     "stackable": true,
     "maxStack": 2,
-    "effects": [{ "type": "applyStatus", "status": "atk_buff", "value": 5, "duration": 6 }],
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "atk_buff",
+        "value": 5,
+        "duration": 6
+      }
+    ],
     "lore": "Six turns of clarity. Then the bill.",
     "floorMin": 2,
     "spawnWeight": 3
@@ -644,7 +844,14 @@
     "spriteKey": "potion_dark_blue",
     "stackable": true,
     "maxStack": 2,
-    "effects": [{ "type": "applyStatus", "status": "def_buff", "value": 5, "duration": 6 }],
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "def_buff",
+        "value": 5,
+        "duration": 6
+      }
+    ],
     "lore": "Drink. Stand. Mean it.",
     "floorMin": 2,
     "spawnWeight": 3
@@ -658,8 +865,18 @@
     "stackable": true,
     "maxStack": 2,
     "effects": [
-      { "type": "applyStatus", "status": "atk_buff", "value": 2, "duration": 8 },
-      { "type": "applyStatus", "status": "def_buff", "value": 2, "duration": 8 }
+      {
+        "type": "applyStatus",
+        "status": "atk_buff",
+        "value": 2,
+        "duration": 8
+      },
+      {
+        "type": "applyStatus",
+        "status": "def_buff",
+        "value": 2,
+        "duration": 8
+      }
     ],
     "lore": "The watchers drank it. The watchers stayed.",
     "floorMin": 2,
@@ -673,14 +890,23 @@
     "spriteKey": "potion_silver",
     "stackable": false,
     "effects": [
-      { "type": "applyStatus", "status": "atk_buff", "value": 1, "duration": 15 },
-      { "type": "applyStatus", "status": "def_buff", "value": 1, "duration": 15 }
+      {
+        "type": "applyStatus",
+        "status": "atk_buff",
+        "value": 1,
+        "duration": 15
+      },
+      {
+        "type": "applyStatus",
+        "status": "def_buff",
+        "value": 1,
+        "duration": 15
+      }
     ],
     "lore": "Slow, quiet, lasting. Like the dead.",
     "floorMin": 3,
     "spawnWeight": 1
   },
-
   "poison_vial": {
     "id": "poison_vial",
     "name": "Poison Vial",
@@ -691,7 +917,15 @@
     "maxStack": 5,
     "target": "tile",
     "range": 5,
-    "effects": [{ "type": "applyStatus", "status": "poison", "value": 2, "duration": 5, "stackable": true }],
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 2,
+        "duration": 5,
+        "stackable": true
+      }
+    ],
     "lore": "Slow. On purpose.",
     "floorMin": 1,
     "spawnWeight": 4
@@ -706,7 +940,15 @@
     "maxStack": 3,
     "target": "tile",
     "range": 5,
-    "effects": [{ "type": "applyStatus", "status": "poison", "value": 3, "duration": 4, "stackable": true }],
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 3,
+        "duration": 4,
+        "stackable": true
+      }
+    ],
     "lore": "Sealed in a hurry. Whoever sealed it was hopeful.",
     "floorMin": 2,
     "spawnWeight": 2
@@ -721,7 +963,15 @@
     "maxStack": 4,
     "target": "tile",
     "range": 4,
-    "effects": [{ "type": "applyStatus", "status": "poison", "value": 1, "duration": 8, "stackable": true }],
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 1,
+        "duration": 8,
+        "stackable": true
+      }
+    ],
     "lore": "Tiny. Patient. Inevitable.",
     "floorMin": 1,
     "spawnWeight": 3
@@ -736,7 +986,14 @@
     "maxStack": 3,
     "target": "tile",
     "range": 4,
-    "effects": [{ "type": "aoe_damage", "radius": 1, "value": 8, "friendlyFire": false }],
+    "effects": [
+      {
+        "type": "aoe_damage",
+        "radius": 1,
+        "value": 8,
+        "friendlyFire": false
+      }
+    ],
     "lore": "Hollow inside. Aren't we all.",
     "floorMin": 1,
     "spawnWeight": 4
@@ -751,7 +1008,14 @@
     "maxStack": 3,
     "target": "tile",
     "range": 4,
-    "effects": [{ "type": "aoe_damage", "radius": 1, "value": 15, "friendlyFire": true }],
+    "effects": [
+      {
+        "type": "aoe_damage",
+        "radius": 1,
+        "value": 15,
+        "friendlyFire": true
+      }
+    ],
     "lore": "Burns whatever it touches. You included.",
     "floorMin": 2,
     "spawnWeight": 3
@@ -766,7 +1030,14 @@
     "maxStack": 2,
     "target": "tile",
     "range": 4,
-    "effects": [{ "type": "aoe_damage", "radius": 2, "value": 12, "friendlyFire": true }],
+    "effects": [
+      {
+        "type": "aoe_damage",
+        "radius": 2,
+        "value": 12,
+        "friendlyFire": true
+      }
+    ],
     "lore": "A piece of what's underneath. Smaller than expected.",
     "floorMin": 3,
     "spawnWeight": 1
@@ -781,12 +1052,18 @@
     "maxStack": 2,
     "target": "tile",
     "range": 3,
-    "effects": [{ "type": "aoe_damage", "radius": 1, "value": 20, "friendlyFire": true }],
+    "effects": [
+      {
+        "type": "aoe_damage",
+        "radius": 1,
+        "value": 20,
+        "friendlyFire": true
+      }
+    ],
     "lore": "For when funeral rites can wait.",
     "floorMin": 3,
     "spawnWeight": 1
   },
-
   "scroll_of_mapping": {
     "id": "scroll_of_mapping",
     "name": "Scroll of Mapping",
@@ -795,7 +1072,11 @@
     "spriteKey": "scroll_yellow",
     "stackable": true,
     "maxStack": 3,
-    "effects": [{ "type": "revealFloor" }],
+    "effects": [
+      {
+        "type": "revealFloor"
+      }
+    ],
     "lore": "Whoever drew this map did not return for it.",
     "floorMin": 1,
     "spawnWeight": 3
@@ -808,7 +1089,11 @@
     "spriteKey": "scroll_white",
     "stackable": true,
     "maxStack": 3,
-    "effects": [{ "type": "revealFloor" }],
+    "effects": [
+      {
+        "type": "revealFloor"
+      }
+    ],
     "lore": "The future, briefly. Then the headache.",
     "floorMin": 1,
     "spawnWeight": 3
@@ -821,12 +1106,16 @@
     "spriteKey": "scroll_red",
     "stackable": true,
     "maxStack": 2,
-    "effects": [{ "type": "heal", "value": 60 }],
+    "effects": [
+      {
+        "type": "heal",
+        "value": 60
+      }
+    ],
     "lore": "Remembers a kinder body for you.",
     "floorMin": 2,
     "spawnWeight": 2
   },
-
   "revive_charm": {
     "id": "revive_charm",
     "name": "Revive Charm",
@@ -834,7 +1123,12 @@
     "rarity": "epic",
     "spriteKey": "charm_white",
     "stackable": false,
-    "effects": [{ "type": "autoReviveOnce", "healPct": 0.5 }],
+    "effects": [
+      {
+        "type": "autoReviveOnce",
+        "healPct": 0.5
+      }
+    ],
     "lore": "It will let you come back once. Once.",
     "floorMin": 2,
     "spawnWeight": 1
@@ -846,7 +1140,12 @@
     "rarity": "rare",
     "spriteKey": "charm_bone",
     "stackable": false,
-    "effects": [{ "type": "autoReviveOnce", "healPct": 0.5 }],
+    "effects": [
+      {
+        "type": "autoReviveOnce",
+        "healPct": 0.5
+      }
+    ],
     "lore": "Knuckles, drilled and strung. Yours, now.",
     "floorMin": 2,
     "spawnWeight": 2
@@ -859,11 +1158,1595 @@
     "spriteKey": "charm_twin",
     "stackable": false,
     "effects": [
-      { "type": "autoReviveOnce", "healPct": 0.5 },
-      { "type": "autoReviveOnce", "healPct": 0.5 }
+      {
+        "type": "autoReviveOnce",
+        "healPct": 0.5
+      },
+      {
+        "type": "autoReviveOnce",
+        "healPct": 0.5
+      }
     ],
     "lore": "Two breaths borrowed from a brother who couldn't use them.",
     "floorMin": 3,
+    "spawnWeight": 1
+  },
+  "legs_ashen_treads": {
+    "id": "legs_ashen_treads",
+    "name": "Ashen Treads",
+    "type": "legs",
+    "rarity": "common",
+    "spriteKey": "legs_grey",
+    "slot": "legs",
+    "stats": {
+      "def": 1,
+      "dex": 1
+    },
+    "lore": "Marked by floor 1, these greaves remember every retreat that became a charge.",
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "legs_iron_greaves": {
+    "id": "legs_iron_greaves",
+    "name": "Iron Greaves",
+    "type": "legs",
+    "rarity": "common",
+    "spriteKey": "legs_iron",
+    "slot": "legs",
+    "stats": {
+      "def": 1
+    },
+    "lore": "Marked by floor 6, these greaves remember every retreat that became a charge.",
+    "floorMin": 6,
+    "spawnWeight": 6
+  },
+  "legs_sable_boots": {
+    "id": "legs_sable_boots",
+    "name": "Sable Boots",
+    "type": "legs",
+    "rarity": "common",
+    "spriteKey": "legs_black",
+    "slot": "legs",
+    "stats": {
+      "def": 1
+    },
+    "lore": "Marked by floor 11, these greaves remember every retreat that became a charge.",
+    "floorMin": 11,
+    "spawnWeight": 6
+  },
+  "legs_mirewalkers": {
+    "id": "legs_mirewalkers",
+    "name": "Mirewalkers",
+    "type": "legs",
+    "rarity": "common",
+    "spriteKey": "legs_green",
+    "slot": "legs",
+    "stats": {
+      "def": 1
+    },
+    "lore": "Marked by floor 16, these greaves remember every retreat that became a charge.",
+    "floorMin": 16,
+    "spawnWeight": 6
+  },
+  "legs_pilgrim_wraps": {
+    "id": "legs_pilgrim_wraps",
+    "name": "Pilgrim Wraps",
+    "type": "legs",
+    "rarity": "uncommon",
+    "spriteKey": "legs_brown",
+    "slot": "legs",
+    "stats": {
+      "def": 1
+    },
+    "lore": "Marked by floor 21, these greaves remember every retreat that became a charge.",
+    "floorMin": 21,
+    "spawnWeight": 4
+  },
+  "legs_lantern_greaves": {
+    "id": "legs_lantern_greaves",
+    "name": "Lantern Greaves",
+    "type": "legs",
+    "rarity": "uncommon",
+    "spriteKey": "legs_yellow",
+    "slot": "legs",
+    "stats": {
+      "def": 2,
+      "dex": 1
+    },
+    "lore": "Marked by floor 26, these greaves remember every retreat that became a charge.",
+    "floorMin": 26,
+    "spawnWeight": 4
+  },
+  "legs_bone_spurs": {
+    "id": "legs_bone_spurs",
+    "name": "Bone Spurs",
+    "type": "legs",
+    "rarity": "uncommon",
+    "spriteKey": "legs_bone",
+    "slot": "legs",
+    "stats": {
+      "def": 2
+    },
+    "lore": "Marked by floor 31, these greaves remember every retreat that became a charge.",
+    "floorMin": 31,
+    "spawnWeight": 4
+  },
+  "legs_duskstep_boots": {
+    "id": "legs_duskstep_boots",
+    "name": "Duskstep Boots",
+    "type": "legs",
+    "rarity": "uncommon",
+    "spriteKey": "legs_purple",
+    "slot": "legs",
+    "stats": {
+      "def": 2
+    },
+    "lore": "Marked by floor 36, these greaves remember every retreat that became a charge.",
+    "floorMin": 36,
+    "spawnWeight": 4
+  },
+  "legs_riftstrider_sabatons": {
+    "id": "legs_riftstrider_sabatons",
+    "name": "Riftstrider Sabatons",
+    "type": "legs",
+    "rarity": "uncommon",
+    "spriteKey": "legs_blue",
+    "slot": "legs",
+    "stats": {
+      "def": 2
+    },
+    "lore": "Marked by floor 41, these greaves remember every retreat that became a charge.",
+    "floorMin": 41,
+    "spawnWeight": 4
+  },
+  "legs_graveknit_leggings": {
+    "id": "legs_graveknit_leggings",
+    "name": "Graveknit Leggings",
+    "type": "legs",
+    "rarity": "rare",
+    "spriteKey": "legs_grey",
+    "slot": "legs",
+    "stats": {
+      "def": 2
+    },
+    "lore": "Marked by floor 46, these greaves remember every retreat that became a charge.",
+    "floorMin": 46,
+    "spawnWeight": 2
+  },
+  "legs_thornbound_greaves": {
+    "id": "legs_thornbound_greaves",
+    "name": "Thornbound Greaves",
+    "type": "legs",
+    "rarity": "rare",
+    "spriteKey": "legs_green",
+    "slot": "legs",
+    "stats": {
+      "def": 3,
+      "dex": 1
+    },
+    "lore": "Marked by floor 51, these greaves remember every retreat that became a charge.",
+    "floorMin": 51,
+    "spawnWeight": 2
+  },
+  "legs_moonlit_spurs": {
+    "id": "legs_moonlit_spurs",
+    "name": "Moonlit Spurs",
+    "type": "legs",
+    "rarity": "rare",
+    "spriteKey": "legs_white",
+    "slot": "legs",
+    "stats": {
+      "def": 3,
+      "dex": -1
+    },
+    "lore": "Marked by floor 56, these greaves remember every retreat that became a charge.",
+    "floorMin": 56,
+    "spawnWeight": 2
+  },
+  "legs_emberwake_boots": {
+    "id": "legs_emberwake_boots",
+    "name": "Emberwake Boots",
+    "type": "legs",
+    "rarity": "rare",
+    "spriteKey": "legs_orange",
+    "slot": "legs",
+    "stats": {
+      "def": 3
+    },
+    "lore": "Marked by floor 61, these greaves remember every retreat that became a charge.",
+    "floorMin": 61,
+    "spawnWeight": 2
+  },
+  "legs_warden_sabatons": {
+    "id": "legs_warden_sabatons",
+    "name": "Warden Sabatons",
+    "type": "legs",
+    "rarity": "rare",
+    "spriteKey": "legs_silver",
+    "slot": "legs",
+    "stats": {
+      "def": 3
+    },
+    "lore": "Marked by floor 66, these greaves remember every retreat that became a charge.",
+    "floorMin": 66,
+    "spawnWeight": 2
+  },
+  "legs_nullstep_greaves": {
+    "id": "legs_nullstep_greaves",
+    "name": "Nullstep Greaves",
+    "type": "legs",
+    "rarity": "rare",
+    "spriteKey": "legs_black",
+    "slot": "legs",
+    "stats": {
+      "def": 3
+    },
+    "lore": "Marked by floor 71, these greaves remember every retreat that became a charge.",
+    "floorMin": 71,
+    "spawnWeight": 2
+  },
+  "legs_saintfall_treads": {
+    "id": "legs_saintfall_treads",
+    "name": "Saintfall Treads",
+    "type": "legs",
+    "rarity": "epic",
+    "spriteKey": "legs_yellow",
+    "slot": "legs",
+    "stats": {
+      "def": 4,
+      "dex": 1
+    },
+    "lore": "Marked by floor 76, these greaves remember every retreat that became a charge.",
+    "floorMin": 76,
+    "spawnWeight": 1
+  },
+  "legs_hollowstride_boots": {
+    "id": "legs_hollowstride_boots",
+    "name": "Hollowstride Boots",
+    "type": "legs",
+    "rarity": "epic",
+    "spriteKey": "legs_teal",
+    "slot": "legs",
+    "stats": {
+      "def": 4
+    },
+    "lore": "Marked by floor 81, these greaves remember every retreat that became a charge.",
+    "floorMin": 81,
+    "spawnWeight": 1
+  },
+  "legs_bloodroad_greaves": {
+    "id": "legs_bloodroad_greaves",
+    "name": "Bloodroad Greaves",
+    "type": "legs",
+    "rarity": "epic",
+    "spriteKey": "legs_crimson",
+    "slot": "legs",
+    "stats": {
+      "def": 4
+    },
+    "lore": "Marked by floor 86, these greaves remember every retreat that became a charge.",
+    "floorMin": 86,
+    "spawnWeight": 1
+  },
+  "legs_starless_sabatons": {
+    "id": "legs_starless_sabatons",
+    "name": "Starless Sabatons",
+    "type": "legs",
+    "rarity": "epic",
+    "spriteKey": "legs_dark_blue",
+    "slot": "legs",
+    "stats": {
+      "def": 4
+    },
+    "lore": "Marked by floor 91, these greaves remember every retreat that became a charge.",
+    "floorMin": 91,
+    "spawnWeight": 1
+  },
+  "legs_abyssal_legplates": {
+    "id": "legs_abyssal_legplates",
+    "name": "Abyssal Legplates",
+    "type": "legs",
+    "rarity": "epic",
+    "spriteKey": "legs_dark_red",
+    "slot": "legs",
+    "stats": {
+      "def": 5
+    },
+    "lore": "Marked by floor 96, these greaves remember every retreat that became a charge.",
+    "floorMin": 96,
+    "spawnWeight": 1
+  },
+  "necklace_bone_rosary": {
+    "id": "necklace_bone_rosary",
+    "name": "Bone Rosary",
+    "type": "necklace",
+    "rarity": "common",
+    "spriteKey": "necklace_bone",
+    "slot": "necklace",
+    "stats": {
+      "critBonus": 0.03
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "necklace_tin_reliquary": {
+    "id": "necklace_tin_reliquary",
+    "name": "Tin Reliquary",
+    "type": "necklace",
+    "rarity": "common",
+    "spriteKey": "necklace_tin",
+    "slot": "necklace",
+    "stats": {
+      "hpMaxBonus": 4
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 6,
+    "spawnWeight": 6
+  },
+  "necklace_cinder_locket": {
+    "id": "necklace_cinder_locket",
+    "name": "Cinder Locket",
+    "type": "necklace",
+    "rarity": "common",
+    "spriteKey": "necklace_orange",
+    "slot": "necklace",
+    "stats": {
+      "def": 1
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 11,
+    "spawnWeight": 6
+  },
+  "necklace_moonthread_necklace": {
+    "id": "necklace_moonthread_necklace",
+    "name": "Moonthread Necklace",
+    "type": "necklace",
+    "rarity": "common",
+    "spriteKey": "necklace_white",
+    "slot": "necklace",
+    "stats": {
+      "atk": 1
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 16,
+    "spawnWeight": 6
+  },
+  "necklace_vowchain": {
+    "id": "necklace_vowchain",
+    "name": "Vowchain",
+    "type": "necklace",
+    "rarity": "uncommon",
+    "spriteKey": "necklace_silver",
+    "slot": "necklace",
+    "stats": {
+      "critBonus": 0.03
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 21,
+    "spawnWeight": 4
+  },
+  "necklace_duskgem_collar": {
+    "id": "necklace_duskgem_collar",
+    "name": "Duskgem Collar",
+    "type": "necklace",
+    "rarity": "uncommon",
+    "spriteKey": "necklace_purple",
+    "slot": "necklace",
+    "stats": {
+      "hpMaxBonus": 6
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 26,
+    "spawnWeight": 4
+  },
+  "necklace_witchglass_pendant": {
+    "id": "necklace_witchglass_pendant",
+    "name": "Witchglass Pendant",
+    "type": "necklace",
+    "rarity": "uncommon",
+    "spriteKey": "necklace_green",
+    "slot": "necklace",
+    "stats": {
+      "def": 1
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 31,
+    "spawnWeight": 4
+  },
+  "necklace_blood_pearl_strand": {
+    "id": "necklace_blood_pearl_strand",
+    "name": "Blood Pearl Strand",
+    "type": "necklace",
+    "rarity": "uncommon",
+    "spriteKey": "necklace_crimson",
+    "slot": "necklace",
+    "stats": {
+      "atk": 1
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 36,
+    "spawnWeight": 4
+  },
+  "necklace_starless_amulet": {
+    "id": "necklace_starless_amulet",
+    "name": "Starless Amulet",
+    "type": "necklace",
+    "rarity": "uncommon",
+    "spriteKey": "necklace_dark_blue",
+    "slot": "necklace",
+    "stats": {
+      "critBonus": 0.05
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 41,
+    "spawnWeight": 4
+  },
+  "necklace_saints_ash_choker": {
+    "id": "necklace_saints_ash_choker",
+    "name": "Saints Ash Choker",
+    "type": "necklace",
+    "rarity": "rare",
+    "spriteKey": "necklace_grey",
+    "slot": "necklace",
+    "stats": {
+      "hpMaxBonus": 7
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 46,
+    "spawnWeight": 2
+  },
+  "necklace_rift_opal_necklace": {
+    "id": "necklace_rift_opal_necklace",
+    "name": "Rift Opal Necklace",
+    "type": "necklace",
+    "rarity": "rare",
+    "spriteKey": "necklace_teal",
+    "slot": "necklace",
+    "stats": {
+      "def": 2
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 51,
+    "spawnWeight": 2
+  },
+  "necklace_gravegold_chain": {
+    "id": "necklace_gravegold_chain",
+    "name": "Gravegold Chain",
+    "type": "necklace",
+    "rarity": "rare",
+    "spriteKey": "necklace_yellow",
+    "slot": "necklace",
+    "stats": {
+      "atk": 2
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 56,
+    "spawnWeight": 2
+  },
+  "necklace_whispering_torque": {
+    "id": "necklace_whispering_torque",
+    "name": "Whispering Torque",
+    "type": "necklace",
+    "rarity": "rare",
+    "spriteKey": "necklace_blue",
+    "slot": "necklace",
+    "stats": {
+      "critBonus": 0.05
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 61,
+    "spawnWeight": 2
+  },
+  "necklace_black_choir_pendant": {
+    "id": "necklace_black_choir_pendant",
+    "name": "Black Choir Pendant",
+    "type": "necklace",
+    "rarity": "rare",
+    "spriteKey": "necklace_black",
+    "slot": "necklace",
+    "stats": {
+      "hpMaxBonus": 9
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 66,
+    "spawnWeight": 2
+  },
+  "necklace_mourner_locket": {
+    "id": "necklace_mourner_locket",
+    "name": "Mourner Locket",
+    "type": "necklace",
+    "rarity": "rare",
+    "spriteKey": "necklace_brown",
+    "slot": "necklace",
+    "stats": {
+      "def": 2
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 71,
+    "spawnWeight": 2
+  },
+  "necklace_ember_saint_necklace": {
+    "id": "necklace_ember_saint_necklace",
+    "name": "Ember Saint Necklace",
+    "type": "necklace",
+    "rarity": "epic",
+    "spriteKey": "necklace_orange",
+    "slot": "necklace",
+    "stats": {
+      "atk": 2
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 76,
+    "spawnWeight": 1
+  },
+  "necklace_frostvein_pendant": {
+    "id": "necklace_frostvein_pendant",
+    "name": "Frostvein Pendant",
+    "type": "necklace",
+    "rarity": "epic",
+    "spriteKey": "necklace_blue",
+    "slot": "necklace",
+    "stats": {
+      "critBonus": 0.07
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 81,
+    "spawnWeight": 1
+  },
+  "necklace_oathbone_collar": {
+    "id": "necklace_oathbone_collar",
+    "name": "Oathbone Collar",
+    "type": "necklace",
+    "rarity": "epic",
+    "spriteKey": "necklace_bone",
+    "slot": "necklace",
+    "stats": {
+      "hpMaxBonus": 11
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 86,
+    "spawnWeight": 1
+  },
+  "necklace_night_crown_chain": {
+    "id": "necklace_night_crown_chain",
+    "name": "Night Crown Chain",
+    "type": "necklace",
+    "rarity": "epic",
+    "spriteKey": "necklace_purple",
+    "slot": "necklace",
+    "stats": {
+      "def": 3
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 91,
+    "spawnWeight": 1
+  },
+  "necklace_abyss_heart_amulet": {
+    "id": "necklace_abyss_heart_amulet",
+    "name": "Abyss Heart Amulet",
+    "type": "necklace",
+    "rarity": "epic",
+    "spriteKey": "necklace_crimson",
+    "slot": "necklace",
+    "stats": {
+      "atk": 3
+    },
+    "lore": "Worn close to the pulse, warmest when the dark begins to answer back.",
+    "floorMin": 96,
+    "spawnWeight": 1
+  },
+  "weapon_candleknife": {
+    "id": "weapon_candleknife",
+    "name": "Candleknife",
+    "type": "weapon",
+    "rarity": "common",
+    "spriteKey": "weapon_dagger_red",
+    "slot": "weapon",
+    "stats": {
+      "atk": 2,
+      "critBonus": 0.05
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.1
+      }
+    ],
+    "lore": "A little blade for carving names into locked doors.",
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "weapon_gravebar_saber": {
+    "id": "weapon_gravebar_saber",
+    "name": "Gravebar Saber",
+    "type": "weapon",
+    "rarity": "common",
+    "spriteKey": "weapon_sword_iron",
+    "slot": "weapon",
+    "stats": {
+      "atk": 2
+    },
+    "lore": "A duelist weapon ruined by burial soil.",
+    "floorMin": 6,
+    "spawnWeight": 6
+  },
+  "weapon_lantern_pike": {
+    "id": "weapon_lantern_pike",
+    "name": "Lantern Pike",
+    "type": "weapon",
+    "rarity": "common",
+    "spriteKey": "weapon_pick",
+    "slot": "weapon",
+    "stats": {
+      "atk": 2
+    },
+    "lore": "Its hook catches both armor and memory.",
+    "floorMin": 11,
+    "spawnWeight": 6
+  },
+  "weapon_briarthorn_axe": {
+    "id": "weapon_briarthorn_axe",
+    "name": "Briarthorn Axe",
+    "type": "weapon",
+    "rarity": "common",
+    "spriteKey": "weapon_hatchet_bone",
+    "slot": "weapon",
+    "stats": {
+      "atk": 3,
+      "critBonus": 0.05
+    },
+    "lore": "The handle bleeds sap when enemies are near.",
+    "floorMin": 16,
+    "spawnWeight": 6
+  },
+  "weapon_choir_mace": {
+    "id": "weapon_choir_mace",
+    "name": "Choir Mace",
+    "type": "weapon",
+    "rarity": "uncommon",
+    "spriteKey": "weapon_mace",
+    "slot": "weapon",
+    "stats": {
+      "atk": 3
+    },
+    "lore": "Every strike rings like a bell under water.",
+    "floorMin": 21,
+    "spawnWeight": 4
+  },
+  "weapon_mooncarved_bow": {
+    "id": "weapon_mooncarved_bow",
+    "name": "Mooncarved Bow",
+    "type": "weapon",
+    "rarity": "uncommon",
+    "spriteKey": "weapon_longbow",
+    "slot": "weapon",
+    "stats": {
+      "atk": 3,
+      "attackRange": 6
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.1
+      }
+    ],
+    "lore": "Its arrows favor targets that think they are hidden.",
+    "floorMin": 26,
+    "spawnWeight": 4
+  },
+  "weapon_pyre_brand": {
+    "id": "weapon_pyre_brand",
+    "name": "Pyre Brand",
+    "type": "weapon",
+    "rarity": "uncommon",
+    "spriteKey": "weapon_brand",
+    "slot": "weapon",
+    "stats": {
+      "atk": 4,
+      "critBonus": 0.05
+    },
+    "lore": "The edge glows only after it has been forgiven.",
+    "floorMin": 31,
+    "spawnWeight": 4
+  },
+  "weapon_hollow_crossbow": {
+    "id": "weapon_hollow_crossbow",
+    "name": "Hollow Crossbow",
+    "type": "weapon",
+    "rarity": "uncommon",
+    "spriteKey": "weapon_crossbow",
+    "slot": "weapon",
+    "stats": {
+      "atk": 4,
+      "attackRange": 5
+    },
+    "lore": "It clicks once for aim, once for judgement.",
+    "floorMin": 36,
+    "spawnWeight": 4
+  },
+  "weapon_rift_rapier": {
+    "id": "weapon_rift_rapier",
+    "name": "Rift Rapier",
+    "type": "weapon",
+    "rarity": "uncommon",
+    "spriteKey": "weapon_rapier",
+    "slot": "weapon",
+    "stats": {
+      "atk": 4
+    },
+    "lore": "Thin enough to pass between seconds.",
+    "floorMin": 41,
+    "spawnWeight": 4
+  },
+  "weapon_kingless_cleaver": {
+    "id": "weapon_kingless_cleaver",
+    "name": "Kingless Cleaver",
+    "type": "weapon",
+    "rarity": "rare",
+    "spriteKey": "weapon_cleaver",
+    "slot": "weapon",
+    "stats": {
+      "atk": 6,
+      "critBonus": 0.05
+    },
+    "lore": "Made for a feast that ended with no guests.",
+    "floorMin": 46,
+    "spawnWeight": 2
+  },
+  "weapon_oathbreaker_scythe": {
+    "id": "weapon_oathbreaker_scythe",
+    "name": "Oathbreaker Scythe",
+    "type": "weapon",
+    "rarity": "rare",
+    "spriteKey": "weapon_scythe",
+    "slot": "weapon",
+    "stats": {
+      "atk": 6
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.1
+      }
+    ],
+    "lore": "A harvest tool sharpened on betrayal.",
+    "floorMin": 51,
+    "spawnWeight": 2
+  },
+  "weapon_starseed_blade": {
+    "id": "weapon_starseed_blade",
+    "name": "Starseed Blade",
+    "type": "weapon",
+    "rarity": "rare",
+    "spriteKey": "weapon_sword_mythril",
+    "slot": "weapon",
+    "stats": {
+      "atk": 6
+    },
+    "lore": "It leaves blue afterimages in stale air.",
+    "floorMin": 56,
+    "spawnWeight": 2
+  },
+  "weapon_voidglass_throwaxe": {
+    "id": "weapon_voidglass_throwaxe",
+    "name": "Voidglass Throwaxe",
+    "type": "weapon",
+    "rarity": "rare",
+    "spriteKey": "weapon_throwaxe",
+    "slot": "weapon",
+    "stats": {
+      "atk": 7,
+      "attackRange": 4,
+      "critBonus": 0.05
+    },
+    "lore": "Returns only when it has heard your fear.",
+    "floorMin": 61,
+    "spawnWeight": 2
+  },
+  "weapon_saintfall_spear": {
+    "id": "weapon_saintfall_spear",
+    "name": "Saintfall Spear",
+    "type": "weapon",
+    "rarity": "rare",
+    "spriteKey": "weapon_spear",
+    "slot": "weapon",
+    "stats": {
+      "atk": 7
+    },
+    "lore": "Balanced for a warrior who prayed standing.",
+    "floorMin": 66,
+    "spawnWeight": 2
+  },
+  "weapon_abyssal_shardblade": {
+    "id": "weapon_abyssal_shardblade",
+    "name": "Abyssal Shardblade",
+    "type": "weapon",
+    "rarity": "rare",
+    "spriteKey": "weapon_shard",
+    "slot": "weapon",
+    "stats": {
+      "atk": 7
+    },
+    "lore": "It cuts light before it cuts flesh.",
+    "floorMin": 71,
+    "spawnWeight": 2
+  },
+  "weapon_ebon_longbow": {
+    "id": "weapon_ebon_longbow",
+    "name": "Ebon Longbow",
+    "type": "weapon",
+    "rarity": "epic",
+    "spriteKey": "weapon_voidbow",
+    "slot": "weapon",
+    "stats": {
+      "atk": 9,
+      "attackRange": 4,
+      "critBonus": 0.05
+    },
+    "onHit": [
+      {
+        "type": "lifesteal",
+        "value": 0.1
+      }
+    ],
+    "lore": "A bowstring pulled from the space between bells.",
+    "floorMin": 76,
+    "spawnWeight": 1
+  },
+  "weapon_iron_choir_flail": {
+    "id": "weapon_iron_choir_flail",
+    "name": "Iron Choir Flail",
+    "type": "weapon",
+    "rarity": "epic",
+    "spriteKey": "weapon_mace",
+    "slot": "weapon",
+    "stats": {
+      "atk": 9
+    },
+    "lore": "A brutal hymn in one hand.",
+    "floorMin": 81,
+    "spawnWeight": 1
+  },
+  "weapon_sundown_rapier": {
+    "id": "weapon_sundown_rapier",
+    "name": "Sundown Rapier",
+    "type": "weapon",
+    "rarity": "epic",
+    "spriteKey": "weapon_rapier",
+    "slot": "weapon",
+    "stats": {
+      "atk": 9
+    },
+    "lore": "The last orange line before night wins.",
+    "floorMin": 86,
+    "spawnWeight": 1
+  },
+  "weapon_cairn_splitter": {
+    "id": "weapon_cairn_splitter",
+    "name": "Cairn Splitter",
+    "type": "weapon",
+    "rarity": "epic",
+    "spriteKey": "weapon_cleaver",
+    "slot": "weapon",
+    "stats": {
+      "atk": 10,
+      "critBonus": 0.05
+    },
+    "lore": "Stone chips cling to its old edge.",
+    "floorMin": 91,
+    "spawnWeight": 1
+  },
+  "weapon_deepbrand_sword": {
+    "id": "weapon_deepbrand_sword",
+    "name": "Deepbrand Sword",
+    "type": "weapon",
+    "rarity": "epic",
+    "spriteKey": "weapon_sword_mythril",
+    "slot": "weapon",
+    "stats": {
+      "atk": 10
+    },
+    "lore": "A cold blade that brightens near stairs.",
+    "floorMin": 96,
+    "spawnWeight": 1
+  },
+  "helm_candlelit_sallet": {
+    "id": "helm_candlelit_sallet",
+    "name": "Candlelit Sallet",
+    "type": "helm",
+    "rarity": "common",
+    "spriteKey": "helm_iron",
+    "slot": "helm",
+    "stats": {
+      "def": 1
+    },
+    "lore": "A narrow helm with soot inside the visor.",
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "helm_mourner_crown": {
+    "id": "helm_mourner_crown",
+    "name": "Mourner Crown",
+    "type": "helm",
+    "rarity": "common",
+    "spriteKey": "helm_bone",
+    "slot": "helm",
+    "stats": {
+      "def": 1,
+      "critBonus": 0.03
+    },
+    "lore": "Not royal. Just heavy with grief.",
+    "floorMin": 7,
+    "spawnWeight": 6
+  },
+  "armor_sepulcher_coat": {
+    "id": "armor_sepulcher_coat",
+    "name": "Sepulcher Coat",
+    "type": "armor",
+    "rarity": "common",
+    "spriteKey": "armor_leather",
+    "slot": "armor",
+    "stats": {
+      "def": 2
+    },
+    "lore": "Layered hide that smells faintly of rain.",
+    "floorMin": 14,
+    "spawnWeight": 6
+  },
+  "armor_ash_warden_mail": {
+    "id": "armor_ash_warden_mail",
+    "name": "Ash Warden Mail",
+    "type": "armor",
+    "rarity": "uncommon",
+    "spriteKey": "armor_scale",
+    "slot": "armor",
+    "stats": {
+      "def": 3,
+      "dex": -1
+    },
+    "lore": "Scale links darkened by old fires.",
+    "floorMin": 21,
+    "spawnWeight": 4
+  },
+  "ring_ring_of_low_stars": {
+    "id": "ring_ring_of_low_stars",
+    "name": "Ring of Low Stars",
+    "type": "ring",
+    "rarity": "uncommon",
+    "spriteKey": "ring_called",
+    "slot": "ring",
+    "stats": {
+      "critBonus": 0.05
+    },
+    "lore": "The gem shows a sky no one has seen.",
+    "floorMin": 28,
+    "spawnWeight": 4
+  },
+  "ring_ring_of_bitter_vigor": {
+    "id": "ring_ring_of_bitter_vigor",
+    "name": "Ring of Bitter Vigor",
+    "type": "ring",
+    "rarity": "uncommon",
+    "spriteKey": "ring_vigor",
+    "slot": "ring",
+    "stats": {
+      "hpMaxBonus": 12
+    },
+    "lore": "It tightens whenever death gets ideas.",
+    "floorMin": 34,
+    "spawnWeight": 4
+  },
+  "helm_veilguard_hood": {
+    "id": "helm_veilguard_hood",
+    "name": "Veilguard Hood",
+    "type": "helm",
+    "rarity": "uncommon",
+    "spriteKey": "helm_cloth",
+    "slot": "helm",
+    "stats": {
+      "def": 1,
+      "dex": 1
+    },
+    "lore": "Soft cloth sewn with watcher knots.",
+    "floorMin": 41,
+    "spawnWeight": 4
+  },
+  "armor_obsidian_habit": {
+    "id": "armor_obsidian_habit",
+    "name": "Obsidian Habit",
+    "type": "armor",
+    "rarity": "rare",
+    "spriteKey": "armor_robe",
+    "slot": "armor",
+    "stats": {
+      "def": 2,
+      "critBonus": 0.04
+    },
+    "lore": "A robe that drinks torchlight.",
+    "floorMin": 48,
+    "spawnWeight": 2
+  },
+  "ring_ring_of_the_third_stair": {
+    "id": "ring_ring_of_the_third_stair",
+    "name": "Ring of the Third Stair",
+    "type": "ring",
+    "rarity": "rare",
+    "spriteKey": "ring_speed",
+    "slot": "ring",
+    "stats": {
+      "dex": 2
+    },
+    "lore": "It hums when a stairwell is near.",
+    "floorMin": 55,
+    "spawnWeight": 2
+  },
+  "armor_last_vigil_plate": {
+    "id": "armor_last_vigil_plate",
+    "name": "Last Vigil Plate",
+    "type": "armor",
+    "rarity": "rare",
+    "spriteKey": "armor_plate",
+    "slot": "armor",
+    "stats": {
+      "def": 5,
+      "dex": -1
+    },
+    "lore": "Built to hold the line after the line is gone.",
+    "floorMin": 62,
+    "spawnWeight": 2
+  },
+  "helm_deepwarden_barbute": {
+    "id": "helm_deepwarden_barbute",
+    "name": "Deepwarden Barbute",
+    "type": "helm",
+    "rarity": "rare",
+    "spriteKey": "helm_iron",
+    "slot": "helm",
+    "stats": {
+      "def": 3
+    },
+    "lore": "Its mouth slit is shaped like a locked gate.",
+    "floorMin": 68,
+    "spawnWeight": 2
+  },
+  "armor_moon_eaten_cloak": {
+    "id": "armor_moon_eaten_cloak",
+    "name": "Moon-Eaten Cloak",
+    "type": "armor",
+    "rarity": "rare",
+    "spriteKey": "armor_cloak",
+    "slot": "armor",
+    "stats": {
+      "def": 2,
+      "dex": 1
+    },
+    "lore": "A cloak that moves half a breath late.",
+    "floorMin": 75,
+    "spawnWeight": 2
+  },
+  "ring_ring_of_quiet_bells": {
+    "id": "ring_ring_of_quiet_bells",
+    "name": "Ring of Quiet Bells",
+    "type": "ring",
+    "rarity": "epic",
+    "spriteKey": "ring_wards",
+    "slot": "ring",
+    "stats": {
+      "def": 2
+    },
+    "lore": "You feel the impact before hearing it.",
+    "floorMin": 82,
+    "spawnWeight": 1
+  },
+  "helm_sable_saint_mask": {
+    "id": "helm_sable_saint_mask",
+    "name": "Sable Saint Mask",
+    "type": "helm",
+    "rarity": "epic",
+    "spriteKey": "helm_cloth",
+    "slot": "helm",
+    "stats": {
+      "def": 2,
+      "critBonus": 0.04
+    },
+    "lore": "A saint wore it once. The stain disagrees.",
+    "floorMin": 89,
+    "spawnWeight": 1
+  },
+  "armor_abyss_tempered_plate": {
+    "id": "armor_abyss_tempered_plate",
+    "name": "Abyss Tempered Plate",
+    "type": "armor",
+    "rarity": "epic",
+    "spriteKey": "armor_plate",
+    "slot": "armor",
+    "stats": {
+      "def": 6,
+      "dex": -2
+    },
+    "lore": "Too heavy for fear to shake loose.",
+    "floorMin": 96,
+    "spawnWeight": 1
+  },
+  "consumable_lantern_sap": {
+    "id": "consumable_lantern_sap",
+    "name": "Lantern Sap",
+    "type": "consumable",
+    "rarity": "common",
+    "spriteKey": "potion_yellow",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "heal",
+        "value": 24
+      }
+    ],
+    "lore": "Sticky light that seals shallow wounds.",
+    "floorMin": 1,
+    "spawnWeight": 7
+  },
+  "consumable_blackroot_tonic": {
+    "id": "consumable_blackroot_tonic",
+    "name": "Blackroot Tonic",
+    "type": "consumable",
+    "rarity": "common",
+    "spriteKey": "potion_dark_green",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "def_buff",
+        "value": 2,
+        "duration": 8
+      }
+    ],
+    "lore": "Tastes like soil under a grave marker.",
+    "floorMin": 7,
+    "spawnWeight": 7
+  },
+  "consumable_saints_breath": {
+    "id": "consumable_saints_breath",
+    "name": "Saints Breath",
+    "type": "consumable",
+    "rarity": "common",
+    "spriteKey": "vial_white",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "heal",
+        "value": 45
+      }
+    ],
+    "lore": "A clear vial that fogs when held by liars.",
+    "floorMin": 14,
+    "spawnWeight": 7
+  },
+  "consumable_war_ash_elixir": {
+    "id": "consumable_war_ash_elixir",
+    "name": "War Ash Elixir",
+    "type": "consumable",
+    "rarity": "uncommon",
+    "spriteKey": "potion_orange",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "atk_buff",
+        "value": 2,
+        "duration": 8
+      }
+    ],
+    "lore": "Bites the tongue and steadies the hand.",
+    "floorMin": 21,
+    "spawnWeight": 5
+  },
+  "consumable_moonmilk_flask": {
+    "id": "consumable_moonmilk_flask",
+    "name": "Moonmilk Flask",
+    "type": "consumable",
+    "rarity": "uncommon",
+    "spriteKey": "potion_blue",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "maxHP",
+        "value": 4
+      }
+    ],
+    "lore": "Pale and sweet, like mercy remembered wrong.",
+    "floorMin": 28,
+    "spawnWeight": 5
+  },
+  "consumable_scribe_xp_draught": {
+    "id": "consumable_scribe_xp_draught",
+    "name": "Scribe XP Draught",
+    "type": "consumable",
+    "rarity": "uncommon",
+    "spriteKey": "vial_teal",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "grantXP",
+        "value": 80
+      }
+    ],
+    "lore": "Words dissolve into courage.",
+    "floorMin": 34,
+    "spawnWeight": 5
+  },
+  "consumable_gravewater": {
+    "id": "consumable_gravewater",
+    "name": "Gravewater",
+    "type": "consumable",
+    "rarity": "uncommon",
+    "spriteKey": "potion_grey",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "heal",
+        "value": 60
+      }
+    ],
+    "lore": "Cold enough to make pain step back.",
+    "floorMin": 41,
+    "spawnWeight": 5
+  },
+  "consumable_prophets_ink": {
+    "id": "consumable_prophets_ink",
+    "name": "Prophets Ink",
+    "type": "consumable",
+    "rarity": "rare",
+    "spriteKey": "vial_purple",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "revealFloor"
+      }
+    ],
+    "lore": "The dungeon briefly forgets how to hide.",
+    "floorMin": 48,
+    "spawnWeight": 3
+  },
+  "consumable_bloodwarm_phial": {
+    "id": "consumable_bloodwarm_phial",
+    "name": "Bloodwarm Phial",
+    "type": "consumable",
+    "rarity": "rare",
+    "spriteKey": "potion_crimson",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "heal",
+        "value": 80
+      },
+      {
+        "type": "applyStatus",
+        "status": "atk_buff",
+        "value": 2,
+        "duration": 6
+      }
+    ],
+    "lore": "Too hot for glass, too useful to refuse.",
+    "floorMin": 55,
+    "spawnWeight": 3
+  },
+  "consumable_eclipse_cordial": {
+    "id": "consumable_eclipse_cordial",
+    "name": "Eclipse Cordial",
+    "type": "consumable",
+    "rarity": "rare",
+    "spriteKey": "potion_black",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "heal",
+        "value": 100
+      },
+      {
+        "type": "maxHP",
+        "value": 3
+      }
+    ],
+    "lore": "For one swallow, the dark calls you kin.",
+    "floorMin": 62,
+    "spawnWeight": 3
+  },
+  "consumable_torchmilk": {
+    "id": "consumable_torchmilk",
+    "name": "Torchmilk",
+    "type": "consumable",
+    "rarity": "rare",
+    "spriteKey": "potion_white",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "heal",
+        "value": 36
+      }
+    ],
+    "lore": "It glows under the tongue.",
+    "floorMin": 68,
+    "spawnWeight": 3
+  },
+  "consumable_gutter_saint_tonic": {
+    "id": "consumable_gutter_saint_tonic",
+    "name": "Gutter Saint Tonic",
+    "type": "consumable",
+    "rarity": "rare",
+    "spriteKey": "potion_brown",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "def_buff",
+        "value": 3,
+        "duration": 6
+      }
+    ],
+    "lore": "Faith, mud, and something stronger.",
+    "floorMin": 75,
+    "spawnWeight": 3
+  },
+  "consumable_kingsroot_draught": {
+    "id": "consumable_kingsroot_draught",
+    "name": "Kingsroot Draught",
+    "type": "consumable",
+    "rarity": "epic",
+    "spriteKey": "vial_green",
+    "stackable": true,
+    "maxStack": 1,
+    "effects": [
+      {
+        "type": "maxHP",
+        "value": 6
+      }
+    ],
+    "lore": "A root that grew around a buried crown.",
+    "floorMin": 82,
+    "spawnWeight": 2
+  },
+  "consumable_veilwater": {
+    "id": "consumable_veilwater",
+    "name": "Veilwater",
+    "type": "consumable",
+    "rarity": "epic",
+    "spriteKey": "potion_teal",
+    "stackable": true,
+    "maxStack": 1,
+    "effects": [
+      {
+        "type": "grantXP",
+        "value": 160
+      }
+    ],
+    "lore": "It teaches without speaking.",
+    "floorMin": 89,
+    "spawnWeight": 2
+  },
+  "consumable_last_ember_cordial": {
+    "id": "consumable_last_ember_cordial",
+    "name": "Last Ember Cordial",
+    "type": "consumable",
+    "rarity": "epic",
+    "spriteKey": "potion_red_large",
+    "stackable": true,
+    "maxStack": 1,
+    "effects": [
+      {
+        "type": "heal",
+        "value": 130
+      }
+    ],
+    "lore": "A final warmth saved in glass.",
+    "floorMin": 96,
+    "spawnWeight": 2
+  },
+  "throwable_cinder_bomb": {
+    "id": "throwable_cinder_bomb",
+    "name": "Cinder Bomb",
+    "type": "throwable",
+    "rarity": "common",
+    "spriteKey": "bomb_red",
+    "stackable": true,
+    "maxStack": 3,
+    "target": "tile",
+    "range": 5,
+    "effects": [
+      {
+        "type": "aoe_damage",
+        "value": 18,
+        "radius": 1,
+        "friendlyFire": true
+      }
+    ],
+    "lore": "The fuse whispers old prayers backward.",
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "throwable_glass_sun_grenade": {
+    "id": "throwable_glass_sun_grenade",
+    "name": "Glass Sun Grenade",
+    "type": "throwable",
+    "rarity": "uncommon",
+    "spriteKey": "bomb_white",
+    "stackable": true,
+    "maxStack": 3,
+    "target": "tile",
+    "range": 5,
+    "effects": [
+      {
+        "type": "aoe_damage",
+        "value": 24,
+        "radius": 1,
+        "friendlyFire": true
+      }
+    ],
+    "lore": "A little sunrise with no mercy.",
+    "floorMin": 24,
+    "spawnWeight": 4
+  },
+  "throwable_mire_flask": {
+    "id": "throwable_mire_flask",
+    "name": "Mire Flask",
+    "type": "throwable",
+    "rarity": "rare",
+    "spriteKey": "vial_dark_green",
+    "stackable": true,
+    "maxStack": 3,
+    "target": "tile",
+    "range": 5,
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 3,
+        "duration": 5
+      }
+    ],
+    "lore": "It breaks, and the floor starts breathing.",
+    "floorMin": 48,
+    "spawnWeight": 2
+  },
+  "throwable_starfall_charge": {
+    "id": "throwable_starfall_charge",
+    "name": "Starfall Charge",
+    "type": "throwable",
+    "rarity": "rare",
+    "spriteKey": "bomb_purple",
+    "stackable": true,
+    "maxStack": 3,
+    "target": "tile",
+    "range": 5,
+    "effects": [
+      {
+        "type": "aoe_damage",
+        "value": 34,
+        "radius": 2,
+        "friendlyFire": true
+      }
+    ],
+    "lore": "Brief, beautiful, and unwise indoors.",
+    "floorMin": 72,
+    "spawnWeight": 2
+  },
+  "throwable_bell_iron_bomb": {
+    "id": "throwable_bell_iron_bomb",
+    "name": "Bell Iron Bomb",
+    "type": "throwable",
+    "rarity": "epic",
+    "spriteKey": "bomb_grey",
+    "stackable": true,
+    "maxStack": 3,
+    "target": "tile",
+    "range": 5,
+    "effects": [
+      {
+        "type": "aoe_damage",
+        "value": 40,
+        "radius": 1,
+        "friendlyFire": true
+      }
+    ],
+    "lore": "The blast leaves a ringing shape in the air.",
+    "floorMin": 96,
+    "spawnWeight": 1
+  },
+  "charm_charred_saints_finger": {
+    "id": "charm_charred_saints_finger",
+    "name": "Charred Saints Finger",
+    "type": "passive",
+    "rarity": "common",
+    "spriteKey": "charm_bone",
+    "stackable": false,
+    "effects": [
+      {
+        "type": "autoReviveOnce"
+      }
+    ],
+    "lore": "A last chance curled into ash.",
+    "floorMin": 1,
+    "spawnWeight": 6
+  },
+  "charm_pocket_reliquary": {
+    "id": "charm_pocket_reliquary",
+    "name": "Pocket Reliquary",
+    "type": "passive",
+    "rarity": "uncommon",
+    "spriteKey": "charm_white",
+    "stackable": false,
+    "effects": [
+      {
+        "type": "maxHP",
+        "value": 6
+      }
+    ],
+    "lore": "It clicks shut whenever something unseen passes.",
+    "floorMin": 24,
+    "spawnWeight": 4
+  },
+  "charm_twin_moth_sigil": {
+    "id": "charm_twin_moth_sigil",
+    "name": "Twin Moth Sigil",
+    "type": "passive",
+    "rarity": "rare",
+    "spriteKey": "charm_twin",
+    "stackable": false,
+    "effects": [
+      {
+        "type": "grantXP",
+        "value": 120
+      }
+    ],
+    "lore": "Two wings, one shadow.",
+    "floorMin": 48,
+    "spawnWeight": 2
+  },
+  "charm_black_choir_page": {
+    "id": "charm_black_choir_page",
+    "name": "Black Choir Page",
+    "type": "passive",
+    "rarity": "rare",
+    "spriteKey": "book_black",
+    "stackable": false,
+    "effects": [
+      {
+        "type": "applyStatus",
+        "status": "def_buff",
+        "value": 3,
+        "duration": 10
+      }
+    ],
+    "lore": "The notation hurts to read aloud.",
+    "floorMin": 72,
+    "spawnWeight": 2
+  },
+  "charm_map_of_the_sleeping_deep": {
+    "id": "charm_map_of_the_sleeping_deep",
+    "name": "Map of the Sleeping Deep",
+    "type": "passive",
+    "rarity": "epic",
+    "spriteKey": "paper_torn",
+    "stackable": false,
+    "effects": [
+      {
+        "type": "revealFloor"
+      }
+    ],
+    "lore": "The ink rearranges when you blink.",
+    "floorMin": 96,
     "spawnWeight": 1
   }
 }

@@ -65,7 +65,8 @@ export class InventoryUI {
     if (!item) return null;
     const t = item.type || '';
     if (t === 'weapon')     return 'arms';
-    if (t === 'armor' || t === 'helm' || t === 'ring') return 'garb';
+    if (t === 'armor' || t === 'helm' || t === 'legs' ||
+        t === 'necklace' || t === 'ring') return 'garb';
     if (t === 'throwable')  return 'thrown';
     if (t === 'passive')    return 'charms';
     if (t === 'consumable') return 'phial';
@@ -380,7 +381,8 @@ export class InventoryUI {
         family: FONT_DISPLAY, color: COLOR.textMuted });
     // Equipped chip.
     if ((sel === player.weapon) || (sel === player.armor) ||
-        (sel === player.helm)   || (sel === player.ring)) {
+        (sel === player.helm)   || (sel === player.legs) ||
+        (sel === player.necklace) || (sel === player.ring)) {
       r.drawText('EQUIPPED', textX + rarityW + 100, chipY + 8,
         { size: 9, bold: true, baseline: 'middle',
           family: FONT_DISPLAY, color: COLOR.gold });
@@ -397,7 +399,8 @@ export class InventoryUI {
     const buttons = this._buttonLayout();
     const sel = this._selectedItem(player);
     const isEquipped = sel && (sel === player.weapon || sel === player.armor ||
-                                sel === player.helm   || sel === player.ring);
+                                sel === player.helm   || sel === player.legs ||
+                                sel === player.necklace || sel === player.ring);
     const labels = [
       { text: !sel ? 'USE' : (sel.slot ? (isEquipped ? 'EQUIP' : 'EQUIP') : 'USE'),
         enabled: !!sel },

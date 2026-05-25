@@ -29,6 +29,7 @@ export class Player extends Entity {
     this.gold = p.startGold;
     this.xp = 0;
     this.level = 1;
+    this.maxLevel = balance.progression.maxLevel || 99;
     this.inventory = inventory;
     /** @type {object|null} item instance currently equipped in weapon slot */
     this.weapon = null;
@@ -36,6 +37,10 @@ export class Player extends Entity {
     this.armor = null;
     /** @type {object|null} headgear — separate slot from torso armor */
     this.helm = null;
+    /** @type {object|null} greaves / boots — legwear defensive slot */
+    this.legs = null;
+    /** @type {object|null} necklace — second accessory slot */
+    this.necklace = null;
     /** @type {object|null} accessory ring — small flexible stat bumps */
     this.ring = null;
 
@@ -132,6 +137,7 @@ export class Player extends Entity {
 
   // --- progression ----------------------------------------------------
   xpToNext() {
+    if (this.level >= this.maxLevel) return Infinity;
     const { xpBase, xpExponent } = this.balance.progression;
     return Math.floor(xpBase * Math.pow(this.level, xpExponent));
   }
@@ -143,15 +149,17 @@ export class Player extends Entity {
    */
   gainXP(amount) {
     if (this.isDead || amount <= 0) return 0;
+    if (this.level >= this.maxLevel) return 0;
     const adjusted = Math.floor(amount * (this.xpMultiplier || 1));
     this.xp += adjusted;
     this.runStats.xpGained += adjusted;
     let gained = 0;
-    while (this.xp >= this.xpToNext()) {
+    while (this.level < this.maxLevel && this.xp >= this.xpToNext()) {
       this.xp -= this.xpToNext();
       this._levelUp();
       gained++;
     }
+    if (this.level >= this.maxLevel) this.xp = 0;
     return gained;
   }
 
@@ -161,6 +169,7 @@ export class Player extends Entity {
   }
 
   _levelUp() {
+    if (this.level >= this.maxLevel) return;
     const p = this.balance.progression;
     this.level += 1;
     this.stats.hpMax += p.hpPerLevel;
@@ -176,7 +185,7 @@ export class Player extends Entity {
   // --- equipment ------------------------------------------------------
   /**
    * Equip an item, swapping anything already in that slot back into inventory.
-   * Supports four slot kinds: weapon, armor, helm, ring.
+   * Supports six slot kinds: weapon, armor, helm, legs, necklace, ring.
    * @returns {object|null} the displaced item, or null
    */
   equip(item) {
@@ -186,6 +195,8 @@ export class Player extends Entity {
     if      (slot === 'weapon') { prev = this.weapon; this.weapon = item; }
     else if (slot === 'armor')  { prev = this.armor;  this.armor  = item; }
     else if (slot === 'helm')   { prev = this.helm;   this.helm   = item; }
+    else if (slot === 'legs')   { prev = this.legs;   this.legs   = item; }
+    else if (slot === 'necklace') { prev = this.necklace; this.necklace = item; }
     else if (slot === 'ring')   { prev = this.ring;   this.ring   = item; }
     else return null;
     // Static stat side-effects (e.g. Plated Mail -1 DEX) apply on equip.
@@ -203,9 +214,9 @@ export class Player extends Entity {
     return prev;
   }
 
-  /** All four equipment pieces as an array (filters nulls). */
+  /** All equipment pieces as an array (filters nulls). */
   equippedPieces() {
-    return [this.weapon, this.armor, this.helm, this.ring].filter(Boolean);
+    return [this.weapon, this.armor, this.helm, this.legs, this.necklace, this.ring].filter(Boolean);
   }
 
   /** Sprite key for dungeon / UI portrait (sword, bow, mace, etc.). */

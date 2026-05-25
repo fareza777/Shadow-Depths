@@ -516,6 +516,28 @@ export class SpriteRegistry {
     } else if (key.startsWith('armor_')) {
       fillRect(ctx, x + s * 0.25, y + s * 0.25, s * 0.5, s * 0.55, tint);
       fillRect(ctx, x + s * 0.35, y + s * 0.2, s * 0.3, s * 0.1, tint);
+    } else if (key.startsWith('legs_')) {
+      fillRect(ctx, x + s * 0.28, y + s * 0.24, s * 0.18, s * 0.52, tint);
+      fillRect(ctx, x + s * 0.54, y + s * 0.24, s * 0.18, s * 0.52, tint);
+      fillRect(ctx, x + s * 0.24, y + s * 0.74, s * 0.24, s * 0.12, '#2a1e18');
+      fillRect(ctx, x + s * 0.52, y + s * 0.74, s * 0.24, s * 0.12, '#2a1e18');
+      fillRect(ctx, x + s * 0.3, y + s * 0.28, s * 0.13, s * 0.12, '#ffffff44');
+      fillRect(ctx, x + s * 0.56, y + s * 0.28, s * 0.13, s * 0.12, '#ffffff44');
+    } else if (key.startsWith('necklace_') || key.startsWith('amulet_')) {
+      ctx.strokeStyle = '#d4be7a';
+      ctx.lineWidth = Math.max(1, Math.floor(s * 0.05));
+      ctx.beginPath();
+      ctx.arc(x + s * 0.5, y + s * 0.36, s * 0.24, Math.PI * 0.15, Math.PI * 0.85);
+      ctx.stroke();
+      ctx.fillStyle = tint;
+      ctx.beginPath();
+      ctx.moveTo(x + s * 0.5, y + s * 0.46);
+      ctx.lineTo(x + s * 0.66, y + s * 0.62);
+      ctx.lineTo(x + s * 0.5, y + s * 0.8);
+      ctx.lineTo(x + s * 0.34, y + s * 0.62);
+      ctx.closePath();
+      ctx.fill();
+      fillRect(ctx, x + s * 0.45, y + s * 0.52, s * 0.1, s * 0.08, '#ffffff66');
     } else if (key.startsWith('potion_') || key.startsWith('vial_')) {
       fillRect(ctx, x + s * 0.35, y + s * 0.2, s * 0.3, s * 0.1, '#5a3a1a'); // cork
       fillRect(ctx, x + s * 0.3, y + s * 0.3, s * 0.4, s * 0.5, tint);

@@ -20,6 +20,7 @@ export const DEFAULT_BALANCE = Object.freeze({
 
   // Level-up: xpNeeded = xpBase * (level ^ xpExponent)
   progression: {
+    maxLevel: 99,
     xpBase: 50,
     xpExponent: 1.5,
     hpPerLevel: 5,

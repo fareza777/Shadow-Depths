@@ -271,6 +271,8 @@ export function defaultTintForKey(key) {
   if (key.startsWith('potion_') || key.startsWith('vial_')) return '#c84868';
   if (key.startsWith('armor_')) return '#8a8078';
   if (key.startsWith('helm_')) return '#9a94a8';
+  if (key.startsWith('legs_')) return '#8a8078';
+  if (key.startsWith('necklace_') || key.startsWith('amulet_')) return '#d4be7a';
   if (key.startsWith('ring_')) return '#d4be7a';
   if (key.startsWith('scroll_') || key.startsWith('paper_')) return '#d8c890';
   if (key.startsWith('bomb_')) return '#808890';

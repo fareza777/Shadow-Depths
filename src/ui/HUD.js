@@ -43,10 +43,11 @@ export class HUD {
       { size: uiSize(13), bold: true, family: FONT_MONO });
 
     const xpNeed = p.xpToNext();
-    r.drawBar(8, TOP_PAD + 22, barW, 10, p.xp, xpNeed, COLOR.xpBar, COLOR.xpBarBg);
+    const xpMaxed = !Number.isFinite(xpNeed);
+    r.drawBar(8, TOP_PAD + 22, barW, 10, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
     r.drawText(`Lv ${p.level}`, 12, TOP_PAD + 22,
       { size: uiSize(11), bold: true, family: FONT_MONO });
-    r.drawText(`${p.xp}/${xpNeed} XP`, CANVAS_WIDTH - 12, TOP_PAD + 22,
+    r.drawText(xpMaxed ? 'MAX XP' : `${p.xp}/${xpNeed} XP`, CANVAS_WIDTH - 12, TOP_PAD + 22,
       { size: uiSize(11), bold: true, align: 'right', family: FONT_MONO });
 
     const atk = p.totalAtk();

@@ -558,6 +558,8 @@ export class GameScene {
     const current = slot === 'weapon' ? player.weapon
                   : slot === 'armor'  ? player.armor
                   : slot === 'helm'   ? player.helm
+                  : slot === 'legs'   ? player.legs
+                  : slot === 'necklace' ? player.necklace
                   : slot === 'ring'   ? player.ring
                   : null;
     if (!current) return;
@@ -574,6 +576,8 @@ export class GameScene {
     if (slot === 'weapon') player.weapon = null;
     else if (slot === 'armor') player.armor = null;
     else if (slot === 'helm') player.helm = null;
+    else if (slot === 'legs') player.legs = null;
+    else if (slot === 'necklace') player.necklace = null;
     else if (slot === 'ring') player.ring = null;
     player.inventory.add(current);
     this.bus.emit('player:unequipped', { item: current, slot });

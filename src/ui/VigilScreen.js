@@ -7,7 +7,7 @@
  *   3. Big HP bar with numeric.
  *   4. Stat grid: ATTACK · DEFENSE · DEXTERITY · CRIT · LIFESTEAL · TORCH.
  *   5. Boons & Afflictions chip row (active status effects).
- *   6. Equipment card list — one card per slot (Weapon, Helm, Armor, Ring).
+ *   6. Equipment card list — one card per equipment slot.
  *      Each card has the piece name, stats, lore, and UNEQUIP button.
  *
  * Opened from in-game via a new "VIGIL" tap on the inventory action row
@@ -93,6 +93,8 @@ export class VigilScreen {
       { slot: 'weapon', label: 'WEAPON',  item: player.weapon },
       { slot: 'helm',   label: 'HELM',    item: player.helm },
       { slot: 'armor',  label: 'ARMOR',   item: player.armor },
+      { slot: 'legs',   label: 'LEGS',    item: player.legs },
+      { slot: 'necklace', label: 'NECKLACE', item: player.necklace },
       { slot: 'ring',   label: 'RING',    item: player.ring }
     ];
     const cardH = IS_LANDSCAPE ? 52 : 60;
@@ -160,12 +162,13 @@ export class VigilScreen {
 
     // 3. Level + XP bar.
     const xpNeed = p.xpToNext();
+    const xpMaxed = !Number.isFinite(xpNeed);
     const lvY = 124;
     r.drawText(`LV.${p.level}`, 16, lvY,
       { size: uiSize(17), bold: true, family: FONT_DISPLAY, color: COLOR.gold });
-    r.drawText(`XP ${p.xp} / ${xpNeed}`, CANVAS_WIDTH - 16, lvY + 2,
+    r.drawText(xpMaxed ? 'XP MAX' : `XP ${p.xp} / ${xpNeed}`, CANVAS_WIDTH - 16, lvY + 2,
       { size: uiSize(12), align: 'right', family: FONT_MONO, color: COLOR.textMuted });
-    r.drawBar(16, lvY + 22, CANVAS_WIDTH - 32, 6, p.xp, xpNeed, COLOR.xpBar, COLOR.xpBarBg);
+    r.drawBar(16, lvY + 22, CANVAS_WIDTH - 32, 6, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
 
     // 4. Portrait area (large player sprite scaled up).
     const portraitY = 160;
@@ -207,9 +210,10 @@ export class VigilScreen {
     r.drawText(`LV.${p.level}`, 110, 74,
       { size: 13, family: FONT_DISPLAY, color: COLOR.textPrimary });
     const xpNeed = p.xpToNext();
-    r.drawText(`XP ${p.xp} / ${xpNeed}`, 162, 76,
+    const xpMaxed = !Number.isFinite(xpNeed);
+    r.drawText(xpMaxed ? 'XP MAX' : `XP ${p.xp} / ${xpNeed}`, 162, 76,
       { size: 11, family: FONT_MONO, color: COLOR.textMuted });
-    r.drawBar(110, 96, 200, 6, p.xp, xpNeed, COLOR.xpBar, COLOR.xpBarBg);
+    r.drawBar(110, 96, 200, 6, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
     r.drawText(`HP ${p.stats.hp} / ${p.stats.hpMax}`, 110, 108,
       { size: 12, bold: true, family: FONT_DISPLAY });
     r.drawBar(110, 126, 200, 8, p.stats.hp, p.stats.hpMax, COLOR.hpBar, COLOR.hpBarBg);
@@ -276,7 +280,7 @@ export class VigilScreen {
     const headerY = this._cardsBaseY() - 22;
     r.drawText('EQUIPMENT', 16, headerY,
       { size: uiSize(13), family: FONT_DISPLAY, color: COLOR.textMuted });
-    r.drawText(`${cards.filter((c) => c.item).length} / 4 equipped`,
+    r.drawText(`${cards.filter((c) => c.item).length} / ${cards.length} equipped`,
       CANVAS_WIDTH - 16, headerY + 2,
       { size: uiSize(12), align: 'right', italic: true, family: FONT_BODY, color: COLOR.textMuted });
 
