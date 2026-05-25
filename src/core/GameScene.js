@@ -218,9 +218,13 @@ export class GameScene {
         //   2. World viewport → tap-to-walk via Renderer.canvasToTile.
         //   3. HUD area taps fall through (no behavior).
         if (this.quickUse) {
-          const qi = this.quickUse.hitTest(action.x, action.y, this.state.state.time);
-          if (qi >= 0) {
-            this._playerQuickUse(qi);
+          const quickHit = this.quickUse.hitTest(action.x, action.y, this.state.state.time);
+          if (typeof quickHit === 'number' && quickHit >= 0) {
+            this._playerQuickUse(quickHit);
+            return;
+          }
+          if (quickHit && typeof quickHit.type === 'string') {
+            this.handleInput({ type: quickHit.type });
             return;
           }
         }

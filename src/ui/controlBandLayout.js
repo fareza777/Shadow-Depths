@@ -2,11 +2,16 @@
  * Control-band geometry — D-pad (full size in band) + quick-use above the band edge.
  */
 import {
-  CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
+  CANVAS_WIDTH, CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
   SIDE_CONTROL_WIDTH, IS_LANDSCAPE
 } from '../config/constants.js';
 
 export const QUICK_SLOT_COUNT = 3;
+export const QUICK_ACTIONS = [
+  { type: 'vigil', label: 'HERO' },
+  { type: 'inventory', label: 'BAG' },
+  { type: 'pickup', label: 'PICK' }
+];
 
 /** D-pad only — centered in the control band, original button sizes. */
 export function getDpadLayout() {
@@ -56,12 +61,16 @@ export function getQuickUseLayout() {
       quickX,
       quickY,
       quickRowW,
-      quickRects: quickRects(quickX, quickY, quickSlot, quickGap)
+      quickRects: quickRects(quickX, quickY, quickSlot, quickGap),
+      actionRects: []
     };
   }
 
   const quickX = dpad.dpadX + (dpad.dpadSize - quickRowW) / 2;
   const quickY = dpad.bandY - quickSlot - 10;
+  const actionGap = quickGap;
+  const actionX = quickX + quickRowW + actionGap;
+  const actionW = Math.max(48, Math.floor((CANVAS_WIDTH - actionX - 10 - actionGap * 2) / 3));
 
   return {
     quickSlot,
@@ -70,7 +79,8 @@ export function getQuickUseLayout() {
     quickY,
     quickRowW,
     bandTop: dpad.bandY,
-    quickRects: quickRects(quickX, quickY, quickSlot, quickGap)
+    quickRects: quickRects(quickX, quickY, quickSlot, quickGap),
+    actionRects: quickActionRects(actionX, quickY, actionW, quickSlot, actionGap)
   };
 }
 
@@ -80,5 +90,15 @@ function quickRects(x, y, slot, gap) {
     y,
     w: slot,
     h: slot
+  }));
+}
+
+function quickActionRects(x, y, w, h, gap) {
+  return QUICK_ACTIONS.map((action, i) => ({
+    ...action,
+    x: x + i * (w + gap),
+    y,
+    w,
+    h
   }));
 }

@@ -32,7 +32,7 @@ export class QuickUseBar {
     renderer.drawRect(
       LAYOUT.quickX - pad,
       LAYOUT.quickY - 14,
-      LAYOUT.quickRowW + pad * 2,
+      QuickUseBar._railWidth() + pad * 2,
       LAYOUT.quickSlot + 18,
       '#0a0810ee'
     );
@@ -73,6 +73,50 @@ export class QuickUseBar {
 
     renderer.drawText('QUICK', LAYOUT.quickX + LAYOUT.quickRowW / 2, LAYOUT.quickY - 10,
       { size: uiSize(9), align: 'center', family: FONT_MONO, color: COLOR.textMuted });
+    this._renderActionButtons(renderer);
+  }
+
+  _renderActionButtons(r) {
+    for (let i = 0; i < LAYOUT.actionRects.length; i++) {
+      const rect = LAYOUT.actionRects[i];
+      const pressed = this._pressed === QUICK_SLOT_COUNT + i;
+      r.drawRect(rect.x - 1, rect.y - 1, rect.w + 2, rect.h + 2, '#0a0810');
+      r.drawRect(rect.x, rect.y, rect.w, rect.h, pressed ? COLOR.bgCardHi : COLOR.bgCard);
+      r.drawStrokedRect(rect.x, rect.y, rect.w, rect.h,
+        pressed ? COLOR.gold : COLOR.goldDim, pressed ? 2 : 1);
+      if (!pressed) r.drawRect(rect.x + 2, rect.y + 2, rect.w - 4, 2, '#252030');
+      this._drawActionGlyph(r, rect.type, rect.x + rect.w / 2, rect.y + 17, pressed);
+      r.drawText(rect.label, rect.x + rect.w / 2, rect.y + rect.h - 13, {
+        size: uiSize(8), bold: true, align: 'center', baseline: 'middle',
+        family: FONT_DISPLAY, color: pressed ? COLOR.goldHi : COLOR.textPrimary
+      });
+    }
+  }
+
+  _drawActionGlyph(r, type, cx, cy, pressed) {
+    const ctx = r.ctx;
+    const col = pressed ? COLOR.goldHi : COLOR.gold;
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.fillStyle = col;
+    ctx.lineWidth = 2;
+    if (type === 'vigil') {
+      r.drawRect(cx - 8, cy - 6, 16, 9, '#3a3040');
+      r.drawRect(cx - 6, cy - 8, 12, 3, col);
+      r.drawRect(cx - 5, cy - 1, 10, 2, '#0a0810');
+      r.drawRect(cx - 4, cy, 2, 2, COLOR.textCrit);
+      r.drawRect(cx + 2, cy, 2, 2, COLOR.textCrit);
+    } else if (type === 'inventory') {
+      r.drawRect(cx - 8, cy - 4, 16, 12, '#3a3040');
+      r.drawStrokedRect(cx - 8, cy - 4, 16, 12, col, 1);
+      r.drawRect(cx - 4, cy - 8, 8, 4, col);
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 9); ctx.lineTo(cx + 8, cy); ctx.lineTo(cx, cy + 9); ctx.lineTo(cx - 8, cy);
+      ctx.closePath(); ctx.stroke();
+      r.drawRect(cx - 2, cy - 2, 4, 4, COLOR.goldDim);
+    }
+    ctx.restore();
   }
 
   hitTest(canvasX, canvasY, time) {
@@ -85,8 +129,23 @@ export class QuickUseBar {
         return i;
       }
     }
+    for (let i = 0; i < LAYOUT.actionRects.length; i++) {
+      const r = LAYOUT.actionRects[i];
+      if (canvasX >= r.x && canvasX <= r.x + r.w &&
+          canvasY >= r.y && canvasY <= r.y + r.h) {
+        this._pressed = QUICK_SLOT_COUNT + i;
+        this._pressedUntil = (time ?? performance.now() / 1000) + 0.12;
+        return { type: r.type };
+      }
+    }
     return -1;
   }
 
   static get layout() { return LAYOUT; }
+
+  static _railWidth() {
+    if (!LAYOUT.actionRects.length) return LAYOUT.quickRowW;
+    const last = LAYOUT.actionRects[LAYOUT.actionRects.length - 1];
+    return last.x + last.w - LAYOUT.quickX;
+  }
 }
