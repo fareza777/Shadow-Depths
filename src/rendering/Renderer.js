@@ -52,6 +52,8 @@ export class Renderer {
     /** Camera offset in canvas pixels, applied to world-space draws. */
     this._camera = { x: 0, y: 0 };
     this._lastTime = 0;
+    /** @type {WeakMap<object, number>} entity → flash end timestamp (ms) */
+    this._hitFlashes = new WeakMap();
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
@@ -59,9 +61,12 @@ export class Renderer {
 
     // Game-feel: trigger camera shake on damage automatically.
     this.bus.on('entity:damaged', ({ amount, isCrit, entity }) => {
-      const base = entity.kind === 'player' ? 5 : 2;
-      const px = Math.min(12, base + amount * 0.3);
+      if (!entity) return;
+      const base = entity.kind === 'player' ? 6 : 3;
+      const px = Math.min(14, base + amount * 0.35);
       this.cameraShake.trigger(px, isCrit ? TIMING.cameraShakeLong : TIMING.cameraShakeShort);
+      const until = performance.now() + (isCrit ? TIMING.hitFlash * 2 : TIMING.hitFlash);
+      this._hitFlashes.set(entity, until);
     });
   }
 
@@ -404,6 +409,7 @@ export class Renderer {
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
       this._drawEntityGrounding(ctx, e, px, py);
       this.sprites.draw(key, ctx, px, py);
+      this._drawEntityHitFlash(ctx, e, px, py);
 
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {
         const pct = e.stats.hp / e.stats.hpMax;
@@ -439,6 +445,17 @@ export class Renderer {
     ctx.textBaseline = 'bottom';
     ctx.fillStyle = color;
     ctx.fillText(glyph, px + TILE_SIZE / 2, py - 8);
+  }
+
+  _drawEntityHitFlash(ctx, entity, px, py) {
+    const until = this._hitFlashes.get(entity);
+    if (!until || performance.now() > until) return;
+    const t = (until - performance.now()) / TIMING.hitFlash;
+    ctx.save();
+    ctx.globalAlpha = Math.min(0.55, 0.15 + t * 0.4);
+    ctx.fillStyle = entity.kind === 'player' ? '#ff8080' : '#ffffff';
+    ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+    ctx.restore();
   }
 
   _drawEntityGrounding(ctx, entity, px, py) {

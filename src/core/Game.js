@@ -48,7 +48,7 @@ export class Game {
     this.balance = deps.balance || DEFAULT_BALANCE;
 
     // Game-level event wiring — scene transitions etc.
-    this.bus.on('request:newRun', () => this.newRun());
+    this.bus.on('request:newRun', (opts) => this.newRun(opts || {}));
     this.bus.on('request:quitToTitle', () => this.quitToTitle());
     this.bus.on('run:over', (summary) => this._onRunOver(summary));
     this.bus.on('run:victory', (summary) => this._onRunVictory(summary));

@@ -21,10 +21,10 @@ export class HUD {
 
   /**
    * @param {import('../rendering/Renderer.js').Renderer} renderer
-   * @param {{ player:object, floor:object, floorIndex:number, totalFloors:number }} ctx
+   * @param {{ player:object, floor:object, floorIndex:number, totalFloors:number, mode?:string }} ctx
    */
   render(renderer, ctx) {
-    const { player, floor, floorIndex, totalFloors } = ctx;
+    const { player, floor, floorIndex, totalFloors, mode } = ctx;
     this._drawTopStrip(renderer, player, floor, floorIndex, totalFloors);
     this._drawMessages(renderer);
   }
@@ -71,6 +71,10 @@ export class HUD {
         { size: uiSize(13), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
       r.drawText(sub, CANVAS_WIDTH / 2, TOP_PAD + 74,
         { size: uiSize(11), bold: true, align: 'center', color: COLOR.textMuted, family: FONT_MONO });
+      if (mode === 'daily') {
+        r.drawText('☼ DAILY', CANVAS_WIDTH - 12, TOP_PAD + 58,
+          { size: uiSize(11), bold: true, align: 'right', color: COLOR.textXP, family: FONT_MONO });
+      }
     }
 
     let chipX = 8;

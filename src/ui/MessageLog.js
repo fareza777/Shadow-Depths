@@ -14,8 +14,9 @@ export class MessageLog {
   /**
    * @param {{ bus:object }} deps
    */
-  constructor({ bus }) {
+  constructor({ bus, enemyDefs }) {
     this.bus = bus;
+    this._enemyDefs = enemyDefs || {};
     /** @type {{ text:string, color:string, t:number }[]} */
     this.entries = [];
     this._t = 0;
@@ -63,8 +64,17 @@ export class MessageLog {
 
     this.bus.on('player:revived', () => this.push(`You wake again. The charm is spent.`, COLOR.textHeal));
 
-    this.bus.on('floor:entered', ({ index, name }) =>
-      this.push(`Floor ${index + 1} — ${name}`, COLOR.textPrimary));
+    this.bus.on('floor:entered', ({ index, name, specialEnemyId, floorNumber }) => {
+      this.push(`Floor ${index + 1} — ${name}`, COLOR.textPrimary);
+      if (!specialEnemyId) return;
+      const def = this._enemyDefs[specialEnemyId];
+      const label = def?.name || specialEnemyId;
+      const isBoss = specialEnemyId.startsWith('boss_');
+      const line = isBoss
+        ? `☠ BOSS — ${label} awaits on floor ${floorNumber || index + 1}.`
+        : `⚔ Elite — ${label} guards this floor.`;
+      this.push(line, isBoss ? '#d4be7a' : '#c080ff');
+    });
   }
 
   push(text, color = COLOR.textPrimary) {

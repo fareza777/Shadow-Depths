@@ -157,29 +157,23 @@ export function drawFloorTile(ctx, x, y, s, opts = {}) {
   const ty = opts.tileY ?? 0;
   const h = hash2(tx, ty, 7);
   const block = ((tx >> 1) + (ty >> 1)) & 1;
-  const natW = Math.max(1, Math.round(s / 32));
 
-  const slab = block ? shade(c.base, 3) : shade(c.base, -2);
-  fillRect(ctx, x, y, s, s, slab);
-
-  // 2×2 flagstone macro grout (only on block edges — no double lines).
-  if (tx % 2 === 0) fillRect(ctx, x, y, natW, s, c.grout);
-  if (ty % 2 === 0) fillRect(ctx, x, y, s, natW, c.grout);
-  fillRect(ctx, x, y + s - natW, s, natW, shade(c.base, -14));
-  fillRect(ctx, x + s - natW, y, natW, s, shade(c.base, -11));
+  const nudge = ((h % 9) - 4) + (block ? 2 : -1);
+  fillRect(ctx, x, y, s, s, shade(c.base, nudge));
 
   if (!opts.dim) {
-    fillRect(ctx, x + s * 0.28, y + s * 0.3, s * 0.44, s * 0.38, '#ffffff09');
-    fillRect(ctx, x + s * 0.38, y + s * 0.36, s * 0.22, s * 0.2, '#ffffff06');
+    const glow = 0.05 + (h % 4) * 0.012;
+    ctx.save();
+    ctx.globalAlpha = glow;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x + s * 0.22, y + s * 0.24, s * 0.56, s * 0.48);
+    ctx.restore();
   }
-  fillRect(ctx, x, y, s, 1, '#ffffff08');
-  fillRect(ctx, x, y, 1, s, '#ffffff05');
 
-  const crack = h % 5;
-  if (crack === 1) {
-    p(ctx, x, y, s, [[10, 16, 12, 1, c.grout], [16, 10, 1, 8, c.grout]]);
-  } else if (crack === 3 && (h >> 4) % 7 === 0) {
-    p(ctx, x, y, s, [[6, 20, 18, 1, c.lo], [20, 6, 1, 14, c.lo]]);
+  if ((h >> 5) % 13 === 0) {
+    const px = (h % 20) + 4;
+    const py = ((h >> 3) % 18) + 6;
+    fillRect(ctx, x + px * (s / 32), y + py * (s / 32), Math.max(1, s * 0.08), 1, c.lo);
   }
   if (c.accent && (h >> 5) % 9 === 0) {
     const ax = (h % 22) + 5;

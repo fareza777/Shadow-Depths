@@ -63,6 +63,7 @@ export class GameScene {
     this.controls = deps.mobileControls || null;
     this.quickUse = deps.quickUseBar || null;
     this.pause = deps.pauseOverlay || null;
+    this.tutorial = deps.tutorial || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
 
@@ -110,8 +111,21 @@ export class GameScene {
 
     this.floor = floor;
     this.lighting.compute(this.floor, this.player);
-    this.state.setRun({ seed: this.seed, floorIndex: 0 });
-    this.bus.emit('floor:entered', { index: 0, name: floor.definition.name });
+    this.state.setRun({ seed: this.seed, floorIndex: 0, mode: this.mode });
+    this._emitFloorEntered(0, floor);
+    if (this.tutorial && this.state.state.meta?.settings?.showTutorial !== false) {
+      this.tutorial.show(true);
+    }
+  }
+
+  _emitFloorEntered(index, floor) {
+    const def = floor?.definition || {};
+    this.bus.emit('floor:entered', {
+      index,
+      name: def.name,
+      specialEnemyId: def.specialEnemyId || null,
+      floorNumber: index + 1
+    });
   }
 
   update(_dt) { /* turn-based; no per-frame logic */ }
@@ -135,7 +149,8 @@ export class GameScene {
     this.hud.render(renderer, {
       player: this.player, floor: this.floor,
       floorIndex: this.dungeon.currentIndex,
-      totalFloors: this.dungeon.totalFloors
+      totalFloors: this.dungeon.totalFloors,
+      mode: this.mode
     });
     // Control band: solid background + D-pad + action buttons. Minimap
     // paints inside the band's center cutout (see Minimap.js for offset).
@@ -149,11 +164,16 @@ export class GameScene {
     // Skill picker on top of EVERYTHING — it blocks all other input.
     if (this.skillPicker) this.skillPicker.render(renderer);
     if (this.pause) this.pause.render(renderer);
+    if (this.tutorial?.open) this.tutorial.render(renderer);
   }
 
   // --- input ----------------------------------------------------------
   handleInput(action) {
     if (!action || this.player.isDead) return;
+
+    if (this.tutorial?.open) {
+      if (this.tutorial.handleInput(action)) return;
+    }
 
     if (this.pause?.open) {
       if (action.type === 'pointer') {
@@ -356,7 +376,7 @@ export class GameScene {
     this.pathfinding.invalidate();
     this.lighting.compute(this.floor, this.player);
     this.state.patch('run.floorIndex', this.dungeon.currentIndex);
-    this.bus.emit('floor:entered', { index: this.dungeon.currentIndex, name: floor.definition.name });
+    this._emitFloorEntered(this.dungeon.currentIndex, floor);
   }
 
   /** Use quick bar slot 0–2 (first consumables / throwables in bag order). */

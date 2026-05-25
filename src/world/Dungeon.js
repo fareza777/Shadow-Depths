@@ -150,16 +150,17 @@ export class Dungeon {
     return map;
   }
 
-  _specialEnemyForFloor(floorNumber) {
-    if (floorNumber < 5) return null;
+  _specialEnemyForFloor(floorIndex) {
+    const floorN = floorIndex + 1;
+    if (floorN < 5) return null;
     const tier = Math.min(
       SUBBOSS_IDS.length - 1,
-      Math.floor((floorNumber - 1) / 25)
+      Math.floor((floorN - 1) / 25)
     );
-    if (floorNumber % 10 === 0) {
+    if (floorN % 10 === 0) {
       return BOSS_IDS[Math.min(BOSS_IDS.length - 1, tier)];
     }
-    if (floorNumber % 5 === 0) return SUBBOSS_IDS[tier];
+    if (floorN % 5 === 0) return SUBBOSS_IDS[tier];
     return null;
   }
 }

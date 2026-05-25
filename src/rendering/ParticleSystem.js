@@ -73,7 +73,7 @@ export class ParticleSystem {
   }
 
   spawnHitFlash(tileX, tileY, strong = false) {
-    const life = strong ? 0.14 : 0.1;
+    const life = strong ? 0.18 : 0.12;
     const cx = (tileX + 0.5) * TILE_SIZE;
     const cy = (tileY + 0.5) * TILE_SIZE;
     if (this._particles.length >= MAX_PARTICLES) this._particles.shift();
@@ -82,8 +82,8 @@ export class ParticleSystem {
       x: cx, y: cy,
       vx: 0, vy: 0,
       life, maxLife: life,
-      size: TILE_SIZE * (strong ? 0.92 : 0.72),
-      color: strong ? '#ffffff' : '#ffe0c0'
+      size: TILE_SIZE * (strong ? 1.05 : 0.85),
+      color: strong ? '#ffffff' : '#ffd0a8'
     });
   }
 

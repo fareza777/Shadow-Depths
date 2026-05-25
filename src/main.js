@@ -39,6 +39,7 @@ import { VictoryScreen } from './ui/VictoryScreen.js';
 import { MobileControls } from './ui/MobileControls.js';
 import { QuickUseBar } from './ui/QuickUseBar.js';
 import { PauseOverlay } from './ui/PauseOverlay.js';
+import { TutorialOverlay } from './ui/TutorialOverlay.js';
 
 import { InputManager } from './input/InputManager.js';
 
@@ -115,7 +116,7 @@ async function bootstrap() {
   window.addEventListener('touchstart', resumeAudioOnce, { once: true });
 
   // --- UI components -------------------------------------------------
-  const messageLog = new MessageLog({ bus });
+  const messageLog = new MessageLog({ bus, enemyDefs: content.enemies });
   const hud = new HUD({ messageLog });
   const minimap = new Minimap();
   const inventoryUI = new InventoryUI({ bus });
@@ -124,6 +125,7 @@ async function bootstrap() {
   const mobileControls = new MobileControls({ bus });
   const quickUseBar = new QuickUseBar({ bus });
   const pauseOverlay = new PauseOverlay({ bus });
+  const tutorial = new TutorialOverlay({ metaProgress });
 
   // --- narrative -----------------------------------------------------
   const lore = new LoreDatabase(content.lore);
@@ -136,7 +138,7 @@ async function bootstrap() {
     title: (deps) => new TitleScreen({ ...deps, metaProgress }),
     game: (deps) => new GameScene({
       ...deps, hud, minimap, inventoryUI, skillPicker, vigilScreen,
-      lighting, renderer, mobileControls, quickUseBar, pauseOverlay
+      lighting, renderer, mobileControls, quickUseBar, pauseOverlay, tutorial
     }),
     gameover: (deps) => new GameOverScreen(deps),
     victory: (deps) => new VictoryScreen(deps)
