@@ -22,9 +22,8 @@
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, GRID_HEIGHT,
   VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H,
-  TILE_SIZE, TILE, COLOR, TIMING, CONTROL_HEIGHT, HUD_HEIGHT
+  TILE_SIZE, TILE, COLOR, TIMING
 } from '../config/constants.js';
-import { VIEWPORT_BOTTOM_Y } from '../ui/controlBandLayout.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
 
 export class Renderer {
@@ -137,9 +136,6 @@ export class Renderer {
     ctx.save();
     ctx.translate(shake.x, shake.y);
     sceneManager.render(this);
-    if (sceneManager.currentName === 'game') {
-      this._drawControlBandShell();
-    }
     // Particles spawn at world coords; clip them to the viewport so a
     // floating damage number can't drift into HUD or control band.
     ctx.save();
@@ -641,17 +637,6 @@ export class Renderer {
     fillRect(ctx, VIEWPORT_X, VIEWPORT_Y, 2, VIEWPORT_H, '#d4be7a22');
     fillRect(ctx, VIEWPORT_X + VIEWPORT_W - 2, VIEWPORT_Y, 2, VIEWPORT_H, '#d4be7a18');
     ctx.restore();
-  }
-
-  /** Solid control-band backdrop (D-pad layer paints on top). */
-  _drawControlBandShell() {
-    if (CONTROL_HEIGHT <= 0) return;
-    const ctx = this.ctx;
-    const y = VIEWPORT_BOTTOM_Y;
-    fillRect(ctx, 0, y, CANVAS_WIDTH, CONTROL_HEIGHT, '#0a0810');
-    fillRect(ctx, 0, y, CANVAS_WIDTH, 2, COLOR.goldDim);
-    fillRect(ctx, 0, y + 2, CANVAS_WIDTH, 1, '#5a4830');
-    fillRect(ctx, 0, HUD_HEIGHT, CANVAS_WIDTH, 1, '#00000044');
   }
 
   // --- viewport scaling ----------------------------------------------

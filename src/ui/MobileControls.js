@@ -83,8 +83,16 @@ export class MobileControls {
   }
 
   render(renderer) {
+    this.renderBackground(renderer);
+    this.renderControls(renderer);
+  }
+
+  renderBackground(renderer) {
+    this._renderBackground(renderer, buildLayout());
+  }
+
+  renderControls(renderer) {
     const LAYOUT = buildLayout();
-    this._renderBackground(renderer, LAYOUT);
     this._renderDpad(renderer, LAYOUT);
     this._renderActions(renderer, LAYOUT);
   }
@@ -248,16 +256,16 @@ export class MobileControls {
 
       if (isCenter) {
         const sz = LAYOUT.dpadBtn;
-        r.drawRect(bx, by, sz, sz, pressed ? '#3a3048' : '#221c2a');
-        r.drawStrokedRect(bx, by, sz, sz, pressed ? COLOR.gold : '#5a5060', pressed ? 2 : 1);
+        r.drawRect(bx, by, sz, sz, pressed ? '#4a3a58' : '#2e2838');
+        r.drawStrokedRect(bx, by, sz, sz, pressed ? COLOR.gold : '#7a7088', pressed ? 2 : 1);
         const gem = pressed ? COLOR.goldHi : COLOR.gold;
         r.drawRect(bx + sz * 0.3, by + sz * 0.3, sz * 0.4, sz * 0.4, gem);
         r.drawRect(bx + sz * 0.38, by + sz * 0.38, sz * 0.24, sz * 0.24, '#fff8e0');
       } else {
         r.drawRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn,
-          pressed ? COLOR.bgCardHi : '#1a1622');
+          pressed ? COLOR.bgCardHi : '#2a2438');
         r.drawStrokedRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn,
-          pressed ? COLOR.gold : '#4a4258', pressed ? 2 : 1);
+          pressed ? COLOR.gold : '#8a8098', pressed ? 2 : 1);
         if (!pressed) {
           r.drawRect(bx + 2, by + 2, LAYOUT.dpadBtn - 4, 3, '#252030');
         }

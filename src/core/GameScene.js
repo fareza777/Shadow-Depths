@@ -162,11 +162,16 @@ export class GameScene {
       totalFloors: this.dungeon.totalFloors,
       mode: this.mode
     });
-    // Control band: solid background + D-pad + action buttons. Minimap
-    // paints inside the band's center cutout (see Minimap.js for offset).
-    if (this.controls) this.controls.render(renderer);
-    this.minimap.render(renderer, { floor: this.floor, player: this.player });
-    if (this.quickUse) this.quickUse.render(renderer, this.player);
+    // Control band — background first, then widgets (never paint over them after).
+    if (this.controls) {
+      this.controls.renderBackground(renderer);
+      this.minimap.render(renderer, { floor: this.floor, player: this.player });
+      if (this.quickUse) this.quickUse.render(renderer, this.player);
+      this.controls.renderControls(renderer);
+    } else {
+      this.minimap.render(renderer, { floor: this.floor, player: this.player });
+      if (this.quickUse) this.quickUse.render(renderer, this.player);
+    }
     // Inventory modal on top of HUD.
     this.inventoryUI.render(renderer, this.player);
     // Vigil character sheet sits above inventory and below skill picker.
