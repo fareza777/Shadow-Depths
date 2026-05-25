@@ -15,9 +15,8 @@ const ACTION_LABELS = [
   { key: 'vigil',     label: 'HERO', icon: 'HELM' }
 ];
 
-const DPAD = getDpadLayout();
-
-const LAYOUT = (() => {
+function buildLayout() {
+  const DPAD = getDpadLayout();
   if (IS_LANDSCAPE) {
     const stripW = DPAD.stripW;
     const { dpadBtn, dpadGap, dpadSize, dpadX, dpadY } = DPAD;
@@ -61,7 +60,7 @@ const LAYOUT = (() => {
     },
     msgRect: null, strips: []
   };
-})();
+}
 
 const DPAD_BUTTONS = [
   { col: 1, row: 0, dir: 'up',    emit: { type: 'move', dx: 0, dy: -1 } },
@@ -84,14 +83,15 @@ export class MobileControls {
   }
 
   render(renderer) {
-    if (this._currentScene !== 'game') return;
-    this._renderBackground(renderer);
-    this._renderDpad(renderer);
-    this._renderActions(renderer);
+    const LAYOUT = buildLayout();
+    this._renderBackground(renderer, LAYOUT);
+    this._renderDpad(renderer, LAYOUT);
+    this._renderActions(renderer, LAYOUT);
   }
 
   handleTap(canvasX, canvasY, currentTime) {
     if (this._currentScene !== 'game') return false;
+    const LAYOUT = buildLayout();
     for (const b of DPAD_BUTTONS) {
       const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
@@ -120,7 +120,7 @@ export class MobileControls {
     this._pressedClearedAt = (time ?? performance.now() / 1000) + 0.12;
   }
 
-  _renderBackground(r) {
+  _renderBackground(r, LAYOUT) {
     const t = performance.now() / 1000;
     if (LAYOUT.band) {
       r.drawRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h, '#0a0810');
@@ -215,7 +215,7 @@ export class MobileControls {
     ctx.restore();
   }
 
-  _renderDpad(r) {
+  _renderDpad(r, LAYOUT) {
     const ctx = r.ctx;
     const padX = LAYOUT.dpadX - 10;
     const padY = LAYOUT.dpadY - 10;
@@ -288,7 +288,7 @@ export class MobileControls {
     ctx.fill();
   }
 
-  _renderActions(r) {
+  _renderActions(r, LAYOUT) {
     for (let i = 0; i < ACTION_LABELS.length; i++) {
       const ax = LAYOUT.actX;
       const ay = LAYOUT.actY + i * (LAYOUT.actH + LAYOUT.actGap);
@@ -344,6 +344,7 @@ export class MobileControls {
   }
 
   static get geometry() {
+    const LAYOUT = buildLayout();
     return {
       isLandscape: LAYOUT.isLandscape,
       band: LAYOUT.band,

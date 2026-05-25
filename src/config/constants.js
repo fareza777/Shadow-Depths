@@ -49,20 +49,10 @@ function _readOrientation() {
 export const ORIENTATION_MODE = _readOrientation();
 export const IS_LANDSCAPE = ORIENTATION_MODE === 'landscape';
 
-// Canvas dims swap with orientation.
-function _portraitCanvasHeight(width) {
-  try {
-    const vw = window.visualViewport?.width || window.innerWidth;
-    const vh = window.visualViewport?.height || window.innerHeight;
-    if (vh > vw && vw > 0) {
-      return Math.max(960, Math.min(1120, Math.round(width * (vh / vw))));
-    }
-  } catch { /* non-browser tooling: use design default */ }
-  return 1040;
-}
-
+// Fixed portrait height — dynamic sizing desynced control-band layout (frozen
+// at module load) from the canvas, pushing D-pad off-screen on some devices.
 export const CANVAS_WIDTH  = IS_LANDSCAPE ? 800 : 480;
-export const CANVAS_HEIGHT = IS_LANDSCAPE ? 480 : _portraitCanvasHeight(CANVAS_WIDTH);
+export const CANVAS_HEIGHT = IS_LANDSCAPE ? 480 : 1040;
 export const RENDER_WIDTH  = CANVAS_WIDTH;
 export const RENDER_HEIGHT = CANVAS_HEIGHT;
 

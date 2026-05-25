@@ -9,8 +9,6 @@ import {
   getQuickUseLayout, QUICK_SLOT_COUNT, VIEWPORT_BOTTOM_Y
 } from './controlBandLayout.js';
 
-const LAYOUT = getQuickUseLayout();
-
 export class QuickUseBar {
   constructor({ bus }) {
     this.bus = bus;
@@ -27,6 +25,7 @@ export class QuickUseBar {
    */
   render(renderer, player) {
     if (!player) return;
+    const LAYOUT = getQuickUseLayout();
     const slots = findQuickUseSlots(player.inventory);
     const inv = player.inventory;
 
@@ -34,7 +33,7 @@ export class QuickUseBar {
     renderer.drawRect(
       LAYOUT.quickX - pad,
       LAYOUT.quickY - 14,
-      QuickUseBar._railWidth() + pad * 2,
+      QuickUseBar._railWidth(LAYOUT) + pad * 2,
       LAYOUT.quickSlot + 18,
       '#0a0810ee'
     );
@@ -75,10 +74,10 @@ export class QuickUseBar {
 
     renderer.drawText('QUICK', LAYOUT.quickX + LAYOUT.quickRowW / 2, LAYOUT.quickY - 10,
       { size: uiSize(9), align: 'center', family: FONT_MONO, color: COLOR.textMuted });
-    this._renderActionButtons(renderer);
+    this._renderActionButtons(renderer, LAYOUT);
   }
 
-  _renderActionButtons(r) {
+  _renderActionButtons(r, LAYOUT) {
     for (let i = 0; i < LAYOUT.actionRects.length; i++) {
       const rect = LAYOUT.actionRects[i];
       const pressed = this._pressed === QUICK_SLOT_COUNT + i;
@@ -129,6 +128,7 @@ export class QuickUseBar {
    */
   hitTest(canvasX, canvasY, time, inventory) {
     if (canvasY < VIEWPORT_BOTTOM_Y) return -1;
+    const LAYOUT = getQuickUseLayout();
 
     const slots = inventory ? findQuickUseSlots(inventory) : [];
     for (let i = 0; i < LAYOUT.quickRects.length; i++) {
@@ -153,11 +153,12 @@ export class QuickUseBar {
     return -1;
   }
 
-  static get layout() { return LAYOUT; }
+  static get layout() { return getQuickUseLayout(); }
 
-  static _railWidth() {
-    if (!LAYOUT.actionRects.length) return LAYOUT.quickRowW;
-    const last = LAYOUT.actionRects[LAYOUT.actionRects.length - 1];
-    return last.x + last.w - LAYOUT.quickX;
+  static _railWidth(layout) {
+    const L = layout || getQuickUseLayout();
+    if (!L.actionRects.length) return L.quickRowW;
+    const last = L.actionRects[L.actionRects.length - 1];
+    return last.x + last.w - L.quickX;
   }
 }

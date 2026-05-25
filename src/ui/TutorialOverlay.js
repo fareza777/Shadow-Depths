@@ -1,6 +1,6 @@
 /**
  * TutorialOverlay — 3-step first-run hints (move, attack, pickup).
- * Blocks input until dismissed; sets meta.settings.showTutorial = false.
+ * Centered modal so it never hides the control band. D-pad moves dismiss it.
  */
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, COLOR, FONT_DISPLAY, FONT_BODY, uiSize
@@ -17,13 +17,13 @@ const STEPS = [
   },
   {
     title: 'LOOT & DESCEND',
-    body: 'PICK gathers items underfoot. DOWN uses stairs. BAG opens inventory. Tap anywhere to continue.'
+    body: 'PICK gathers items. DOWN uses stairs. BAG opens inventory. Tap or press any direction to continue.'
   }
 ];
 
 export class TutorialOverlay {
   /**
-   * @param {{ metaProgress?: { setSetting: Function, save?: Function } }} deps
+   * @param {{ metaProgress?: { setSetting: Function } }} deps
    */
   constructor({ metaProgress } = {}) {
     this.meta = metaProgress || null;
@@ -31,7 +31,6 @@ export class TutorialOverlay {
     this._step = 0;
   }
 
-  /** @param {boolean} show */
   show(show = true) {
     this.open = !!show;
     this._step = 0;
@@ -46,31 +45,35 @@ export class TutorialOverlay {
     if (!this.open) return;
     const step = STEPS[this._step] || STEPS[STEPS.length - 1];
     const r = renderer;
-    const panelH = 168;
-    const y = CANVAS_HEIGHT - panelH - 8;
+    const panelW = CANVAS_WIDTH - 32;
+    const panelH = 200;
+    const x = 16;
+    const y = Math.floor((CANVAS_HEIGHT - panelH) / 2) - 40;
 
-    r.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 'rgba(0,0,0,0.55)');
-    r.drawRect(12, y, CANVAS_WIDTH - 24, panelH, COLOR.bgPanel);
-    r.drawStrokedRect(12, y, CANVAS_WIDTH - 24, panelH, COLOR.gold, 2);
-    r.drawRect(12, y, CANVAS_WIDTH - 24, 3, COLOR.gold);
+    r.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 'rgba(0,0,0,0.62)');
+    r.drawRect(x, y, panelW, panelH, COLOR.bgPanel);
+    r.drawStrokedRect(x, y, panelW, panelH, COLOR.gold, 2);
+    r.drawRect(x, y, panelW, 3, COLOR.gold);
 
     r.drawText('FIRST RUN', CANVAS_WIDTH / 2, y + 22,
       { size: uiSize(11), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
-    r.drawText(step.title, CANVAS_WIDTH / 2, y + 48,
+    r.drawText(step.title, CANVAS_WIDTH / 2, y + 50,
       { size: uiSize(20), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
 
-    const lines = wrapText(step.body, 38);
-    let ly = y + 78;
+    const lines = wrapText(step.body, 36);
+    let ly = y + 82;
     for (const line of lines) {
       r.drawText(line, CANVAS_WIDTH / 2, ly,
         { size: uiSize(13), align: 'center', color: COLOR.textPrimary, family: FONT_BODY });
       ly += uiSize(16);
     }
 
-    const hint = this._step < STEPS.length - 1 ? 'Tap to continue' : 'Tap to play';
+    const hint = this._step < STEPS.length - 1 ? 'Tap or use D-pad to continue' : 'Tap or move to play';
     r.drawText(`${this._step + 1} / ${STEPS.length}  ·  ${hint}`,
-      CANVAS_WIDTH / 2, y + panelH - 18,
+      CANVAS_WIDTH / 2, y + panelH - 20,
       { size: uiSize(12), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
+    r.drawText('SKIP', CANVAS_WIDTH / 2, y + panelH + 14,
+      { size: uiSize(11), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
   }
 
   handleInput(action) {
@@ -79,12 +82,15 @@ export class TutorialOverlay {
       this.hide();
       return true;
     }
-    if (action.type === 'pointer' || action.type === 'tap' || action.type === 'confirm'
-        || action.type === 'wait') {
+    if (action.type === 'move' || action.type === 'wait') {
+      this._advance();
+      return false;
+    }
+    if (action.type === 'pointer' || action.type === 'tap' || action.type === 'confirm') {
       this._advance();
       return true;
     }
-    return true;
+    return false;
   }
 
   _advance() {

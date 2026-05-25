@@ -172,7 +172,8 @@ export class GameScene {
     if (!action || this.player.isDead) return;
 
     if (this.tutorial?.open) {
-      if (this.tutorial.handleInput(action)) return;
+      const consumed = this.tutorial.handleInput(action);
+      if (consumed) return;
     }
 
     if (this.pause?.open) {
