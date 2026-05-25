@@ -22,7 +22,7 @@
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, GRID_HEIGHT,
   VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H,
-  TILE_SIZE, TILE, COLOR, TIMING, IS_LANDSCAPE
+  TILE_SIZE, TILE, COLOR, TIMING
 } from '../config/constants.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
 
@@ -467,11 +467,6 @@ export class Renderer {
   _fitToViewport() {
     const vw = window.visualViewport?.width || window.innerWidth;
     const vh = window.visualViewport?.height || window.innerHeight;
-    if (!IS_LANDSCAPE) {
-      this.canvas.style.width = `${Math.ceil(vw)}px`;
-      this.canvas.style.height = `${Math.ceil(vh)}px`;
-      return;
-    }
     const scale = Math.min(vw / CANVAS_WIDTH, vh / CANVAS_HEIGHT);
     this.canvas.style.width  = `${Math.floor(CANVAS_WIDTH * scale)}px`;
     this.canvas.style.height = `${Math.floor(CANVAS_HEIGHT * scale)}px`;
