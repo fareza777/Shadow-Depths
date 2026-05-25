@@ -42,7 +42,10 @@ export class KeyboardHandler {
     if (KEYBIND.escape.includes(key))    return { type: 'escape' };
     if (key === 'Enter')                 return { type: 'confirm' };
     if (key === 'd' || key === 'D')      return { type: 'drop' };
-    for (let i = 1; i <= 9; i++) {
+    for (let i = 1; i <= 3; i++) {
+      if (KEYBIND[`hotkey${i}`].includes(key)) return { type: 'quickUse', index: i - 1 };
+    }
+    for (let i = 4; i <= 9; i++) {
       if (KEYBIND[`hotkey${i}`].includes(key)) return { type: 'useSlot', index: i - 1 };
     }
     return null;

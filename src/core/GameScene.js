@@ -22,6 +22,7 @@ import { Enemy } from '../entities/Enemy.js';
 import { Inventory } from '../items/Inventory.js';
 import { ItemFactory } from '../items/ItemFactory.js';
 import { Equipment } from '../items/Equipment.js';
+import { findQuickUseSlots } from '../items/quickUse.js';
 import { Dungeon } from '../world/Dungeon.js';
 import { Pathfinding } from '../world/Pathfinding.js';
 import { CombatSystem } from '../combat/CombatSystem.js';
@@ -61,6 +62,7 @@ export class GameScene {
     this.skillPicker = deps.skillPicker || null;
     this.vigil = deps.vigilScreen || null;
     this.controls = deps.mobileControls || null;
+    this.quickUse = deps.quickUseBar || null;
     this.pause = deps.pauseOverlay || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
@@ -130,6 +132,7 @@ export class GameScene {
     // Control band: solid background + D-pad + action buttons. Minimap
     // paints inside the band's center cutout (see Minimap.js for offset).
     if (this.controls) this.controls.render(renderer);
+    if (this.quickUse) this.quickUse.render(renderer, this.player);
     this.minimap.render(renderer, { floor: this.floor, player: this.player });
     // Inventory modal on top of HUD.
     this.inventoryUI.render(renderer, this.player);
@@ -206,6 +209,7 @@ export class GameScene {
         if (this.pause) this.pause.show();
         return;
       case 'minimap':    return this.minimap.toggle();
+      case 'quickUse':   return this._playerQuickUse(action.index);
       case 'useSlot':    return this._playerUseSlot(action.index);
       case 'pointer': {
         // Canvas tap dispatch order:
@@ -213,6 +217,13 @@ export class GameScene {
         //      INSIDE the canvas now, so hit-tests are pixel-perfect.
         //   2. World viewport → tap-to-walk via Renderer.canvasToTile.
         //   3. HUD area taps fall through (no behavior).
+        if (this.quickUse) {
+          const qi = this.quickUse.hitTest(action.x, action.y, this.state.state.time);
+          if (qi >= 0) {
+            this._playerQuickUse(qi);
+            return;
+          }
+        }
         if (this.controls && this.controls.handleTap(action.x, action.y, this.state.state.time)) return;
         if (!this.renderer) return;
         const tile = this.renderer.canvasToTile(action.x, action.y);
@@ -299,6 +310,14 @@ export class GameScene {
     this.lighting.compute(this.floor, this.player);
     this.state.patch('run.floorIndex', this.dungeon.currentIndex);
     this.bus.emit('floor:entered', { index: this.dungeon.currentIndex, name: floor.definition.name });
+  }
+
+  /** Use quick bar slot 0–2 (first consumables / throwables in bag order). */
+  _playerQuickUse(quickIndex) {
+    const slots = findQuickUseSlots(this.player.inventory);
+    const invIdx = slots[quickIndex];
+    if (invIdx === undefined) return;
+    this._playerUseSlot(invIdx);
   }
 
   _playerUseSlot(index) {
