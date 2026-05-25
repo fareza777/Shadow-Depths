@@ -54,6 +54,8 @@ function potion(ctx, x, y, s, color, large = false) {
   fillRect(ctx, ox + 8 * u, oy + 10 * u, 2 * u, (large ? 8 : 6) * u, lo);
   fillRect(ctx, ox + 3 * u, oy + 5 * u, 1 * u, (large ? 18 : 14) * u, '#ffffff55');
   strokeRect(ctx, ox + 2 * u, oy + 5 * u, 10 * u, (large ? 20 : 16) * u, '#00000044', 1);
+  fillRect(ctx, ox + 7 * u, oy + 6 * u, 2 * u, 2 * u, '#ffffffaa');
+  if (large) fillRect(ctx, ox + 5 * u, oy + 9 * u, 1 * u, 1 * u, '#ffffff66');
 }
 
 function vial(ctx, x, y, s, color) {

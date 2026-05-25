@@ -54,6 +54,31 @@ function biomeMoss(id, dim) {
   return null;
 }
 
+function biomeFloorAccent(id, dim) {
+  if (dim || !id) return null;
+  if (id.includes('garden') || id.includes('bloodroot') || id.includes('veiled')) return '#3a5030';
+  if (id.includes('drowning') || id.includes('sunken')) return '#2a5868';
+  if (id.includes('frost') || id.includes('salt')) return '#5a7088';
+  if (id.includes('ashen') || id.includes('cinder')) return '#6a5040';
+  if (id.includes('empty') || id.includes('below')) return '#4a3888';
+  return null;
+}
+
+/** @param {{ floorLit?:string, floorDim?:string, dim?:boolean, biomeId?:string }} opts */
+function floorPalette(opts) {
+  const lit = opts.floorLit || '#2e2734';
+  const dim = opts.floorDim || '#181420';
+  const base = opts.dim ? dim : lit;
+  return {
+    base,
+    hi: shade(base, 14),
+    lo: shade(base, -16),
+    grout: shade(base, -20),
+    wet: shade(base, 22),
+    accent: biomeFloorAccent(opts.biomeId, !!opts.dim)
+  };
+}
+
 /**
  * @param {CanvasRenderingContext2D} ctx
  * @param {number} x @param {number} y @param {number} s
@@ -127,28 +152,44 @@ export function drawWallTile(ctx, x, y, s, opts = {}) {
 }
 
 export function drawFloorTile(ctx, x, y, s, opts = {}) {
-  const lit = opts.floorLit || '#2e2734';
-  const dim = opts.floorDim || '#181420';
-  const base = opts.dim ? dim : lit;
+  const c = floorPalette(opts);
   const tx = opts.tileX ?? 0;
   const ty = opts.tileY ?? 0;
   const h = hash2(tx, ty, 7);
-
-  // Full-tile slab; thin nat only on south/east so adjacent tiles don't double up.
-  const slab = (h % 4 === 0) ? shade(base, 2) : (h % 4 === 2) ? shade(base, -2) : base;
+  const block = ((tx >> 1) + (ty >> 1)) & 1;
   const natW = Math.max(1, Math.round(s / 32));
 
+  const slab = block ? shade(c.base, 3) : shade(c.base, -2);
   fillRect(ctx, x, y, s, s, slab);
-  fillRect(ctx, x, y + s - natW, s, natW, shade(base, -14));
-  fillRect(ctx, x + s - natW, y, natW, s, shade(base, -11));
-  fillRect(ctx, x, y, s, 1, '#ffffff07');
-  fillRect(ctx, x, y, 1, s, '#ffffff04');
 
-  if ((h >> 5) % 13 === 0) {
-    fillRect(ctx, x + s * 0.42, y + 3, 1, s - 6, shade(base, -10));
+  // 2×2 flagstone macro grout (only on block edges — no double lines).
+  if (tx % 2 === 0) fillRect(ctx, x, y, natW, s, c.grout);
+  if (ty % 2 === 0) fillRect(ctx, x, y, s, natW, c.grout);
+  fillRect(ctx, x, y + s - natW, s, natW, shade(c.base, -14));
+  fillRect(ctx, x + s - natW, y, natW, s, shade(c.base, -11));
+
+  if (!opts.dim) {
+    fillRect(ctx, x + s * 0.28, y + s * 0.3, s * 0.44, s * 0.38, '#ffffff09');
+    fillRect(ctx, x + s * 0.38, y + s * 0.36, s * 0.22, s * 0.2, '#ffffff06');
   }
-  if ((h >> 7) % 11 === 0) {
-    fillRect(ctx, x + 5, y + 8, 2, 1, shade(base, 6));
+  fillRect(ctx, x, y, s, 1, '#ffffff08');
+  fillRect(ctx, x, y, 1, s, '#ffffff05');
+
+  const crack = h % 5;
+  if (crack === 1) {
+    p(ctx, x, y, s, [[10, 16, 12, 1, c.grout], [16, 10, 1, 8, c.grout]]);
+  } else if (crack === 3 && (h >> 4) % 7 === 0) {
+    p(ctx, x, y, s, [[6, 20, 18, 1, c.lo], [20, 6, 1, 14, c.lo]]);
+  }
+  if (c.accent && (h >> 5) % 9 === 0) {
+    const ax = (h % 22) + 5;
+    const ay = ((h >> 3) % 20) + 6;
+    p(ctx, x, y, s, [[ax, ay, 2, 2, c.accent], [ax + 1, ay, 1, 1, shade(c.accent, 30)]]);
+  }
+  const biome = opts.biomeId || '';
+  if (!opts.dim && (biome.includes('drowning') || biome.includes('sunken')) && (h >> 6) % 8 === 0) {
+    fillRect(ctx, x + 4, y + ((h >> 2) % 16) + 8, s - 8, 1, '#ffffff14');
+    fillRect(ctx, x + ((h >> 4) % 12) + 6, y + 10, 3, 1, c.wet);
   }
 }
 
@@ -247,6 +288,17 @@ export function drawVoidTile(ctx, x, y, s, opts = {}) {
 }
 
 export function drawStairsDownTile(ctx, x, y, s, opts = {}) {
+  if (!opts.dim) {
+    ctx.save();
+    ctx.globalAlpha = 0.42;
+    const g = ctx.createRadialGradient(x + s / 2, y + s / 2, s * 0.08, x + s / 2, y + s / 2, s * 0.58);
+    g.addColorStop(0, '#d4be7a66');
+    g.addColorStop(0.55, '#d4be7a18');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, s, s);
+    ctx.restore();
+  }
   drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
   const gold = opts.dim ? shade('#d4be7a', -40) : '#d4be7a';
   const u = s / 32;
@@ -256,8 +308,12 @@ export function drawStairsDownTile(ctx, x, y, s, opts = {}) {
     const sy = y + (6 + i * 5) * u;
     fillRect(ctx, sx, sy, w, 3 * u, i % 2 ? shade(gold, -15) : gold);
     fillRect(ctx, sx, sy, w, 1, '#ffffff28');
+    fillRect(ctx, sx + w * 0.42, sy + 1 * u, 2 * u, 1 * u, '#ffffff44');
   }
   fillRect(ctx, x + s * 0.35, y + s * 0.15, s * 0.3, s * 0.08, '#00000044');
+  if (!opts.dim) {
+    p(ctx, x, y, s, [[14, 4, 4, 3, '#d4be7a'], [15, 5, 2, 1, '#ffffff66']]);
+  }
 }
 
 export function drawStairsUpTile(ctx, x, y, s, opts = {}) {
@@ -272,12 +328,25 @@ export function drawStairsUpTile(ctx, x, y, s, opts = {}) {
 
 export function drawDoorTile(ctx, x, y, s, opts = {}) {
   drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
+  const stone = opts.dim ? '#2a2430' : '#3a3448';
   const wood = opts.dim ? '#4a3828' : '#7a5436';
+  const iron = opts.dim ? '#4a4a52' : '#8a9098';
   const u = s / 32;
-  fillRect(ctx, x + 10 * u, y + 3 * u, 12 * u, 26 * u, wood);
-  fillRect(ctx, x + 11 * u, y + 4 * u, 10 * u, 1, shade(wood, 30));
-  fillRect(ctx, x + 19 * u, y + 16 * u, 2 * u, 2 * u, '#d4be7a');
-  fillRect(ctx, x + 10 * u, y + 3 * u, 1 * u, 26 * u, '#00000055');
+  p(ctx, x, y, s, [
+    [6, 2, 20, 3, stone], [5, 5, 22, 2, shade(stone, 8)],
+    [8, 3, 16, 2, shade(stone, 18)], [7, 2, 18, 1, '#ffffff12']
+  ]);
+  fillRect(ctx, x + 10 * u, y + 6 * u, 12 * u, 23 * u, wood);
+  fillRect(ctx, x + 11 * u, y + 7 * u, 10 * u, 1, shade(wood, 30));
+  fillRect(ctx, x + 10 * u, y + 14 * u, 1 * u, 10 * u, shade(wood, -25));
+  fillRect(ctx, x + 21 * u, y + 14 * u, 1 * u, 10 * u, shade(wood, -25));
+  fillRect(ctx, x + 19 * u, y + 18 * u, 2 * u, 2 * u, '#d4be7a');
+  fillRect(ctx, x + 19 * u, y + 18 * u, 2 * u, 1, '#ffffff33');
+  p(ctx, x, y, s, [
+    [9, 8, 2, 20, iron], [21, 8, 2, 20, iron],
+    [10, 6, 12, 2, iron]
+  ]);
+  fillRect(ctx, x + 10 * u, y + 6 * u, 1 * u, 23 * u, '#00000055');
 }
 
 /** @returns {Record<string, function>} */

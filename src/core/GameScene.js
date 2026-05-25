@@ -115,7 +115,7 @@ export class GameScene {
     // Camera follows player; world draws use this offset internally.
     renderer.setCameraFor(this.player.renderX, this.player.renderY);
 
-    renderer.drawFloor(this.floor);
+    renderer.drawFloor(this.floor, this.player);
     renderer.drawGroundItems(this.floor);
     renderer.drawTelegraphs(this.floor, this.player);
     const now = performance.now();

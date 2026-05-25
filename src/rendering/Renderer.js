@@ -146,8 +146,9 @@ export class Renderer {
    * Paint the dungeon floor with vision state. Applies camera offset.
    * Only iterates tiles inside the visible viewport for perf.
    * @param {import('../world/Floor.js').Floor} floor
+   * @param {{ renderX?:number, renderY?:number }} [player] — for torch glow
    */
-  drawFloor(floor) {
+  drawFloor(floor, player) {
     const ctx = this.ctx;
     const cam = this._camera;
     ctx.save();
@@ -247,6 +248,34 @@ export class Renderer {
         if (dim) Renderer._applyFog(ctx, tx, ty);
       }
     }
+
+    if (player) {
+      this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
+    }
+    ctx.restore();
+  }
+
+  _drawTorchGlow(ctx, floor, player, x0, y0, x1, y1) {
+    const def = floor.definition || {};
+    const radius = (def.torchRadius || 5) * TILE_SIZE;
+    const px = player.renderX * TILE_SIZE + TILE_SIZE / 2;
+    const py = player.renderY * TILE_SIZE + TILE_SIZE / 2;
+    const left = x0 * TILE_SIZE;
+    const top = y0 * TILE_SIZE;
+    const w = (x1 - x0 + 1) * TILE_SIZE;
+    const h = (y1 - y0 + 1) * TILE_SIZE;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(left, top, w, h);
+    ctx.clip();
+    const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.3, px, py, radius);
+    g.addColorStop(0, 'rgba(212, 190, 122, 0.24)');
+    g.addColorStop(0.42, 'rgba(160, 120, 70, 0.09)');
+    g.addColorStop(0.82, 'rgba(48, 36, 64, 0.03)');
+    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = g;
+    ctx.fillRect(left, top, w, h);
     ctx.restore();
   }
 
@@ -265,7 +294,10 @@ export class Renderer {
       const t = floor.tileAt(x, y);
       if (!t || !t.visible) continue;
       const top = stack[stack.length - 1];
-      this.sprites.draw(top.spriteKey, ctx, x * TILE_SIZE, y * TILE_SIZE);
+      const ix = x * TILE_SIZE;
+      const iy = y * TILE_SIZE;
+      this._drawItemGlow(ctx, ix, iy, top.spriteKey);
+      this.sprites.draw(top.spriteKey, ctx, ix, iy);
       if (stack.length > 1) {
         this._tinyBadge(ctx, x * TILE_SIZE + TILE_SIZE - 10, y * TILE_SIZE + TILE_SIZE - 10, `${stack.length}`);
       }
@@ -370,6 +402,9 @@ export class Renderer {
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
       this._drawEntityGrounding(ctx, e, px, py);
       this.sprites.draw(key, ctx, px, py);
+      if (e.kind === 'enemy' && t?.visible) {
+        this._drawEntitySilhouette(ctx, px, py);
+      }
 
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {
         const pct = e.stats.hp / e.stats.hpMax;
@@ -407,6 +442,28 @@ export class Renderer {
     ctx.fillStyle = '#000000';
     ctx.beginPath();
     ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE * 0.82, w / 2, h / 2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  _drawEntitySilhouette(ctx, px, py) {
+    ctx.save();
+    ctx.globalAlpha = 0.42;
+    strokeRect(ctx, px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6, '#000000', 1);
+    ctx.restore();
+  }
+
+  _drawItemGlow(ctx, ix, iy, spriteKey) {
+    const warm = spriteKey?.startsWith('potion_') || spriteKey?.startsWith('vial_')
+      || spriteKey?.startsWith('weapon_') || spriteKey?.startsWith('ring_')
+      || spriteKey?.startsWith('necklace_') || spriteKey?.startsWith('amulet_');
+    const cx = ix + TILE_SIZE / 2;
+    const cy = iy + TILE_SIZE * 0.86;
+    ctx.save();
+    ctx.globalAlpha = warm ? 0.34 : 0.22;
+    ctx.fillStyle = warm ? '#d4be7a' : '#8090b0';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, TILE_SIZE * 0.3, TILE_SIZE * 0.11, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
@@ -472,10 +529,16 @@ export class Renderer {
   /** Warm fog-of-war tint on explored-but-not-visible tiles. */
   static _applyFog(ctx, tx, ty) {
     ctx.save();
-    ctx.globalAlpha = 0.42;
-    fillRect(ctx, tx, ty, TILE_SIZE, TILE_SIZE, '#120e1c');
-    ctx.globalAlpha = 0.18;
-    fillRect(ctx, tx, ty, TILE_SIZE, TILE_SIZE, '#000');
+    const g = ctx.createLinearGradient(tx, ty, tx, ty + TILE_SIZE);
+    g.addColorStop(0, 'rgba(36, 28, 52, 0.52)');
+    g.addColorStop(0.55, 'rgba(20, 16, 32, 0.58)');
+    g.addColorStop(1, 'rgba(6, 4, 12, 0.72)');
+    ctx.fillStyle = g;
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    ctx.globalAlpha = 0.14;
+    fillRect(ctx, tx, ty, TILE_SIZE, 1, '#d4be7a28');
+    ctx.globalAlpha = 0.1;
+    fillRect(ctx, tx, ty, 1, TILE_SIZE, '#00000088');
     ctx.restore();
   }
 
