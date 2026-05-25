@@ -69,6 +69,8 @@ export class TitleScreen {
 
   render(renderer) {
     this._renderBackdrop(renderer);
+    const menuItems = this._menuItems();
+    if (this.selected >= menuItems.length) this.selected = 0;
 
     for (const p of this._particles) {
       const ctx = renderer.ctx;
@@ -97,7 +99,7 @@ export class TitleScreen {
       { size: uiSize(15), align: 'center', color: COLOR.gold, bold: true, family: FONT_MONO });
 
     // --- Menu rows ---
-    this._renderMenuRows(renderer);
+    this._renderMenuRows(renderer, menuItems);
 
     // --- Footer ---
     const runs = (this.state.state.meta.runsCompleted || 0) + (this.state.state.meta.runsDied || 0);
@@ -117,14 +119,23 @@ export class TitleScreen {
     else if (this.modal === 'codex') this._renderCodex(renderer);
   }
 
-  _renderMenuRows(r) {
+  _menuItems() {
+    const run = this.state.state.run;
+    if (!run?.canContinue) return MENU;
+    return [
+      { id: 'continue', icon: '▶', label: 'CONTINUE', sub: '' },
+      ...MENU
+    ];
+  }
+
+  _renderMenuRows(r, menuItems = this._menuItems()) {
     const ctx = r.ctx;
     const t = this._t;
     const rowH = LAYOUT.rowH;
     const rowW = LAYOUT.rowW;
     const x = (CANVAS_WIDTH - rowW) / 2;
-    for (let i = 0; i < MENU.length; i++) {
-      const item = MENU[i];
+    for (let i = 0; i < menuItems.length; i++) {
+      const item = menuItems[i];
       const y = LAYOUT.baseY + i * (rowH + LAYOUT.rowGap);
       const selected = i === this.selected;
       ctx.save();
@@ -163,7 +174,7 @@ export class TitleScreen {
           family: FONT_DISPLAY, color: COLOR.textPrimary });
       const sub = this._statusFor(item);
       if (sub) {
-        r.drawText(sub, x + rowW - 12, y + rowH / 2,
+        r.drawText(sub, x + rowW - (selected ? 48 : 12), y + rowH / 2,
           { size: uiSize(12), italic: true, align: 'right', baseline: 'middle',
             family: FONT_BODY, color: COLOR.textMuted });
       }
@@ -178,6 +189,12 @@ export class TitleScreen {
 
   /** Dynamic status text per row. */
   _statusFor(item) {
+    if (item.id === 'continue') {
+      const run = this.state.state.run || {};
+      const floor = (run.floorIndex || 0) + 1;
+      const hp = Number.isFinite(run.hp) ? ` · HP ${run.hp}` : '';
+      return `F${floor} · Lv ${run.level || 1}${hp}`;
+    }
     if (item.id === 'newRun') return 'permadeath';
     if (item.id === 'shop') {
       const coins = this.state.state.meta.coins || 0;
@@ -250,24 +267,26 @@ export class TitleScreen {
     }
     switch (action.type) {
       case 'move':
-        if (action.dy === -1) this.selected = (this.selected + MENU.length - 1) % MENU.length;
-        else if (action.dy === 1) this.selected = (this.selected + 1) % MENU.length;
+        if (action.dy === -1) this.selected = (this.selected + this._menuItems().length - 1) % this._menuItems().length;
+        else if (action.dy === 1) this.selected = (this.selected + 1) % this._menuItems().length;
         break;
       case 'confirm':
-        this._activate(MENU[this.selected].id);
+        this._activate(this._menuItems()[this.selected].id);
         break;
       case 'tap':
+        const menuItems = this._menuItems();
         if (typeof action.buttonIndex === 'number' &&
-            action.buttonIndex >= 0 && action.buttonIndex < MENU.length) {
+            action.buttonIndex >= 0 && action.buttonIndex < menuItems.length) {
           this.selected = action.buttonIndex;
-          this._activate(MENU[action.buttonIndex].id);
+          this._activate(menuItems[action.buttonIndex].id);
         }
         break;
     }
   }
 
   _activate(id) {
-    if (id === 'newRun') this.bus.emit('request:newRun', {});
+    if (id === 'continue') this.bus.emit('request:continueRun', {});
+    else if (id === 'newRun') this.bus.emit('request:newRun', {});
     else if (id === 'daily') {
       const seed = TitleScreen.dailySeed();
       this.bus.emit('request:newRun', { seed, mode: 'daily' });
@@ -797,7 +816,8 @@ export class TitleScreen {
     const rowH = LAYOUT.rowH;
     const rowW = LAYOUT.rowW;
     const bx = (CANVAS_WIDTH - rowW) / 2;
-    for (let i = 0; i < MENU.length; i++) {
+    const menuItems = this._menuItems();
+    for (let i = 0; i < menuItems.length; i++) {
       const by = LAYOUT.baseY + i * (rowH + LAYOUT.rowGap);
       if (x >= bx && x <= bx + rowW && y >= by && y <= by + rowH) return i;
     }

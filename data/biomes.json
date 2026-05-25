@@ -3,7 +3,7 @@
     {
       "id": "forgotten_crypts",
       "name": "The Forgotten Crypts",
-      "atmosphere": "Catacomb terabaikan, debu, tulang, sisa-sisa tradisi pemakaman lama.",
+      "atmosphere": "Abandoned catacombs, dust, bone, and the last rites of a forgotten burial order.",
       "wallPalette": [
         "#3a3340",
         "#1a1820"
@@ -45,7 +45,7 @@
     {
       "id": "bone_garden",
       "name": "The Bone Garden",
-      "atmosphere": "Sesuatu tumbuh di antara tulang. Bukan tanaman.",
+      "atmosphere": "Something grows between the bones. It is not a plant.",
       "wallPalette": [
         "#3a3340",
         "#181420"

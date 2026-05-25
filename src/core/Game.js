@@ -49,6 +49,7 @@ export class Game {
 
     // Game-level event wiring — scene transitions etc.
     this.bus.on('request:newRun', (opts) => this.newRun(opts || {}));
+    this.bus.on('request:continueRun', () => this.continueRun());
     this.bus.on('request:quitToTitle', () => this.quitToTitle());
     this.bus.on('run:over', (summary) => this._onRunOver(summary));
     this.bus.on('run:victory', (summary) => this._onRunVictory(summary));
@@ -69,6 +70,10 @@ export class Game {
     if (metaSnapshot) {
       Object.assign(this.state.state.meta, metaSnapshot);
     }
+    const resumeSnapshot = this._loadRunSnapshot();
+    if (resumeSnapshot) {
+      this.state.setRun(Game._runCard(resumeSnapshot));
+    }
 
     // Switch to title.
     this.quitToTitle();
@@ -83,9 +88,11 @@ export class Game {
       console.warn(LOG.CORE, 'newRun called before GameScene factory is registered');
       return;
     }
+    this.save.clearRun?.();
     const scene = this._sceneFactories.game({
       bus: this.bus,
       state: this.state,
+      saveManager: this.save,
       content: this.content,
       balance: this.balance,
       seed: opts.seed,
@@ -95,8 +102,30 @@ export class Game {
     this.scenes.switch('game', scene, opts);
   }
 
+  /** Resume the last in-progress run if storage has a valid snapshot. */
+  continueRun() {
+    if (!this._sceneFactories.game) return;
+    const snapshot = this._loadRunSnapshot();
+    if (!snapshot) return;
+    const scene = this._sceneFactories.game({
+      bus: this.bus,
+      state: this.state,
+      saveManager: this.save,
+      content: this.content,
+      balance: this.balance,
+      seed: snapshot.seed,
+      mode: snapshot.mode || 'normal',
+      resumeSnapshot: snapshot
+    });
+    this.state.setScene('game');
+    this.scenes.switch('game', scene, { resumeSnapshot: snapshot });
+  }
+
   /** Drop the player back to the title screen. */
   quitToTitle() {
+    const resumeSnapshot = this._loadRunSnapshot();
+    if (resumeSnapshot) this.state.setRun(Game._runCard(resumeSnapshot));
+    else this.state.setRun(null);
     const scene = this._sceneFactories.title({
       bus: this.bus,
       state: this.state,
@@ -108,6 +137,8 @@ export class Game {
   }
 
   _onRunOver(summary) {
+    this.save.clearRun?.();
+    this.state.setRun(null);
     // recordRun mutates the COPY it receives (sets score, coinsEarned,
     // dailyNewBest if applicable). We need to forward those values into
     // the scene's summary or the GameOver screen renders zeros.
@@ -133,6 +164,8 @@ export class Game {
   }
 
   _onRunVictory(summary) {
+    this.save.clearRun?.();
+    this.state.setRun(null);
     const summaryForRecord = { ...summary, died: false };
     const result = this.meta.recordRun(summaryForRecord);
     const enriched = {
@@ -152,5 +185,25 @@ export class Game {
     });
     this.state.setScene('victory');
     this.scenes.switch('victory', scene, enriched);
+  }
+
+  _loadRunSnapshot() {
+    const raw = this.save.loadRun?.();
+    if (!raw || raw.dead || raw.victory) return null;
+    const migrated = this.save.migrate ? this.save.migrate(raw).data : raw;
+    if (!migrated || typeof migrated.seed !== 'number') return null;
+    return migrated;
+  }
+
+  static _runCard(snapshot) {
+    return {
+      canContinue: true,
+      seed: snapshot.seed,
+      mode: snapshot.mode || 'normal',
+      floorIndex: snapshot.floorIndex || 0,
+      level: snapshot.player?.level || 1,
+      hp: snapshot.player?.stats?.hp,
+      savedAt: snapshot.savedAt || Date.now()
+    };
   }
 }

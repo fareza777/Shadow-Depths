@@ -71,9 +71,11 @@ export class GameScene {
     this.tutorial = deps.tutorial || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
+    this.save = deps.saveManager || null;
+    this.resumeSnapshot = deps.resumeSnapshot || null;
 
-    this.seed = deps.seed ?? RNG.newSeed();
-    this.mode = deps.mode || 'normal'; // 'normal' | 'daily'
+    this.seed = this.resumeSnapshot?.seed ?? deps.seed ?? RNG.newSeed();
+    this.mode = this.resumeSnapshot?.mode || deps.mode || 'normal'; // 'normal' | 'daily'
     this.rng = new RNG(this.seed, 'run');
     this.pathfinding = new Pathfinding();
     this.combat = new CombatSystem({
@@ -107,6 +109,11 @@ export class GameScene {
   enter(_opts) {
     this._resetBlockingUI();
     this._processingTurn = false;
+    if (this.resumeSnapshot) {
+      this._enterFromSnapshot(this.resumeSnapshot);
+      this.resumeSnapshot = null;
+      return;
+    }
     const inv = new Inventory(this.balance.player.inventorySlots);
     const { floor, spawns } = this.dungeon.getOrGenerate(0);
     this.player = new Player(this.balance, spawns.player, inv);
@@ -121,9 +128,41 @@ export class GameScene {
     this.lighting.compute(this.floor, this.player);
     this.state.setRun({ seed: this.seed, floorIndex: 0, mode: this.mode });
     this._emitFloorEntered(0, floor);
+    this._saveRun();
     if (this.tutorial && this.state.state.meta?.settings?.showTutorial !== false) {
       this.tutorial.show(true);
     }
+  }
+
+  _enterFromSnapshot(snapshot) {
+    const floorIndex = Math.max(0, Math.min(this.dungeon.totalFloors - 1, snapshot.floorIndex || 0));
+    for (let i = 0; i <= floorIndex; i++) this.dungeon.getOrGenerate(i);
+    this.dungeon.currentIndex = floorIndex;
+    const { floor, spawns } = this.dungeon.current();
+    this.itemFactory = new ItemFactory(this.content.items);
+    this._restoreFloorSnapshot(floor, snapshot.floor);
+
+    const inv = new Inventory(snapshot.player?.inventorySize || this.balance.player.inventorySlots);
+    inv.loadSnapshot(snapshot.player?.inventory || [], this.itemFactory);
+    this.player = new Player(this.balance, snapshot.player?.pos || spawns.player, inv);
+    this._restorePlayerSnapshot(this.player, snapshot.player || {});
+    this.player.snapRender();
+    floor.addEntity(this.player);
+
+    this.floor = floor;
+    this.pathfinding.invalidate();
+    this.lighting.compute(this.floor, this.player);
+    this.state.setRun({
+      seed: this.seed,
+      floorIndex,
+      mode: this.mode,
+      canContinue: true,
+      level: this.player.level,
+      hp: this.player.stats.hp,
+      savedAt: snapshot.savedAt || Date.now()
+    });
+    this._emitFloorEntered(floorIndex, floor);
+    this._saveRun();
   }
 
   /** Close singleton modals so a new run cannot inherit a soft-lock. */
@@ -204,7 +243,7 @@ export class GameScene {
     const isSubboss = specialId?.startsWith('subboss_');
     return {
       startedAt: performance.now(),
-      duration: isBoss ? 3200 : isSubboss ? 2600 : 1800,
+      duration: isBoss ? 5200 : isSubboss ? 4400 : 3600,
       title: isBoss ? 'BOSS FLOOR'
         : isSubboss ? 'SUBBOSS FLOOR'
         : `FLOOR ${index + 1}`,
@@ -496,6 +535,7 @@ export class GameScene {
     this.lighting.compute(this.floor, this.player);
     this.state.patch('run.floorIndex', this.dungeon.currentIndex);
     this._emitFloorEntered(this.dungeon.currentIndex, floor);
+    this._saveRun();
   }
 
   /** Use quick bar slot 0–2 (first consumables / throwables in bag order). */
@@ -615,6 +655,7 @@ export class GameScene {
     this._refreshEnemyIntents();
 
     if (this.player.stats.hp < this.player.stats.hpMax) this.floor.clearedWithoutDamage = false;
+    this._saveRun();
   }
 
   /** Show next-turn intent icons without re-running behavior AI (avoids Heavy counter drift). */
@@ -688,6 +729,16 @@ export class GameScene {
       const item = this.itemFactory.create(s.defId, 1);
       if (item) floor.addItem(s.x, s.y, item);
     }
+  }
+
+  _createEnemy(defId, pos, floor) {
+    const def = this.content.enemies[defId];
+    if (!def) return null;
+    const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
+    const behavior = new BehaviorCls(def.behaviorParams);
+    const enemy = new Enemy(def, behavior, pos, floor.definition?.depthScale || 1);
+    enemy.snapRender();
+    return enemy;
   }
 
   /** Every run begins with a basic dagger — no cleaver/bow unless shop unlocks. */
@@ -768,6 +819,7 @@ export class GameScene {
 
   // --- finalization --------------------------------------------------
   _endRun(victory) {
+    this.save?.clearRun?.();
     const summary = {
       ...this.player.runStats,
       died: !victory,
@@ -783,10 +835,12 @@ export class GameScene {
     this._listen('command:useSlot', ({ index }) => {
       this._playerUseSlot(index);
       this.inventoryUI.hide();
+      this._saveRun();
     });
     this._listen('command:equipSlot', ({ index }) => {
       this._playerUseSlot(index);
       this.inventoryUI.hide();
+      this._saveRun();
     });
     this._listen('command:dropSlot', ({ index }) => this._dropSlot(index));
     this._listen('command:unequip', ({ slot }) => this._unequipSlot(slot));
@@ -827,6 +881,7 @@ export class GameScene {
     else if (slot === 'ring') player.ring = null;
     player.inventory.add(current);
     this.bus.emit('player:unequipped', { item: current, slot });
+    this._saveRun();
   }
 
   _dropSlot(index) {
@@ -834,5 +889,153 @@ export class GameScene {
     if (!item) return;
     this.floor.addItem(this.player.x, this.player.y, item);
     this.bus.emit('item:dropped', { item });
+    this._saveRun();
+  }
+
+  _saveRun() {
+    if (!this.save || !this.player || !this.floor || this.player.isDead) return;
+    const snapshot = {
+      version: 1,
+      savedAt: Date.now(),
+      seed: this.seed,
+      mode: this.mode,
+      floorIndex: this.dungeon.currentIndex,
+      player: this._playerSnapshot(),
+      floor: this._floorSnapshot(this.floor)
+    };
+    this.save.saveRun(snapshot);
+    this.state.setRun({
+      seed: this.seed,
+      mode: this.mode,
+      floorIndex: this.dungeon.currentIndex,
+      canContinue: true,
+      level: this.player.level,
+      hp: this.player.stats.hp,
+      savedAt: snapshot.savedAt
+    });
+  }
+
+  _playerSnapshot() {
+    const itemSnap = (item) => (item ? { id: item.id, count: item.count || 1 } : null);
+    return {
+      pos: { x: this.player.x, y: this.player.y },
+      stats: { ...this.player.stats },
+      gold: this.player.gold,
+      xp: this.player.xp,
+      level: this.player.level,
+      inventorySize: this.player.inventory.size,
+      inventory: this.player.inventory.toSnapshot(),
+      equipment: {
+        weapon: itemSnap(this.player.weapon),
+        armor: itemSnap(this.player.armor),
+        helm: itemSnap(this.player.helm),
+        legs: itemSnap(this.player.legs),
+        necklace: itemSnap(this.player.necklace),
+        ring: itemSnap(this.player.ring)
+      },
+      runStats: { ...this.player.runStats },
+      reviveCharges: this.player.reviveCharges,
+      skills: [...this.player.skills],
+      xpMultiplier: this.player.xpMultiplier,
+      skillLifesteal: this.player.skillLifesteal,
+      damageReduction: this.player.damageReduction,
+      skillRangeBonus: this.player.skillRangeBonus,
+      regenEveryNTurns: this.player.regenEveryNTurns,
+      regenAmount: this.player.regenAmount,
+      turnsSinceRegen: this.player._turnsSinceRegen,
+      statusEffects: this.player.statusEffects.map((e) => ({ ...e }))
+    };
+  }
+
+  _floorSnapshot(floor) {
+    const items = [];
+    for (const [key, stack] of floor.items.entries()) {
+      const [x, y] = key.split(',').map(Number);
+      items.push({
+        x, y,
+        stack: stack.map((item) => ({ id: item.id, count: item.count || 1 }))
+      });
+    }
+    const enemies = floor.enemies().map((e) => ({
+      defId: e.defId,
+      x: e.x,
+      y: e.y,
+      stats: { ...e.stats },
+      statusEffects: e.statusEffects.map((s) => ({ ...s })),
+      rolledGold: e._rolledGold || 0,
+      behaviorState: e.behavior?._counter !== undefined ? { counter: e.behavior._counter } : null
+    }));
+    const explored = [];
+    for (let y = 0; y < floor.height; y++) {
+      for (let x = 0; x < floor.width; x++) {
+        if (floor.tiles[y][x].explored) explored.push([x, y]);
+      }
+    }
+    return {
+      index: floor.index,
+      clearedWithoutDamage: floor.clearedWithoutDamage,
+      items,
+      enemies,
+      explored
+    };
+  }
+
+  _restorePlayerSnapshot(player, snap) {
+    player.x = snap.pos?.x ?? player.x;
+    player.y = snap.pos?.y ?? player.y;
+    player.stats = { ...player.stats, ...(snap.stats || {}) };
+    player.gold = snap.gold || 0;
+    player.xp = snap.xp || 0;
+    player.level = snap.level || 1;
+    player.runStats = { ...player.runStats, ...(snap.runStats || {}) };
+    player.reviveCharges = snap.reviveCharges || 0;
+    player.skills = Array.isArray(snap.skills) ? [...snap.skills] : [];
+    player.xpMultiplier = snap.xpMultiplier ?? 1;
+    player.skillLifesteal = snap.skillLifesteal || 0;
+    player.damageReduction = snap.damageReduction || 0;
+    player.skillRangeBonus = snap.skillRangeBonus || 0;
+    player.regenEveryNTurns = snap.regenEveryNTurns || 0;
+    player.regenAmount = snap.regenAmount || 0;
+    player._turnsSinceRegen = snap.turnsSinceRegen || 0;
+    player.statusEffects = Array.isArray(snap.statusEffects) ? snap.statusEffects.map((e) => ({ ...e })) : [];
+    const make = (s) => (s?.id ? this.itemFactory.create(s.id, s.count || 1) : null);
+    const eq = snap.equipment || {};
+    player.weapon = make(eq.weapon);
+    player.armor = make(eq.armor);
+    player.helm = make(eq.helm);
+    player.legs = make(eq.legs);
+    player.necklace = make(eq.necklace);
+    player.ring = make(eq.ring);
+  }
+
+  _restoreFloorSnapshot(floor, snap = {}) {
+    floor.items = new Map();
+    floor.clearedWithoutDamage = snap.clearedWithoutDamage !== false;
+    floor.clearVisibility();
+    for (const pair of snap.explored || []) {
+      const [x, y] = pair;
+      const t = floor.tileAt(x, y);
+      if (t) t.explored = true;
+    }
+    for (const it of snap.items || []) {
+      for (const itemSnap of it.stack || []) {
+        const item = this.itemFactory.create(itemSnap.id, itemSnap.count || 1);
+        if (item) floor.addItem(it.x, it.y, item);
+      }
+    }
+    for (const enemySnap of snap.enemies || []) {
+      const enemy = this._createEnemy(enemySnap.defId, { x: enemySnap.x, y: enemySnap.y }, floor);
+      if (!enemy) continue;
+      enemy.stats = { ...enemy.stats, ...(enemySnap.stats || {}) };
+      enemy.statusEffects = Array.isArray(enemySnap.statusEffects)
+        ? enemySnap.statusEffects.map((e) => ({ ...e }))
+        : [];
+      enemy._rolledGold = enemySnap.rolledGold || 0;
+      if (enemy.behavior && enemySnap.behaviorState?.counter !== undefined) {
+        enemy.behavior._counter = enemySnap.behaviorState.counter;
+      }
+      enemy.isDead = enemy.stats.hp <= 0;
+      if (!enemy.isDead) floor.addEntity(enemy);
+    }
   }
 }
