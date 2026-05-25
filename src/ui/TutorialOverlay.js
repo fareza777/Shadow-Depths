@@ -2,10 +2,9 @@
  * TutorialOverlay — 3-step first-run hints (move, attack, pickup).
  * Centered modal so it never hides the control band. D-pad moves dismiss it.
  */
-import {
-  CANVAS_WIDTH, CANVAS_HEIGHT, COLOR, FONT_DISPLAY, FONT_BODY, uiSize
-} from '../config/constants.js';
-import { VIEWPORT_BOTTOM_Y } from './controlBandLayout.js';
+import { COLOR, FONT_DISPLAY, FONT_BODY, uiSize } from '../config/constants.js';
+import { Layout } from '../config/layoutMetrics.js';
+import { getViewportBottomY } from './controlBandLayout.js';
 
 const STEPS = [
   {
@@ -53,34 +52,34 @@ export class TutorialOverlay {
     if (!this.open) return;
     const step = STEPS[this._step] || STEPS[STEPS.length - 1];
     const r = renderer;
-    const panelW = CANVAS_WIDTH - 32;
+    const panelW = Layout.canvasW - 32;
     const panelH = 200;
     const x = 16;
-    const y = Math.floor((CANVAS_HEIGHT - panelH) / 2) - 40;
+    const y = Math.floor((Layout.canvasH - panelH) / 2) - 40;
 
-    r.drawRect(0, 0, CANVAS_WIDTH, VIEWPORT_BOTTOM_Y, 'rgba(0,0,0,0.55)');
+    r.drawRect(0, 0, Layout.canvasW, getViewportBottomY(), 'rgba(0,0,0,0.55)');
     r.drawRect(x, y, panelW, panelH, COLOR.bgPanel);
     r.drawStrokedRect(x, y, panelW, panelH, COLOR.gold, 2);
     r.drawRect(x, y, panelW, 3, COLOR.gold);
 
     r.drawText('FIRST RUN', CANVAS_WIDTH / 2, y + 22,
       { size: uiSize(11), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
-    r.drawText(step.title, CANVAS_WIDTH / 2, y + 50,
+    r.drawText(step.title, Layout.canvasW / 2, y + 50,
       { size: uiSize(20), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
 
     const lines = wrapText(step.body, 36);
     let ly = y + 82;
     for (const line of lines) {
-      r.drawText(line, CANVAS_WIDTH / 2, ly,
+      r.drawText(line, Layout.canvasW / 2, ly,
         { size: uiSize(13), align: 'center', color: COLOR.textPrimary, family: FONT_BODY });
       ly += uiSize(16);
     }
 
     const hint = this._step < STEPS.length - 1 ? 'Tap or use D-pad to continue' : 'Tap or move to play';
     r.drawText(`${this._step + 1} / ${STEPS.length}  ·  ${hint}`,
-      CANVAS_WIDTH / 2, y + panelH - 20,
+      Layout.canvasW / 2, y + panelH - 20,
       { size: uiSize(12), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
-    r.drawText('SKIP', CANVAS_WIDTH / 2, y + panelH + 14,
+    r.drawText('SKIP', Layout.canvasW / 2, y + panelH + 14,
       { size: uiSize(11), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
   }
 

@@ -1,10 +1,8 @@
 /**
  * MobileControls — ornate D-pad + action buttons.
  */
-import {
-  CANVAS_WIDTH, CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
-  IS_LANDSCAPE, COLOR, FONT_DISPLAY, uiSize
-} from '../config/constants.js';
+import { Layout } from '../config/layoutMetrics.js';
+import { COLOR, FONT_DISPLAY, uiSize } from '../config/constants.js';
 import { getDpadLayout } from './controlBandLayout.js';
 
 const ACTION_LABELS = [
@@ -17,7 +15,7 @@ const ACTION_LABELS = [
 
 function buildLayout() {
   const DPAD = getDpadLayout();
-  if (IS_LANDSCAPE) {
+  if (!Layout.portrait) {
     const stripW = DPAD.stripW;
     const { dpadBtn, dpadGap, dpadSize, dpadX, dpadY } = DPAD;
     const actW = 100;
@@ -25,19 +23,19 @@ function buildLayout() {
     const actGap = 5;
     const actCount = ACTION_LABELS.length;
     const actStackH = actH * actCount + actGap * (actCount - 1);
-    const actX = CANVAS_WIDTH - stripW + (stripW - actW) / 2;
-    const actY = HUD_HEIGHT + 10;
+    const actX = Layout.canvasW - stripW + (stripW - actW) / 2;
+    const actY = Layout.hud + 10;
     return {
       isLandscape: true, band: null,
       dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
       actW, actH, actGap, actStackH, actX, actY,
       centerRect: { x: 6, y: dpadY + dpadSize + 10, w: stripW - 12,
-        h: CANVAS_HEIGHT - (dpadY + dpadSize + 10) - 10 },
-      msgRect: { x: CANVAS_WIDTH - stripW + 6, y: actY + actStackH + 10,
-        w: stripW - 12, h: CANVAS_HEIGHT - (actY + actStackH + 10) - 10 },
+        h: Layout.canvasH - (dpadY + dpadSize + 10) - 10 },
+      msgRect: { x: Layout.canvasW - stripW + 6, y: actY + actStackH + 10,
+        w: stripW - 12, h: Layout.canvasH - (actY + actStackH + 10) - 10 },
       strips: [
-        { x: 0, y: HUD_HEIGHT, w: stripW, h: CANVAS_HEIGHT - HUD_HEIGHT },
-        { x: CANVAS_WIDTH - stripW, y: HUD_HEIGHT, w: stripW, h: CANVAS_HEIGHT - HUD_HEIGHT }
+        { x: 0, y: Layout.hud, w: stripW, h: Layout.canvasH - Layout.hud },
+        { x: Layout.canvasW - stripW, y: Layout.hud, w: stripW, h: Layout.canvasH - Layout.hud }
       ]
     };
   }
@@ -47,16 +45,16 @@ function buildLayout() {
   const actH = 38;
   const actGap = 4;
   const actStackH = actH * ACTION_LABELS.length + actGap * (ACTION_LABELS.length - 1);
-  const actX = CANVAS_WIDTH - actW - 10;
-  const actY = bandY + (CONTROL_HEIGHT - actStackH) / 2;
+  const actX = Layout.canvasW - actW - 10;
+  const actY = bandY + (Layout.control - actStackH) / 2;
   return {
     isLandscape: false,
-    band: { x: 0, y: bandY, w: CANVAS_WIDTH, h: CONTROL_HEIGHT },
+    band: { x: 0, y: bandY, w: Layout.canvasW, h: Layout.control },
     dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
     actW, actH, actGap, actStackH, actX, actY,
     centerRect: {
       x: dpadX + dpadSize + 14, y: bandY + 10,
-      w: actX - (dpadX + dpadSize) - 28, h: CONTROL_HEIGHT - 20
+      w: actX - (dpadX + dpadSize) - 28, h: Layout.control - 20
     },
     msgRect: null, strips: []
   };
@@ -132,11 +130,11 @@ export class MobileControls {
     if (LAYOUT.band) {
       r.drawRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h, '#1a1624');
       MobileControls._drawStoneRelief(r, LAYOUT.band, t);
-      r.drawRect(0, LAYOUT.band.y, CANVAS_WIDTH, 3, COLOR.gold);
-      r.drawRect(0, LAYOUT.band.y + 3, CANVAS_WIDTH, 1, '#8a7048');
+      r.drawRect(0, LAYOUT.band.y, Layout.canvasW, 3, COLOR.gold);
+      r.drawRect(0, LAYOUT.band.y + 3, Layout.canvasW, 1, '#8a7048');
       MobileControls._drawTorch(r, LAYOUT.dpadX + LAYOUT.dpadSize + 22, LAYOUT.band.y + 20, t, false);
       MobileControls._drawTorch(r, LAYOUT.actX - 32, LAYOUT.band.y + 20, t, true);
-      MobileControls._drawSigil(r, CANVAS_WIDTH / 2, LAYOUT.band.y + CONTROL_HEIGHT - 22, t);
+      MobileControls._drawSigil(r, Layout.canvasW / 2, LAYOUT.band.y + Layout.control - 22, t);
     }
     for (const s of LAYOUT.strips) {
       r.drawRect(s.x, s.y, s.w, s.h, '#0a0810');

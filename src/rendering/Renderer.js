@@ -20,10 +20,11 @@
  * stays pure data.
  */
 import {
-  CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, GRID_HEIGHT,
-  VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H,
-  TILE_SIZE, TILE, COLOR, TIMING
+  GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, TILE, COLOR, TIMING
 } from '../config/constants.js';
+import {
+  Layout, syncLayoutFromWindow, viewportX, viewportY, viewportW, viewportH
+} from '../config/layoutMetrics.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
 
 export class Renderer {
@@ -39,8 +40,7 @@ export class Renderer {
    */
   constructor({ canvas, sprites, cameraShake, lighting, particles, eventBus }) {
     this.canvas = canvas;
-    this.canvas.width = CANVAS_WIDTH;
-    this.canvas.height = CANVAS_HEIGHT;
+    syncLayoutFromWindow(canvas);
     this.ctx = canvas.getContext('2d', { alpha: false });
     this.ctx.imageSmoothingEnabled = false;
     this.sprites = sprites;
@@ -57,6 +57,7 @@ export class Renderer {
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
+    window.visualViewport?.addEventListener('resize', this._resizeBound);
     this._fitToViewport();
 
     // Game-feel: trigger camera shake on damage automatically.
@@ -72,6 +73,7 @@ export class Renderer {
 
   destroy() {
     window.removeEventListener('resize', this._resizeBound);
+    window.visualViewport?.removeEventListener('resize', this._resizeBound);
   }
 
   // --- camera ---------------------------------------------------------
@@ -81,16 +83,20 @@ export class Renderer {
    * — the world never paints over them.
    */
   setCameraFor(playerRenderX, playerRenderY) {
+    const vx = viewportX();
+    const vy = viewportY();
+    const vw = viewportW();
+    const vh = viewportH();
     const worldW = GRID_WIDTH * TILE_SIZE;
     const worldH = GRID_HEIGHT * TILE_SIZE;
-    let cx = VIEWPORT_X + VIEWPORT_W / 2 - (playerRenderX + 0.5) * TILE_SIZE;
-    let cy = VIEWPORT_Y + VIEWPORT_H / 2 - (playerRenderY + 0.5) * TILE_SIZE;
-    cx = worldW <= VIEWPORT_W
-      ? VIEWPORT_X + (VIEWPORT_W - worldW) / 2
-      : Math.max(VIEWPORT_X + VIEWPORT_W - worldW, Math.min(VIEWPORT_X, cx));
-    cy = worldH <= VIEWPORT_H
-      ? VIEWPORT_Y + (VIEWPORT_H - worldH) / 2
-      : Math.max(VIEWPORT_Y + VIEWPORT_H - worldH, Math.min(VIEWPORT_Y, cy));
+    let cx = vx + vw / 2 - (playerRenderX + 0.5) * TILE_SIZE;
+    let cy = vy + vh / 2 - (playerRenderY + 0.5) * TILE_SIZE;
+    cx = worldW <= vw
+      ? vx + (vw - worldW) / 2
+      : Math.max(vx + vw - worldW, Math.min(vx, cx));
+    cy = worldH <= vh
+      ? vy + (vh - worldH) / 2
+      : Math.max(vy + vh - worldH, Math.min(vy, cy));
     this._camera = { x: Math.round(cx), y: Math.round(cy) };
   }
 
@@ -102,8 +108,12 @@ export class Renderer {
    * control band — those taps don't count as movement intents).
    */
   canvasToTile(canvasX, canvasY) {
-    if (canvasX < VIEWPORT_X || canvasX >= VIEWPORT_X + VIEWPORT_W) return null;
-    if (canvasY < VIEWPORT_Y || canvasY >= VIEWPORT_Y + VIEWPORT_H) return null;
+    const vx = viewportX();
+    const vy = viewportY();
+    const vw = viewportW();
+    const vh = viewportH();
+    if (canvasX < vx || canvasX >= vx + vw) return null;
+    if (canvasY < vy || canvasY >= vy + vh) return null;
     return {
       x: Math.floor((canvasX - this._camera.x) / TILE_SIZE),
       y: Math.floor((canvasY - this._camera.y) / TILE_SIZE)
@@ -112,8 +122,12 @@ export class Renderer {
 
   /** True if a canvas pixel sits inside the world viewport rect. */
   isInViewport(canvasX, canvasY) {
-    return canvasX >= VIEWPORT_X && canvasX < VIEWPORT_X + VIEWPORT_W
-        && canvasY >= VIEWPORT_Y && canvasY < VIEWPORT_Y + VIEWPORT_H;
+    const vx = viewportX();
+    const vy = viewportY();
+    const vw = viewportW();
+    const vh = viewportH();
+    return canvasX >= vx && canvasX < vx + vw
+        && canvasY >= vy && canvasY < vy + vh;
   }
 
   // --- main entry -----------------------------------------------------
@@ -137,7 +151,7 @@ export class Renderer {
     sceneManager.render(this);
     ctx.save();
     ctx.beginPath();
-    ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
     ctx.clip();
     this.particles.render(ctx, this._camera);
     ctx.restore();
@@ -173,18 +187,21 @@ export class Renderer {
     // Clip to viewport rect so world pixels can never spill into HUD or
     // control band areas. Then translate by camera offset.
     ctx.beginPath();
-    ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    const vx = viewportX();
+    const vy = viewportY();
+    const vw = viewportW();
+    const vh = viewportH();
+    ctx.rect(vx, vy, vw, vh);
     ctx.clip();
     this._drawViewportAbyss(ctx, floor.definition || {});
     ctx.translate(cam.x, cam.y);
 
-    // Visible tile range — derived from viewport rect, not full canvas.
-    const x0 = Math.max(0, Math.floor((VIEWPORT_X - cam.x) / TILE_SIZE));
-    const y0 = Math.max(0, Math.floor((VIEWPORT_Y - cam.y) / TILE_SIZE));
+    const x0 = Math.max(0, Math.floor((vx - cam.x) / TILE_SIZE));
+    const y0 = Math.max(0, Math.floor((vy - cam.y) / TILE_SIZE));
     const x1 = Math.min(floor.width - 1,
-      Math.ceil((VIEWPORT_X + VIEWPORT_W - cam.x) / TILE_SIZE));
+      Math.ceil((vx + vw - cam.x) / TILE_SIZE));
     const y1 = Math.min(floor.height - 1,
-      Math.ceil((VIEWPORT_Y + VIEWPORT_H - cam.y) / TILE_SIZE));
+      Math.ceil((vy + vh - cam.y) / TILE_SIZE));
 
     // Base abyss wash inside visible tile range.
     fillRect(ctx, x0 * TILE_SIZE, y0 * TILE_SIZE,
@@ -310,7 +327,7 @@ export class Renderer {
     const cam = this._camera;
     ctx.save();
     ctx.beginPath();
-    ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
     ctx.clip();
     ctx.translate(cam.x, cam.y);
     for (const [key, stack] of floor.items) {
@@ -336,7 +353,7 @@ export class Renderer {
     const cam = this._camera;
     ctx.save();
     ctx.beginPath();
-    ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
     ctx.clip();
     ctx.translate(cam.x, cam.y);
 
@@ -404,7 +421,7 @@ export class Renderer {
     const cam = this._camera;
     ctx.save();
     ctx.beginPath();
-    ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
     ctx.clip();
     ctx.translate(cam.x, cam.y);
 
@@ -620,44 +637,49 @@ export class Renderer {
       top = '#02020a'; mid = '#000004'; haze = '#181048';
     }
 
-    const g = ctx.createLinearGradient(0, VIEWPORT_Y, 0, VIEWPORT_Y + VIEWPORT_H);
+    const vx = viewportX();
+    const vy = viewportY();
+    const vw = viewportW();
+    const vh = viewportH();
+    const g = ctx.createLinearGradient(0, vy, 0, vy + vh);
     g.addColorStop(0, top);
     g.addColorStop(0.52, mid);
     g.addColorStop(1, '#000000');
     ctx.fillStyle = g;
-    ctx.fillRect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.fillRect(vx, vy, vw, vh);
 
     ctx.save();
     ctx.globalAlpha = 0.16;
     const rg = ctx.createRadialGradient(
-      VIEWPORT_X + VIEWPORT_W / 2, VIEWPORT_Y + VIEWPORT_H * 0.34, 10,
-      VIEWPORT_X + VIEWPORT_W / 2, VIEWPORT_Y + VIEWPORT_H * 0.34, VIEWPORT_W * 0.62
+      vx + vw / 2, vy + vh * 0.34, 10,
+      vx + vw / 2, vy + vh * 0.34, vw * 0.62
     );
     rg.addColorStop(0, haze);
     rg.addColorStop(1, 'transparent');
     ctx.fillStyle = rg;
-    ctx.fillRect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+    ctx.fillRect(vx, vy, vw, vh);
 
     ctx.globalAlpha = 0.28;
     for (let i = 0; i < 12; i++) {
-      const x = VIEWPORT_X + 16 + ((i * 43) % Math.max(1, VIEWPORT_W - 32));
-      const y = VIEWPORT_Y + 42 + ((i * 71) % Math.max(1, VIEWPORT_H - 84));
+      const x = vx + 16 + ((i * 43) % Math.max(1, vw - 32));
+      const y = vy + 42 + ((i * 71) % Math.max(1, vh - 84));
       fillRect(ctx, x, y, 1, 1, i % 3 === 0 ? '#d4be7a22' : '#ffffff14');
     }
 
     ctx.globalAlpha = 0.2;
-    fillRect(ctx, VIEWPORT_X, VIEWPORT_Y, 2, VIEWPORT_H, '#d4be7a22');
-    fillRect(ctx, VIEWPORT_X + VIEWPORT_W - 2, VIEWPORT_Y, 2, VIEWPORT_H, '#d4be7a18');
+    fillRect(ctx, vx, vy, 2, vh, '#d4be7a22');
+    fillRect(ctx, vx + vw - 2, vy, 2, vh, '#d4be7a18');
     ctx.restore();
   }
 
   // --- viewport scaling ----------------------------------------------
   _fitToViewport() {
+    syncLayoutFromWindow(this.canvas);
     const vw = window.visualViewport?.width || window.innerWidth;
     const vh = window.visualViewport?.height || window.innerHeight;
-    const scale = Math.min(vw / CANVAS_WIDTH, vh / CANVAS_HEIGHT);
-    this.canvas.style.width  = `${Math.floor(CANVAS_WIDTH * scale)}px`;
-    this.canvas.style.height = `${Math.floor(CANVAS_HEIGHT * scale)}px`;
+    const scale = Math.min(vw / Layout.canvasW, vh / Layout.canvasH);
+    this.canvas.style.width  = `${Math.floor(Layout.canvasW * scale)}px`;
+    this.canvas.style.height = `${Math.floor(Layout.canvasH * scale)}px`;
   }
 }
 

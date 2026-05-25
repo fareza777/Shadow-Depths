@@ -6,7 +6,7 @@ import {
 } from '../config/constants.js';
 import { findQuickUseSlots } from '../items/quickUse.js';
 import {
-  getQuickUseLayout, QUICK_SLOT_COUNT, VIEWPORT_BOTTOM_Y
+  getQuickUseLayout, QUICK_SLOT_COUNT, getViewportBottomY
 } from './controlBandLayout.js';
 
 export class QuickUseBar {
@@ -127,7 +127,7 @@ export class QuickUseBar {
    * @param {import('../items/Inventory.js').Inventory} [inventory]
    */
   hitTest(canvasX, canvasY, time, inventory) {
-    if (canvasY < VIEWPORT_BOTTOM_Y) return -1;
+    if (canvasY < getViewportBottomY()) return -1;
     const LAYOUT = getQuickUseLayout();
 
     const slots = inventory ? findQuickUseSlots(inventory) : [];

@@ -8,7 +8,7 @@
  *
  * Maps screen coords → canvas coords accounting for the CSS scale factor.
  */
-import { CANVAS_WIDTH, CANVAS_HEIGHT, TILE_SIZE } from '../config/constants.js';
+import { TILE_SIZE } from '../config/constants.js';
 
 export class TouchHandler {
   /**
@@ -46,8 +46,8 @@ export class TouchHandler {
 
   _toCanvas(ev) {
     const rect = this.canvas.getBoundingClientRect();
-    const sx = CANVAS_WIDTH / rect.width;
-    const sy = CANVAS_HEIGHT / rect.height;
+    const sx = this.canvas.width / rect.width;
+    const sy = this.canvas.height / rect.height;
     return {
       x: (ev.clientX - rect.left) * sx,
       y: (ev.clientY - rect.top)  * sy

@@ -7,9 +7,8 @@
  * modal via the BAG button. Quick-use bar (1–3) sits in the control band;
  * keys 1–3 use potions, 4–9 map to bag slots 4–9 on desktop.
  */
-import {
-  COLOR, CANVAS_WIDTH, HUD_HEIGHT, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
-} from '../config/constants.js';
+import { COLOR, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize } from '../config/constants.js';
+import { Layout } from '../config/layoutMetrics.js';
 
 const TOP_PAD = 10;
 
@@ -33,11 +32,10 @@ export class HUD {
     // Solid background — the world rendering is now clipped out of this
     // band, so we don't need rgba; opaque looks cleaner and contrasts
     // well with the world view that sits just below.
-    r.drawRect(0, 0, CANVAS_WIDTH, HUD_HEIGHT, COLOR.bgPanel);
-    r.drawRect(0, HUD_HEIGHT - 1, CANVAS_WIDTH, 1, COLOR.gold);
+    r.drawRect(0, 0, Layout.canvasW, Layout.hud, COLOR.bgPanel);
+    r.drawRect(0, Layout.hud - 1, Layout.canvasW, 1, COLOR.gold);
 
-    // HP bar — full width minus padding.
-    const barW = CANVAS_WIDTH - 16;
+    const barW = Layout.canvasW - 16;
     r.drawBar(8, TOP_PAD, barW, 18, p.stats.hp, p.stats.hpMax, COLOR.hpBar, COLOR.hpBarBg);
     r.drawText(`HP ${p.stats.hp}/${p.stats.hpMax}`, 12, TOP_PAD + 2,
       { size: uiSize(13), bold: true, family: FONT_MONO });
@@ -50,8 +48,8 @@ export class HUD {
     r.drawText(`LEVEL ${p.level}`, 45, xpY + 6,
       { size: uiSize(11), bold: true, align: 'center', baseline: 'middle',
         family: FONT_MONO, color: COLOR.textPrimary });
-    r.drawBar(88, xpY, CANVAS_WIDTH - 96, 10, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
-    r.drawText(xpMaxed ? 'MAX XP' : `${p.xp}/${xpNeed} XP`, CANVAS_WIDTH - 12, xpY,
+    r.drawBar(88, xpY, Layout.canvasW - 96, 10, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
+    r.drawText(xpMaxed ? 'MAX XP' : `${p.xp}/${xpNeed} XP`, Layout.canvasW - 12, xpY,
       { size: uiSize(11), bold: true, align: 'right', family: FONT_MONO });
 
     const atk = p.totalAtk();
@@ -61,18 +59,18 @@ export class HUD {
     const rangeChip = range > 1 ? `  RNG ${range}` : '';
     r.drawText(`ATK ${atk}  DEF ${def}  CRIT ${crit}%${rangeChip}`,
       8, TOP_PAD + 38, { size: uiSize(12), color: COLOR.textMuted, family: FONT_MONO });
-    r.drawText(`◈ ${p.gold}`, CANVAS_WIDTH - 12, TOP_PAD + 38,
+    r.drawText(`◈ ${p.gold}`, Layout.canvasW - 12, TOP_PAD + 38,
       { size: uiSize(12), color: COLOR.textXP, align: 'right', family: FONT_MONO });
 
     if (floor) {
       const name = `${floor.definition.name}`;
       const sub = `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
-      r.drawText(name, CANVAS_WIDTH / 2, TOP_PAD + 56,
+      r.drawText(name, Layout.canvasW / 2, TOP_PAD + 56,
         { size: uiSize(13), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
-      r.drawText(sub, CANVAS_WIDTH / 2, TOP_PAD + 74,
+      r.drawText(sub, Layout.canvasW / 2, TOP_PAD + 74,
         { size: uiSize(11), bold: true, align: 'center', color: COLOR.textMuted, family: FONT_MONO });
       if (mode === 'daily') {
-        r.drawText('☼ DAILY', CANVAS_WIDTH - 12, TOP_PAD + 58,
+        r.drawText('☼ DAILY', Layout.canvasW - 12, TOP_PAD + 58,
           { size: uiSize(11), bold: true, align: 'right', color: COLOR.textXP, family: FONT_MONO });
       }
     }
@@ -87,10 +85,10 @@ export class HUD {
       r.drawRect(chipX, chipY, w, 14, bg);
       r.drawText(label, chipX + 4, chipY + 1, { size: uiSize(11) });
       chipX += w + 4;
-      if (chipX > CANVAS_WIDTH - 80) break;
+      if (chipX > Layout.canvasW - 80) break;
     }
     if (p.reviveCharges > 0) {
-      r.drawText(`✦ Revive ×${p.reviveCharges}`, CANVAS_WIDTH - 12, chipY + 1,
+      r.drawText(`✦ Revive ×${p.reviveCharges}`, Layout.canvasW - 12, chipY + 1,
         { size: uiSize(12), color: COLOR.textHeal, align: 'right' });
     }
     // Skill chips — appear under status chips when the player has skills.
@@ -106,7 +104,7 @@ export class HUD {
         r.drawRect(sx, sy, w, 14, '#1e2a3a');
         r.drawText(abbr, sx + 3, sy + 1, { size: uiSize(11), color: '#a0d0ff' });
         sx += w + 3;
-        if (sx > CANVAS_WIDTH - 8) break;
+        if (sx > Layout.canvasW - 8) break;
       }
     }
   }
@@ -136,12 +134,12 @@ export class HUD {
     // Float just below the HUD strip, at the top of the world viewport.
     // Each line carries its own alpha so the band dissolves a few seconds
     // after the action that produced it — never permanently blocks view.
-    const baseY = HUD_HEIGHT + 4;
+    const baseY = Layout.hud + 4;
     const ctx = r.ctx;
     const maxAlpha = Math.max(...lines.map((l) => l.alpha));
     ctx.save();
     ctx.globalAlpha = 0.72 * maxAlpha;
-    r.drawRect(0, baseY, CANVAS_WIDTH, lines.length * 18 + 8, '#06060a');
+    r.drawRect(0, baseY, Layout.canvasW, lines.length * 18 + 8, '#06060a');
     ctx.restore();
     for (let i = 0; i < lines.length; i++) {
       ctx.save();

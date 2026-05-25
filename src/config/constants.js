@@ -85,6 +85,7 @@ export function uiSize(n) {
   return Math.max(8, Math.round(n * UI_SCALE));
 }
 
+/** @deprecated In-game layout uses layoutMetrics.js (physical screen orientation). */
 export const VIEWPORT_X = SIDE_CONTROL_WIDTH;
 export const VIEWPORT_Y = HUD_HEIGHT;
 export const VIEWPORT_W = CANVAS_WIDTH - SIDE_CONTROL_WIDTH * 2;
