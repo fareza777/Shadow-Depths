@@ -126,7 +126,15 @@ export class MobileControls {
   _renderBackground(r, LAYOUT) {
     const t = performance.now() / 1000;
     if (LAYOUT.band) {
-      r.drawRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h, '#1a1624');
+      const ctx = r.ctx;
+      ctx.save();
+      const g = ctx.createLinearGradient(0, LAYOUT.band.y, 0, LAYOUT.band.y + LAYOUT.band.h);
+      g.addColorStop(0, '#211a28');
+      g.addColorStop(0.45, '#17121d');
+      g.addColorStop(1, '#09070d');
+      ctx.fillStyle = g;
+      ctx.fillRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h);
+      ctx.restore();
       MobileControls._drawStoneRelief(r, LAYOUT.band, t);
       r.drawRect(0, LAYOUT.band.y, Layout.canvasW, 3, COLOR.gold);
       r.drawRect(0, LAYOUT.band.y + 3, Layout.canvasW, 1, '#8a7048');
@@ -154,10 +162,31 @@ export class MobileControls {
       }
     }
     ctx.globalAlpha = 0.34;
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 26; i++) {
       const x = rect.x + ((i * 37 + rect.w * 3) % Math.max(1, rect.w));
       const y = rect.y + 10 + ((i * 23) % Math.max(1, rect.h - 20));
       r.drawRect(x, y, 2, 2, i % 3 === 0 ? COLOR.goldDim : '#2a2230');
+    }
+    ctx.globalAlpha = 0.18;
+    for (let i = 0; i < 7; i++) {
+      const cx = rect.x + 36 + ((i * 67 + Math.sin(time * 0.4 + i) * 5) % Math.max(1, rect.w - 72));
+      const cy = rect.y + 38 + ((i * 31) % Math.max(1, rect.h - 76));
+      ctx.strokeStyle = i % 2 ? '#6a6080' : COLOR.goldDim;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 8);
+      ctx.lineTo(cx + 8, cy);
+      ctx.lineTo(cx, cy + 8);
+      ctx.lineTo(cx - 8, cy);
+      ctx.closePath();
+      ctx.stroke();
+      r.drawRect(cx - 1, cy - 1, 2, 2, '#d4be7a55');
+    }
+    ctx.globalAlpha = 0.12;
+    for (let i = 0; i < 6; i++) {
+      const x = rect.x + 18 + i * Math.max(36, rect.w / 6);
+      const y = rect.y + rect.h - 28 + Math.sin(time + i) * 2;
+      r.drawRect(x, y, 24, 1, '#ffffff55');
+      r.drawRect(x + 8, y + 5, 38, 1, COLOR.goldDim);
     }
     ctx.globalAlpha = 0.12 + Math.sin(time * 1.4) * 0.03;
     const g = ctx.createRadialGradient(
@@ -237,6 +266,15 @@ export class MobileControls {
 
     r.drawStrokedRect(padX, padY, padS, padS, COLOR.gold, 3);
     r.drawStrokedRect(padX + 3, padY + 3, padS - 6, padS - 6, '#6a6080', 1);
+    ctx.save();
+    ctx.globalAlpha = 0.24;
+    for (let i = 0; i < 8; i++) {
+      const x = padX + 14 + ((i * 29) % Math.max(1, padS - 28));
+      const y = padY + 12 + ((i * 41) % Math.max(1, padS - 24));
+      r.drawRect(x, y, 12, 1, i % 2 ? '#ffffff33' : '#00000088');
+      if (i % 3 === 0) r.drawRect(x + 3, y + 4, 1, 9, '#00000077');
+    }
+    ctx.restore();
 
     const cx = LAYOUT.dpadX + LAYOUT.dpadSize / 2;
     const cy = LAYOUT.dpadY + LAYOUT.dpadSize / 2;
@@ -252,14 +290,13 @@ export class MobileControls {
 
       if (isCenter) {
         const sz = LAYOUT.dpadBtn;
-        r.drawRect(bx, by, sz, sz, pressed ? '#4a3a58' : '#2e2838');
+        this._drawRelicButton(r, bx, by, sz, sz, pressed, true);
         r.drawStrokedRect(bx, by, sz, sz, pressed ? COLOR.gold : '#7a7088', pressed ? 2 : 1);
         const gem = pressed ? COLOR.goldHi : COLOR.gold;
         r.drawRect(bx + sz * 0.3, by + sz * 0.3, sz * 0.4, sz * 0.4, gem);
         r.drawRect(bx + sz * 0.38, by + sz * 0.38, sz * 0.24, sz * 0.24, '#fff8e0');
       } else {
-        r.drawRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn,
-          pressed ? COLOR.bgCardHi : '#2a2438');
+        this._drawRelicButton(r, bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn, pressed, false);
         r.drawStrokedRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn,
           pressed ? COLOR.gold : '#8a8098', pressed ? 2 : 1);
         if (!pressed) {
@@ -268,6 +305,24 @@ export class MobileControls {
         MobileControls._drawArrow(r, bx, by, LAYOUT.dpadBtn, b.dir, pressed);
       }
     }
+  }
+
+  _drawRelicButton(r, x, y, w, h, pressed, center) {
+    const ctx = r.ctx;
+    ctx.save();
+    const g = ctx.createLinearGradient(x, y, x, y + h);
+    g.addColorStop(0, pressed ? '#4e415a' : '#373040');
+    g.addColorStop(0.52, center ? '#292436' : '#262134');
+    g.addColorStop(1, '#110e18');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = pressed ? 0.38 : 0.2;
+    r.drawRect(x + 4, y + 4, w - 8, 2, COLOR.goldDim);
+    r.drawRect(x + 6, y + h - 5, w - 12, 1, '#000000aa');
+    ctx.globalAlpha = 0.18;
+    r.drawRect(x + 9, y + 10, 12, 1, '#ffffff66');
+    r.drawRect(x + w - 16, y + 12, 1, 15, '#000000aa');
+    ctx.restore();
   }
 
   static _drawArrow(r, bx, by, sz, dir, pressed) {
@@ -299,11 +354,20 @@ export class MobileControls {
       const isMenu = ACTION_LABELS[i].key === 'menu';
 
       r.drawRect(ax - 1, ay - 1, LAYOUT.actW + 2, LAYOUT.actH + 2, '#0a0810');
-      r.drawRect(ax, ay, LAYOUT.actW, LAYOUT.actH,
-        pressed ? COLOR.bgCardHi : (isMenu ? '#3a2838' : '#2a2438'));
+      const ctx = r.ctx;
+      ctx.save();
+      const g = ctx.createLinearGradient(ax, ay, ax, ay + LAYOUT.actH);
+      g.addColorStop(0, pressed ? '#4a3a50' : (isMenu ? '#3a2838' : '#30283c'));
+      g.addColorStop(1, isMenu ? '#1a111c' : '#14101a');
+      ctx.fillStyle = g;
+      ctx.fillRect(ax, ay, LAYOUT.actW, LAYOUT.actH);
+      ctx.restore();
       r.drawStrokedRect(ax, ay, LAYOUT.actW, LAYOUT.actH,
         pressed ? COLOR.gold : COLOR.goldDim, pressed ? 2 : 1);
-      if (!pressed) r.drawRect(ax + 2, ay + 2, LAYOUT.actW - 4, 2, '#252030');
+      if (!pressed) {
+        r.drawRect(ax + 2, ay + 2, LAYOUT.actW - 4, 2, isMenu ? '#d4be7a25' : '#ffffff18');
+        r.drawRect(ax + 5, ay + LAYOUT.actH - 5, LAYOUT.actW - 10, 1, '#00000099');
+      }
       MobileControls._drawActionIcon(r, ACTION_LABELS[i].icon, ax + 18, ay + LAYOUT.actH / 2, pressed, isMenu);
       r.drawText(ACTION_LABELS[i].label, ax + 42, ay + LAYOUT.actH / 2, {
         size: uiSize(11), bold: true, align: 'left', baseline: 'middle',

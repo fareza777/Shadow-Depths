@@ -12,9 +12,9 @@ export class Minimap {
    * @param {import('../rendering/Renderer.js').Renderer} renderer
    * @param {{ floor: object, player: object }} ctx
    */
-  render(renderer, ctx) {
+  render(renderer, renderCtx) {
     if (!this.visible) return;
-    const { floor, player } = ctx;
+    const { floor, player } = renderCtx;
     if (!floor) return;
 
     const slot = MobileControls.geometry.centerRect;
@@ -24,17 +24,26 @@ export class Minimap {
     const innerW = slot.w - pad * 2;
     const innerH = slot.h - pad * 2;
 
-    renderer.drawRect(slot.x, slot.y, slot.w, slot.h, '#1a1624');
+    const ctx = renderer.ctx;
+    ctx.save();
+    const panel = ctx.createLinearGradient(slot.x, slot.y, slot.x, slot.y + slot.h);
+    panel.addColorStop(0, '#201927');
+    panel.addColorStop(0.48, '#100c15');
+    panel.addColorStop(1, '#07050a');
+    ctx.fillStyle = panel;
+    ctx.fillRect(slot.x, slot.y, slot.w, slot.h);
+    ctx.restore();
     this._drawMapTable(renderer, slot);
-    renderer.drawStrokedRect(slot.x, slot.y, slot.w, slot.h, COLOR.goldDim, 1);
+    renderer.drawStrokedRect(slot.x, slot.y, slot.w, slot.h, COLOR.goldDim, 2);
+    renderer.drawStrokedRect(slot.x + 4, slot.y + 4, slot.w - 8, slot.h - 8, '#4a4258', 1);
     renderer.drawRect(slot.x + 2, slot.y + 2, slot.w - 4, 2, COLOR.goldDim);
-    renderer.drawText('MAP', slot.x + slot.w / 2, slot.y + uiSize(9), {
+    renderer.drawText('DEPTH MAP', slot.x + slot.w / 2, slot.y + uiSize(8), {
       size: uiSize(10), bold: true, align: 'center',
       family: FONT_DISPLAY, color: COLOR.gold
     });
 
-    const mapTop = innerY + uiSize(12);
-    const mapH = innerH - uiSize(12);
+    const mapTop = innerY + uiSize(17);
+    const mapH = innerH - uiSize(18);
     const bounds = this._exploredBounds(floor, player);
     const bw = bounds.x1 - bounds.x0 + 1;
     const bh = bounds.y1 - bounds.y0 + 1;
@@ -46,8 +55,9 @@ export class Minimap {
     const x = innerX + (innerW - w) / 2;
     const y = mapTop + (mapH - h) / 2;
 
-    renderer.drawRect(x - 2, y - 2, w + 4, h + 4, '#06060a');
-    renderer.drawStrokedRect(x - 2, y - 2, w + 4, h + 4, '#4a4258', 1);
+    renderer.drawRect(x - 4, y - 4, w + 8, h + 8, '#030206');
+    renderer.drawStrokedRect(x - 4, y - 4, w + 8, h + 8, COLOR.goldDim, 1);
+    renderer.drawStrokedRect(x - 1, y - 1, w + 2, h + 2, '#4a4258', 1);
     renderer.drawRect(x, y, w, h, '#09070d');
 
     const wallLit = floor.definition?.wallPalette?.[0] || '#5a5060';
@@ -84,7 +94,8 @@ export class Minimap {
       const ctx2 = renderer.ctx;
       ctx2.save();
       ctx2.globalAlpha = pulse;
-      renderer.drawStrokedRect(pxPlayer - 3, pyPlayer - 3, px + 6, px + 6, COLOR.goldDim, 1);
+      renderer.drawStrokedRect(pxPlayer - 4, pyPlayer - 4, px + 8, px + 8, COLOR.goldDim, 1);
+      renderer.drawStrokedRect(pxPlayer - 7, pyPlayer - 7, px + 14, px + 14, '#ffffff44', 1);
       ctx2.restore();
       renderer.drawRect(
         pxPlayer - 1,
@@ -149,15 +160,15 @@ export class Minimap {
     r.drawRect(slot.x + slot.w - 10, slot.y + 30, 1, slot.h - 42, COLOR.goldDim);
 
     ctx.globalAlpha = 0.32;
-    r.drawText('N', slot.x + slot.w / 2, slot.y + slot.h - 31, {
+    r.drawText('N', slot.x + slot.w / 2, slot.y + slot.h - 24, {
       size: uiSize(11), bold: true, align: 'center',
       family: FONT_DISPLAY, color: COLOR.goldDim
     });
     ctx.beginPath();
-    ctx.moveTo(slot.x + slot.w / 2, slot.y + slot.h - 52);
-    ctx.lineTo(slot.x + slot.w / 2 + 7, slot.y + slot.h - 38);
-    ctx.lineTo(slot.x + slot.w / 2, slot.y + slot.h - 42);
-    ctx.lineTo(slot.x + slot.w / 2 - 7, slot.y + slot.h - 38);
+    ctx.moveTo(slot.x + slot.w / 2, slot.y + slot.h - 45);
+    ctx.lineTo(slot.x + slot.w / 2 + 7, slot.y + slot.h - 31);
+    ctx.lineTo(slot.x + slot.w / 2, slot.y + slot.h - 35);
+    ctx.lineTo(slot.x + slot.w / 2 - 7, slot.y + slot.h - 31);
     ctx.closePath();
     ctx.strokeStyle = COLOR.goldDim;
     ctx.stroke();

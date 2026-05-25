@@ -59,15 +59,23 @@ export class QuickUseBar {
       const invIdx = slots[qi];
       const item = invIdx >= 0 ? inv.getSlot(invIdx) : null;
       const pressed = this._pressed === qi;
+      const rarity = item ? QuickUseBar._rarityColor(item.rarity) : COLOR.borderSoft;
 
       renderer.drawRect(rect.x - 1, rect.y - 1, rect.w + 2, rect.h + 2, '#0a0810');
-      renderer.drawRect(rect.x, rect.y, rect.w, rect.h,
-        pressed ? COLOR.bgCardHi : (item ? COLOR.bgCard : COLOR.bgPanelAlt));
+      const sg = ctx.createLinearGradient(rect.x, rect.y, rect.x, rect.y + rect.h);
+      sg.addColorStop(0, pressed ? '#4a3e52' : (item ? '#312a38' : '#211b29'));
+      sg.addColorStop(1, pressed ? '#22182a' : '#100d16');
+      ctx.fillStyle = sg;
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
       renderer.drawStrokedRect(rect.x, rect.y, rect.w, rect.h,
-        pressed ? COLOR.gold : (item ? COLOR.goldDim : COLOR.borderSoft), pressed ? 2 : 1);
+        pressed ? COLOR.gold : (item ? rarity : COLOR.borderSoft), pressed ? 2 : 1);
       if (!pressed) {
         renderer.drawRect(rect.x + 3, rect.y + 3, rect.w - 6, 2, item ? '#ffffff24' : '#ffffff12');
         renderer.drawRect(rect.x + rect.w - 4, rect.y + 5, 1, rect.h - 10, '#00000066');
+      }
+      if (item) {
+        renderer.drawRect(rect.x + 2, rect.y + rect.h - 5, rect.w - 4, 2, rarity);
+        renderer.drawRect(rect.x + rect.w - 5, rect.y + 5, 2, rect.h - 12, '#00000070');
       }
 
       renderer.drawRect(rect.x + 2, rect.y + 2, 14, 14, '#0a0810cc');
@@ -84,6 +92,16 @@ export class QuickUseBar {
           renderer.drawRect(rect.x + rect.w - 22, rect.y + rect.h - 16, 20, 12, '#0a0810dd');
           renderer.drawText(`×${item.count}`, rect.x + rect.w - 6, rect.y + rect.h - 6,
             { size: uiSize(10), bold: true, align: 'right', baseline: 'bottom', family: FONT_MONO });
+        }
+        if (pressed) {
+          ctx.save();
+          ctx.globalAlpha = 0.35;
+          ctx.strokeStyle = COLOR.goldHi;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(rect.x + rect.w / 2, rect.y + rect.h / 2, rect.w * 0.38, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
         }
       } else {
         renderer.drawText('—', rect.x + rect.w / 2, rect.y + rect.h / 2,
@@ -181,5 +199,14 @@ export class QuickUseBar {
     if (!L.actionRects.length) return L.quickRowW;
     const last = L.actionRects[L.actionRects.length - 1];
     return last.x + last.w - L.quickX;
+  }
+
+  static _rarityColor(rarity) {
+    switch (rarity) {
+      case 'uncommon': return COLOR.itemUncommon;
+      case 'rare': return COLOR.itemRare;
+      case 'epic': return COLOR.itemEpic;
+      default: return COLOR.goldDim;
+    }
   }
 }
