@@ -94,6 +94,7 @@ export class GameScene {
     floor.addEntity(this.player);
 
     this._spawnFloorEntities(floor, spawns);
+    this._applyStarterLoadout();
     this._applyMetaUnlocks();
 
     this.floor = floor;
@@ -426,6 +427,12 @@ export class GameScene {
     }
   }
 
+  /** Every run begins with a basic dagger — no cleaver/bow unless shop unlocks. */
+  _applyStarterLoadout() {
+    const dagger = this.itemFactory.create('worn_dagger', 1);
+    if (dagger) this.player.equip(dagger);
+  }
+
   _applyMetaUnlocks() {
     const meta = this.state.state.meta;
     if (!meta) return;
@@ -433,10 +440,8 @@ export class GameScene {
     // Score-threshold unlocks (legacy v0.1 system).
     for (const id of meta.unlocks || []) {
       if (id === 'worn_dagger') {
-        const dagger = this.itemFactory.create('rusted_cleaver', 1);
-        if (dagger) {
-          const swap = this.player.equip(dagger);
-          if (swap) this.player.inventory.add(swap);
+        if (this.player.weapon?.id === 'worn_dagger' && this.player.weapon.stats) {
+          this.player.weapon.stats.atk = (this.player.weapon.stats.atk || 1) + 1;
         }
       } else if (id === 'veterans_vigor') {
         this.player.stats.hpMax += 10;

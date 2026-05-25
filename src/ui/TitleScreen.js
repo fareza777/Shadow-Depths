@@ -248,7 +248,11 @@ export class TitleScreen {
       this.bus.emit('request:newRun', { seed, mode: 'daily' });
     }
     else if (id === 'shop') this.modal = 'shop';
-    else if (id === 'codex') this.modal = 'codex';
+    else if (id === 'codex') {
+      this.modal = 'codex';
+      this._codexTab = 'items';
+      this._codexPage = 0;
+    }
     else if (id === 'meta') this.modal = 'meta';
     else if (id === 'controls') this.modal = 'controls';
     else if (id === 'settings') this.modal = 'settings';
@@ -535,7 +539,7 @@ export class TitleScreen {
     const listX = g.modalX + 8;
     const listW = g.modalW - 16;
     const listH = g.closeY - g.listY - 16;
-    const perPage = Math.floor(listH / rowH);
+    const perPage = Math.max(1, Math.floor(listH / rowH));
     const totalPages = Math.max(1, Math.ceil(entries.length / perPage));
     if (!this._codexPage) this._codexPage = 0;
     if (this._codexPage >= totalPages) this._codexPage = totalPages - 1;
@@ -554,7 +558,7 @@ export class TitleScreen {
       const iconY = ry + 3;
       r.drawRect(iconX, iconY, iconSize, iconSize,
         e.seen ? COLOR.bgPanel : '#000');
-      if (e.seen && e.spriteKey) {
+      if (e.seen && e.spriteKey && r.sprites) {
         r.sprites.draw(e.spriteKey, r.ctx, iconX, iconY, { size: iconSize });
       } else if (!e.seen) {
         r.drawText('?', iconX + iconSize / 2, iconY + iconSize / 2,
@@ -837,5 +841,14 @@ export class TitleScreen {
       });
     }
     return arr;
+  }
+}
+
+function rarityColor(r) {
+  switch (r) {
+    case 'uncommon': return COLOR.itemUncommon;
+    case 'rare':     return COLOR.itemRare;
+    case 'epic':     return COLOR.itemEpic;
+    default:         return COLOR.itemCommon;
   }
 }

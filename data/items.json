@@ -55,6 +55,18 @@
     "spawnWeight": 3
   },
 
+  "worn_dagger": {
+    "id": "worn_dagger",
+    "name": "Worn Dagger",
+    "type": "weapon",
+    "rarity": "common",
+    "spriteKey": "weapon_dagger_red",
+    "slot": "weapon",
+    "stats": { "atk": 1 },
+    "lore": "A dull edge and a steady grip. Enough for the first steps down.",
+    "floorMin": 99,
+    "spawnWeight": 0
+  },
   "iron_sword": {
     "id": "iron_sword",
     "name": "Iron Sword",
