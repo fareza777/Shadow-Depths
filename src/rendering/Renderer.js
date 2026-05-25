@@ -22,7 +22,7 @@
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, GRID_WIDTH, GRID_HEIGHT,
   VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H,
-  TILE_SIZE, TILE, COLOR, TIMING
+  TILE_SIZE, TILE, COLOR, TIMING, IS_LANDSCAPE
 } from '../config/constants.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
 
@@ -156,6 +156,7 @@ export class Renderer {
     ctx.beginPath();
     ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
     ctx.clip();
+    this._drawViewportAbyss(ctx, floor.definition || {});
     ctx.translate(cam.x, cam.y);
 
     // Visible tile range — derived from viewport rect, not full canvas.
@@ -410,10 +411,67 @@ export class Renderer {
     strokeRect(this.ctx, x, y, w, h, color, line);
   }
 
+  _drawViewportAbyss(ctx, def = {}) {
+    const biome = def.biomeId || '';
+    let top = '#08060e';
+    let mid = '#030208';
+    let haze = '#1a1220';
+    if (biome.includes('drowning') || biome.includes('sunken')) {
+      top = '#050a12'; mid = '#02050a'; haze = '#123040';
+    } else if (biome.includes('frost') || biome.includes('salt')) {
+      top = '#080a14'; mid = '#03040a'; haze = '#203048';
+    } else if (biome.includes('ashen') || biome.includes('cinder')) {
+      top = '#0c0806'; mid = '#030201'; haze = '#3a2418';
+    } else if (biome.includes('empty') || biome.includes('below')) {
+      top = '#02020a'; mid = '#000004'; haze = '#181048';
+    }
+
+    const g = ctx.createLinearGradient(0, VIEWPORT_Y, 0, VIEWPORT_Y + VIEWPORT_H);
+    g.addColorStop(0, top);
+    g.addColorStop(0.52, mid);
+    g.addColorStop(1, '#000000');
+    ctx.fillStyle = g;
+    ctx.fillRect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+
+    ctx.save();
+    ctx.globalAlpha = 0.16;
+    const rg = ctx.createRadialGradient(
+      VIEWPORT_X + VIEWPORT_W / 2, VIEWPORT_Y + VIEWPORT_H * 0.34, 10,
+      VIEWPORT_X + VIEWPORT_W / 2, VIEWPORT_Y + VIEWPORT_H * 0.34, VIEWPORT_W * 0.62
+    );
+    rg.addColorStop(0, haze);
+    rg.addColorStop(1, 'transparent');
+    ctx.fillStyle = rg;
+    ctx.fillRect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
+
+    ctx.globalAlpha = 0.18;
+    for (let y = VIEWPORT_Y + 48; y < VIEWPORT_Y + VIEWPORT_H; y += 86) {
+      fillRect(ctx, VIEWPORT_X + 12, y, VIEWPORT_W - 24, 1, '#ffffff08');
+      fillRect(ctx, VIEWPORT_X + 36, y + 16, VIEWPORT_W - 72, 1, '#d4be7a07');
+    }
+
+    ctx.globalAlpha = 0.28;
+    for (let i = 0; i < 12; i++) {
+      const x = VIEWPORT_X + 16 + ((i * 43) % Math.max(1, VIEWPORT_W - 32));
+      const y = VIEWPORT_Y + 42 + ((i * 71) % Math.max(1, VIEWPORT_H - 84));
+      fillRect(ctx, x, y, 1, 1, i % 3 === 0 ? '#d4be7a22' : '#ffffff14');
+    }
+
+    ctx.globalAlpha = 0.2;
+    fillRect(ctx, VIEWPORT_X, VIEWPORT_Y, 2, VIEWPORT_H, '#d4be7a22');
+    fillRect(ctx, VIEWPORT_X + VIEWPORT_W - 2, VIEWPORT_Y, 2, VIEWPORT_H, '#d4be7a18');
+    ctx.restore();
+  }
+
   // --- viewport scaling ----------------------------------------------
   _fitToViewport() {
     const vw = window.visualViewport?.width || window.innerWidth;
     const vh = window.visualViewport?.height || window.innerHeight;
+    if (!IS_LANDSCAPE) {
+      this.canvas.style.width = `${Math.ceil(vw)}px`;
+      this.canvas.style.height = `${Math.ceil(vh)}px`;
+      return;
+    }
     const scale = Math.min(vw / CANVAS_WIDTH, vh / CANVAS_HEIGHT);
     this.canvas.style.width  = `${Math.floor(CANVAS_WIDTH * scale)}px`;
     this.canvas.style.height = `${Math.floor(CANVAS_HEIGHT * scale)}px`;

@@ -2,7 +2,7 @@
  * Control-band geometry — D-pad (full size in band) + quick-use above the band edge.
  */
 import {
-  CANVAS_HEIGHT, CONTROL_HEIGHT,
+  CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
   SIDE_CONTROL_WIDTH, IS_LANDSCAPE
 } from '../config/constants.js';
 
@@ -43,8 +43,8 @@ export function getDpadLayout() {
 /** Quick-use row sits above the control band top line (not inside the band). */
 export function getQuickUseLayout() {
   const dpad = getDpadLayout();
-  const quickSlot = IS_LANDSCAPE ? 40 : 44;
-  const quickGap = 6;
+  const quickSlot = IS_LANDSCAPE ? 40 : dpad.dpadBtn;
+  const quickGap = IS_LANDSCAPE ? 6 : dpad.dpadGap;
   const quickRowW = QUICK_SLOT_COUNT * quickSlot + (QUICK_SLOT_COUNT - 1) * quickGap;
 
   if (IS_LANDSCAPE) {

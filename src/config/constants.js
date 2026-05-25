@@ -10,7 +10,7 @@
 // — that yielded 9 px tiles on a 360-wide phone in v0.1. Instead the canvas
 // is portrait-shaped (mobile-first), tile size is bumped, and the Renderer
 // uses a camera that follows the player. The world is bigger than the view.
-export const TILE_SIZE = 32;            // px per tile (bumped from 24 → 32 for tap targets)
+export const TILE_SIZE = 40;            // px per tile (mobile readability; world scrolls via camera)
 export const GRID_WIDTH = 40;           // world width in tiles
 export const GRID_HEIGHT = 28;          // world height in tiles
 
