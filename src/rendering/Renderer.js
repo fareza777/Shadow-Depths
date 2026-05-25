@@ -402,22 +402,19 @@ export class Renderer {
         || (e.kind === 'player' && typeof e.displaySpriteKey === 'function'
           ? e.displaySpriteKey()
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
-      if (e.kind === 'enemy' && t?.visible) {
-        this._drawThreatAura(ctx, e, px, py);
-      }
       this._drawEntityGrounding(ctx, e, px, py);
       this.sprites.draw(key, ctx, px, py);
 
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {
         const pct = e.stats.hp / e.stats.hpMax;
         const w = TILE_SIZE - 6;
-        const barH = entity.defId?.startsWith('boss_') ? 5 : 4;
+        const barH = e.defId?.startsWith('boss_') ? 5 : 4;
         const barY = py - (barH + 2);
-        const barColor = entity.defId?.startsWith('boss_') ? '#d4be7a'
-          : entity.defId?.startsWith('subboss_') ? '#c080ff' : COLOR.hpBar;
+        const barColor = e.defId?.startsWith('boss_') ? '#d4be7a'
+          : e.defId?.startsWith('subboss_') ? '#c080ff' : COLOR.hpBar;
         fillRect(ctx, px + 3, barY, w, barH, COLOR.hpBarBg);
         fillRect(ctx, px + 3, barY, w * pct, barH, barColor);
-        if (entity.defId?.startsWith('boss_')) {
+        if (e.defId?.startsWith('boss_')) {
           fillRect(ctx, px + 3, barY, w, 1, '#ffffff33');
         }
       }

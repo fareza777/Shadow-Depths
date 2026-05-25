@@ -40,13 +40,7 @@ export class TouchHandler {
     }
 
     if (name === 'game') {
-      // Emit BOTH the raw canvas-pixel coords (for in-game modals like the
-      // inventory grid) and the tile coords (for tile-aware fallback). The
-      // GameScene decides which interpretation wins based on UI state.
       this.bus.emit('input:action', { type: 'pointer', x, y });
-      const tx = Math.floor(x / TILE_SIZE);
-      const ty = Math.floor(y / TILE_SIZE);
-      this.bus.emit('input:action', { type: 'tapTile', x: tx, y: ty });
     }
   }
 

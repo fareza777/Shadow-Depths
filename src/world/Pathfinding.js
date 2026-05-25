@@ -120,7 +120,8 @@ export class Pathfinding {
   static _reconstruct(cameFrom, currentIdx, w) {
     const path = [];
     let idx = currentIdx;
-    while (idx !== undefined) {
+    const maxSteps = w * (cameFrom.size + 1);
+    while (idx !== undefined && path.length < maxSteps) {
       const x = idx % w;
       const y = (idx - x) / w;
       path.push({ x, y });

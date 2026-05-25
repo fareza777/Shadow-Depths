@@ -154,10 +154,13 @@ export class Player extends Entity {
     this.xp += adjusted;
     this.runStats.xpGained += adjusted;
     let gained = 0;
-    while (this.level < this.maxLevel && this.xp >= this.xpToNext()) {
-      this.xp -= this.xpToNext();
+    while (this.level < this.maxLevel) {
+      const need = this.xpToNext();
+      if (!Number.isFinite(need) || need <= 0 || this.xp < need) break;
+      this.xp -= need;
       this._levelUp();
       gained++;
+      if (gained > 99) break;
     }
     if (this.level >= this.maxLevel) this.xp = 0;
     return gained;

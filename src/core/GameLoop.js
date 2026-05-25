@@ -65,8 +65,11 @@ export class GameLoop {
     // 2. Scene update (handles e.g. floor transition animation).
     this._scenes.update(dt);
 
-    // 3. Render.
-    this._renderer.render(this._scenes, this._state);
+    try {
+      this._renderer.render(this._scenes, this._state);
+    } catch (err) {
+      console.error(LOG.CORE, 'render threw (loop kept alive):', err);
+    }
 
     this._rafId = requestAnimationFrame(this._loop);
   }

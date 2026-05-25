@@ -82,8 +82,18 @@ export class GameScene {
 
     this.player = null;
     this.floor = null;
+    this._processingTurn = false;
+    this._busHandlers = [];
     this._wireCommands();
     this._wireDeathCleanup();
+  }
+
+  exit() {
+    for (const { event, fn } of this._busHandlers) {
+      this.bus.off(event, fn);
+    }
+    this._busHandlers.length = 0;
+    this._processingTurn = false;
   }
 
   // --- scene contract -------------------------------------------------
@@ -103,8 +113,6 @@ export class GameScene {
     this.state.setRun({ seed: this.seed, floorIndex: 0 });
     this.bus.emit('floor:entered', { index: 0, name: floor.definition.name });
   }
-
-  exit() { /* no-op; state retained until next newRun() */ }
 
   update(_dt) { /* turn-based; no per-frame logic */ }
 
@@ -256,8 +264,13 @@ export class GameScene {
    * immediately. Without this they persisted in the spatial index and
    * blocked movement on their tile (the "invisible corpse" bug).
    */
+  _listen(event, fn) {
+    this.bus.on(event, fn);
+    this._busHandlers.push({ event, fn });
+  }
+
   _wireDeathCleanup() {
-    this.bus.on('entity:died', ({ entity }) => {
+    this._listen('entity:died', ({ entity }) => {
       if (!this.floor) return;
       if (entity?.kind === 'enemy') {
         this.floor.removeEntity(entity);
@@ -435,7 +448,18 @@ export class GameScene {
 
   // --- turn management -----------------------------------------------
   _endPlayerTurn(actionTaken) {
-    if (!actionTaken) return;
+    if (!actionTaken || this._processingTurn) return;
+    this._processingTurn = true;
+    try {
+      this._resolvePlayerTurn();
+    } catch (err) {
+      console.error(LOG.CORE, 'turn resolution failed:', err);
+    } finally {
+      this._processingTurn = false;
+    }
+  }
+
+  _resolvePlayerTurn() {
     this.player.runStats.turnsUsed += 1;
     // Passive skill tick (Second Wind regen, future passives).
     if (typeof this.player.passiveTurnTick === 'function') this.player.passiveTurnTick();
@@ -495,9 +519,13 @@ export class GameScene {
 
     for (const enemy of enemies) {
       if (enemy.isDead) continue;
-      const action = enemy.decide(ctx);
-      this.combat.execute(action, enemy, ctx);
-      this.combat.tickEntity(enemy);
+      try {
+        const action = enemy.decide(ctx);
+        this.combat.execute(action, enemy, ctx);
+        this.combat.tickEntity(enemy);
+      } catch (err) {
+        console.error(LOG.CORE, `enemy turn failed (${enemy.defId}):`, err);
+      }
       if (this.player.isDead) break;
     }
   }
@@ -612,10 +640,16 @@ export class GameScene {
 
   // --- commands from UI ----------------------------------------------
   _wireCommands() {
-    this.bus.on('command:useSlot',  ({ index }) => { this._playerUseSlot(index); this.inventoryUI.hide(); });
-    this.bus.on('command:equipSlot',({ index }) => { this._playerUseSlot(index); this.inventoryUI.hide(); });
-    this.bus.on('command:dropSlot', ({ index }) => this._dropSlot(index));
-    this.bus.on('command:unequip', ({ slot }) => this._unequipSlot(slot));
+    this._listen('command:useSlot', ({ index }) => {
+      this._playerUseSlot(index);
+      this.inventoryUI.hide();
+    });
+    this._listen('command:equipSlot', ({ index }) => {
+      this._playerUseSlot(index);
+      this.inventoryUI.hide();
+    });
+    this._listen('command:dropSlot', ({ index }) => this._dropSlot(index));
+    this._listen('command:unequip', ({ slot }) => this._unequipSlot(slot));
   }
 
   /**

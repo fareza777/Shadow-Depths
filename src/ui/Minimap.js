@@ -72,11 +72,13 @@ export class Minimap {
       renderer.drawRect(x + e.x * px, y + e.y * px, px, px, COLOR.enemy);
     }
 
-    renderer.drawRect(
-      x + player.x * px - 1,
-      y + player.y * px - 1,
-      px + 2, px + 2, COLOR.player
-    );
+    if (player) {
+      renderer.drawRect(
+        x + player.x * px - 1,
+        y + player.y * px - 1,
+        px + 2, px + 2, COLOR.player
+      );
+    }
     renderer.drawStrokedRect(
       x + player.x * px - 1,
       y + player.y * px - 1,
