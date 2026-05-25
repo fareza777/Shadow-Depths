@@ -156,19 +156,19 @@ export class VigilScreen {
       { size: uiSize(13), align: 'center', family: FONT_BODY, italic: true, color: COLOR.textMuted });
     r.drawText(HERO_NAME, CANVAS_WIDTH / 2, 76,
       { size: uiSize(30), bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
-    r.drawText('"he carries other names. too late."',
-      CANVAS_WIDTH / 2, 108,
-      { size: uiSize(12), italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
 
     // 3. Level + XP bar.
     const xpNeed = p.xpToNext();
     const xpMaxed = !Number.isFinite(xpNeed);
-    const lvY = 124;
-    r.drawText(`LV.${p.level}`, 16, lvY,
-      { size: uiSize(17), bold: true, family: FONT_DISPLAY, color: COLOR.gold });
+    const lvY = 114;
+    r.drawRect(16, lvY - 2, 64, 20, COLOR.bgCardHi);
+    r.drawStrokedRect(16, lvY - 2, 64, 20, COLOR.goldDim, 1);
+    r.drawText(`LV ${p.level}`, 48, lvY + 8,
+      { size: uiSize(13), bold: true, align: 'center', baseline: 'middle',
+        family: FONT_MONO, color: COLOR.textPrimary });
     r.drawText(xpMaxed ? 'XP MAX' : `XP ${p.xp} / ${xpNeed}`, CANVAS_WIDTH - 16, lvY + 2,
       { size: uiSize(12), align: 'right', family: FONT_MONO, color: COLOR.textMuted });
-    r.drawBar(16, lvY + 22, CANVAS_WIDTH - 32, 6, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
+    r.drawBar(16, lvY + 24, CANVAS_WIDTH - 32, 7, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
 
     // 4. Portrait area (large player sprite scaled up).
     const portraitY = 160;

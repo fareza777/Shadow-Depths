@@ -24,6 +24,18 @@ import { DungeonGenerator } from './DungeonGenerator.js';
 const FLOORS_PER_BIOME = 5;
 const TOTAL_FLOORS = 100;
 const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+const SUBBOSS_IDS = [
+  'subboss_cairn_knight',
+  'subboss_veil_stalker',
+  'subboss_iron_prior',
+  'subboss_void_seraph'
+];
+const BOSS_IDS = [
+  'boss_crypt_regent',
+  'boss_ash_titan',
+  'boss_sunless_oracle',
+  'boss_the_below'
+];
 
 export class Dungeon {
   /**
@@ -102,6 +114,8 @@ export class Dungeon {
 
       const isFinal = (i === TOTAL_FLOORS - 1) || !!biome?.isFinalBiome && positionInBiome === FLOORS_PER_BIOME - 1
         && biomeIdx === biomeCount - 1;
+      const floorNumber = i + 1;
+      const specialEnemyId = this._specialEnemyForFloor(floorNumber);
 
       out.push({
         index: i,
@@ -117,6 +131,7 @@ export class Dungeon {
         itemCount:  Math.min(8,  5 + Math.floor(i * 0.04)),
         torchRadius: biome?.torchRadius || 5,
         depthScale: 1 + i * 0.08, // enemy HP/ATK multiplier — read by spawner
+        specialEnemyId,
         biomeId: biome?.id || 'unknown',
         isFinalFloor: isFinal
       });
@@ -133,5 +148,18 @@ export class Dungeon {
       if (typeof def.index === 'number') map[def.index] = def;
     }
     return map;
+  }
+
+  _specialEnemyForFloor(floorNumber) {
+    if (floorNumber < 5) return null;
+    const tier = Math.min(
+      SUBBOSS_IDS.length - 1,
+      Math.floor((floorNumber - 1) / 25)
+    );
+    if (floorNumber % 10 === 0) {
+      return BOSS_IDS[Math.min(BOSS_IDS.length - 1, tier)];
+    }
+    if (floorNumber % 5 === 0) return SUBBOSS_IDS[tier];
+    return null;
   }
 }

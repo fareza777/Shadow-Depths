@@ -3,10 +3,17 @@
     "id": "goblin_scout",
     "name": "Goblin Scout",
     "spriteKey": "enemy_goblin",
-    "stats": { "hp": 8, "atk": 3, "def": 0 },
+    "stats": {
+      "hp": 8,
+      "atk": 3,
+      "def": 0
+    },
     "behavior": "chase",
     "xp": 8,
-    "goldDrop": [1, 4],
+    "goldDrop": [
+      1,
+      4
+    ],
     "floorMin": 1,
     "spawnWeight": 10
   },
@@ -14,11 +21,22 @@
     "id": "skeleton_archer",
     "name": "Skeleton Archer",
     "spriteKey": "enemy_skeleton_archer",
-    "stats": { "hp": 6, "atk": 4, "def": 0 },
+    "stats": {
+      "hp": 6,
+      "atk": 4,
+      "def": 0
+    },
     "behavior": "ranged",
-    "behaviorParams": { "preferredDistance": 4, "minDistance": 3, "range": 6 },
+    "behaviorParams": {
+      "preferredDistance": 4,
+      "minDistance": 3,
+      "range": 6
+    },
     "xp": 12,
-    "goldDrop": [2, 5],
+    "goldDrop": [
+      2,
+      5
+    ],
     "floorMin": 1,
     "spawnWeight": 6
   },
@@ -26,11 +44,21 @@
     "id": "cave_bat",
     "name": "Cave Bat",
     "spriteKey": "enemy_bat",
-    "stats": { "hp": 4, "atk": 2, "def": 0 },
+    "stats": {
+      "hp": 4,
+      "atk": 2,
+      "def": 0
+    },
     "behavior": "erratic",
-    "behaviorParams": { "missChance": 0.25, "randomMoveChance": 0.40 },
+    "behaviorParams": {
+      "missChance": 0.25,
+      "randomMoveChance": 0.4
+    },
     "xp": 6,
-    "goldDrop": [0, 2],
+    "goldDrop": [
+      0,
+      2
+    ],
     "floorMin": 1,
     "spawnWeight": 8
   },
@@ -38,11 +66,20 @@
     "id": "stone_golem",
     "name": "Stone Golem",
     "spriteKey": "enemy_golem",
-    "stats": { "hp": 30, "atk": 7, "def": 4 },
+    "stats": {
+      "hp": 30,
+      "atk": 7,
+      "def": 4
+    },
     "behavior": "heavy",
-    "behaviorParams": { "actEveryNTurns": 2 },
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
     "xp": 30,
-    "goldDrop": [5, 12],
+    "goldDrop": [
+      5,
+      12
+    ],
     "floorMin": 2,
     "spawnWeight": 3
   },
@@ -50,23 +87,41 @@
     "id": "shadow_wraith",
     "name": "Shadow Wraith",
     "spriteKey": "enemy_wraith",
-    "stats": { "hp": 16, "atk": 5, "def": 1 },
+    "stats": {
+      "hp": 16,
+      "atk": 5,
+      "def": 1
+    },
     "behavior": "phase",
-    "onHitPlayer": [{ "type": "drainXP", "value": 5 }],
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 5
+      }
+    ],
     "xp": 25,
-    "goldDrop": [3, 8],
+    "goldDrop": [
+      3,
+      8
+    ],
     "floorMin": 3,
     "spawnWeight": 4
   },
-
   "deep_lurker": {
     "id": "deep_lurker",
     "name": "Deep Lurker",
     "spriteKey": "enemy_lurker",
-    "stats": { "hp": 14, "atk": 5, "def": 1 },
+    "stats": {
+      "hp": 14,
+      "atk": 5,
+      "def": 1
+    },
     "behavior": "chase",
     "xp": 18,
-    "goldDrop": [3, 7],
+    "goldDrop": [
+      3,
+      7
+    ],
     "floorMin": 15,
     "spawnWeight": 6
   },
@@ -74,11 +129,26 @@
     "id": "rotbringer",
     "name": "Rotbringer",
     "spriteKey": "enemy_rotbringer",
-    "stats": { "hp": 18, "atk": 4, "def": 2 },
+    "stats": {
+      "hp": 18,
+      "atk": 4,
+      "def": 2
+    },
     "behavior": "chase",
-    "onHitPlayer": [{ "type": "applyStatus", "status": "poison", "value": 2, "duration": 3, "stackable": true }],
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 2,
+        "duration": 3,
+        "stackable": true
+      }
+    ],
     "xp": 22,
-    "goldDrop": [3, 8],
+    "goldDrop": [
+      3,
+      8
+    ],
     "floorMin": 15,
     "spawnWeight": 5
   },
@@ -86,11 +156,21 @@
     "id": "cinder_imp",
     "name": "Cinder Imp",
     "spriteKey": "enemy_imp",
-    "stats": { "hp": 10, "atk": 6, "def": 0 },
+    "stats": {
+      "hp": 10,
+      "atk": 6,
+      "def": 0
+    },
     "behavior": "erratic",
-    "behaviorParams": { "missChance": 0.20, "randomMoveChance": 0.35 },
+    "behaviorParams": {
+      "missChance": 0.2,
+      "randomMoveChance": 0.35
+    },
     "xp": 16,
-    "goldDrop": [2, 6],
+    "goldDrop": [
+      2,
+      6
+    ],
     "floorMin": 20,
     "spawnWeight": 6
   },
@@ -98,11 +178,20 @@
     "id": "ash_warden",
     "name": "Ash Warden",
     "spriteKey": "enemy_warden",
-    "stats": { "hp": 40, "atk": 8, "def": 5 },
+    "stats": {
+      "hp": 40,
+      "atk": 8,
+      "def": 5
+    },
     "behavior": "heavy",
-    "behaviorParams": { "actEveryNTurns": 2 },
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
     "xp": 45,
-    "goldDrop": [8, 18],
+    "goldDrop": [
+      8,
+      18
+    ],
     "floorMin": 20,
     "spawnWeight": 3
   },
@@ -110,10 +199,17 @@
     "id": "mirror_thrall",
     "name": "Mirror Thrall",
     "spriteKey": "enemy_thrall",
-    "stats": { "hp": 22, "atk": 6, "def": 2 },
+    "stats": {
+      "hp": 22,
+      "atk": 6,
+      "def": 2
+    },
     "behavior": "phase",
     "xp": 32,
-    "goldDrop": [5, 12],
+    "goldDrop": [
+      5,
+      12
+    ],
     "floorMin": 25,
     "spawnWeight": 4
   },
@@ -121,12 +217,28 @@
     "id": "ink_scribe",
     "name": "Ink Scribe",
     "spriteKey": "enemy_scribe",
-    "stats": { "hp": 14, "atk": 7, "def": 1 },
+    "stats": {
+      "hp": 14,
+      "atk": 7,
+      "def": 1
+    },
     "behavior": "ranged",
-    "behaviorParams": { "preferredDistance": 5, "minDistance": 3, "range": 7 },
-    "onHitPlayer": [{ "type": "drainXP", "value": 3 }],
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 7
+    },
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 3
+      }
+    ],
     "xp": 28,
-    "goldDrop": [4, 10],
+    "goldDrop": [
+      4,
+      10
+    ],
     "floorMin": 30,
     "spawnWeight": 5
   },
@@ -134,11 +246,26 @@
     "id": "ice_revenant",
     "name": "Ice Revenant",
     "spriteKey": "enemy_revenant",
-    "stats": { "hp": 28, "atk": 7, "def": 3 },
+    "stats": {
+      "hp": 28,
+      "atk": 7,
+      "def": 3
+    },
     "behavior": "chase",
-    "onHitPlayer": [{ "type": "applyStatus", "status": "poison", "value": 1, "duration": 4, "stackable": true }],
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 1,
+        "duration": 4,
+        "stackable": true
+      }
+    ],
     "xp": 36,
-    "goldDrop": [6, 14],
+    "goldDrop": [
+      6,
+      14
+    ],
     "floorMin": 35,
     "spawnWeight": 5
   },
@@ -146,10 +273,17 @@
     "id": "bloodroot_fiend",
     "name": "Bloodroot Fiend",
     "spriteKey": "enemy_fiend",
-    "stats": { "hp": 24, "atk": 8, "def": 2 },
+    "stats": {
+      "hp": 24,
+      "atk": 8,
+      "def": 2
+    },
     "behavior": "chase",
     "xp": 38,
-    "goldDrop": [6, 14],
+    "goldDrop": [
+      6,
+      14
+    ],
     "floorMin": 40,
     "spawnWeight": 5
   },
@@ -157,11 +291,20 @@
     "id": "iron_sentinel",
     "name": "Iron Sentinel",
     "spriteKey": "enemy_sentinel",
-    "stats": { "hp": 50, "atk": 10, "def": 7 },
+    "stats": {
+      "hp": 50,
+      "atk": 10,
+      "def": 7
+    },
     "behavior": "heavy",
-    "behaviorParams": { "actEveryNTurns": 2 },
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
     "xp": 60,
-    "goldDrop": [12, 25],
+    "goldDrop": [
+      12,
+      25
+    ],
     "floorMin": 45,
     "spawnWeight": 3
   },
@@ -169,11 +312,21 @@
     "id": "whisper_hound",
     "name": "Whisper Hound",
     "spriteKey": "enemy_hound",
-    "stats": { "hp": 18, "atk": 9, "def": 1 },
+    "stats": {
+      "hp": 18,
+      "atk": 9,
+      "def": 1
+    },
     "behavior": "erratic",
-    "behaviorParams": { "missChance": 0.15, "randomMoveChance": 0.30 },
+    "behaviorParams": {
+      "missChance": 0.15,
+      "randomMoveChance": 0.3
+    },
     "xp": 40,
-    "goldDrop": [5, 12],
+    "goldDrop": [
+      5,
+      12
+    ],
     "floorMin": 50,
     "spawnWeight": 5
   },
@@ -181,10 +334,17 @@
     "id": "hollow_marcher",
     "name": "Hollow Marcher",
     "spriteKey": "enemy_marcher",
-    "stats": { "hp": 32, "atk": 10, "def": 4 },
+    "stats": {
+      "hp": 32,
+      "atk": 10,
+      "def": 4
+    },
     "behavior": "chase",
     "xp": 55,
-    "goldDrop": [10, 22],
+    "goldDrop": [
+      10,
+      22
+    ],
     "floorMin": 75,
     "spawnWeight": 5
   },
@@ -192,11 +352,21 @@
     "id": "wyrm_spawn",
     "name": "Wyrm Spawn",
     "spriteKey": "enemy_wyrm",
-    "stats": { "hp": 26, "atk": 11, "def": 2 },
+    "stats": {
+      "hp": 26,
+      "atk": 11,
+      "def": 2
+    },
     "behavior": "erratic",
-    "behaviorParams": { "missChance": 0.10, "randomMoveChance": 0.45 },
+    "behaviorParams": {
+      "missChance": 0.1,
+      "randomMoveChance": 0.45
+    },
     "xp": 48,
-    "goldDrop": [8, 18],
+    "goldDrop": [
+      8,
+      18
+    ],
     "floorMin": 80,
     "spawnWeight": 4
   },
@@ -204,12 +374,214 @@
     "id": "the_called",
     "name": "The Called",
     "spriteKey": "enemy_called",
-    "stats": { "hp": 100, "atk": 14, "def": 6 },
+    "stats": {
+      "hp": 100,
+      "atk": 14,
+      "def": 6
+    },
     "behavior": "phase",
-    "onHitPlayer": [{ "type": "drainXP", "value": 10 }],
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 10
+      }
+    ],
     "xp": 200,
-    "goldDrop": [50, 100],
+    "goldDrop": [
+      50,
+      100
+    ],
     "floorMin": 95,
     "spawnWeight": 2
+  },
+  "subboss_cairn_knight": {
+    "id": "subboss_cairn_knight",
+    "name": "Cairn Knight",
+    "spriteKey": "enemy_sentinel",
+    "stats": {
+      "hp": 46,
+      "atk": 8,
+      "def": 4
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
+    "xp": 70,
+    "goldDrop": [
+      14,
+      28
+    ],
+    "floorMin": 5,
+    "spawnWeight": 0,
+    "role": "subboss"
+  },
+  "subboss_veil_stalker": {
+    "id": "subboss_veil_stalker",
+    "name": "Veil Stalker",
+    "spriteKey": "enemy_wraith",
+    "stats": {
+      "hp": 54,
+      "atk": 10,
+      "def": 3
+    },
+    "behavior": "phase",
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 6
+      }
+    ],
+    "xp": 95,
+    "goldDrop": [
+      20,
+      38
+    ],
+    "floorMin": 25,
+    "spawnWeight": 0,
+    "role": "subboss"
+  },
+  "subboss_iron_prior": {
+    "id": "subboss_iron_prior",
+    "name": "Iron Prior",
+    "spriteKey": "enemy_marcher",
+    "stats": {
+      "hp": 70,
+      "atk": 13,
+      "def": 6
+    },
+    "behavior": "chase",
+    "xp": 130,
+    "goldDrop": [
+      28,
+      50
+    ],
+    "floorMin": 50,
+    "spawnWeight": 0,
+    "role": "subboss"
+  },
+  "subboss_void_seraph": {
+    "id": "subboss_void_seraph",
+    "name": "Void Seraph",
+    "spriteKey": "enemy_called",
+    "stats": {
+      "hp": 86,
+      "atk": 16,
+      "def": 7
+    },
+    "behavior": "phase",
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 8
+      }
+    ],
+    "xp": 170,
+    "goldDrop": [
+      40,
+      70
+    ],
+    "floorMin": 75,
+    "spawnWeight": 0,
+    "role": "subboss"
+  },
+  "boss_crypt_regent": {
+    "id": "boss_crypt_regent",
+    "name": "Crypt Regent",
+    "spriteKey": "enemy_golem",
+    "stats": {
+      "hp": 78,
+      "atk": 11,
+      "def": 6
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
+    "xp": 180,
+    "goldDrop": [
+      35,
+      70
+    ],
+    "floorMin": 10,
+    "spawnWeight": 0,
+    "role": "boss"
+  },
+  "boss_ash_titan": {
+    "id": "boss_ash_titan",
+    "name": "Ash Titan",
+    "spriteKey": "enemy_warden",
+    "stats": {
+      "hp": 110,
+      "atk": 15,
+      "def": 8
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
+    "xp": 260,
+    "goldDrop": [
+      55,
+      95
+    ],
+    "floorMin": 30,
+    "spawnWeight": 0,
+    "role": "boss"
+  },
+  "boss_sunless_oracle": {
+    "id": "boss_sunless_oracle",
+    "name": "Sunless Oracle",
+    "spriteKey": "enemy_scribe",
+    "stats": {
+      "hp": 96,
+      "atk": 17,
+      "def": 5
+    },
+    "behavior": "ranged",
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 7
+    },
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 9
+      }
+    ],
+    "xp": 340,
+    "goldDrop": [
+      70,
+      120
+    ],
+    "floorMin": 60,
+    "spawnWeight": 0,
+    "role": "boss"
+  },
+  "boss_the_below": {
+    "id": "boss_the_below",
+    "name": "The Below",
+    "spriteKey": "enemy_called",
+    "stats": {
+      "hp": 150,
+      "atk": 21,
+      "def": 9
+    },
+    "behavior": "phase",
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 12
+      }
+    ],
+    "xp": 500,
+    "goldDrop": [
+      100,
+      180
+    ],
+    "floorMin": 90,
+    "spawnWeight": 0,
+    "role": "boss"
   }
 }

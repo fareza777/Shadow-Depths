@@ -44,10 +44,14 @@ export class HUD {
 
     const xpNeed = p.xpToNext();
     const xpMaxed = !Number.isFinite(xpNeed);
-    r.drawBar(8, TOP_PAD + 22, barW, 10, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
-    r.drawText(`Lv ${p.level}`, 12, TOP_PAD + 22,
-      { size: uiSize(11), bold: true, family: FONT_MONO });
-    r.drawText(xpMaxed ? 'MAX XP' : `${p.xp}/${xpNeed} XP`, CANVAS_WIDTH - 12, TOP_PAD + 22,
+    const xpY = TOP_PAD + 22;
+    r.drawRect(8, xpY - 2, 74, 16, COLOR.bgCardHi);
+    r.drawStrokedRect(8, xpY - 2, 74, 16, COLOR.gold, 1);
+    r.drawText(`LEVEL ${p.level}`, 45, xpY + 6,
+      { size: uiSize(11), bold: true, align: 'center', baseline: 'middle',
+        family: FONT_MONO, color: COLOR.textPrimary });
+    r.drawBar(88, xpY, CANVAS_WIDTH - 96, 10, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
+    r.drawText(xpMaxed ? 'MAX XP' : `${p.xp}/${xpNeed} XP`, CANVAS_WIDTH - 12, xpY,
       { size: uiSize(11), bold: true, align: 'right', family: FONT_MONO });
 
     const atk = p.totalAtk();
@@ -62,11 +66,11 @@ export class HUD {
 
     if (floor) {
       const name = `${floor.definition.name}`;
-      const sub = `floor ${floorIndex + 1} / ${totalFloors}`;
+      const sub = `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
       r.drawText(name, CANVAS_WIDTH / 2, TOP_PAD + 56,
         { size: uiSize(13), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
       r.drawText(sub, CANVAS_WIDTH / 2, TOP_PAD + 74,
-        { size: uiSize(11), italic: true, align: 'center', color: COLOR.textMuted, family: FONT_BODY });
+        { size: uiSize(11), bold: true, align: 'center', color: COLOR.textMuted, family: FONT_MONO });
     }
 
     let chipX = 8;

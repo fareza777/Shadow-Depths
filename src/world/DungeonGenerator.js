@@ -239,10 +239,20 @@ export class DungeonGenerator {
     const weighted = pool.map((id) => ({ value: id, weight: enemyDefs[id].spawnWeight || 1 }));
     const spawns = [];
     const candidates = rooms.filter((r) => r !== spawnRoom);
+    const reserved = new Set();
+    if (floorDef.specialEnemyId && enemyDefs[floorDef.specialEnemyId]) {
+      const bossRoom = this._farthestRoom(candidates.length ? candidates : rooms, floor.playerSpawn, 0);
+      const tile = this._randomTileInRoom(floor, bossRoom, reserved);
+      if (tile) {
+        reserved.add(`${tile.x},${tile.y}`);
+        spawns.push({ x: tile.x, y: tile.y, defId: floorDef.specialEnemyId });
+      }
+    }
     for (let i = 0; i < count; i++) {
       const room = this.rng.pick(candidates.length ? candidates : rooms);
-      const tile = this._randomTileInRoom(floor, room);
+      const tile = this._randomTileInRoom(floor, room, reserved);
       if (!tile) continue;
+      reserved.add(`${tile.x},${tile.y}`);
       const defId = this.rng.weightedPick(weighted);
       spawns.push({ x: tile.x, y: tile.y, defId });
     }
@@ -267,13 +277,13 @@ export class DungeonGenerator {
     return spawns;
   }
 
-  _randomTileInRoom(floor, room) {
+  _randomTileInRoom(floor, room, reserved = null) {
     // Try up to 10 times to find a free FLOOR tile (not stairs).
     for (let attempt = 0; attempt < 10; attempt++) {
       const x = this.rng.randInt(room.x, room.x + room.w - 1);
       const y = this.rng.randInt(room.y, room.y + room.h - 1);
       const t = floor.tileAt(x, y);
-      if (t && t.type === TILE.FLOOR) return { x, y };
+      if (t && t.type === TILE.FLOOR && !reserved?.has(`${x},${y}`)) return { x, y };
     }
     return null;
   }

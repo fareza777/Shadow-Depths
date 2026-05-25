@@ -21,8 +21,8 @@ const TABS = [
   { id: 'arms',    label: 'ARMS'   },
   { id: 'garb',    label: 'GARB'   },
   { id: 'phial',   label: 'PHIAL'  },
-  { id: 'thrown',  label: 'THROWN' },
-  { id: 'charms',  label: 'CHARMS' }
+  { id: 'thrown',  label: 'THROW'  },
+  { id: 'charms',  label: 'CHARM'  }
 ];
 
 const SLOT_SIZE    = IS_LANDSCAPE ? 56 : 80;
@@ -272,7 +272,7 @@ export class InventoryUI {
       r.drawStrokedRect(x + 2, g.y, g.tabW - 4, TAB_H,
         active ? COLOR.gold : COLOR.borderSoft, active ? 2 : 1);
       r.drawText(TABS[i].label, x + g.tabW / 2, g.y + TAB_H / 2 - 4,
-        { size: uiSize(12), bold: true, align: 'center', baseline: 'middle',
+        { size: uiSize(11), bold: true, align: 'center', baseline: 'middle',
           family: FONT_DISPLAY, color: active ? COLOR.gold : COLOR.textMuted });
       if (count > 0) {
         r.drawText(String(count), x + g.tabW / 2, g.y + TAB_H - 8,
@@ -389,10 +389,13 @@ export class InventoryUI {
     }
 
     // Stat line.
-    r.drawText(this._statLine(sel), textX, cardY + 62,
+    r.drawText(this._fitLine(r, this._statLine(sel), cardW - (textX - cardX) - 12, uiSize(13)),
+      textX, cardY + 62,
       { size: uiSize(13), family: FONT_MONO, color: COLOR.textPrimary });
-    r.drawText(`"${sel.lore}"`, textX, cardY + 84,
-      { size: uiSize(13), italic: true, family: FONT_BODY, color: COLOR.textMuted });
+    this._drawWrappedText(r, sel.lore || '', textX, cardY + 84,
+      cardW - (textX - cardX) - 12, 2, {
+        size: uiSize(12), italic: true, family: FONT_BODY, color: COLOR.textMuted
+      });
   }
 
   _renderActionButtons(r, player) {
@@ -444,6 +447,42 @@ export class InventoryUI {
       }
     }
     return parts.join('   ') || item.type;
+  }
+
+  _fitLine(r, text, maxW, size) {
+    const opts = { size, family: FONT_MONO };
+    if (r.measureText(text, opts) <= maxW) return text;
+    const ellipsis = '...';
+    let out = text;
+    while (out.length > 0 && r.measureText(out + ellipsis, opts) > maxW) {
+      out = out.slice(0, -1);
+    }
+    return out ? out + ellipsis : ellipsis;
+  }
+
+  _drawWrappedText(r, text, x, y, maxW, maxLines, opts) {
+    const words = String(text).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+      const next = line ? `${line} ${word}` : word;
+      if (r.measureText(next, opts) <= maxW) {
+        line = next;
+      } else {
+        if (line) lines.push(line);
+        line = word;
+      }
+      if (lines.length >= maxLines) break;
+    }
+    if (line && lines.length < maxLines) lines.push(line);
+    if (lines.length === maxLines && words.join(' ').length > lines.join(' ').length) {
+      let last = lines[maxLines - 1];
+      while (last.length > 0 && r.measureText(`${last}...`, opts) > maxW) last = last.slice(0, -1);
+      lines[maxLines - 1] = `${last}...`;
+    }
+    for (let i = 0; i < lines.length; i++) {
+      r.drawText(lines[i], x, y + i * 16, opts);
+    }
   }
 }
 
