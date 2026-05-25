@@ -158,6 +158,10 @@ export class Renderer {
     ctx.clip();
     ctx.translate(cam.x, cam.y);
 
+    // Base abyss wash inside viewport (void outside rooms reads as depth, not flat UI gray).
+    fillRect(ctx, x0 * TILE_SIZE, y0 * TILE_SIZE,
+      (x1 - x0 + 1) * TILE_SIZE, (y1 - y0 + 1) * TILE_SIZE, '#05040a');
+
     // Visible tile range — derived from viewport rect, not full canvas.
     const x0 = Math.max(0, Math.floor((VIEWPORT_X - cam.x) / TILE_SIZE));
     const y0 = Math.max(0, Math.floor((VIEWPORT_Y - cam.y) / TILE_SIZE));
@@ -186,7 +190,21 @@ export class Renderer {
 
     const toPx = (g) => g * TILE_SIZE;
 
-    // Pass 1 — floors & walkable surfaces.
+    // Pass 1 — void abyss (in & outside rooms), then floors.
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const t = floor.tiles[y][x];
+        if (t.type !== TILE.VOID) continue;
+        const tx = toPx(x);
+        const ty = toPx(y);
+        this.sprites.draw('tile_void', ctx, tx, ty, {
+          tileX: x, tileY: y, ...tileOpts,
+          explored: t.explored,
+          dim: !t.visible
+        });
+      }
+    }
+
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
@@ -195,11 +213,7 @@ export class Renderer {
         const opts = { dim, tileX: x, tileY: y, ...tileOpts };
         const tx = toPx(x);
         const ty = toPx(y);
-        if (t.type === TILE.VOID) {
-          this.sprites.draw('tile_void', ctx, tx, ty, opts);
-          continue;
-        }
-        if (t.type === TILE.WALL) continue;
+        if (t.type === TILE.VOID || t.type === TILE.WALL) continue;
         switch (t.type) {
           case TILE.FLOOR:       this.sprites.draw('tile_floor', ctx, tx, ty, opts); break;
           case TILE.STAIRS_DOWN: this.sprites.draw('tile_stairs_down', ctx, tx, ty, opts); break;

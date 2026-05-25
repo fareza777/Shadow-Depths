@@ -106,17 +106,9 @@ export function drawWallTile(ctx, x, y, s, opts = {}) {
 
   p(ctx, x, y, s, bricks);
 
-  // Mortar grooves between bricks.
-  p(ctx, x, y, s, [
-    [0, 8, 32, 1, c.mortar], [0, 16, 32, 1, c.mortar],
-    [15, 0, 1, 9, c.mortar], [10, 9, 1, 8, c.mortar]
-  ]);
-
-  // Surface detail: cracks & chips from hash.
-  if ((h >> 4) % 7 === 0) {
-    p(ctx, x, y, s, [
-      [8, 12, 6, 1, c.mortar], [9, 13, 1, 4, c.mortar]
-    ]);
+  // Light mortar (fewer lines = less busy).
+  if (variant % 2 === 0) {
+    p(ctx, x, y, s, [[0, 15, 32, 1, c.mortar]]);
   }
   if ((h >> 8) % 5 === 0) {
     p(ctx, x, y, s, [[20, 20, 3, 2, c.dark], [21, 21, 1, 1, shade(c.base, 40)]]);
@@ -142,52 +134,91 @@ export function drawFloorTile(ctx, x, y, s, opts = {}) {
   const ty = opts.tileY ?? 0;
   const h = hash2(tx, ty, 7);
 
-  const grout = shade(base, -22);
-  const stoneA = base;
-  const stoneB = shade(base, 8);
-  const stoneC = shade(base, 14);
-  const speck = shade(base, -10);
+  const grout = shade(base, -16);
+  const slab = (h % 3 === 0) ? shade(base, 3) : base;
+  const inset = Math.max(2, Math.floor(s * 0.1));
 
   fillRect(ctx, x, y, s, s, grout);
+  fillRect(ctx, x + inset, y + inset, s - inset * 2, s - inset * 2, slab);
+  fillRect(ctx, x + inset, y + inset, s - inset * 2, 1, '#ffffff08');
+  fillRect(ctx, x + inset, y + inset, 1, s - inset * 2, '#ffffff05');
 
-  const pattern = h % 5;
-  const slabs = pattern === 0
-    ? [[3, 2, 12, 11, stoneA], [16, 3, 13, 10, stoneB], [4, 15, 11, 14, stoneC], [17, 16, 12, 13, stoneA]]
-    : pattern === 1
-    ? [[2, 2, 14, 13, stoneB], [17, 2, 12, 12, stoneA], [3, 17, 26, 12, stoneC]]
-    : pattern === 2
-    ? [[2, 3, 10, 9, stoneA], [13, 2, 17, 8, stoneB], [2, 12, 8, 17, stoneC], [11, 13, 18, 16, stoneA]]
-    : pattern === 3
-    ? [[4, 4, 24, 10, stoneB], [3, 16, 11, 13, stoneA], [16, 17, 13, 12, stoneC]]
-    : [[5, 2, 9, 13, stoneA], [15, 3, 14, 11, stoneB], [2, 16, 13, 13, stoneC], [16, 15, 14, 14, stoneA]];
-
-  for (const slab of slabs) {
-    const [px, py, pw, ph, col] = slab;
-    p(ctx, x, y, s, [[px, py, pw, ph, col]]);
-    // Bevel per slab.
-    const u = s / 32;
-    fillRect(ctx, x + px * u, y + py * u, pw * u, 1, '#ffffff14');
-    fillRect(ctx, x + px * u, y + py * u, 1, ph * u, '#ffffff0c');
-    fillRect(ctx, x + (px + pw - 1) * u, y + (py + ph - 1) * u, 1, 1, '#00000033');
-  }
-
-  // Grout gaps & wear.
-  if ((h >> 3) % 4 === 0) {
-    p(ctx, x, y, s, [[14, 10, 4, 1, grout], [15, 11, 1, 3, grout]]);
-  }
-  if ((h >> 5) % 6 === 0) {
-    fillRect(ctx, x + s * 0.2, y + s * 0.55, 2, 2, speck);
-  }
-  if ((h >> 7) % 8 === 0 && !opts.dim) {
-    fillRect(ctx, x + s * 0.7, y + s * 0.25, 1, 1, '#ffffff22');
+  // Rare subtle crack — keeps variety without visual noise.
+  if ((h >> 5) % 13 === 0) {
+    fillRect(ctx, x + s * 0.45, y + inset + 2, 1, s - inset * 2 - 4, shade(base, -12));
   }
 }
 
+/**
+ * Abyss outside rooms — misty cave depth, not flat gray.
+ * @param {{ explored?:boolean, tileX?:number, tileY?:number, biomeId?:string }} opts
+ */
 export function drawVoidTile(ctx, x, y, s, opts = {}) {
-  const base = opts.dim ? '#050408' : '#0a0810';
-  fillRect(ctx, x, y, s, s, base);
-  const h = hash2(opts.tileX ?? 0, opts.tileY ?? 0, 99);
-  if ((h % 11) === 0) fillRect(ctx, x + 4, y + 8, 2, 2, '#0e0c14');
+  const tx = opts.tileX ?? 0;
+  const ty = opts.tileY ?? 0;
+  const h = hash2(tx, ty, 99);
+  const seen = opts.explored !== false;
+  const biome = opts.biomeId || '';
+
+  let abyss = '#06050c';
+  let mist = '#14101c';
+  let speck = '#2a2438';
+  if (biome.includes('drowning') || biome.includes('sunken')) {
+    abyss = '#040810'; mist = '#0c1824'; speck = '#1a3040';
+  } else if (biome.includes('frost') || biome.includes('salt')) {
+    abyss = '#080a14'; mist = '#141a28'; speck = '#283048';
+  } else if (biome.includes('ashen') || biome.includes('cinder')) {
+    abyss = '#0a0806'; mist = '#1a1410'; speck = '#302820';
+  } else if (biome.includes('empty') || biome.includes('below')) {
+    abyss = '#020208'; mist = '#0a0820'; speck = '#1a1840';
+  }
+
+  if (!seen) {
+    fillRect(ctx, x, y, s, s, '#020106');
+    fillRect(ctx, x, y, s, 1, '#000000');
+    return;
+  }
+
+  const depth = ((tx * 0.6 + ty) % 12) / 12;
+  fillRect(ctx, x, y, s, s, shade(abyss, Math.floor(depth * 6)));
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  fillRect(ctx, x, y, s, s * 0.4, mist);
+  ctx.restore();
+
+  // Soft vertical depth gradient (farther = darker bottom).
+  const g = ctx.createLinearGradient(x, y, x, y + s);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = g;
+  ctx.fillRect(x, y, s, s);
+
+  // Drifting mist wisps.
+  if ((h >> 3) % 5 === 0) {
+    fillRect(ctx, x + 4, y + s * 0.3, s - 8, 2, '#ffffff06');
+  }
+  if ((h >> 6) % 7 === 0) {
+    fillRect(ctx, x + 2, y + s * 0.6, s * 0.5, 1, '#ffffff08');
+  }
+
+  // Distant rock / stalactite silhouette (cave edge feel).
+  if ((h >> 4) % 9 === 0) {
+    p(ctx, x, y, s, [
+      [4, 24, 6, 6, speck], [5, 22, 4, 2, shade(speck, 20)],
+      [22, 26, 5, 4, shade(speck, -10)]
+    ]);
+  }
+
+  // Dust motes in the dark.
+  if ((h >> 8) % 11 === 0) {
+    fillRect(ctx, x + (h % 20) + 6, y + ((h >> 4) % 18) + 4, 1, 1, '#ffffff18');
+  }
+  if ((h >> 10) % 13 === 0) {
+    fillRect(ctx, x + ((h >> 2) % 22) + 2, y + ((h >> 6) % 20) + 6, 1, 1, '#d4be7a22');
+  }
+
+  fillRect(ctx, x, y, 1, s, '#00000033');
+  fillRect(ctx, x, y, s, 1, '#00000022');
 }
 
 export function drawStairsDownTile(ctx, x, y, s, opts = {}) {
