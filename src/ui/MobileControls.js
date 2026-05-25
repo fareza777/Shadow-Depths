@@ -1,89 +1,73 @@
 /**
- * MobileControls — canvas-painted controls.
- *
- * Two layouts share the same hit-test code; the only difference is where
- * each region (D-pad / actions / center cutout for minimap+messages)
- * lives. Orientation is fixed at module load (constants.js) so we can
- * compute the geometry once per session.
- *
- * Portrait — control band at the bottom.
- *   [ DPAD | MAP | ACTIONS ]
- *
- * Landscape — two side strips. D-pad upper-left, map lower-left,
- *   actions upper-right, run messages lower-right.
- *   [ DPAD          ]              [ ACTIONS         ]
- *   [ MAP   |   WORLD VIEWPORT |   MESSAGES          ]
+ * MobileControls — canvas-painted D-pad, action buttons, and MENU.
  */
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
-  SIDE_CONTROL_WIDTH, IS_LANDSCAPE, COLOR
+  SIDE_CONTROL_WIDTH, IS_LANDSCAPE, COLOR, uiSize
 } from '../config/constants.js';
 
 const ACTION_LABELS = [
+  { key: 'menu',      label: 'MENU' },
   { key: 'pickup',    label: 'PICK' },
   { key: 'descend',   label: 'DOWN' },
   { key: 'inventory', label: 'BAG'  },
   { key: 'vigil',     label: 'HERO' }
 ];
 
-// Geometry layouts — chosen once per session based on orientation.
 const LAYOUT = (() => {
   if (IS_LANDSCAPE) {
-    // Left strip = D-pad up top, minimap area below.
-    // Right strip = action buttons up top, message area below.
     const stripW = SIDE_CONTROL_WIDTH;
-    const dpadBtn = 38;
-    const dpadGap = 4;
-    const dpadSize = dpadBtn * 3 + dpadGap * 2; // 122
+    const dpadBtn = 42;
+    const dpadGap = 5;
+    const dpadSize = dpadBtn * 3 + dpadGap * 2;
     const dpadX = (stripW - dpadSize) / 2;
-    const dpadY = HUD_HEIGHT + 8;
+    const dpadY = HUD_HEIGHT + 10;
 
-    const actW = 96;
-    const actH = 40;
-    const actGap = 6;
+    const actW = 100;
+    const actH = 36;
+    const actGap = 5;
     const actCount = ACTION_LABELS.length;
     const actStackH = actH * actCount + actGap * (actCount - 1);
     const actX = CANVAS_WIDTH - stripW + (stripW - actW) / 2;
-    const actY = HUD_HEIGHT + 8;
+    const actY = HUD_HEIGHT + 10;
 
     return {
       isLandscape: true,
-      band: null, // no bottom band
+      band: null,
       dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
       actW, actH, actGap, actStackH, actX, actY,
-      centerRect: { // minimap slot
-        x: 4,
-        y: dpadY + dpadSize + 8,
-        w: stripW - 8,
-        h: CANVAS_HEIGHT - (dpadY + dpadSize + 8) - 8
+      centerRect: {
+        x: 6,
+        y: dpadY + dpadSize + 10,
+        w: stripW - 12,
+        h: CANVAS_HEIGHT - (dpadY + dpadSize + 10) - 10
       },
-      msgRect: { // messages strip on right
-        x: CANVAS_WIDTH - stripW + 4,
-        y: actY + actStackH + 8,
-        w: stripW - 8,
-        h: CANVAS_HEIGHT - (actY + actStackH + 8) - 8
+      msgRect: {
+        x: CANVAS_WIDTH - stripW + 6,
+        y: actY + actStackH + 10,
+        w: stripW - 12,
+        h: CANVAS_HEIGHT - (actY + actStackH + 10) - 10
       },
-      // Left + right strip backgrounds.
       strips: [
         { x: 0, y: HUD_HEIGHT, w: stripW, h: CANVAS_HEIGHT - HUD_HEIGHT },
         { x: CANVAS_WIDTH - stripW, y: HUD_HEIGHT, w: stripW, h: CANVAS_HEIGHT - HUD_HEIGHT }
       ]
     };
   }
-  // Portrait.
+
   const bandY = CANVAS_HEIGHT - CONTROL_HEIGHT;
-  const dpadBtn = 52;
-  const dpadGap = 4;
+  const dpadBtn = 56;
+  const dpadGap = 5;
   const dpadSize = dpadBtn * 3 + dpadGap * 2;
-  const dpadX = 8;
+  const dpadX = 10;
   const dpadY = bandY + (CONTROL_HEIGHT - dpadSize) / 2;
 
-  const actW = 72;
-  const actH = 42;
+  const actW = 78;
+  const actH = 38;
   const actGap = 4;
   const actCount = ACTION_LABELS.length;
   const actStackH = actH * actCount + actGap * (actCount - 1);
-  const actX = CANVAS_WIDTH - actW - 8;
+  const actX = CANVAS_WIDTH - actW - 10;
   const actY = bandY + (CONTROL_HEIGHT - actStackH) / 2;
 
   return {
@@ -92,17 +76,16 @@ const LAYOUT = (() => {
     dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
     actW, actH, actGap, actStackH, actX, actY,
     centerRect: {
-      x: dpadX + dpadSize + 12,
-      y: bandY + 8,
-      w: actX - (dpadX + dpadSize) - 24,
-      h: CONTROL_HEIGHT - 16
+      x: dpadX + dpadSize + 14,
+      y: bandY + 10,
+      w: actX - (dpadX + dpadSize) - 28,
+      h: CONTROL_HEIGHT - 20
     },
     msgRect: null,
     strips: []
   };
 })();
 
-// D-pad button definitions (positions in 3×3 grid).
 const DPAD_BUTTONS = [
   { col: 1, row: 0, label: '▲', emit: { type: 'move', dx: 0, dy: -1 } },
   { col: 0, row: 1, label: '◀', emit: { type: 'move', dx: -1, dy: 0 } },
@@ -165,30 +148,41 @@ export class MobileControls {
     this._pressedClearedAt = (time ?? performance.now() / 1000) + 0.12;
   }
 
-  // --- canvas drawing ----------------------------------------------
   _renderBackground(r) {
     if (LAYOUT.band) {
-      r.drawRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h, '#08080c');
-      r.drawRect(0, LAYOUT.band.y, CANVAS_WIDTH, 1, '#2a2530');
+      r.drawRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h, '#0c0a10');
+      r.drawRect(0, LAYOUT.band.y, CANVAS_WIDTH, 2, COLOR.goldDim);
+      r.drawRect(0, LAYOUT.band.y + 2, CANVAS_WIDTH, 1, '#2a2530');
     }
     for (const s of LAYOUT.strips) {
-      r.drawRect(s.x, s.y, s.w, s.h, '#08080c');
-      // hairline borders on inner edges of strips
-      if (s.x === 0) r.drawRect(s.x + s.w - 1, s.y, 1, s.h, '#2a2530');
-      else           r.drawRect(s.x, s.y, 1, s.h, '#2a2530');
+      r.drawRect(s.x, s.y, s.w, s.h, '#0c0a10');
+      if (s.x === 0) r.drawRect(s.x + s.w - 1, s.y, 1, s.h, COLOR.goldDim);
+      else           r.drawRect(s.x, s.y, 1, s.h, COLOR.goldDim);
     }
   }
 
   _renderDpad(r) {
+    const padX = LAYOUT.dpadX - 6;
+    const padY = LAYOUT.dpadY - 6;
+    const padS = LAYOUT.dpadSize + 12;
+    r.drawRect(padX, padY, padS, padS, '#121018');
+    r.drawStrokedRect(padX, padY, padS, padS, COLOR.borderSoft, 1);
+
     for (const b of DPAD_BUTTONS) {
       const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const pressed = this._pressedKey === `dpad:${b.col},${b.row}`;
-      r.drawRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn, pressed ? '#3a3548' : '#1a1820');
+      r.drawRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn,
+        pressed ? COLOR.bgCardHi : '#1e1a26');
       r.drawStrokedRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn,
-        pressed ? '#d6c87a' : '#3a3340', pressed ? 2 : 1);
-      r.drawText(b.label, bx + LAYOUT.dpadBtn / 2, by + LAYOUT.dpadBtn / 2,
-        { size: LAYOUT.isLandscape ? 18 : 22, bold: true, align: 'center', baseline: 'middle' });
+        pressed ? COLOR.gold : '#4a4258', pressed ? 2 : 1);
+      if (!pressed) {
+        r.drawRect(bx + 2, by + 2, LAYOUT.dpadBtn - 4, 2, '#2a2634');
+      }
+      r.drawText(b.label, bx + LAYOUT.dpadBtn / 2, by + LAYOUT.dpadBtn / 2, {
+        size: uiSize(LAYOUT.isLandscape ? 16 : 20), bold: true,
+        align: 'center', baseline: 'middle', color: pressed ? COLOR.goldHi : COLOR.textPrimary
+      });
     }
   }
 
@@ -197,11 +191,15 @@ export class MobileControls {
       const ax = LAYOUT.actX;
       const ay = LAYOUT.actY + i * (LAYOUT.actH + LAYOUT.actGap);
       const pressed = this._pressedKey === `act:${i}`;
-      r.drawRect(ax, ay, LAYOUT.actW, LAYOUT.actH, pressed ? '#3a3548' : '#1a1820');
+      const isMenu = ACTION_LABELS[i].key === 'menu';
+      r.drawRect(ax, ay, LAYOUT.actW, LAYOUT.actH,
+        pressed ? COLOR.bgCardHi : (isMenu ? '#2a2228' : '#1e1a26'));
       r.drawStrokedRect(ax, ay, LAYOUT.actW, LAYOUT.actH,
-        pressed ? '#d6c87a' : '#3a3340', pressed ? 2 : 1);
-      r.drawText(ACTION_LABELS[i].label, ax + LAYOUT.actW / 2, ay + LAYOUT.actH / 2,
-        { size: 14, bold: true, align: 'center', baseline: 'middle', color: COLOR.textPrimary });
+        pressed ? COLOR.gold : (isMenu ? '#6a5a40' : '#4a4258'), pressed ? 2 : 1);
+      r.drawText(ACTION_LABELS[i].label, ax + LAYOUT.actW / 2, ay + LAYOUT.actH / 2, {
+        size: uiSize(13), bold: true, align: 'center', baseline: 'middle',
+        color: isMenu ? COLOR.gold : COLOR.textPrimary
+      });
     }
   }
 

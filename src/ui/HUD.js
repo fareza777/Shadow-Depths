@@ -8,10 +8,10 @@
  * desktop because KeyboardHandler maps them; HUD just doesn't draw the bar.
  */
 import {
-  COLOR, CANVAS_WIDTH, HUD_HEIGHT, FONT_DISPLAY, FONT_BODY, FONT_MONO
+  COLOR, CANVAS_WIDTH, HUD_HEIGHT, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 
-const TOP_PAD = 8;
+const TOP_PAD = 10;
 
 export class HUD {
   /** @param {{ messageLog: object }} deps */
@@ -38,68 +38,64 @@ export class HUD {
 
     // HP bar — full width minus padding.
     const barW = CANVAS_WIDTH - 16;
-    r.drawBar(8, TOP_PAD, barW, 16, p.stats.hp, p.stats.hpMax, COLOR.hpBar, COLOR.hpBarBg);
+    r.drawBar(8, TOP_PAD, barW, 18, p.stats.hp, p.stats.hpMax, COLOR.hpBar, COLOR.hpBarBg);
     r.drawText(`HP ${p.stats.hp}/${p.stats.hpMax}`, 12, TOP_PAD + 2,
-      { size: 12, bold: true, family: FONT_MONO });
+      { size: uiSize(13), bold: true, family: FONT_MONO });
 
-    // XP bar just below.
     const xpNeed = p.xpToNext();
-    r.drawBar(8, TOP_PAD + 20, barW, 8, p.xp, xpNeed, COLOR.xpBar, COLOR.xpBarBg);
-    r.drawText(`Lv ${p.level}`, 12, TOP_PAD + 20,
-      { size: 9, bold: true, family: FONT_MONO });
-    r.drawText(`${p.xp}/${xpNeed} XP`, CANVAS_WIDTH - 12, TOP_PAD + 20,
-      { size: 9, bold: true, align: 'right', family: FONT_MONO });
+    r.drawBar(8, TOP_PAD + 22, barW, 10, p.xp, xpNeed, COLOR.xpBar, COLOR.xpBarBg);
+    r.drawText(`Lv ${p.level}`, 12, TOP_PAD + 22,
+      { size: uiSize(11), bold: true, family: FONT_MONO });
+    r.drawText(`${p.xp}/${xpNeed} XP`, CANVAS_WIDTH - 12, TOP_PAD + 22,
+      { size: uiSize(11), bold: true, align: 'right', family: FONT_MONO });
 
-    // Stats line.
     const atk = p.totalAtk();
     const def = p.totalDef();
     const crit = Math.round(p.critChance() * 100);
     const range = p.weapon?.stats?.attackRange || 1;
     const rangeChip = range > 1 ? `  RNG ${range}` : '';
     r.drawText(`ATK ${atk}  DEF ${def}  CRIT ${crit}%${rangeChip}`,
-      8, TOP_PAD + 34, { size: 11, color: COLOR.textMuted, family: FONT_MONO });
-    r.drawText(`◈ ${p.gold}`, CANVAS_WIDTH - 12, TOP_PAD + 34,
-      { size: 11, color: COLOR.textXP, align: 'right', family: FONT_MONO });
+      8, TOP_PAD + 38, { size: uiSize(12), color: COLOR.textMuted, family: FONT_MONO });
+    r.drawText(`◈ ${p.gold}`, CANVAS_WIDTH - 12, TOP_PAD + 38,
+      { size: uiSize(12), color: COLOR.textXP, align: 'right', family: FONT_MONO });
 
-    // Floor tag — atmospheric italic flavor.
     if (floor) {
       const name = `${floor.definition.name}`;
       const sub = `floor ${floorIndex + 1} / ${totalFloors}`;
-      r.drawText(name, CANVAS_WIDTH / 2, TOP_PAD + 50,
-        { size: 12, bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
-      r.drawText(sub, CANVAS_WIDTH / 2, TOP_PAD + 64,
-        { size: 9, italic: true, align: 'center', color: COLOR.textMuted, family: FONT_BODY });
+      r.drawText(name, CANVAS_WIDTH / 2, TOP_PAD + 56,
+        { size: uiSize(13), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
+      r.drawText(sub, CANVAS_WIDTH / 2, TOP_PAD + 74,
+        { size: uiSize(11), italic: true, align: 'center', color: COLOR.textMuted, family: FONT_BODY });
     }
 
-    // Status effect chips (tight row).
     let chipX = 8;
-    const chipY = TOP_PAD + 66;
+    const chipY = TOP_PAD + 82;
     for (const eff of p.statusEffects) {
       const label = `${eff.id} ${eff.value}×${eff.duration}`;
       const w = 8 + label.length * 6;
       const bg = eff.id === 'poison' ? '#2a4a30'
               : (eff.id === 'atk_buff' ? '#4a2a20' : '#1e3a52');
       r.drawRect(chipX, chipY, w, 14, bg);
-      r.drawText(label, chipX + 4, chipY + 1, { size: 10 });
+      r.drawText(label, chipX + 4, chipY + 1, { size: uiSize(11) });
       chipX += w + 4;
       if (chipX > CANVAS_WIDTH - 80) break;
     }
     if (p.reviveCharges > 0) {
       r.drawText(`✦ Revive ×${p.reviveCharges}`, CANVAS_WIDTH - 12, chipY + 1,
-        { size: 11, color: COLOR.textHeal, align: 'right' });
+        { size: uiSize(12), color: COLOR.textHeal, align: 'right' });
     }
     // Skill chips — appear under status chips when the player has skills.
     // Compact: 4-char abbreviation per skill so multiple fit on one row.
     if (p.skills && p.skills.length > 0) {
       let sx = 8;
       const sy = chipY + 18;
-      r.drawText('SK', sx, sy + 1, { size: 9, color: COLOR.textMuted });
+      r.drawText('SK', sx, sy + 1, { size: uiSize(10), color: COLOR.textMuted });
       sx += 16;
       for (const id of p.skills) {
         const abbr = HUD._skillAbbr(id);
         const w = 6 + abbr.length * 6;
         r.drawRect(sx, sy, w, 14, '#1e2a3a');
-        r.drawText(abbr, sx + 3, sy + 1, { size: 10, color: '#a0d0ff' });
+        r.drawText(abbr, sx + 3, sy + 1, { size: uiSize(11), color: '#a0d0ff' });
         sx += w + 3;
         if (sx > CANVAS_WIDTH - 8) break;
       }
@@ -136,13 +132,13 @@ export class HUD {
     const maxAlpha = Math.max(...lines.map((l) => l.alpha));
     ctx.save();
     ctx.globalAlpha = 0.72 * maxAlpha;
-    r.drawRect(0, baseY, CANVAS_WIDTH, lines.length * 16 + 8, '#06060a');
+    r.drawRect(0, baseY, CANVAS_WIDTH, lines.length * 18 + 8, '#06060a');
     ctx.restore();
     for (let i = 0; i < lines.length; i++) {
       ctx.save();
       ctx.globalAlpha = lines[i].alpha;
-      r.drawText(lines[i].text, 8, baseY + 4 + i * 16,
-        { size: 11, color: lines[i].color });
+      r.drawText(lines[i].text, 8, baseY + 4 + i * 18,
+        { size: uiSize(13), color: lines[i].color, family: FONT_BODY });
       ctx.restore();
     }
   }

@@ -61,6 +61,7 @@ export class GameScene {
     this.skillPicker = deps.skillPicker || null;
     this.vigil = deps.vigilScreen || null;
     this.controls = deps.mobileControls || null;
+    this.pause = deps.pauseOverlay || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
 
@@ -135,11 +136,23 @@ export class GameScene {
     if (this.vigil) this.vigil.render(renderer, this.player);
     // Skill picker on top of EVERYTHING — it blocks all other input.
     if (this.skillPicker) this.skillPicker.render(renderer);
+    if (this.pause) this.pause.render(renderer);
   }
 
   // --- input ----------------------------------------------------------
   handleInput(action) {
     if (!action || this.player.isDead) return;
+
+    if (this.pause?.open) {
+      if (action.type === 'pointer') {
+        const idx = this.pause.hitTest(action.x, action.y);
+        if (idx >= 0) {
+          this.pause.handleInput({ type: 'tap', buttonIndex: idx });
+        }
+        return;
+      }
+      if (this.pause.handleInput(action)) return;
+    }
 
     // Skill picker modal takes highest priority — it pops on level-up and
     // must resolve before any other input.
@@ -180,6 +193,9 @@ export class GameScene {
       case 'descend':    return this._playerDescend();
       case 'inventory':  return this.inventoryUI.toggle();
       case 'vigil':      if (this.vigil) this.vigil.toggle(); return;
+      case 'menu':
+        if (this.pause) this.pause.show();
+        return;
       case 'minimap':    return this.minimap.toggle();
       case 'useSlot':    return this._playerUseSlot(action.index);
       case 'pointer': {
@@ -195,7 +211,11 @@ export class GameScene {
         return this._playerTapTile(tile.x, tile.y);
       }
       case 'tapTile':    return; // legacy; pointer is preferred
-      case 'escape':     return this.inventoryUI.hide();
+      case 'escape':
+        if (this.inventoryUI.open) return this.inventoryUI.hide();
+        if (this.vigil?.open) { this.vigil.hide(); return; }
+        if (this.pause) { this.pause.toggle(); return; }
+        return;
       default: break;
     }
   }

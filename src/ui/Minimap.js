@@ -1,13 +1,7 @@
 /**
- * Minimap — small floor overview painted INSIDE the control band's center
- * area, between the D-pad and the action buttons. Never overlaps the world
- * viewport.
- *
- * Tile pixel size auto-fits whatever space MobileControls leaves; we read
- * its geometry rather than hard-coding so layout shifts in one place stay
- * in sync.
+ * Minimap — floor overview in the control band center slot.
  */
-import { COLOR, TILE } from '../config/constants.js';
+import { COLOR, TILE, FONT_DISPLAY, uiSize } from '../config/constants.js';
 import { MobileControls } from './MobileControls.js';
 
 export class Minimap {
@@ -24,26 +18,45 @@ export class Minimap {
     if (!floor) return;
 
     const slot = MobileControls.geometry.centerRect;
-    // Fit minimap into the center cutout of the control band. Pick the
-    // largest integer tile size that keeps the whole map inside the slot.
-    const sx = Math.floor(slot.w / floor.width);
-    const sy = Math.floor(slot.h / floor.height);
-    const px = Math.max(1, Math.min(sx, sy));
+    const pad = 4;
+    const innerX = slot.x + pad;
+    const innerY = slot.y + pad;
+    const innerW = slot.w - pad * 2;
+    const innerH = slot.h - pad * 2;
+
+    renderer.drawRect(slot.x, slot.y, slot.w, slot.h, '#0a0810');
+    renderer.drawStrokedRect(slot.x, slot.y, slot.w, slot.h, COLOR.goldDim, 1);
+    renderer.drawRect(slot.x + 2, slot.y + 2, slot.w - 4, 2, COLOR.goldDim);
+    renderer.drawText('MAP', slot.x + slot.w / 2, slot.y + uiSize(9), {
+      size: uiSize(10), bold: true, align: 'center',
+      family: FONT_DISPLAY, color: COLOR.gold
+    });
+
+    const mapTop = innerY + uiSize(12);
+    const mapH = innerH - uiSize(12);
+    const sx = Math.floor(innerW / floor.width);
+    const sy = Math.floor(mapH / floor.height);
+    const px = Math.max(2, Math.min(sx, sy));
     const w = floor.width * px;
     const h = floor.height * px;
-    const x = slot.x + (slot.w - w) / 2;
-    const y = slot.y + (slot.h - h) / 2;
+    const x = innerX + (innerW - w) / 2;
+    const y = mapTop + (mapH - h) / 2;
 
     renderer.drawRect(x - 2, y - 2, w + 4, h + 4, '#06060a');
-    renderer.drawStrokedRect(x - 2, y - 2, w + 4, h + 4, '#3a3340', 1);
+    renderer.drawStrokedRect(x - 2, y - 2, w + 4, h + 4, '#4a4258', 1);
+
+    const wallLit = floor.definition?.wallPalette?.[0] || '#5a5060';
+    const wallDim = floor.definition?.wallPalette?.[1] || '#2a2530';
+    const floorLit = floor.definition?.floorPalette?.[0] || '#4a4350';
+    const floorDim = floor.definition?.floorPalette?.[1] || '#22202a';
 
     for (let ty = 0; ty < floor.height; ty++) {
       for (let tx = 0; tx < floor.width; tx++) {
         const t = floor.tiles[ty][tx];
         if (!t.explored) continue;
         let color;
-        if (t.type === TILE.WALL) color = t.visible ? '#5a5060' : '#2a2530';
-        else if (t.type === TILE.FLOOR) color = t.visible ? '#4a4350' : '#22202a';
+        if (t.type === TILE.WALL) color = t.visible ? wallLit : wallDim;
+        else if (t.type === TILE.FLOOR) color = t.visible ? floorLit : floorDim;
         else if (t.type === TILE.STAIRS_DOWN) color = COLOR.stairs;
         else if (t.type === TILE.STAIRS_UP) color = '#a09060';
         else if (t.type === TILE.DOOR) color = COLOR.door;
@@ -62,6 +75,11 @@ export class Minimap {
       x + player.x * px - 1,
       y + player.y * px - 1,
       px + 2, px + 2, COLOR.player
+    );
+    renderer.drawStrokedRect(
+      x + player.x * px - 1,
+      y + player.y * px - 1,
+      px + 2, px + 2, COLOR.gold, 1
     );
   }
 }

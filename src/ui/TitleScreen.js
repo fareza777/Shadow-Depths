@@ -13,7 +13,7 @@
  */
 import {
   COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
-  FONT_DISPLAY, FONT_BODY, FONT_MONO
+  FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 
 const MENU = [
@@ -33,10 +33,10 @@ const LAYOUT = IS_LANDSCAPE
       footerY: CANVAS_HEIGHT - 14
     }
   : {
-      logoY: 80, logoSize: 44, ornY: 130, tagY: 152, tagSize: 14,
-      hsY: 184, coinY: 206,
-      baseY: 250, rowH: 56, rowGap: 8, rowW: 340,
-      footerY: CANVAS_HEIGHT - 24
+      logoY: 72, logoSize: 48, ornY: 128, tagY: 150, tagSize: 16,
+      hsY: 178, coinY: 200,
+      baseY: 238, rowH: 58, rowGap: 10, rowW: 360,
+      footerY: CANVAS_HEIGHT - 28
     };
 
 export class TitleScreen {
@@ -80,12 +80,11 @@ export class TitleScreen {
 
     // --- Logo + ornament + tagline ---
     renderer.drawText('SHADOW DEPTHS', CANVAS_WIDTH / 2, LAYOUT.logoY,
-      { size: LAYOUT.logoSize, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
-    // Star ornament: ✦ ─── ✦
+      { size: uiSize(LAYOUT.logoSize), bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
     renderer.drawText('✦  ·  ✦', CANVAS_WIDTH / 2, LAYOUT.ornY,
-      { size: 14, align: 'center', color: COLOR.goldDim, family: FONT_DISPLAY });
+      { size: uiSize(16), align: 'center', color: COLOR.goldDim, family: FONT_DISPLAY });
     renderer.drawText('a melancholic descent', CANVAS_WIDTH / 2, LAYOUT.tagY,
-      { size: LAYOUT.tagSize, italic: true, align: 'center',
+      { size: uiSize(LAYOUT.tagSize), italic: true, align: 'center',
         family: FONT_BODY, color: COLOR.textMuted });
 
     // --- Stats: high score + coins ---
@@ -93,10 +92,10 @@ export class TitleScreen {
     const coins = this.state.state.meta.coins || 0;
     if (hs > 0) {
       renderer.drawText(`high score · ${hs}`, CANVAS_WIDTH / 2, LAYOUT.hsY,
-        { size: 11, align: 'center', color: COLOR.textXP, family: FONT_BODY, italic: true });
+        { size: uiSize(12), align: 'center', color: COLOR.textXP, family: FONT_BODY, italic: true });
     }
     renderer.drawText(`◈  ${coins} coins`, CANVAS_WIDTH / 2, LAYOUT.coinY,
-      { size: 13, align: 'center', color: COLOR.gold, bold: true, family: FONT_MONO });
+      { size: uiSize(15), align: 'center', color: COLOR.gold, bold: true, family: FONT_MONO });
 
     // --- Menu rows ---
     this._renderMenuRows(renderer);
@@ -109,7 +108,7 @@ export class TitleScreen {
     renderer.drawText(
       `the depths remember you  ·  ${runs} runs  ·  ${enemies}+ foes  ·  ${relics} relics`,
       CANVAS_WIDTH / 2, LAYOUT.footerY,
-      { size: 10, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted }
+      { size: uiSize(11), italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted }
     );
 
     if (this.modal === 'controls') this._renderControls(renderer);
@@ -136,19 +135,18 @@ export class TitleScreen {
       r.drawStrokedRect(x, y, rowW, rowH,
         selected ? COLOR.gold : COLOR.borderSoft, selected ? 2 : 1);
 
-      // Icon
-      r.drawText(item.icon, x + 18, y + rowH / 2,
-        { size: 22, bold: true, align: 'center', baseline: 'middle',
+      const iconCx = x + 32;
+      r.drawRect(x + 10, y + 8, 44, rowH - 16, selected ? COLOR.bgPanelAlt : COLOR.bgPanel);
+      r.drawText(item.icon, iconCx, y + rowH / 2,
+        { size: uiSize(20), bold: true, align: 'center', baseline: 'middle',
           family: FONT_DISPLAY, color: selected ? COLOR.goldHi : COLOR.gold });
-      // Label
-      r.drawText(item.label, x + 40, y + rowH / 2 - 2,
-        { size: 15, bold: true, align: 'left', baseline: 'middle',
+      r.drawText(item.label, x + 62, y + rowH / 2,
+        { size: uiSize(16), bold: true, align: 'left', baseline: 'middle',
           family: FONT_DISPLAY, color: COLOR.textPrimary });
-      // Status sub-text on right
       const sub = this._statusFor(item);
       if (sub) {
-        r.drawText(sub, x + rowW - 14, y + rowH / 2 - 2,
-          { size: 11, italic: true, align: 'right', baseline: 'middle',
+        r.drawText(sub, x + rowW - 12, y + rowH / 2,
+          { size: uiSize(12), italic: true, align: 'right', baseline: 'middle',
             family: FONT_BODY, color: COLOR.textMuted });
       }
     }

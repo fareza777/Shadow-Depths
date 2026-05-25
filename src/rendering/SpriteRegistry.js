@@ -322,12 +322,52 @@ const PROCEDURAL_SPRITES = {
 
   // --- tiles --------------------------------------------------------
   tile_wall: (ctx, x, y, s, opts) => {
-    fillRect(ctx, x, y, s, s, opts?.dim ? COLOR.wallDim : COLOR.wallLit);
-    // subtle brick lines for texture
-    strokeRect(ctx, x, y, s, s, '#000000', 1);
+    const lit = opts?.wallLit || COLOR.wallLit;
+    const dim = opts?.wallDim || COLOR.wallDim;
+    const base = opts?.dim ? dim : lit;
+    const tx = opts?.tileX ?? 0;
+    const ty = opts?.tileY ?? 0;
+    fillRect(ctx, x, y, s, s, base);
+    // Top/left highlight, bottom/right shadow — carved stone blocks.
+    const hi = shadeColor(base, 22);
+    const lo = shadeColor(base, -28);
+    fillRect(ctx, x, y, s, 2, hi);
+    fillRect(ctx, x, y, 2, s, hi);
+    fillRect(ctx, x + s - 2, y, 2, s, lo);
+    fillRect(ctx, x, y + s - 2, s, 2, lo);
+    // Mortar grid (varies per tile for organic look).
+    const mortar = shadeColor(base, -12);
+    if ((tx + ty) % 2 === 0) {
+      fillRect(ctx, x + s * 0.45, y + 2, 1, s - 4, mortar);
+    } else {
+      fillRect(ctx, x + 2, y + s * 0.42, s - 4, 1, mortar);
+    }
+    if ((tx * 3 + ty) % 5 === 0) {
+      fillRect(ctx, x + s * 0.2, y + s * 0.25, 2, 2, shadeColor(base, -18));
+    }
+    strokeRect(ctx, x, y, s, s, '#00000055', 1);
   },
   tile_floor: (ctx, x, y, s, opts) => {
-    fillRect(ctx, x, y, s, s, opts?.dim ? COLOR.floorDim : COLOR.floorLit);
+    const lit = opts?.floorLit || COLOR.floorLit;
+    const dim = opts?.floorDim || COLOR.floorDim;
+    const base = opts?.dim ? dim : lit;
+    const tx = opts?.tileX ?? 0;
+    const ty = opts?.tileY ?? 0;
+    fillRect(ctx, x, y, s, s, base);
+    // Flagstone slabs — lighter center patch, darker seams.
+    const seam = shadeColor(base, -14);
+    const slab = shadeColor(base, 10);
+    if ((tx + ty) % 2 === 0) {
+      fillRect(ctx, x + 2, y + 2, s - 4, s - 4, slab);
+    }
+    fillRect(ctx, x, y + s - 1, s, 1, seam);
+    fillRect(ctx, x + s - 1, y, 1, s, seam);
+    if ((tx * 2 + ty) % 7 === 0) {
+      fillRect(ctx, x + s * 0.35, y + s * 0.4, 2, 2, shadeColor(base, -8));
+    }
+    if ((tx + ty * 2) % 11 === 0) {
+      fillRect(ctx, x + s * 0.15, y + s * 0.7, 3, 1, shadeColor(base, 6));
+    }
   },
   tile_stairs_down: (ctx, x, y, s) => {
     fillRect(ctx, x, y, s, s, COLOR.floorLit);
@@ -633,6 +673,16 @@ export function strokeRect(ctx, x, y, w, h, color, line = 1) {
   ctx.strokeStyle = color;
   ctx.lineWidth = line;
   ctx.strokeRect((x | 0) + 0.5, (y | 0) + 0.5, Math.ceil(w) - 1, Math.ceil(h) - 1);
+}
+
+/** Lighten (+) or darken (-) a #rrggbb hex color. */
+function shadeColor(hex, amount) {
+  const h = hex.replace('#', '');
+  if (h.length < 6) return hex;
+  const r = Math.max(0, Math.min(255, parseInt(h.slice(0, 2), 16) + amount));
+  const g = Math.max(0, Math.min(255, parseInt(h.slice(2, 4), 16) + amount));
+  const b = Math.max(0, Math.min(255, parseInt(h.slice(4, 6), 16) + amount));
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
 /** Pick a tint for items whose sprite key encodes a hue (e.g. potion_red). */

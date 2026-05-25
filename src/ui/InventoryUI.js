@@ -13,7 +13,7 @@
  */
 import {
   COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
-  FONT_DISPLAY, FONT_BODY, FONT_MONO
+  FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 
 const TABS = [
@@ -245,16 +245,14 @@ export class InventoryUI {
     // Top bar with back arrow.
     r.drawRect(0, 0, CANVAS_WIDTH, IS_LANDSCAPE ? 30 : 38, COLOR.bgPanel);
     r.drawText('◀ SATCHEL', 12, top,
-      { size: 12, family: FONT_DISPLAY, color: COLOR.gold });
-    // Count badge.
+      { size: uiSize(14), family: FONT_DISPLAY, color: COLOR.gold });
     const filled = player.inventory.slots.filter(Boolean).length;
     r.drawText(`${filled} / ${player.inventory.size}`,
       CANVAS_WIDTH / 2, top, {
-        size: 11, align: 'center', family: FONT_MONO, color: COLOR.textPrimary
+        size: uiSize(13), align: 'center', family: FONT_MONO, color: COLOR.textPrimary
       });
-    // Coins.
     r.drawText(`◈ ${player.gold}`, CANVAS_WIDTH - 12, top,
-      { size: 11, align: 'right', family: FONT_MONO, color: COLOR.textXP });
+      { size: uiSize(13), align: 'right', family: FONT_MONO, color: COLOR.textXP });
   }
 
   _renderTabs(r, player) {
@@ -267,11 +265,11 @@ export class InventoryUI {
       r.drawStrokedRect(x + 2, g.y, g.tabW - 4, TAB_H,
         active ? COLOR.gold : COLOR.borderSoft, active ? 2 : 1);
       r.drawText(TABS[i].label, x + g.tabW / 2, g.y + TAB_H / 2 - 4,
-        { size: 10, bold: true, align: 'center', baseline: 'middle',
+        { size: uiSize(12), bold: true, align: 'center', baseline: 'middle',
           family: FONT_DISPLAY, color: active ? COLOR.gold : COLOR.textMuted });
       if (count > 0) {
         r.drawText(String(count), x + g.tabW / 2, g.y + TAB_H - 8,
-          { size: 9, align: 'center', baseline: 'middle',
+          { size: uiSize(11), align: 'center', baseline: 'middle',
             family: FONT_MONO, color: COLOR.textMuted });
       }
     }
@@ -337,7 +335,7 @@ export class InventoryUI {
 
     if (!sel) {
       r.drawText('— no item selected —', CANVAS_WIDTH / 2, cardY + DETAIL_H / 2,
-        { size: 12, italic: true, align: 'center', baseline: 'middle',
+        { size: uiSize(14), italic: true, align: 'center', baseline: 'middle',
           family: FONT_BODY, color: COLOR.textMuted });
       return;
     }
@@ -352,7 +350,7 @@ export class InventoryUI {
     // Name + rarity chip on right of icon.
     const textX = iconX + iconSize + 14;
     r.drawText(sel.name, textX, cardY + 12,
-      { size: 16, bold: true, family: FONT_DISPLAY, color: rarityColor(sel.rarity) });
+      { size: uiSize(17), bold: true, family: FONT_DISPLAY, color: rarityColor(sel.rarity) });
     // Rarity chip.
     const rarityW = 60;
     const chipY = cardY + 36;
@@ -375,10 +373,9 @@ export class InventoryUI {
 
     // Stat line.
     r.drawText(this._statLine(sel), textX, cardY + 62,
-      { size: 11, family: FONT_MONO, color: COLOR.textPrimary });
-    // Lore line.
+      { size: uiSize(13), family: FONT_MONO, color: COLOR.textPrimary });
     r.drawText(`"${sel.lore}"`, textX, cardY + 84,
-      { size: 11, italic: true, family: FONT_BODY, color: COLOR.textMuted });
+      { size: uiSize(13), italic: true, family: FONT_BODY, color: COLOR.textMuted });
   }
 
   _renderActionButtons(r, player) {
@@ -398,7 +395,7 @@ export class InventoryUI {
       r.drawRect(b.x, b.y, b.w, b.h, enabled ? COLOR.bgCardHi : COLOR.bgPanelAlt);
       r.drawStrokedRect(b.x, b.y, b.w, b.h, enabled ? COLOR.gold : COLOR.borderSoft, enabled ? 2 : 1);
       r.drawText(labels[i].text, b.x + b.w / 2, b.y + b.h / 2,
-        { size: 13, bold: true, align: 'center', baseline: 'middle',
+        { size: uiSize(15), bold: true, align: 'center', baseline: 'middle',
           family: FONT_DISPLAY,
           color: enabled ? COLOR.textPrimary : COLOR.textMuted });
     }

@@ -16,7 +16,7 @@
  */
 import {
   COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
-  FONT_DISPLAY, FONT_BODY, FONT_MONO, TILE_SIZE
+  FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 
 const HERO_NAME = 'FAJAR';
@@ -118,7 +118,8 @@ export class VigilScreen {
 
   /** Top Y of the first equipment card. Depends on what's above. */
   _cardsBaseY() {
-    return IS_LANDSCAPE ? 200 : 380;
+    // Portrait: stat block ends ~y434; equipment starts below with gap.
+    return IS_LANDSCAPE ? 210 : 468;
   }
 
   // --- render --------------------------------------------------------
@@ -136,7 +137,7 @@ export class VigilScreen {
     renderer.drawRect(close.x, close.y, close.w, close.h, COLOR.bgCard);
     renderer.drawStrokedRect(close.x, close.y, close.w, close.h, COLOR.gold, 2);
     renderer.drawText('CLOSE', close.x + close.w / 2, close.y + close.h / 2,
-      { size: 14, bold: true, align: 'center', baseline: 'middle',
+      { size: uiSize(15), bold: true, align: 'center', baseline: 'middle',
         family: FONT_DISPLAY, color: COLOR.textPrimary });
   }
 
@@ -145,26 +146,25 @@ export class VigilScreen {
     // 1. Header bar.
     r.drawRect(0, 0, CANVAS_WIDTH, 30, COLOR.bgPanel);
     r.drawText('◀ THE VIGIL', 12, 15,
-      { size: 12, align: 'left', baseline: 'middle', family: FONT_DISPLAY, color: COLOR.gold });
+      { size: uiSize(13), align: 'left', baseline: 'middle', family: FONT_DISPLAY, color: COLOR.gold });
     r.drawText('RUN', CANVAS_WIDTH - 12, 15,
-      { size: 11, align: 'right', baseline: 'middle', family: FONT_MONO, color: COLOR.textMuted });
+      { size: uiSize(12), align: 'right', baseline: 'middle', family: FONT_MONO, color: COLOR.textMuted });
 
-    // 2. Title + name block.
     r.drawText(HERO_TITLE, CANVAS_WIDTH / 2, 50,
-      { size: 12, align: 'center', family: FONT_BODY, italic: true, color: COLOR.textMuted });
-    r.drawText(HERO_NAME, CANVAS_WIDTH / 2, 74,
-      { size: 28, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
+      { size: uiSize(13), align: 'center', family: FONT_BODY, italic: true, color: COLOR.textMuted });
+    r.drawText(HERO_NAME, CANVAS_WIDTH / 2, 76,
+      { size: uiSize(30), bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
     r.drawText('"he carries other names. too late."',
-      CANVAS_WIDTH / 2, 102,
-      { size: 10, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
+      CANVAS_WIDTH / 2, 108,
+      { size: uiSize(12), italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
 
     // 3. Level + XP bar.
     const xpNeed = p.xpToNext();
     const lvY = 124;
     r.drawText(`LV.${p.level}`, 16, lvY,
-      { size: 16, bold: true, family: FONT_DISPLAY, color: COLOR.gold });
+      { size: uiSize(17), bold: true, family: FONT_DISPLAY, color: COLOR.gold });
     r.drawText(`XP ${p.xp} / ${xpNeed}`, CANVAS_WIDTH - 16, lvY + 2,
-      { size: 11, align: 'right', family: FONT_MONO, color: COLOR.textMuted });
+      { size: uiSize(12), align: 'right', family: FONT_MONO, color: COLOR.textMuted });
     r.drawBar(16, lvY + 22, CANVAS_WIDTH - 32, 6, p.xp, xpNeed, COLOR.xpBar, COLOR.xpBarBg);
 
     // 4. Portrait area (large player sprite scaled up).
@@ -178,7 +178,7 @@ export class VigilScreen {
     // 5. HP bar.
     const hpY = 270;
     r.drawText(`HP ${p.stats.hp} / ${p.stats.hpMax}`, 16, hpY,
-      { size: 12, bold: true, family: FONT_DISPLAY, color: COLOR.textPrimary });
+      { size: uiSize(14), bold: true, family: FONT_DISPLAY, color: COLOR.textPrimary });
     r.drawBar(16, hpY + 18, CANVAS_WIDTH - 32, 10, p.stats.hp, p.stats.hpMax,
       COLOR.hpBar, COLOR.hpBarBg);
 
@@ -223,7 +223,7 @@ export class VigilScreen {
 
   // ---- shared sections ----------------------------------------------
   _renderStatBlock(r, p, baseY, startX = 16) {
-    const lineH = IS_LANDSCAPE ? 18 : 22;
+    const lineH = IS_LANDSCAPE ? 20 : 24;
     const labelW = 110;
     const lines = [
       ['ATTACK',     p.totalAtk(),  ''],
@@ -237,10 +237,10 @@ export class VigilScreen {
       const [label, value] = lines[i];
       const y = baseY + i * lineH;
       r.drawText(label, startX, y,
-        { size: IS_LANDSCAPE ? 11 : 12, family: FONT_DISPLAY, color: COLOR.textMuted });
+        { size: uiSize(IS_LANDSCAPE ? 12 : 13), family: FONT_DISPLAY, color: COLOR.textMuted });
       r.drawText(String(value),
         IS_LANDSCAPE ? startX + labelW + 60 : CANVAS_WIDTH - 16, y,
-        { size: IS_LANDSCAPE ? 12 : 13, bold: true, family: FONT_MONO,
+        { size: uiSize(IS_LANDSCAPE ? 13 : 14), bold: true, family: FONT_MONO,
           align: IS_LANDSCAPE ? 'left' : 'right', color: COLOR.gold });
     }
     // Boons strip below stats.
@@ -273,12 +273,12 @@ export class VigilScreen {
   _renderEquipmentCards(r, p) {
     const cards = this._equipmentCards(p);
     // Section header.
-    const headerY = this._cardsBaseY() - 18;
+    const headerY = this._cardsBaseY() - 22;
     r.drawText('EQUIPMENT', 16, headerY,
-      { size: 11, family: FONT_DISPLAY, color: COLOR.textMuted });
+      { size: uiSize(13), family: FONT_DISPLAY, color: COLOR.textMuted });
     r.drawText(`${cards.filter((c) => c.item).length} / 4 equipped`,
-      CANVAS_WIDTH - 16, headerY,
-      { size: 10, align: 'right', italic: true, family: FONT_BODY, color: COLOR.textMuted });
+      CANVAS_WIDTH - 16, headerY + 2,
+      { size: uiSize(12), align: 'right', italic: true, family: FONT_BODY, color: COLOR.textMuted });
 
     for (const card of cards) {
       const sel = !!card.item;
@@ -299,14 +299,14 @@ export class VigilScreen {
       // Slot label + item name.
       const textX = iconX + iconSize + 10;
       r.drawText(card.label, textX, card.y + 6,
-        { size: 9, family: FONT_DISPLAY, color: COLOR.textMuted });
+        { size: uiSize(11), family: FONT_DISPLAY, color: COLOR.textMuted });
       r.drawText(card.item ? card.item.name : '— empty —',
-        textX, card.y + 22,
-        { size: 13, bold: true, family: FONT_DISPLAY,
+        textX, card.y + 24,
+        { size: uiSize(14), bold: true, family: FONT_DISPLAY,
           color: card.item ? rarityColor(card.item.rarity) : COLOR.textMuted });
       if (card.item) {
-        r.drawText(this._statLine(card.item), textX, card.y + 40,
-          { size: 10, italic: true, family: FONT_BODY, color: COLOR.textMuted });
+        r.drawText(this._statLine(card.item), textX, card.y + 42,
+          { size: uiSize(11), italic: true, family: FONT_BODY, color: COLOR.textMuted });
       }
 
       // UNEQUIP button (only for filled slots).

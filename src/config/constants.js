@@ -74,9 +74,15 @@ export const RENDER_HEIGHT = CANVAS_HEIGHT;
 // Landscape HUD needs the same vertical real-estate as portrait now that
 // skill chips landed (chip rows live at y~92 inside the strip). Side bars
 // recover that pixel real-estate from the horizontal width budget.
-export const HUD_HEIGHT         = IS_LANDSCAPE ? 96  : 96;
-export const CONTROL_HEIGHT     = IS_LANDSCAPE ? 0   : 200;
-export const SIDE_CONTROL_WIDTH = IS_LANDSCAPE ? 130 : 0;
+export const HUD_HEIGHT         = IS_LANDSCAPE ? 108 : 112;
+export const CONTROL_HEIGHT     = IS_LANDSCAPE ? 0   : 228;
+export const SIDE_CONTROL_WIDTH = IS_LANDSCAPE ? 136 : 0;
+
+/** Global UI text scale — bump labels on mobile without retuning every screen. */
+export const UI_SCALE = 1.35;
+export function uiSize(n) {
+  return Math.max(8, Math.round(n * UI_SCALE));
+}
 
 export const VIEWPORT_X = SIDE_CONTROL_WIDTH;
 export const VIEWPORT_Y = HUD_HEIGHT;

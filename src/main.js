@@ -37,6 +37,7 @@ import { TitleScreen } from './ui/TitleScreen.js';
 import { GameOverScreen } from './ui/GameOverScreen.js';
 import { VictoryScreen } from './ui/VictoryScreen.js';
 import { MobileControls } from './ui/MobileControls.js';
+import { PauseOverlay } from './ui/PauseOverlay.js';
 
 import { InputManager } from './input/InputManager.js';
 
@@ -120,6 +121,7 @@ async function bootstrap() {
   const skillPicker = new SkillPickerUI({ bus, content });
   const vigilScreen = new VigilScreen({ bus });
   const mobileControls = new MobileControls({ bus });
+  const pauseOverlay = new PauseOverlay({ bus });
 
   // --- narrative -----------------------------------------------------
   const lore = new LoreDatabase(content.lore);
@@ -132,7 +134,7 @@ async function bootstrap() {
     title: (deps) => new TitleScreen({ ...deps, metaProgress }),
     game: (deps) => new GameScene({
       ...deps, hud, minimap, inventoryUI, skillPicker, vigilScreen,
-      lighting, renderer, mobileControls
+      lighting, renderer, mobileControls, pauseOverlay
     }),
     gameover: (deps) => new GameOverScreen(deps),
     victory: (deps) => new VictoryScreen(deps)

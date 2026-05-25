@@ -166,18 +166,27 @@ export class Renderer {
     const y1 = Math.min(floor.height - 1,
       Math.ceil((VIEWPORT_Y + VIEWPORT_H - cam.y) / TILE_SIZE));
 
+    const def = floor.definition || {};
+    const tileOpts = {
+      wallLit: def.wallPalette?.[0] || COLOR.wallLit,
+      wallDim: def.wallPalette?.[1] || COLOR.wallDim,
+      floorLit: def.floorPalette?.[0] || COLOR.floorLit,
+      floorDim: def.floorPalette?.[1] || COLOR.floorDim
+    };
+
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
         if (t.type === TILE.VOID) continue;
         if (!t.explored) continue;
         const dim = !t.visible;
+        const opts = { dim, tileX: x, tileY: y, ...tileOpts };
         switch (t.type) {
-          case TILE.WALL:        this.sprites.draw('tile_wall',        ctx, x * TILE_SIZE, y * TILE_SIZE, { dim }); break;
-          case TILE.FLOOR:       this.sprites.draw('tile_floor',       ctx, x * TILE_SIZE, y * TILE_SIZE, { dim }); break;
-          case TILE.STAIRS_DOWN: this.sprites.draw('tile_stairs_down', ctx, x * TILE_SIZE, y * TILE_SIZE, { dim }); break;
-          case TILE.STAIRS_UP:   this.sprites.draw('tile_stairs_up',   ctx, x * TILE_SIZE, y * TILE_SIZE, { dim }); break;
-          case TILE.DOOR:        this.sprites.draw('tile_door',        ctx, x * TILE_SIZE, y * TILE_SIZE, { dim }); break;
+          case TILE.WALL:        this.sprites.draw('tile_wall',        ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
+          case TILE.FLOOR:       this.sprites.draw('tile_floor',       ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
+          case TILE.STAIRS_DOWN: this.sprites.draw('tile_stairs_down', ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
+          case TILE.STAIRS_UP:   this.sprites.draw('tile_stairs_up',   ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
+          case TILE.DOOR:        this.sprites.draw('tile_door',        ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
           default: break;
         }
         if (dim) {
