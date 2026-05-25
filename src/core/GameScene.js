@@ -16,7 +16,7 @@
  * Per-frame work is delegated to Renderer + ParticleSystem; this scene does
  * no per-tick simulation. Update() is empty by design.
  */
-import { TILE, LOG } from '../config/constants.js';
+import { TILE, TILE_SIZE, LOG } from '../config/constants.js';
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
 import { Inventory } from '../items/Inventory.js';
@@ -121,7 +121,7 @@ export class GameScene {
     const now = performance.now();
     const dt = this._lastRenderTime ? (now - this._lastRenderTime) / 1000 : 0;
     this._lastRenderTime = now;
-    renderer.drawEntities(this.floor, dt);
+    renderer.drawEntities(this.floor, dt, this.player);
 
     // HUD layers (drawn in screen space).
     this.hud.render(renderer, {
@@ -236,8 +236,9 @@ export class GameScene {
         }
         if (this.controls && this.controls.handleTap(action.x, action.y, this.state.state.time)) return;
         if (!this.renderer) return;
+        if (this._tryTapAttackAdjacent(action.x, action.y)) return;
         const tile = this.renderer.canvasToTile(action.x, action.y);
-        if (!tile) return; // tap fell outside the world viewport
+        if (!tile) return;
         return this._playerTapTile(tile.x, tile.y);
       }
       case 'tapTile':    return; // legacy; pointer is preferred
@@ -268,10 +269,8 @@ export class GameScene {
   _playerMove(dx, dy) {
     const nx = this.player.x + dx, ny = this.player.y + dy;
     const target = this.floor.entityAt(nx, ny);
-    if (target && target.kind === 'enemy') {
-      this.combat.execute({ type: 'attack', target: { x: nx, y: ny } },
-        this.player, { floor: this.floor, player: this.player });
-      this._endPlayerTurn(true);
+    if (target && target.kind === 'enemy' && !target.isDead) {
+      this._attackEnemyAt(nx, ny);
       return;
     }
     if (this.floor.isPassable(nx, ny)) {
@@ -279,6 +278,31 @@ export class GameScene {
         this.player, { floor: this.floor, player: this.player });
       this._endPlayerTurn(true);
     }
+  }
+
+  _attackEnemyAt(tx, ty) {
+    const ent = this.floor.entityAt(tx, ty);
+    if (!ent || ent.kind !== 'enemy' || ent.isDead) return;
+    this.combat.execute(
+      { type: 'attack', target: { x: tx, y: ty } },
+      this.player,
+      { floor: this.floor, player: this.player }
+    );
+    this._endPlayerTurn(true);
+  }
+
+  /** Generous tap hit on adjacent foe (sprite larger than one tile). */
+  _tryTapAttackAdjacent(canvasX, canvasY) {
+    const adj = this._adjacentEnemy();
+    if (!adj || !this.renderer) return false;
+    const cam = this.renderer.camera;
+    const cx = (adj.renderX + 0.5) * TILE_SIZE + cam.x;
+    const cy = (adj.renderY + 0.5) * TILE_SIZE + cam.y;
+    if (Math.hypot(canvasX - cx, canvasY - cy) <= TILE_SIZE * 0.62) {
+      this._attackEnemyAt(adj.x, adj.y);
+      return true;
+    }
+    return false;
   }
 
   _playerPickup() {
@@ -362,24 +386,14 @@ export class GameScene {
     const distToTarget = Math.abs(dxRaw) + Math.abs(dyRaw);
 
     if (targetEnemy && targetEnemy.kind === 'enemy' && distToTarget === 1) {
-      this.combat.execute(
-        { type: 'attack', target: { x: tx, y: ty } },
-        this.player,
-        { floor: this.floor, player: this.player }
-      );
-      this._endPlayerTurn(true);
+      this._attackEnemyAt(tx, ty);
       return;
     }
 
     if (dxRaw === 0 && dyRaw === 0) {
       const adj = this._adjacentEnemy();
       if (adj) {
-        this.combat.execute(
-          { type: 'attack', target: { x: adj.x, y: adj.y } },
-          this.player,
-          { floor: this.floor, player: this.player }
-        );
-        this._endPlayerTurn(true);
+        this._attackEnemyAt(adj.x, adj.y);
         return;
       }
       const stack = this.floor.itemsAt(tx, ty);
@@ -434,9 +448,35 @@ export class GameScene {
     if (this.player.isDead) { this._endRun(false); return; }
     this.pathfinding.invalidate();
     this.lighting.compute(this.floor, this.player);
+    this._refreshEnemyIntents();
 
-    // Damage-tracking for perfect-floor bonus.
     if (this.player.stats.hp < this.player.stats.hpMax) this.floor.clearedWithoutDamage = false;
+  }
+
+  /** Show next-turn intent icons without re-running behavior AI (avoids Heavy counter drift). */
+  _refreshEnemyIntents() {
+    if (!this.floor || !this.player) return;
+    for (const e of this.floor.enemies()) {
+      if (e.isDead) continue;
+      e.intent = this._peekEnemyIntent(e) || { type: 'wait' };
+    }
+  }
+
+  _peekEnemyIntent(enemy) {
+    const d = Math.abs(enemy.x - this.player.x) + Math.abs(enemy.y - this.player.y);
+    if (d === 1) return { type: 'attack', target: { x: this.player.x, y: this.player.y } };
+    const beh = enemy.behavior;
+    if (beh?.actEveryNTurns && typeof beh._counter === 'number') {
+      const next = beh._counter + 1;
+      if (next < beh.actEveryNTurns) {
+        return { type: 'wait', meta: { winding: true } };
+      }
+    }
+    if (beh?.range && d <= beh.range && d >= (beh.minDistance ?? 0)) {
+      return { type: 'ranged', target: { x: this.player.x, y: this.player.y } };
+    }
+    if (d <= 8) return { type: 'move' };
+    return { type: 'wait' };
   }
 
   _runEnemyTurns() {

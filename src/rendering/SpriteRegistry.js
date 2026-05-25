@@ -19,7 +19,7 @@ import {
   HERO_ARMOR, HERO_ARMOR_HI, HERO_BELT, HERO_CAPE, HERO_CAPE_HI,
   HERO_EMBLEM, HERO_EYE, HERO_HELMET, HERO_HELM_HI, HERO_PAULDRON, HERO_VISOR
 } from './playerSprites.js';
-import { buildEnemySprites, drawEnemyBackdrop, drawEnemyPolish } from './enemySprites.js';
+import { buildEnemySprites, drawEnemyBackdrop } from './enemySprites.js';
 
 const FALLBACK_COLOR = '#9a8a78';
 
@@ -290,7 +290,6 @@ export class SpriteRegistry {
       const isEnemy = key.startsWith('enemy_');
       if (isEnemy && !opts.dim) drawEnemyBackdrop(ctx, x, y, size, key);
       fn(ctx, x, y, size, opts);
-      if (isEnemy && !opts.dim) drawEnemyPolish(ctx, x, y, size);
       return;
     }
     // Inferred item draw: classify by key prefix and tint by rarity if given.

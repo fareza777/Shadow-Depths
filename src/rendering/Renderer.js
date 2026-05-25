@@ -329,12 +329,8 @@ export class Renderer {
       if (!tile || !tile.visible) continue;
       const intent = e.intent || Renderer._inferThreatIntent(e, player);
       if (!intent) continue;
-      if (intent.type === 'attack') {
-        this._drawThreatTile(ctx, player.x, player.y, '#e85a4a', 0.26);
-      } else if (intent.type === 'ranged') {
+      if (intent.type === 'ranged') {
         this._drawThreatLine(ctx, e.x, e.y, intent.target?.x ?? player.x, intent.target?.y ?? player.y);
-      } else if (intent.type === 'wait' && intent.meta?.winding) {
-        this._drawThreatTile(ctx, e.x, e.y, COLOR.gold, 0.18);
       }
     }
     ctx.restore();
@@ -351,9 +347,7 @@ export class Renderer {
     const y = ty * TILE_SIZE;
     ctx.save();
     ctx.globalAlpha = alpha;
-    fillRect(ctx, x + 3, y + 3, TILE_SIZE - 6, TILE_SIZE - 6, color);
-    ctx.globalAlpha = Math.min(0.9, alpha + 0.32);
-    strokeRect(ctx, x + 4, y + 4, TILE_SIZE - 8, TILE_SIZE - 8, color, 2);
+    fillRect(ctx, x + 8, y + 8, TILE_SIZE - 16, TILE_SIZE - 16, color);
     ctx.restore();
   }
 
@@ -379,7 +373,7 @@ export class Renderer {
    * @param {import('../world/Floor.js').Floor} floor
    * @param {number} dt seconds since last frame
    */
-  drawEntities(floor, dt) {
+  drawEntities(floor, dt, player = null) {
     const ctx = this.ctx;
     const speed = 1000 / TIMING.moveTween;
     for (const e of floor.entities.values()) {
@@ -413,9 +407,6 @@ export class Renderer {
       }
       this._drawEntityGrounding(ctx, e, px, py);
       this.sprites.draw(key, ctx, px, py);
-      if (e.kind === 'enemy' && t?.visible) {
-        this._drawEntitySilhouette(ctx, px, py);
-      }
 
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {
         const pct = e.stats.hp / e.stats.hpMax;
@@ -430,8 +421,9 @@ export class Renderer {
           fillRect(ctx, px + 3, barY, w, 1, '#ffffff33');
         }
       }
-      if (e.kind === 'enemy' && e.intent) {
-        this._drawIntentIcon(ctx, e.intent, px, py);
+      if (e.kind === 'enemy' && t?.visible && player) {
+        const intent = e.intent || Renderer._inferThreatIntent(e, player);
+        if (intent) this._drawIntentIcon(ctx, intent, px, py);
       }
     }
     ctx.restore();
@@ -461,13 +453,6 @@ export class Renderer {
     ctx.beginPath();
     ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE * 0.82, w / 2, h / 2, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
-  }
-
-  _drawEntitySilhouette(ctx, px, py) {
-    ctx.save();
-    ctx.globalAlpha = 0.42;
-    strokeRect(ctx, px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6, '#000000', 1);
     ctx.restore();
   }
 

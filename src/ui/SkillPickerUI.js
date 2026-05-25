@@ -129,6 +129,10 @@ export class SkillPickerUI {
   // --- render --------------------------------------------------------
   render(renderer) {
     if (!this.open) return;
+    if (this.choices.length === 0) {
+      this.hide();
+      return;
+    }
     renderer.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 'rgba(0,0,0,0.92)');
 
     renderer.drawText('LEVEL UP', CANVAS_WIDTH / 2, 50,
