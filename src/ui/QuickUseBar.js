@@ -1,11 +1,13 @@
 /**
  * QuickUseBar — tap-to-use potions / consumables (row above the D-pad).
  */
-import { COLOR, FONT_DISPLAY, FONT_MONO, uiSize } from '../config/constants.js';
+import {
+  COLOR, CANVAS_WIDTH, FONT_DISPLAY, FONT_MONO, uiSize
+} from '../config/constants.js';
 import { findQuickUseSlots } from '../items/quickUse.js';
-import { getControlBandLayout, QUICK_SLOT_COUNT } from './controlBandLayout.js';
+import { getQuickUseLayout, QUICK_SLOT_COUNT } from './controlBandLayout.js';
 
-const LAYOUT = getControlBandLayout();
+const LAYOUT = getQuickUseLayout();
 
 export class QuickUseBar {
   constructor({ bus }) {
@@ -25,6 +27,15 @@ export class QuickUseBar {
     if (!player) return;
     const slots = findQuickUseSlots(player.inventory);
     const inv = player.inventory;
+
+    const pad = 4;
+    renderer.drawRect(
+      LAYOUT.quickX - pad,
+      LAYOUT.quickY - 14,
+      LAYOUT.quickRowW + pad * 2,
+      LAYOUT.quickSlot + 18,
+      '#0a0810ee'
+    );
 
     for (let qi = 0; qi < QUICK_SLOT_COUNT; qi++) {
       const rect = LAYOUT.quickRects[qi];
@@ -60,9 +71,7 @@ export class QuickUseBar {
       }
     }
 
-    const quickRowW = QUICK_SLOT_COUNT * LAYOUT.quickSlot
-      + (QUICK_SLOT_COUNT - 1) * LAYOUT.quickGap;
-    renderer.drawText('QUICK', LAYOUT.quickX + quickRowW / 2, LAYOUT.quickY - 10,
+    renderer.drawText('QUICK', LAYOUT.quickX + LAYOUT.quickRowW / 2, LAYOUT.quickY - 10,
       { size: uiSize(9), align: 'center', family: FONT_MONO, color: COLOR.textMuted });
   }
 

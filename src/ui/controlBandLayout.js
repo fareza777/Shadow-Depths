@@ -1,5 +1,5 @@
 /**
- * Shared control-band geometry — D-pad + quick-use row stay aligned.
+ * Control-band geometry — D-pad (full size in band) + quick-use above the band edge.
  */
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
@@ -8,46 +8,68 @@ import {
 
 export const QUICK_SLOT_COUNT = 3;
 
-/** @returns {object} layout used by MobileControls + QuickUseBar */
-export function getControlBandLayout() {
+/** D-pad only — centered in the control band, original button sizes. */
+export function getDpadLayout() {
   if (IS_LANDSCAPE) {
     const stripW = SIDE_CONTROL_WIDTH;
-    const quickSlot = 40;
-    const quickGap = 5;
-    const quickRowW = QUICK_SLOT_COUNT * quickSlot + (QUICK_SLOT_COUNT - 1) * quickGap;
     const dpadBtn = 42;
     const dpadGap = 5;
     const dpadSize = dpadBtn * 3 + dpadGap * 2;
-    const dpadX = (stripW - dpadSize) / 2;
-    const quickX = (stripW - quickRowW) / 2;
-    const quickY = HUD_HEIGHT + 8;
-    const dpadY = quickY + quickSlot + 8;
     return {
       isLandscape: true,
       stripW,
-      dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
-      quickSlot, quickGap, quickX, quickY,
+      dpadBtn,
+      dpadGap,
+      dpadSize,
+      dpadX: (stripW - dpadSize) / 2,
+      dpadY: HUD_HEIGHT + 10
+    };
+  }
+  const bandY = CANVAS_HEIGHT - CONTROL_HEIGHT;
+  const dpadBtn = 56;
+  const dpadGap = 5;
+  const dpadSize = dpadBtn * 3 + dpadGap * 2;
+  return {
+    isLandscape: false,
+    bandY,
+    dpadBtn,
+    dpadGap,
+    dpadSize,
+    dpadX: 10,
+    dpadY: bandY + (CONTROL_HEIGHT - dpadSize) / 2
+  };
+}
+
+/** Quick-use row sits above the control band top line (not inside the band). */
+export function getQuickUseLayout() {
+  const dpad = getDpadLayout();
+  const quickSlot = IS_LANDSCAPE ? 40 : 44;
+  const quickGap = 6;
+  const quickRowW = QUICK_SLOT_COUNT * quickSlot + (QUICK_SLOT_COUNT - 1) * quickGap;
+
+  if (IS_LANDSCAPE) {
+    const quickX = (dpad.stripW - quickRowW) / 2;
+    const quickY = dpad.dpadY - quickSlot - 12;
+    return {
+      quickSlot,
+      quickGap,
+      quickX,
+      quickY,
+      quickRowW,
       quickRects: quickRects(quickX, quickY, quickSlot, quickGap)
     };
   }
 
-  const bandY = CANVAS_HEIGHT - CONTROL_HEIGHT;
-  const quickSlot = 40;
-  const quickGap = 5;
-  const dpadBtn = 52;
-  const dpadGap = 5;
-  const dpadSize = dpadBtn * 3 + dpadGap * 2;
-  const dpadX = 10;
-  const quickRowW = QUICK_SLOT_COUNT * quickSlot + (QUICK_SLOT_COUNT - 1) * quickGap;
-  const quickX = dpadX + (dpadSize - quickRowW) / 2;
-  const quickY = bandY + 8;
-  const dpadY = quickY + quickSlot + 8;
+  const quickX = dpad.dpadX + (dpad.dpadSize - quickRowW) / 2;
+  const quickY = dpad.bandY - quickSlot - 10;
 
   return {
-    isLandscape: false,
-    bandY,
-    dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
-    quickSlot, quickGap, quickX, quickY,
+    quickSlot,
+    quickGap,
+    quickX,
+    quickY,
+    quickRowW,
+    bandTop: dpad.bandY,
     quickRects: quickRects(quickX, quickY, quickSlot, quickGap)
   };
 }
