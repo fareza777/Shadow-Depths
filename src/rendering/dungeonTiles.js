@@ -317,12 +317,23 @@ export function drawStairsDownTile(ctx, x, y, s, opts = {}) {
 }
 
 export function drawStairsUpTile(ctx, x, y, s, opts = {}) {
+  if (!opts.dim) {
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    const g = ctx.createRadialGradient(x + s / 2, y + s / 2, s * 0.1, x + s / 2, y + s / 2, s * 0.5);
+    g.addColorStop(0, '#80b0e066');
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, s, s);
+    ctx.restore();
+  }
   drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
   const u = s / 32;
   const col = opts.dim ? '#6a5a40' : '#a09060';
   for (let i = 0; i < 4; i++) {
     const w = (10 + i * 5) * u;
     fillRect(ctx, x + (s - w) / 2, y + (8 + i * 5) * u, w, 3 * u, col);
+    fillRect(ctx, x + (s - w) / 2, y + (8 + i * 5) * u, w, 1, '#ffffff22');
   }
 }
 

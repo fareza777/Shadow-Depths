@@ -116,6 +116,7 @@ export class Renderer {
     const now = performance.now();
     const dt = this._lastTime ? (now - this._lastTime) / 1000 : 0;
     this._lastTime = now;
+    this._timeSec = now / 1000;
 
     this.cameraShake.update(dt);
     this.particles.update(dt);
@@ -264,18 +265,25 @@ export class Renderer {
     const top = y0 * TILE_SIZE;
     const w = (x1 - x0 + 1) * TILE_SIZE;
     const h = (y1 - y0 + 1) * TILE_SIZE;
+    const flicker = 0.88 + Math.sin((this._timeSec || 0) * 5.2) * 0.08
+      + Math.sin((this._timeSec || 0) * 11.7) * 0.04;
     ctx.save();
     ctx.beginPath();
     ctx.rect(left, top, w, h);
     ctx.clip();
     const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.3, px, py, radius);
-    g.addColorStop(0, 'rgba(212, 190, 122, 0.24)');
-    g.addColorStop(0.42, 'rgba(160, 120, 70, 0.09)');
+    g.addColorStop(0, `rgba(212, 190, 122, ${0.26 * flicker})`);
+    g.addColorStop(0.42, `rgba(160, 120, 70, ${0.1 * flicker})`);
     g.addColorStop(0.82, 'rgba(48, 36, 64, 0.03)');
     g.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.globalCompositeOperation = 'screen';
     ctx.fillStyle = g;
     ctx.fillRect(left, top, w, h);
+    ctx.globalAlpha = 0.12 * flicker;
+    ctx.fillStyle = '#ffe8b0';
+    ctx.beginPath();
+    ctx.arc(px, py - TILE_SIZE * 0.08, TILE_SIZE * 0.18, 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
@@ -400,6 +408,9 @@ export class Renderer {
         || (e.kind === 'player' && typeof e.displaySpriteKey === 'function'
           ? e.displaySpriteKey()
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
+      if (e.kind === 'enemy' && t?.visible) {
+        this._drawThreatAura(ctx, e, px, py);
+      }
       this._drawEntityGrounding(ctx, e, px, py);
       this.sprites.draw(key, ctx, px, py);
       if (e.kind === 'enemy' && t?.visible) {
@@ -409,8 +420,15 @@ export class Renderer {
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {
         const pct = e.stats.hp / e.stats.hpMax;
         const w = TILE_SIZE - 6;
-        fillRect(ctx, px + 3, py - 5, w, 4, COLOR.hpBarBg);
-        fillRect(ctx, px + 3, py - 5, w * pct, 4, COLOR.hpBar);
+        const barH = entity.defId?.startsWith('boss_') ? 5 : 4;
+        const barY = py - (barH + 2);
+        const barColor = entity.defId?.startsWith('boss_') ? '#d4be7a'
+          : entity.defId?.startsWith('subboss_') ? '#c080ff' : COLOR.hpBar;
+        fillRect(ctx, px + 3, barY, w, barH, COLOR.hpBarBg);
+        fillRect(ctx, px + 3, barY, w * pct, barH, barColor);
+        if (entity.defId?.startsWith('boss_')) {
+          fillRect(ctx, px + 3, barY, w, 1, '#ffffff33');
+        }
       }
       if (e.kind === 'enemy' && e.intent) {
         this._drawIntentIcon(ctx, e.intent, px, py);
@@ -450,6 +468,36 @@ export class Renderer {
     ctx.save();
     ctx.globalAlpha = 0.42;
     strokeRect(ctx, px + 3, py + 3, TILE_SIZE - 6, TILE_SIZE - 6, '#000000', 1);
+    ctx.restore();
+  }
+
+  _drawThreatAura(ctx, entity, px, py) {
+    const isBoss = entity.defId?.startsWith('boss_');
+    const isSub = entity.defId?.startsWith('subboss_');
+    const elite = isBoss || isSub || (entity.stats?.hpMax ?? 0) >= 28;
+    if (!elite) return;
+    const pulse = 0.55 + Math.sin((this._timeSec || 0) * 3.5) * 0.25;
+    const color = isBoss ? '#d4be7a' : isSub ? '#c080ff' : '#8060a0';
+    ctx.save();
+    ctx.globalAlpha = (isBoss ? 0.38 : 0.24) * pulse;
+    const cx = px + TILE_SIZE / 2;
+    const cy = py + TILE_SIZE * 0.55;
+    const r = TILE_SIZE * (isBoss ? 0.52 : 0.44);
+    const g = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    if (isBoss) {
+      ctx.globalAlpha = 0.35 * pulse;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+      ctx.stroke();
+    }
     ctx.restore();
   }
 
