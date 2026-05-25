@@ -16,7 +16,10 @@
  * Per-frame work is delegated to Renderer + ParticleSystem; this scene does
  * no per-tick simulation. Update() is empty by design.
  */
-import { TILE, TILE_SIZE, LOG } from '../config/constants.js';
+import {
+  TILE, TILE_SIZE, LOG, COLOR, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
+} from '../config/constants.js';
+import { Layout } from '../config/layoutMetrics.js';
 import { Player } from '../entities/Player.js';
 import { Enemy } from '../entities/Enemy.js';
 import { Inventory } from '../items/Inventory.js';
@@ -85,6 +88,7 @@ export class GameScene {
 
     this.player = null;
     this.floor = null;
+    this._floorBanner = null;
     this._processingTurn = false;
     this._busHandlers = [];
     this._wireCommands();
@@ -132,6 +136,7 @@ export class GameScene {
 
   _emitFloorEntered(index, floor) {
     const def = floor?.definition || {};
+    this._floorBanner = this._buildFloorBanner(index, def);
     this.bus.emit('floor:entered', {
       index,
       name: def.name,
@@ -171,7 +176,8 @@ export class GameScene {
         player: this.player, floor: this.floor,
         floorIndex: this.dungeon.currentIndex,
         totalFloors: this.dungeon.totalFloors,
-        mode: this.mode
+        mode: this.mode,
+        suppressMessages: !!this._floorBanner
       });
     } catch (err) {
       console.error(LOG.CORE, 'HUD render failed:', err);
@@ -187,7 +193,87 @@ export class GameScene {
     if (this.vigil) this.vigil.render(renderer, this.player);
     if (this.skillPicker) this.skillPicker.render(renderer);
     if (this.pause) this.pause.render(renderer);
+    this._renderFloorBanner(renderer);
     if (this.tutorial?.open) this.tutorial.render(renderer);
+  }
+
+  _buildFloorBanner(index, def) {
+    const specialId = def.specialEnemyId || null;
+    const special = specialId ? this.content.enemies?.[specialId] : null;
+    const isBoss = specialId?.startsWith('boss_');
+    const isSubboss = specialId?.startsWith('subboss_');
+    return {
+      startedAt: performance.now(),
+      duration: isBoss ? 3200 : isSubboss ? 2600 : 1800,
+      title: isBoss ? 'BOSS FLOOR'
+        : isSubboss ? 'SUBBOSS FLOOR'
+        : `FLOOR ${index + 1}`,
+      name: isBoss || isSubboss ? (special?.name || def.name) : def.name,
+      subtitle: isBoss ? 'The dungeon seals behind you.'
+        : isSubboss ? 'An elite guardian is awake.'
+        : (def.atmosphere || `Depth ${index + 1} of ${this.dungeon.totalFloors}`),
+      accent: isBoss ? '#d4be7a' : isSubboss ? '#c080ff' : COLOR.goldDim,
+      boss: isBoss,
+      subboss: isSubboss
+    };
+  }
+
+  _renderFloorBanner(r) {
+    if (!this._floorBanner) return;
+    const b = this._floorBanner;
+    const age = performance.now() - b.startedAt;
+    if (age > b.duration) {
+      this._floorBanner = null;
+      return;
+    }
+    const fadeIn = Math.min(1, age / 260);
+    const fadeOut = Math.min(1, (b.duration - age) / 480);
+    const alpha = Math.max(0, Math.min(fadeIn, fadeOut));
+    const ctx = r.ctx;
+    const w = b.boss ? Layout.canvasW - 34 : Layout.canvasW - 74;
+    const h = b.boss ? 94 : 76;
+    const x = (Layout.canvasW - w) / 2;
+    const y = Layout.hud + 18;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    r.drawRect(x - 6, y - 6, w + 12, h + 12, '#050308dd');
+    r.drawRect(x, y, w, h, '#1d1724ee');
+    r.drawStrokedRect(x, y, w, h, b.accent, b.boss ? 3 : 2);
+    r.drawRect(x + 6, y + 6, w - 12, 2, '#ffffff1a');
+    r.drawText(b.title, Layout.canvasW / 2, y + 12, {
+      size: uiSize(10), bold: true, align: 'center',
+      family: FONT_MONO, color: b.accent
+    });
+    this._drawFittedBannerText(r, b.name, Layout.canvasW / 2, y + 31, w - 34, {
+      size: uiSize(b.boss ? 18 : 15), minSize: uiSize(12), bold: true,
+      align: 'center', family: FONT_DISPLAY, color: b.boss ? COLOR.goldHi : COLOR.gold
+    });
+    this._drawFittedBannerText(r, b.subtitle, Layout.canvasW / 2, y + h - 22, w - 34, {
+      size: uiSize(11), minSize: uiSize(8), align: 'center',
+      family: FONT_BODY, color: COLOR.textMuted
+    });
+    if (b.boss || b.subboss) {
+      const pulse = 0.55 + Math.sin(age * 0.012) * 0.25;
+      ctx.globalAlpha = alpha * pulse;
+      ctx.strokeStyle = b.accent;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x + 18, y + h / 2);
+      ctx.lineTo(x + 48, y + h / 2);
+      ctx.moveTo(x + w - 18, y + h / 2);
+      ctx.lineTo(x + w - 48, y + h / 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  _drawFittedBannerText(r, text, x, y, maxW, opts) {
+    let size = opts.size || uiSize(11);
+    const minSize = opts.minSize || uiSize(8);
+    while (size > minSize && r.measureText(text, { ...opts, size }) > maxW) {
+      size -= 1;
+    }
+    r.drawText(text, x, y, { ...opts, size });
   }
 
   _renderControlBandContent(renderer) {

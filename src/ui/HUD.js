@@ -23,21 +23,33 @@ export class HUD {
    * @param {{ player:object, floor:object, floorIndex:number, totalFloors:number, mode?:string }} ctx
    */
   render(renderer, ctx) {
-    const { player, floor, floorIndex, totalFloors, mode } = ctx;
+    const { player, floor, floorIndex, totalFloors, mode, suppressMessages } = ctx;
     this._drawTopStrip(renderer, player, floor, floorIndex, totalFloors, mode);
-    this._drawMessages(renderer);
+    if (!suppressMessages) this._drawMessages(renderer);
   }
 
   _drawTopStrip(r, p, floor, floorIndex, totalFloors, mode) {
-    // Solid background — the world rendering is now clipped out of this
-    // band, so we don't need rgba; opaque looks cleaner and contrasts
-    // well with the world view that sits just below.
+    const ctx = r.ctx;
     r.drawRect(0, 0, Layout.canvasW, Layout.hud, COLOR.bgPanel);
+    ctx.save();
+    const g = ctx.createLinearGradient(0, 0, 0, Layout.hud);
+    g.addColorStop(0, '#302536');
+    g.addColorStop(0.46, '#1f1926');
+    g.addColorStop(1, '#120f18');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, Layout.canvasW, Layout.hud);
+    ctx.globalAlpha = 0.18;
+    for (let x = 10; x < Layout.canvasW; x += 42) {
+      r.drawRect(x, 4, 18, 1, COLOR.goldDim);
+      r.drawRect(x + 9, 94, 28, 1, '#ffffff22');
+    }
+    ctx.restore();
     r.drawRect(0, Layout.hud - 1, Layout.canvasW, 1, COLOR.gold);
 
     const barW = Layout.canvasW - 16;
-    r.drawBar(8, TOP_PAD, barW, 18, p.stats.hp, p.stats.hpMax, COLOR.hpBar, COLOR.hpBarBg);
-    r.drawText(`HP ${p.stats.hp}/${p.stats.hpMax}`, 12, TOP_PAD + 2,
+    this._drawFramedBar(r, 8, TOP_PAD, barW, 18, p.stats.hp, p.stats.hpMax,
+      COLOR.hpBar, COLOR.hpBarBg, 'HP');
+    r.drawText(`${p.stats.hp}/${p.stats.hpMax}`, 36, TOP_PAD + 2,
       { size: uiSize(13), bold: true, family: FONT_MONO });
 
     const xpNeed = p.xpToNext();
@@ -48,7 +60,8 @@ export class HUD {
     r.drawText(`LEVEL ${p.level}`, 45, xpY + 6,
       { size: uiSize(11), bold: true, align: 'center', baseline: 'middle',
         family: FONT_MONO, color: COLOR.textPrimary });
-    r.drawBar(88, xpY, Layout.canvasW - 96, 10, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
+    this._drawFramedBar(r, 88, xpY, Layout.canvasW - 96, 10,
+      xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg, '');
     r.drawText(xpMaxed ? 'MAX XP' : `${p.xp}/${xpNeed} XP`, Layout.canvasW - 12, xpY,
       { size: uiSize(11), bold: true, align: 'right', family: FONT_MONO });
 
@@ -73,6 +86,7 @@ export class HUD {
         r.drawText('☼ DAILY', Layout.canvasW - 12, TOP_PAD + 58,
           { size: uiSize(11), bold: true, align: 'right', color: COLOR.textXP, family: FONT_MONO });
       }
+      this._drawFloorChip(r, floor, floorIndex);
     }
 
     let chipX = 8;
@@ -107,6 +121,39 @@ export class HUD {
         if (sx > Layout.canvasW - 8) break;
       }
     }
+  }
+
+  _drawFramedBar(r, x, y, w, h, value, max, fill, bg, label) {
+    r.drawRect(x - 2, y - 2, w + 4, h + 4, '#08050a');
+    r.drawBar(x, y, w, h, value, max, fill, bg);
+    r.drawRect(x + 2, y + 2, w - 4, 2, '#ffffff28');
+    if (label) {
+      r.drawRect(x, y, 24, h, '#00000044');
+      r.drawText(label, x + 4, y + 2, { size: uiSize(10), bold: true, family: FONT_MONO });
+    }
+  }
+
+  _drawFloorChip(r, floor, floorIndex) {
+    const special = floor?.definition?.specialEnemyId || '';
+    const y = TOP_PAD + 72;
+    if ((floorIndex + 1) % 20 === 0) {
+      r.drawRect(8, y, 62, 16, '#0a1018');
+      r.drawStrokedRect(8, y, 62, 16, '#80b0e0', 1);
+      r.drawText('BIOME', 39, y + 2, {
+        size: uiSize(9), bold: true, align: 'center', family: FONT_MONO, color: '#80b0e0'
+      });
+    }
+    if (!special) return;
+    const boss = special.startsWith('boss_');
+    const text = boss ? 'BOSS' : 'ELITE';
+    const col = boss ? COLOR.gold : '#c080ff';
+    const x = boss ? Layout.canvasW - 74 : Layout.canvasW - 78;
+    r.drawRect(x, y, 66, 16, '#09060c');
+    r.drawStrokedRect(x, y, 66, 16, col, 1);
+    r.drawText(text, x + 33, y + 2, {
+      size: uiSize(9), bold: true, align: 'center',
+      family: FONT_MONO, color: col
+    });
   }
 
   static _skillAbbr(id) {

@@ -54,6 +54,7 @@ export class Renderer {
     this._lastTime = 0;
     /** @type {WeakMap<object, number>} entity → flash end timestamp (ms) */
     this._hitFlashes = new WeakMap();
+    this._attackFlashes = [];
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
@@ -68,6 +69,18 @@ export class Renderer {
       this.cameraShake.trigger(px, isCrit ? TIMING.cameraShakeLong : TIMING.cameraShakeShort);
       const until = performance.now() + (isCrit ? TIMING.hitFlash * 2 : TIMING.hitFlash);
       this._hitFlashes.set(entity, until);
+    });
+    this.bus.on('entity:attacked', ({ attacker, target, isCrit, isMiss, kind }) => {
+      if (!attacker || !target || isMiss) return;
+      this._attackFlashes.push({
+        attacker,
+        target,
+        kind,
+        isCrit,
+        startedAt: performance.now(),
+        duration: isCrit ? 190 : 140
+      });
+      if (this._attackFlashes.length > 16) this._attackFlashes.shift();
     });
   }
 
@@ -139,6 +152,7 @@ export class Renderer {
 
     this.cameraShake.update(dt);
     this.particles.update(dt);
+    this._attackFlashes = this._attackFlashes.filter((f) => now - f.startedAt < f.duration);
     const shake = this.cameraShake.offset();
 
     // Clear.
@@ -426,6 +440,7 @@ export class Renderer {
     ctx.translate(cam.x, cam.y);
 
     const list = Array.from(floor.entities.values()).sort((a, b) => a.renderY - b.renderY);
+    this._drawAttackFlashes(ctx, cam);
     for (const e of list) {
       if (e.isDead) continue;
       const t = floor.tileAt(e.x, e.y);
@@ -437,7 +452,8 @@ export class Renderer {
           ? e.displaySpriteKey()
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
       this._drawEntityGrounding(ctx, e, px, py);
-      this.sprites.draw(key, ctx, px, py);
+      this._drawThreatAura(ctx, e, px, py);
+      this.sprites.draw(key, ctx, px, py, { entity: e, time: this._timeSec || 0 });
       this._drawEntityHitFlash(ctx, e, px, py);
 
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {
@@ -461,13 +477,46 @@ export class Renderer {
     ctx.restore();
   }
 
+  _drawAttackFlashes(ctx) {
+    const now = performance.now();
+    for (const f of this._attackFlashes) {
+      const t = Math.max(0, Math.min(1, (now - f.startedAt) / f.duration));
+      const tx = (f.target.renderX + 0.5) * TILE_SIZE;
+      const ty = (f.target.renderY + 0.48) * TILE_SIZE;
+      ctx.save();
+      ctx.globalAlpha = (1 - t) * (f.isCrit ? 0.95 : 0.7);
+      ctx.strokeStyle = f.isCrit ? '#fff0b0' : '#e8e0d0';
+      ctx.lineWidth = f.isCrit ? 4 : 3;
+      ctx.beginPath();
+      if (f.kind === 'ranged') {
+        const ax = (f.attacker.renderX + 0.5) * TILE_SIZE;
+        const ay = (f.attacker.renderY + 0.5) * TILE_SIZE;
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+        ctx.fillStyle = f.isCrit ? '#fff0b0' : '#80b0e0';
+        ctx.fillRect(tx - 3, ty - 3, 6, 6);
+      } else {
+        const r = TILE_SIZE * (0.22 + t * 0.42);
+        ctx.arc(tx, ty, r, -Math.PI * 0.75, Math.PI * 0.25);
+        ctx.stroke();
+        ctx.strokeStyle = f.isCrit ? '#e85a4a' : '#d4be7a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(tx, ty, r + 5, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
+
   _drawIntentIcon(ctx, intent, px, py) {
     let glyph = '';
     let color = '#d6d6da';
     if (intent.type === 'attack') { glyph = '!'; color = '#ff6060'; }
-    else if (intent.type === 'ranged') { glyph = '➜'; color = '#80b0e0'; }
-    else if (intent.type === 'move')   { glyph = '·'; color = '#a0a0aa'; }
-    else if (intent.type === 'wait')   { glyph = intent.meta?.winding ? '⌛' : '…'; color = '#c0a060'; }
+    else if (intent.type === 'ranged') { glyph = '>'; color = '#80b0e0'; }
+    else if (intent.type === 'move')   { glyph = '.'; color = '#a0a0aa'; }
+    else if (intent.type === 'wait')   { glyph = intent.meta?.winding ? '!!' : '...'; color = '#c0a060'; }
     if (!glyph) return;
     ctx.font = 'bold 12px "Courier New", monospace';
     ctx.textAlign = 'center';
@@ -623,6 +672,7 @@ export class Renderer {
   }
 
   _drawViewportAbyss(ctx, def = {}) {
+    const time = this._timeSec || 0;
     const biome = def.biomeId || '';
     let top = '#08060e';
     let mid = '#030208';
@@ -661,9 +711,28 @@ export class Renderer {
 
     ctx.globalAlpha = 0.28;
     for (let i = 0; i < 12; i++) {
-      const x = vx + 16 + ((i * 43) % Math.max(1, vw - 32));
-      const y = vy + 42 + ((i * 71) % Math.max(1, vh - 84));
+      const drift = Math.sin(time * 0.28 + i * 1.7) * 6;
+      const x = vx + 16 + ((i * 43 + time * 7) % Math.max(1, vw - 32));
+      const y = vy + 42 + ((i * 71 + drift) % Math.max(1, vh - 84));
       fillRect(ctx, x, y, 1, 1, i % 3 === 0 ? '#d4be7a22' : '#ffffff14');
+    }
+
+    ctx.globalAlpha = 0.12;
+    for (let i = 0; i < 5; i++) {
+      const y = vy + 52 + i * Math.max(42, vh / 5)
+        + Math.sin(time * 0.22 + i) * 5;
+      const x = vx + ((time * (4 + i) + i * 89) % Math.max(1, vw + 80)) - 40;
+      fillRect(ctx, x, y, 36 + i * 9, 1, '#d4be7a40');
+      fillRect(ctx, x + 18, y + 7, 52, 1, haze);
+    }
+
+    ctx.globalAlpha = 0.1;
+    for (let i = 0; i < 4; i++) {
+      const x = vx + 26 + ((i * 117 + time * 3) % Math.max(1, vw - 52));
+      const y = vy + vh - 60 - i * 36 + Math.sin(time * 0.18 + i) * 4;
+      fillRect(ctx, x, y, 4, 4, '#d4be7a55');
+      fillRect(ctx, x - 6, y + 6, 16, 2, '#ffffff18');
+      fillRect(ctx, x + 2, y + 8, 1, 8, '#ffffff18');
     }
 
     ctx.globalAlpha = 0.2;

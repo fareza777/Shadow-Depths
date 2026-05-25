@@ -30,12 +30,28 @@ export class QuickUseBar {
     const inv = player.inventory;
 
     const pad = 4;
+    const ctx = renderer.ctx;
+    const railX = LAYOUT.quickX - pad;
+    const railY = LAYOUT.quickY - 14;
+    const railW = QuickUseBar._railWidth(LAYOUT) + pad * 2;
+    const railH = LAYOUT.quickSlot + 18;
+    ctx.save();
+    const rail = ctx.createLinearGradient(railX, railY, railX, railY + railH);
+    rail.addColorStop(0, '#2b2533ee');
+    rail.addColorStop(0.5, '#191421ee');
+    rail.addColorStop(1, '#09070dee');
+    ctx.fillStyle = rail;
+    ctx.fillRect(railX, railY, railW, railH);
+    ctx.globalAlpha = 0.35;
+    renderer.drawRect(railX + 4, railY + 3, railW - 8, 1, COLOR.goldDim);
+    renderer.drawRect(railX + 8, railY + railH - 4, railW - 16, 1, '#ffffff20');
+    ctx.restore();
     renderer.drawRect(
-      LAYOUT.quickX - pad,
-      LAYOUT.quickY - 14,
-      QuickUseBar._railWidth(LAYOUT) + pad * 2,
-      LAYOUT.quickSlot + 18,
-      '#1a1624ee'
+      railX,
+      railY,
+      railW,
+      1,
+      '#0a0810'
     );
 
     for (let qi = 0; qi < QUICK_SLOT_COUNT; qi++) {
@@ -49,6 +65,10 @@ export class QuickUseBar {
         pressed ? COLOR.bgCardHi : (item ? COLOR.bgCard : COLOR.bgPanelAlt));
       renderer.drawStrokedRect(rect.x, rect.y, rect.w, rect.h,
         pressed ? COLOR.gold : (item ? COLOR.goldDim : COLOR.borderSoft), pressed ? 2 : 1);
+      if (!pressed) {
+        renderer.drawRect(rect.x + 3, rect.y + 3, rect.w - 6, 2, item ? '#ffffff24' : '#ffffff12');
+        renderer.drawRect(rect.x + rect.w - 4, rect.y + 5, 1, rect.h - 10, '#00000066');
+      }
 
       renderer.drawRect(rect.x + 2, rect.y + 2, 14, 14, '#0a0810cc');
       renderer.drawText(String(qi + 1), rect.x + 9, rect.y + 9,
@@ -86,6 +106,7 @@ export class QuickUseBar {
       r.drawStrokedRect(rect.x, rect.y, rect.w, rect.h,
         pressed ? COLOR.gold : COLOR.goldDim, pressed ? 2 : 1);
       if (!pressed) r.drawRect(rect.x + 2, rect.y + 2, rect.w - 4, 2, '#252030');
+      if (i > 0) r.drawRect(rect.x - LAYOUT.quickGap / 2 - 1, rect.y + 7, 1, rect.h - 14, '#d4be7a2c');
       this._drawActionGlyph(r, rect.type, rect.x + rect.w / 2, rect.y + 17, pressed);
       r.drawText(rect.label, rect.x + rect.w / 2, rect.y + rect.h - 13, {
         size: uiSize(8), bold: true, align: 'center', baseline: 'middle',

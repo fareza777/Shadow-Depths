@@ -146,17 +146,33 @@ export function buildPlayerSprites(pixelDraw) {
   const entries = {};
   for (const [variant, layers] of Object.entries(WEAPON_LAYERS)) {
     const key = variant === 'sword' ? 'player_sword' : `player_${variant}`;
-    entries[key] = (ctx, x, y, s) => {
-      drawHeroAura(ctx, x, y, s, variant);
-      pixelDraw(ctx, x, y, s, HERO_BODY);
+    entries[key] = (ctx, x, y, s, opts = {}) => {
+      const entity = opts.entity || null;
+      drawHeroAura(ctx, x, y, s, variant, entity, opts.time || 0);
+      pixelDraw(ctx, x, y, s, heroBodyFor(entity, opts.time || 0));
       pixelDraw(ctx, x, y, s, layers);
+      drawEquipmentAccents(ctx, x, y, s, entity, pixelDraw);
     };
   }
   entries.player_idle = entries.player_sword;
   return entries;
 }
 
-function drawHeroAura(ctx, x, y, s, variant) {
+function heroBodyFor(entity, time) {
+  const body = HERO_BODY.slice();
+  if (!entity) return body;
+  const hpPct = entity.stats?.hpMax ? entity.stats.hp / entity.stats.hpMax : 1;
+  if (hpPct < 0.35 && Math.sin(time * 8) > 0) {
+    return body.concat([
+      [13, 11, 2, 2, '#ff2a2a'],
+      [17, 11, 2, 2, '#ff2a2a'],
+      [8, 15, 16, 8, '#5a1018']
+    ]);
+  }
+  return body;
+}
+
+function drawHeroAura(ctx, x, y, s, variant, entity, time) {
   const colors = {
     bow: '#6ad07c',
     crossbow: '#7aa6e8',
@@ -167,11 +183,51 @@ function drawHeroAura(ctx, x, y, s, variant) {
     pick: '#9a8060',
     sword: '#d4be7a'
   };
+  const hpPct = entity?.stats?.hpMax ? entity.stats.hp / entity.stats.hpMax : 1;
+  const pulse = 0.85 + Math.sin(time * (hpPct < 0.35 ? 8 : 3)) * 0.15;
   ctx.save();
-  ctx.globalAlpha = 0.22;
+  ctx.globalAlpha = (hpPct < 0.35 ? 0.34 : 0.22) * pulse;
   ctx.fillStyle = colors[variant] || colors.sword;
   ctx.beginPath();
   ctx.ellipse(x + s / 2, y + s * 0.86, s * 0.34, s * 0.11, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+}
+
+function drawEquipmentAccents(ctx, x, y, s, entity, pixelDraw) {
+  if (!entity) return;
+  const pixels = [];
+  const helm = entity.helm?.spriteKey || '';
+  const armor = entity.armor?.spriteKey || '';
+  const legs = entity.legs?.spriteKey || '';
+  const necklace = entity.necklace?.spriteKey || '';
+  const ring = entity.ring?.spriteKey || '';
+
+  if (helm) {
+    const col = helm.includes('bone') ? '#d8ccb0'
+      : helm.includes('crown') ? HERO_EMBLEM
+      : helm.includes('hood') || helm.includes('cloth') ? '#2a2038'
+      : '#9a949e';
+    pixels.push([10, 3, 12, 2, col], [11, 2, 10, 1, '#ffffff44']);
+  }
+  if (armor) {
+    const col = armor.includes('plate') || armor.includes('scale') ? '#9a98a8'
+      : armor.includes('robe') || armor.includes('cloak') ? '#604080'
+      : armor.includes('bone') ? '#c8b890'
+      : '#7a5a40';
+    pixels.push([10, 16, 12, 3, col], [11, 17, 10, 1, '#ffffff33']);
+  }
+  if (legs) {
+    const col = legs.includes('iron') || legs.includes('silver') ? '#8a8a94'
+      : legs.includes('crimson') || legs.includes('dark_red') ? '#7a1a28'
+      : '#4a4250';
+    pixels.push([11, 25, 4, 5, col], [17, 25, 4, 5, col]);
+  }
+  if (necklace) {
+    pixels.push([14, 16, 4, 1, HERO_EMBLEM], [15, 17, 2, 2, '#fff0a0']);
+  }
+  if (ring) {
+    pixels.push([22, 20, 2, 2, ring.includes('speed') ? '#60d080' : HERO_EMBLEM]);
+  }
+  if (pixels.length) pixelDraw(ctx, x, y, s, pixels);
 }

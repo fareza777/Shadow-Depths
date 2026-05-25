@@ -64,6 +64,16 @@ function biomeFloorAccent(id, dim) {
   return null;
 }
 
+function biomeRune(id, dim) {
+  if (dim || !id) return '#d4be7a22';
+  if (id.includes('drowning') || id.includes('sunken')) return '#58b8c844';
+  if (id.includes('frost') || id.includes('salt')) return '#a8d8ff44';
+  if (id.includes('ashen') || id.includes('cinder')) return '#d8844a44';
+  if (id.includes('empty') || id.includes('below')) return '#b070ff44';
+  if (id.includes('garden') || id.includes('bloodroot')) return '#70b85044';
+  return '#d4be7a36';
+}
+
 /** @param {{ floorLit?:string, floorDim?:string, dim?:boolean, biomeId?:string }} opts */
 function floorPalette(opts) {
   const lit = opts.floorLit || '#2e2734';
@@ -179,6 +189,26 @@ export function drawFloorTile(ctx, x, y, s, opts = {}) {
     const ax = (h % 22) + 5;
     const ay = ((h >> 3) % 20) + 6;
     p(ctx, x, y, s, [[ax, ay, 2, 2, c.accent], [ax + 1, ay, 1, 1, shade(c.accent, 30)]]);
+  }
+  if (!opts.dim && (h >> 8) % 17 === 0) {
+    const rune = biomeRune(opts.biomeId, false);
+    p(ctx, x, y, s, [
+      [14, 10, 4, 1, rune], [15, 11, 2, 1, rune],
+      [13, 13, 6, 1, rune], [15, 14, 2, 4, rune],
+      [12, 19, 8, 1, rune]
+    ]);
+  }
+  if (!opts.dim && (h >> 9) % 19 === 0) {
+    p(ctx, x, y, s, [
+      [6, 7, 1, 9, c.lo], [7, 15, 8, 1, c.lo],
+      [18, 20, 8, 1, shade(c.lo, 12)], [25, 16, 1, 5, c.lo]
+    ]);
+  }
+  if (!opts.dim && (h >> 11) % 29 === 0) {
+    p(ctx, x, y, s, [
+      [7, 23, 5, 2, '#5a1820'], [9, 22, 2, 1, '#8a2830'],
+      [20, 8, 3, 2, '#5a1820']
+    ]);
   }
   const biome = opts.biomeId || '';
   if (!opts.dim && (biome.includes('drowning') || biome.includes('sunken')) && (h >> 6) % 8 === 0) {
