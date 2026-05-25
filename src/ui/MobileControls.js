@@ -5,6 +5,7 @@ import {
   CANVAS_WIDTH, CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
   SIDE_CONTROL_WIDTH, IS_LANDSCAPE, COLOR, uiSize
 } from '../config/constants.js';
+import { getControlBandLayout } from './controlBandLayout.js';
 
 const ACTION_LABELS = [
   { key: 'menu',      label: 'MENU' },
@@ -14,14 +15,12 @@ const ACTION_LABELS = [
   { key: 'vigil',     label: 'HERO' }
 ];
 
+const BAND = getControlBandLayout();
+
 const LAYOUT = (() => {
   if (IS_LANDSCAPE) {
-    const stripW = SIDE_CONTROL_WIDTH;
-    const dpadBtn = 42;
-    const dpadGap = 5;
-    const dpadSize = dpadBtn * 3 + dpadGap * 2;
-    const dpadX = (stripW - dpadSize) / 2;
-    const dpadY = HUD_HEIGHT + 10;
+    const stripW = BAND.stripW;
+    const { dpadBtn, dpadGap, dpadSize, dpadX, dpadY } = BAND;
     const actW = 100;
     const actH = 36;
     const actGap = 5;
@@ -43,12 +42,8 @@ const LAYOUT = (() => {
       ]
     };
   }
-  const bandY = CANVAS_HEIGHT - CONTROL_HEIGHT;
-  const dpadBtn = 56;
-  const dpadGap = 5;
-  const dpadSize = dpadBtn * 3 + dpadGap * 2;
-  const dpadX = 10;
-  const dpadY = bandY + (CONTROL_HEIGHT - dpadSize) / 2;
+  const bandY = BAND.bandY;
+  const { dpadBtn, dpadGap, dpadSize, dpadX, dpadY } = BAND;
   const actW = 78;
   const actH = 38;
   const actGap = 4;
