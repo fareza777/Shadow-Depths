@@ -158,10 +158,6 @@ export class Renderer {
     ctx.clip();
     ctx.translate(cam.x, cam.y);
 
-    // Base abyss wash inside viewport (void outside rooms reads as depth, not flat UI gray).
-    fillRect(ctx, x0 * TILE_SIZE, y0 * TILE_SIZE,
-      (x1 - x0 + 1) * TILE_SIZE, (y1 - y0 + 1) * TILE_SIZE, '#05040a');
-
     // Visible tile range — derived from viewport rect, not full canvas.
     const x0 = Math.max(0, Math.floor((VIEWPORT_X - cam.x) / TILE_SIZE));
     const y0 = Math.max(0, Math.floor((VIEWPORT_Y - cam.y) / TILE_SIZE));
@@ -169,6 +165,10 @@ export class Renderer {
       Math.ceil((VIEWPORT_X + VIEWPORT_W - cam.x) / TILE_SIZE));
     const y1 = Math.min(floor.height - 1,
       Math.ceil((VIEWPORT_Y + VIEWPORT_H - cam.y) / TILE_SIZE));
+
+    // Base abyss wash inside visible tile range.
+    fillRect(ctx, x0 * TILE_SIZE, y0 * TILE_SIZE,
+      (x1 - x0 + 1) * TILE_SIZE, (y1 - y0 + 1) * TILE_SIZE, '#05040a');
 
     const def = floor.definition || {};
     const tileOpts = {
