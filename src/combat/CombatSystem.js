@@ -107,7 +107,7 @@ export class CombatSystem {
       return true;
     }
 
-    this._resolveHit(actor, target, 'melee');
+    this._resolveHit(actor, target, 'melee', ctx);
     return true;
   }
 
@@ -116,13 +116,18 @@ export class CombatSystem {
     const target = floor.entityAt(targetPos.x, targetPos.y);
     if (!target || target.isDead) return true;
     if (!hasLineOfSight(floor, actor, target)) return true; // missed — no LOS
-    this._resolveHit(actor, target, 'ranged');
+    this._resolveHit(actor, target, 'ranged', ctx);
     return true;
   }
 
-  _resolveHit(attacker, target, kind) {
+  _resolveHit(attacker, target, kind, ctx = {}) {
     const raw = this.calculateDamage(attacker, target);
     let finalDamage = raw.damage;
+    if (attacker.kind === 'enemy' && kind === 'ranged') {
+      const depth = ctx.floor?.definition?.index ?? 0;
+      if (depth >= 30) finalDamage += 1;
+      if (depth >= 60) finalDamage += 1;
+    }
     // Player passive skill: Stout reduces incoming damage.
     if (target.kind === 'player' && target.damageReduction > 0) {
       finalDamage = Math.max(1, Math.round(finalDamage * (1 - target.damageReduction)));
@@ -140,7 +145,7 @@ export class CombatSystem {
       for (const eff of attacker.onHitPlayer) this._applyOnHit(eff, target);
     }
 
-    if (target.isDead) this._handleDeath(target, attacker);
+    if (target.isDead) this._handleDeath(target, attacker, ctx);
   }
 
   _applyAttackerOnHit(attacker, target, dealt) {
@@ -170,12 +175,14 @@ export class CombatSystem {
     }
   }
 
-  _handleDeath(entity, killer) {
-    // Revive Charm for the player.
+  _handleDeath(entity, killer, ctx = {}) {
+    // Revive Charm for the player — weaker restore on deep floors.
     if (entity.kind === 'player' && entity.reviveCharges > 0) {
       entity.reviveCharges -= 1;
       entity.isDead = false;
-      const restored = Math.floor(entity.stats.hpMax * 0.5);
+      const floorIdx = ctx.floor?.definition?.index ?? ctx.floorIndex ?? 0;
+      const healPct = floorIdx >= 40 ? 0.35 : floorIdx >= 20 ? 0.42 : 0.5;
+      const restored = Math.floor(entity.stats.hpMax * healPct);
       entity.stats.hp = restored;
       this.bus.emit('entity:healed', { entity, amount: restored, source: 'revive_charm' });
       this.bus.emit('player:revived', { entity });
@@ -281,7 +288,7 @@ export class CombatSystem {
         if (ent.kind === 'player' && !eff.friendlyFire) continue;
         const dealt = ent.takeDamage(eff.value);
         this.bus.emit('entity:damaged', { entity: ent, amount: dealt, source: item, isCrit: false });
-        if (ent.isDead) this._handleDeath(ent, player);
+        if (ent.isDead) this._handleDeath(ent, player, { floor, floorIndex: floor.definition?.index });
         any = true;
       }
     }

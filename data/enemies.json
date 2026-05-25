@@ -583,5 +583,572 @@
     "floorMin": 90,
     "spawnWeight": 0,
     "role": "boss"
+  },
+  "shroud_crawler": {
+    "id": "shroud_crawler",
+    "name": "Shroud Crawler",
+    "spriteKey": "enemy_shroud_crawler",
+    "stats": {
+      "hp": 12,
+      "atk": 3,
+      "def": 0
+    },
+    "behavior": "chase",
+    "xp": 10,
+    "goldDrop": [
+      1,
+      4
+    ],
+    "floorMin": 1,
+    "spawnWeight": 7
+  },
+  "candle_licker": {
+    "id": "candle_licker",
+    "name": "Candle Licker",
+    "spriteKey": "enemy_candle_licker",
+    "stats": {
+      "hp": 6,
+      "atk": 4,
+      "def": 0
+    },
+    "behavior": "erratic",
+    "xp": 8,
+    "goldDrop": [
+      0,
+      3
+    ],
+    "floorMin": 1,
+    "spawnWeight": 6,
+    "behaviorParams": {
+      "missChance": 0.2,
+      "randomMoveChance": 0.45
+    }
+  },
+  "grave_moss": {
+    "id": "grave_moss",
+    "name": "Grave Moss",
+    "spriteKey": "enemy_grave_moss",
+    "stats": {
+      "hp": 14,
+      "atk": 3,
+      "def": 1
+    },
+    "behavior": "chase",
+    "xp": 12,
+    "goldDrop": [
+      2,
+      5
+    ],
+    "floorMin": 2,
+    "spawnWeight": 6,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 1,
+        "duration": 2,
+        "stackable": true
+      }
+    ]
+  },
+  "bell_haunt": {
+    "id": "bell_haunt",
+    "name": "Bell Haunt",
+    "spriteKey": "enemy_bell_haunt",
+    "stats": {
+      "hp": 10,
+      "atk": 5,
+      "def": 0
+    },
+    "behavior": "ranged",
+    "xp": 14,
+    "goldDrop": [
+      2,
+      6
+    ],
+    "floorMin": 3,
+    "spawnWeight": 5,
+    "behaviorParams": {
+      "preferredDistance": 4,
+      "minDistance": 3,
+      "range": 5
+    }
+  },
+  "marrow_hound": {
+    "id": "marrow_hound",
+    "name": "Marrow Hound",
+    "spriteKey": "enemy_marrow_hound",
+    "stats": {
+      "hp": 16,
+      "atk": 6,
+      "def": 1
+    },
+    "behavior": "erratic",
+    "xp": 18,
+    "goldDrop": [
+      3,
+      7
+    ],
+    "floorMin": 8,
+    "spawnWeight": 5,
+    "behaviorParams": {
+      "missChance": 0.12,
+      "randomMoveChance": 0.35
+    }
+  },
+  "ossuary_moth": {
+    "id": "ossuary_moth",
+    "name": "Ossuary Moth",
+    "spriteKey": "enemy_ossuary_moth",
+    "stats": {
+      "hp": 12,
+      "atk": 5,
+      "def": 0
+    },
+    "behavior": "erratic",
+    "xp": 16,
+    "goldDrop": [
+      2,
+      6
+    ],
+    "floorMin": 10,
+    "spawnWeight": 6,
+    "behaviorParams": {
+      "missChance": 0.18,
+      "randomMoveChance": 0.5
+    }
+  },
+  "brine_leech": {
+    "id": "brine_leech",
+    "name": "Brine Leech",
+    "spriteKey": "enemy_brine_leech",
+    "stats": {
+      "hp": 18,
+      "atk": 5,
+      "def": 1
+    },
+    "behavior": "chase",
+    "xp": 20,
+    "goldDrop": [
+      3,
+      8
+    ],
+    "floorMin": 12,
+    "spawnWeight": 5,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 2,
+        "duration": 3,
+        "stackable": true
+      }
+    ]
+  },
+  "echo_knight": {
+    "id": "echo_knight",
+    "name": "Echo Knight",
+    "spriteKey": "enemy_echo_knight",
+    "stats": {
+      "hp": 22,
+      "atk": 6,
+      "def": 2
+    },
+    "behavior": "heavy",
+    "xp": 24,
+    "goldDrop": [
+      4,
+      9
+    ],
+    "floorMin": 14,
+    "spawnWeight": 4,
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    }
+  },
+  "ember_shade": {
+    "id": "ember_shade",
+    "name": "Ember Shade",
+    "spriteKey": "enemy_ember_shade",
+    "stats": {
+      "hp": 16,
+      "atk": 7,
+      "def": 0
+    },
+    "behavior": "phase",
+    "xp": 22,
+    "goldDrop": [
+      3,
+      8
+    ],
+    "floorMin": 18,
+    "spawnWeight": 5
+  },
+  "glass_twin": {
+    "id": "glass_twin",
+    "name": "Glass Twin",
+    "spriteKey": "enemy_glass_twin",
+    "stats": {
+      "hp": 20,
+      "atk": 7,
+      "def": 1
+    },
+    "behavior": "phase",
+    "xp": 26,
+    "goldDrop": [
+      4,
+      10
+    ],
+    "floorMin": 20,
+    "spawnWeight": 4
+  },
+  "page_gnawer": {
+    "id": "page_gnawer",
+    "name": "Page Gnawer",
+    "spriteKey": "enemy_page_gnawer",
+    "stats": {
+      "hp": 15,
+      "atk": 6,
+      "def": 1
+    },
+    "behavior": "chase",
+    "xp": 24,
+    "goldDrop": [
+      4,
+      9
+    ],
+    "floorMin": 22,
+    "spawnWeight": 5,
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 2
+      }
+    ]
+  },
+  "lexicon_wraith": {
+    "id": "lexicon_wraith",
+    "name": "Lexicon Wraith",
+    "spriteKey": "enemy_lexicon_wraith",
+    "stats": {
+      "hp": 18,
+      "atk": 8,
+      "def": 1
+    },
+    "behavior": "ranged",
+    "xp": 28,
+    "goldDrop": [
+      5,
+      11
+    ],
+    "floorMin": 25,
+    "spawnWeight": 4,
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 6
+    },
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 3
+      }
+    ]
+  },
+  "frost_crawler": {
+    "id": "frost_crawler",
+    "name": "Frost Crawler",
+    "spriteKey": "enemy_frost_crawler",
+    "stats": {
+      "hp": 24,
+      "atk": 7,
+      "def": 3
+    },
+    "behavior": "heavy",
+    "xp": 30,
+    "goldDrop": [
+      5,
+      12
+    ],
+    "floorMin": 28,
+    "spawnWeight": 4,
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    }
+  },
+  "vein_stalker": {
+    "id": "vein_stalker",
+    "name": "Vein Stalker",
+    "spriteKey": "enemy_vein_stalker",
+    "stats": {
+      "hp": 20,
+      "atk": 8,
+      "def": 2
+    },
+    "behavior": "chase",
+    "xp": 32,
+    "goldDrop": [
+      6,
+      13
+    ],
+    "floorMin": 30,
+    "spawnWeight": 5,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 2,
+        "duration": 4,
+        "stackable": true
+      }
+    ]
+  },
+  "rust_prophet": {
+    "id": "rust_prophet",
+    "name": "Rust Prophet",
+    "spriteKey": "enemy_rust_prophet",
+    "stats": {
+      "hp": 22,
+      "atk": 9,
+      "def": 2
+    },
+    "behavior": "ranged",
+    "xp": 34,
+    "goldDrop": [
+      6,
+      14
+    ],
+    "floorMin": 32,
+    "spawnWeight": 4,
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 6
+    }
+  },
+  "chain_ghost": {
+    "id": "chain_ghost",
+    "name": "Chain Ghost",
+    "spriteKey": "enemy_chain_ghost",
+    "stats": {
+      "hp": 26,
+      "atk": 9,
+      "def": 2
+    },
+    "behavior": "phase",
+    "xp": 36,
+    "goldDrop": [
+      7,
+      15
+    ],
+    "floorMin": 35,
+    "spawnWeight": 4
+  },
+  "hymn_wretch": {
+    "id": "hymn_wretch",
+    "name": "Hymn Wretch",
+    "spriteKey": "enemy_hymn_wretch",
+    "stats": {
+      "hp": 24,
+      "atk": 10,
+      "def": 2
+    },
+    "behavior": "ranged",
+    "xp": 38,
+    "goldDrop": [
+      7,
+      16
+    ],
+    "floorMin": 38,
+    "spawnWeight": 4,
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 6
+    }
+  },
+  "salt_ghoul": {
+    "id": "salt_ghoul",
+    "name": "Salt Ghoul",
+    "spriteKey": "enemy_salt_ghoul",
+    "stats": {
+      "hp": 40,
+      "atk": 10,
+      "def": 5
+    },
+    "behavior": "heavy",
+    "xp": 42,
+    "goldDrop": [
+      8,
+      18
+    ],
+    "floorMin": 40,
+    "spawnWeight": 3,
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    }
+  },
+  "ear_worm": {
+    "id": "ear_worm",
+    "name": "Ear Worm",
+    "spriteKey": "enemy_ear_worm",
+    "stats": {
+      "hp": 20,
+      "atk": 11,
+      "def": 1
+    },
+    "behavior": "erratic",
+    "xp": 40,
+    "goldDrop": [
+      6,
+      14
+    ],
+    "floorMin": 42,
+    "spawnWeight": 5,
+    "behaviorParams": {
+      "missChance": 0.1,
+      "randomMoveChance": 0.4
+    }
+  },
+  "scale_skitter": {
+    "id": "scale_skitter",
+    "name": "Scale Skitter",
+    "spriteKey": "enemy_scale_skitter",
+    "stats": {
+      "hp": 22,
+      "atk": 12,
+      "def": 2
+    },
+    "behavior": "erratic",
+    "xp": 44,
+    "goldDrop": [
+      7,
+      16
+    ],
+    "floorMin": 45,
+    "spawnWeight": 4,
+    "behaviorParams": {
+      "missChance": 0.08,
+      "randomMoveChance": 0.42
+    }
+  },
+  "banner_void": {
+    "id": "banner_void",
+    "name": "Banner Void",
+    "spriteKey": "enemy_banner_void",
+    "stats": {
+      "hp": 44,
+      "atk": 12,
+      "def": 6
+    },
+    "behavior": "heavy",
+    "xp": 50,
+    "goldDrop": [
+      10,
+      22
+    ],
+    "floorMin": 50,
+    "spawnWeight": 3,
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    }
+  },
+  "hive_warden": {
+    "id": "hive_warden",
+    "name": "Hive Warden",
+    "spriteKey": "enemy_hive_warden",
+    "stats": {
+      "hp": 38,
+      "atk": 13,
+      "def": 4
+    },
+    "behavior": "chase",
+    "xp": 48,
+    "goldDrop": [
+      9,
+      20
+    ],
+    "floorMin": 55,
+    "spawnWeight": 4,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 3,
+        "duration": 3,
+        "stackable": true
+      }
+    ]
+  },
+  "sting_matron": {
+    "id": "sting_matron",
+    "name": "Sting Matron",
+    "spriteKey": "enemy_sting_matron",
+    "stats": {
+      "hp": 30,
+      "atk": 14,
+      "def": 3
+    },
+    "behavior": "ranged",
+    "xp": 52,
+    "goldDrop": [
+      10,
+      22
+    ],
+    "floorMin": 60,
+    "spawnWeight": 4,
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 6
+    }
+  },
+  "starved_seraph": {
+    "id": "starved_seraph",
+    "name": "Starved Seraph",
+    "spriteKey": "enemy_starved_seraph",
+    "stats": {
+      "hp": 50,
+      "atk": 15,
+      "def": 4
+    },
+    "behavior": "phase",
+    "xp": 65,
+    "goldDrop": [
+      12,
+      28
+    ],
+    "floorMin": 70,
+    "spawnWeight": 3,
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 8
+      }
+    ]
+  },
+  "null_weaver": {
+    "id": "null_weaver",
+    "name": "Null Weaver",
+    "spriteKey": "enemy_null_weaver",
+    "stats": {
+      "hp": 70,
+      "atk": 18,
+      "def": 8
+    },
+    "behavior": "phase",
+    "xp": 90,
+    "goldDrop": [
+      15,
+      35
+    ],
+    "floorMin": 85,
+    "spawnWeight": 2,
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 10
+      }
+    ]
   }
 }

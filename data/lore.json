@@ -13,14 +13,38 @@
     "skeleton_archer": "Bersumpah setia pada seorang raja yang sudah tidak ada lagi.",
     "cave_bat": "Tidak buta. Hanya tidak peduli.",
     "stone_golem": "Dibangun untuk menunggu. Selesai menunggu.",
-    "shadow_wraith": "Pernah punya nama. Lupa, tapi marah."
+    "shadow_wraith": "Pernah punya nama. Lupa, tapi marah.",
+    "shroud_crawler": "Memakai kain kafan orang lain. Masih basah.",
+    "candle_licker": "Menjilat lilin mayat. Karena itu ia masih hidup.",
+    "grave_moss": "Lumpur hijau yang ingat nama di atas batu nisan.",
+    "bell_haunt": "Lonceng kecil tanpa tali. Berbunyi saat kau berbalik.",
+    "marrow_hound": "Mengais sumsum. Bau tulang basah mengikutinya.",
+    "ossuary_moth": "Sayapnya dari membran tulang tipis. Tidak pernah tidur.",
+    "brine_leech": "Menempel di betis. Air asin bukan satu-satunya garam di sini.",
+    "echo_knight": "Armor kosong yang meniru langkahmu — satu langkah terlambat.",
+    "ember_shade": "Bara yang belum menerima bahwa api sudah padam.",
+    "glass_twin": "Wajahmu di cermin retak. Ia lebih tajam dari aslinya.",
+    "page_gnawer": "Mengunyah halaman yang belum ditulis. Rasa hambar.",
+    "lexicon_wraith": "Kata-kata yang terlupakan bisa menyakitkan.",
+    "frost_crawler": "Merayap di salju yang tidak pernah mencair.",
+    "vein_stalker": "Mengikuti denyut nadi, bukan langkah kaki.",
+    "rust_prophet": "Memprediksi kematianmu dengan suara besi berkarat.",
+    "chain_ghost": "Rantai masih mengingat leher yang pernah dijepit.",
+    "hymn_wretch": "Bernyanyi satu nada. Nada itu menusuk tulang.",
+    "salt_ghoul": "Kulitnya seperti kristal. Air mata tidak pernah datang.",
+    "ear_worm": "Masuk lewat cerita. Keluar lewat teriakan.",
+    "scale_skitter": "Sisik kecil, gerakan besar. Tidak pernah lurus.",
+    "banner_void": "Panji hitam tanpa pasukan. Pasukan datang belakangan.",
+    "hive_warden": "Sarang di dadanya. Kamu bukan tamu.",
+    "sting_matron": "Satu sengatan untuk mengingatkan, satu untuk menagih.",
+    "starved_seraph": "Sayap tanpa anggota. Doa tanpa jawaban.",
+    "null_weaver": "Menenun kekosongan. Benangnya adalah nama-nama yang hilang."
   },
   "items": {
     "minor_healing_draught": "Watered down. Better than nothing.",
     "health_potion": "Bitter, but life is bitterer.",
     "greater_health_potion": "Brewed by a hand that knew loss.",
     "blood_cordial": "It heals. It also remembers what fed it.",
-
     "worn_dagger": "A dull edge and a steady grip. Enough for the first steps down.",
     "iron_sword": "Forged for someone who never came back.",
     "rusted_cleaver": "Used for meat. Once.",
@@ -34,7 +58,6 @@
     "obsidian_shard": "All edge, no balance. Just like its owner was.",
     "mythril_blade": "Cold to the touch even in a hot hand.",
     "heartseeker_rapier": "Finds the gap. Always the gap.",
-
     "padded_tunic": "More comfortable than it looks. Less useful, too.",
     "leather_armor": "Stitched by a tailor with no eye for fashion.",
     "scale_hauberk": "Scales overlapped by patient, dead hands.",
@@ -42,22 +65,18 @@
     "plated_mail": "Heavier than it looks. The previous wearer is, too, somewhere down here.",
     "bone_cuirass": "The ribs were not yours. They are now.",
     "cinder_robe": "Lighter than ash. Older than fire.",
-
     "sliver_of_the_heart": "Small. Insistent. Yours now.",
     "ironheart_shard": "A heart that learned to be stone.",
     "heart_crystal": "Beats in time with something that should not be alive.",
-
     "crumpled_page": "Half a thought, badly preserved.",
     "tome_of_wisdom": "The pages turn themselves when no one watches.",
     "ancient_codex": "You do not read it. You let it read you.",
-
     "strength_elixir": "Tastes like a brawl you survived.",
     "iron_skin_tonic": "The skin remembers what the mind forgets.",
     "berserkers_brew": "Six turns of clarity. Then the bill.",
     "wardstone_draught": "Drink. Stand. Mean it.",
     "long_vigil_tea": "The watchers drank it. The watchers stayed.",
     "phantom_vial": "Slow, quiet, lasting. Like the dead.",
-
     "poison_vial": "Slow. On purpose.",
     "plague_flask": "Sealed in a hurry. Whoever sealed it was hopeful.",
     "caltrop_pouch": "Tiny. Patient. Inevitable.",
@@ -65,11 +84,9 @@
     "fire_bomb": "Burns whatever it touches. You included.",
     "voidshard": "A piece of what's underneath. Smaller than expected.",
     "pyre_capsule": "For when funeral rites can wait.",
-
     "scroll_of_mapping": "Whoever drew this map did not return for it.",
     "scroll_of_foresight": "The future, briefly. Then the headache.",
     "scroll_of_recall": "Remembers a kinder body for you.",
-
     "revive_charm": "It will let you come back once. Once.",
     "bone_talisman": "Knuckles, drilled and strung. Yours, now.",
     "twin_charm": "Two breaths borrowed from a brother who couldn't use them."

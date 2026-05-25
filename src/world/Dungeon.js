@@ -127,10 +127,11 @@ export class Dungeon {
         enemyPool: biome?.enemyPool || ['goblin_scout'],
         // Difficulty curves: enemies & items both scale gently with depth.
         // Capped so floor 100 isn't a meat grinder of 30 enemies.
-        enemyCount: Math.min(12, 3 + Math.floor(i * 0.18)),
+        enemyCount: Math.min(14, 3 + Math.floor(i * 0.2) + (i >= 40 ? 1 : 0)),
         itemCount:  Math.min(8,  5 + Math.floor(i * 0.04)),
         torchRadius: biome?.torchRadius || 5,
-        depthScale: 1 + i * 0.08, // enemy HP/ATK multiplier — read by spawner
+        // Steeper curve after floor 25 — counters longbow + revive stacking.
+        depthScale: 1 + i * 0.09 + (i > 25 ? (i - 25) * 0.02 : 0),
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
         isFinalFloor: isFinal

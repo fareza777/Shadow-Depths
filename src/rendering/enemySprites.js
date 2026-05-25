@@ -1,6 +1,10 @@
 /**
  * Enemy procedural sprites + backdrop aura colors.
  */
+import {
+  buildExtendedEnemySprites,
+  EXTENDED_ENEMY_AURA
+} from './enemySpritesBatch2.js';
 
 const ENEMY_AURA = {
   enemy_goblin: '#3a5028',
@@ -20,7 +24,8 @@ const ENEMY_AURA = {
   enemy_hound: '#503060',
   enemy_marcher: '#a08040',
   enemy_wyrm: '#a07028',
-  enemy_called: '#c040ff'
+  enemy_called: '#c040ff',
+  ...EXTENDED_ENEMY_AURA
 };
 
 export function drawEnemyBackdrop(ctx, x, y, s, key) {
@@ -240,6 +245,7 @@ export function buildEnemySprites(pixelDraw) {
         [13, 29, 4, 2, '#0a0214'], [17, 29, 4, 2, '#0a0214'],
         [21, 29, 2, 2, '#0a0214'], [12, 3, 8, 1, '#6020a0']
       ]);
-    }
+    },
+    ...buildExtendedEnemySprites(pixelDraw)
   };
 }

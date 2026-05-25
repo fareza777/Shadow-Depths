@@ -233,7 +233,12 @@ export class DungeonGenerator {
 
   _spawnEnemies(floor, rooms, spawnRoom, floorDef, enemyDefs) {
     const count = floorDef.enemyCount ?? this.balance.dungeon.enemySpawnsPerFloor[floorDef.index] ?? 3;
-    const pool = (floorDef.enemyPool || []).filter((id) => enemyDefs[id]);
+    const floorNum = (floorDef.index ?? 0) + 1;
+    const pool = (floorDef.enemyPool || []).filter((id) => {
+      const def = enemyDefs[id];
+      if (!def || def.spawnWeight === 0) return false;
+      return (def.floorMin ?? 1) <= floorNum;
+    });
     if (pool.length === 0) return [];
 
     const weighted = pool.map((id) => ({ value: id, weight: enemyDefs[id].spawnWeight || 1 }));

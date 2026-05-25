@@ -4,180 +4,420 @@
       "id": "forgotten_crypts",
       "name": "The Forgotten Crypts",
       "atmosphere": "Catacomb terabaikan, debu, tulang, sisa-sisa tradisi pemakaman lama.",
-      "wallPalette": ["#3a3340", "#1a1820"],
-      "floorPalette": ["#2a2630", "#15131a"],
-      "enemyPool": ["goblin_scout", "cave_bat", "skeleton_archer"],
+      "wallPalette": [
+        "#3a3340",
+        "#1a1820"
+      ],
+      "floorPalette": [
+        "#2a2630",
+        "#15131a"
+      ],
+      "enemyPool": [
+        "goblin_scout",
+        "cave_bat",
+        "skeleton_archer",
+        "shroud_crawler",
+        "candle_licker"
+      ],
       "torchRadius": 5
     },
     {
       "id": "halls_of_echoes",
       "name": "Halls of Echoes",
       "atmosphere": "Aula besar pecah, gema langkah kaki sendiri menjadi ancaman.",
-      "wallPalette": ["#3a3548", "#1a1828"],
-      "floorPalette": ["#2c2838", "#16141e"],
-      "enemyPool": ["goblin_scout", "skeleton_archer", "cave_bat", "stone_golem"],
+      "wallPalette": [
+        "#3a3548",
+        "#1a1828"
+      ],
+      "floorPalette": [
+        "#2c2838",
+        "#16141e"
+      ],
+      "enemyPool": [
+        "skeleton_archer",
+        "cave_bat",
+        "stone_golem",
+        "bell_haunt",
+        "marrow_hound"
+      ],
       "torchRadius": 5
     },
     {
       "id": "bone_garden",
       "name": "The Bone Garden",
       "atmosphere": "Sesuatu tumbuh di antara tulang. Bukan tanaman.",
-      "wallPalette": ["#3a3340", "#181420"],
-      "floorPalette": ["#2a2538", "#14101a"],
-      "enemyPool": ["skeleton_archer", "stone_golem", "shadow_wraith", "cave_bat"],
+      "wallPalette": [
+        "#3a3340",
+        "#181420"
+      ],
+      "floorPalette": [
+        "#2a2538",
+        "#14101a"
+      ],
+      "enemyPool": [
+        "stone_golem",
+        "shadow_wraith",
+        "cave_bat",
+        "grave_moss",
+        "ossuary_moth"
+      ],
       "torchRadius": 4
     },
     {
       "id": "drowning_caves",
       "name": "The Drowning Caves",
       "atmosphere": "Air merembes dari langit-langit. Sesekali yang merembes bukan air.",
-      "wallPalette": ["#2a3a44", "#101820"],
-      "floorPalette": ["#1a2a30", "#0a1218"],
-      "enemyPool": ["cave_bat", "deep_lurker", "shadow_wraith", "rotbringer"],
+      "wallPalette": [
+        "#2a3a44",
+        "#101820"
+      ],
+      "floorPalette": [
+        "#1a2a30",
+        "#0a1218"
+      ],
+      "enemyPool": [
+        "deep_lurker",
+        "shadow_wraith",
+        "rotbringer",
+        "brine_leech",
+        "echo_knight"
+      ],
       "torchRadius": 4
     },
     {
       "id": "ashen_wastes",
       "name": "The Ashen Wastes",
       "atmosphere": "Bukan abu kayu. Sesuatu yang lebih besar, lebih lama.",
-      "wallPalette": ["#3a3030", "#1c1414"],
-      "floorPalette": ["#2a2220", "#150d0d"],
-      "enemyPool": ["cinder_imp", "stone_golem", "rotbringer", "ash_warden"],
+      "wallPalette": [
+        "#3a3030",
+        "#1c1414"
+      ],
+      "floorPalette": [
+        "#2a2220",
+        "#150d0d"
+      ],
+      "enemyPool": [
+        "cinder_imp",
+        "stone_golem",
+        "rotbringer",
+        "ash_warden",
+        "ember_shade"
+      ],
       "torchRadius": 4
     },
     {
       "id": "mirror_vaults",
       "name": "The Mirror Vaults",
       "atmosphere": "Cermin menempel di setiap dinding. Wajahmu tidak selalu di dalamnya.",
-      "wallPalette": ["#34384a", "#16182a"],
-      "floorPalette": ["#26283a", "#10101e"],
-      "enemyPool": ["mirror_thrall", "shadow_wraith", "cinder_imp", "ash_warden"],
+      "wallPalette": [
+        "#34384a",
+        "#16182a"
+      ],
+      "floorPalette": [
+        "#26283a",
+        "#10101e"
+      ],
+      "enemyPool": [
+        "mirror_thrall",
+        "shadow_wraith",
+        "cinder_imp",
+        "ash_warden",
+        "glass_twin"
+      ],
       "torchRadius": 4
     },
     {
       "id": "sundered_library",
       "name": "The Sundered Library",
       "atmosphere": "Halaman demi halaman gugur seperti daun musim mati.",
-      "wallPalette": ["#3a3428", "#1c1810"],
-      "floorPalette": ["#2c2820", "#16140e"],
-      "enemyPool": ["mirror_thrall", "rotbringer", "ink_scribe", "shadow_wraith"],
+      "wallPalette": [
+        "#3a3428",
+        "#1c1810"
+      ],
+      "floorPalette": [
+        "#2c2820",
+        "#16140e"
+      ],
+      "enemyPool": [
+        "rotbringer",
+        "ink_scribe",
+        "shadow_wraith",
+        "page_gnawer",
+        "lexicon_wraith"
+      ],
       "torchRadius": 5
     },
     {
       "id": "frostbite_mines",
       "name": "Frostbite Mines",
       "atmosphere": "Tambang tua. Yang ditambang bukan logam.",
-      "wallPalette": ["#2a3a48", "#0e1828"],
-      "floorPalette": ["#1a2a38", "#080e18"],
-      "enemyPool": ["ice_revenant", "stone_golem", "deep_lurker", "ash_warden"],
+      "wallPalette": [
+        "#2a3a48",
+        "#0e1828"
+      ],
+      "floorPalette": [
+        "#1a2a38",
+        "#080e18"
+      ],
+      "enemyPool": [
+        "ice_revenant",
+        "stone_golem",
+        "deep_lurker",
+        "ash_warden",
+        "frost_crawler"
+      ],
       "torchRadius": 4
     },
     {
       "id": "bloodroot_hollow",
       "name": "Bloodroot Hollow",
       "atmosphere": "Akar-akar di sini meminum bukan air.",
-      "wallPalette": ["#3a2424", "#1c1010"],
-      "floorPalette": ["#2c1c1c", "#160a0a"],
-      "enemyPool": ["bloodroot_fiend", "rotbringer", "cinder_imp", "ink_scribe"],
+      "wallPalette": [
+        "#3a2424",
+        "#1c1010"
+      ],
+      "floorPalette": [
+        "#2c1c1c",
+        "#160a0a"
+      ],
+      "enemyPool": [
+        "bloodroot_fiend",
+        "rotbringer",
+        "cinder_imp",
+        "ink_scribe",
+        "vein_stalker"
+      ],
       "torchRadius": 4
     },
     {
       "id": "iron_sepulchre",
       "name": "Iron Sepulchre",
       "atmosphere": "Setiap makam terkunci dari dalam.",
-      "wallPalette": ["#3a3a44", "#1a1a24"],
-      "floorPalette": ["#2a2a34", "#14141c"],
-      "enemyPool": ["iron_sentinel", "ash_warden", "stone_golem", "mirror_thrall"],
+      "wallPalette": [
+        "#3a3a44",
+        "#1a1a24"
+      ],
+      "floorPalette": [
+        "#2a2a34",
+        "#14141c"
+      ],
+      "enemyPool": [
+        "iron_sentinel",
+        "ash_warden",
+        "stone_golem",
+        "mirror_thrall",
+        "rust_prophet"
+      ],
       "torchRadius": 4
     },
     {
       "id": "whispering_reach",
       "name": "The Whispering Reach",
       "atmosphere": "Suara-suara di telingamu menyebut nama. Bukan namamu.",
-      "wallPalette": ["#34304a", "#1a162a"],
-      "floorPalette": ["#26223a", "#100c1e"],
-      "enemyPool": ["whisper_hound", "shadow_wraith", "mirror_thrall", "ink_scribe"],
+      "wallPalette": [
+        "#34304a",
+        "#1a162a"
+      ],
+      "floorPalette": [
+        "#26223a",
+        "#100c1e"
+      ],
+      "enemyPool": [
+        "shadow_wraith",
+        "mirror_thrall",
+        "ink_scribe",
+        "chain_ghost",
+        "ear_worm"
+      ],
       "torchRadius": 3
     },
     {
       "id": "cinder_court",
       "name": "Cinder Court",
       "atmosphere": "Tahta-tahta kosong. Singgasana-singgasana yang masih hangat.",
-      "wallPalette": ["#48342a", "#241612"],
-      "floorPalette": ["#382820", "#1a0e0a"],
-      "enemyPool": ["cinder_imp", "iron_sentinel", "ash_warden", "bloodroot_fiend"],
+      "wallPalette": [
+        "#48342a",
+        "#241612"
+      ],
+      "floorPalette": [
+        "#382820",
+        "#1a0e0a"
+      ],
+      "enemyPool": [
+        "iron_sentinel",
+        "ash_warden",
+        "bloodroot_fiend",
+        "hymn_wretch",
+        "ember_shade"
+      ],
       "torchRadius": 4
     },
     {
       "id": "sunken_chapel",
       "name": "The Sunken Chapel",
       "atmosphere": "Doa-doa di sini sudah dilupakan. Tidak oleh segalanya.",
-      "wallPalette": ["#243a3a", "#101c1c"],
-      "floorPalette": ["#1a2c2c", "#0a1414"],
-      "enemyPool": ["deep_lurker", "whisper_hound", "rotbringer", "iron_sentinel"],
+      "wallPalette": [
+        "#243a3a",
+        "#101c1c"
+      ],
+      "floorPalette": [
+        "#1a2c2c",
+        "#0a1414"
+      ],
+      "enemyPool": [
+        "whisper_hound",
+        "rotbringer",
+        "iron_sentinel",
+        "hymn_wretch",
+        "salt_ghoul"
+      ],
       "torchRadius": 4
     },
     {
       "id": "veiled_garden",
       "name": "The Veiled Garden",
       "atmosphere": "Tirai-tirai bergerak meski tidak ada angin.",
-      "wallPalette": ["#3a2a3a", "#1c121c"],
-      "floorPalette": ["#2c202c", "#160a14"],
-      "enemyPool": ["bloodroot_fiend", "mirror_thrall", "whisper_hound", "ink_scribe"],
+      "wallPalette": [
+        "#3a2a3a",
+        "#1c121c"
+      ],
+      "floorPalette": [
+        "#2c202c",
+        "#160a14"
+      ],
+      "enemyPool": [
+        "mirror_thrall",
+        "whisper_hound",
+        "ink_scribe",
+        "vein_stalker",
+        "glass_twin"
+      ],
       "torchRadius": 3
     },
     {
       "id": "salt_tombs",
       "name": "Salt Tombs",
       "atmosphere": "Tubuh diawetkan. Wajah tidak.",
-      "wallPalette": ["#3a3a3a", "#1c1c1c"],
-      "floorPalette": ["#2c2c2c", "#161616"],
-      "enemyPool": ["ice_revenant", "iron_sentinel", "ash_warden", "whisper_hound"],
+      "wallPalette": [
+        "#3a3a3a",
+        "#1c1c1c"
+      ],
+      "floorPalette": [
+        "#2c2c2c",
+        "#161616"
+      ],
+      "enemyPool": [
+        "iron_sentinel",
+        "ash_warden",
+        "whisper_hound",
+        "salt_ghoul",
+        "frost_crawler"
+      ],
       "torchRadius": 4
     },
     {
       "id": "hollow_kings_march",
       "name": "Hollow King's March",
       "atmosphere": "Mereka masih berbaris. Sudah jauh sebelum kau lahir.",
-      "wallPalette": ["#34344a", "#16162a"],
-      "floorPalette": ["#26263a", "#10101e"],
-      "enemyPool": ["iron_sentinel", "hollow_marcher", "shadow_wraith", "ash_warden"],
+      "wallPalette": [
+        "#34344a",
+        "#16162a"
+      ],
+      "floorPalette": [
+        "#26263a",
+        "#10101e"
+      ],
+      "enemyPool": [
+        "iron_sentinel",
+        "hollow_marcher",
+        "shadow_wraith",
+        "ash_warden",
+        "banner_void"
+      ],
       "torchRadius": 3
     },
     {
       "id": "wyrms_throat",
       "name": "Wyrm's Throat",
       "atmosphere": "Lorong ini bernafas.",
-      "wallPalette": ["#3a2a24", "#1c1410"],
-      "floorPalette": ["#2c1c18", "#160a08"],
-      "enemyPool": ["bloodroot_fiend", "cinder_imp", "wyrm_spawn", "hollow_marcher"],
+      "wallPalette": [
+        "#3a2a24",
+        "#1c1410"
+      ],
+      "floorPalette": [
+        "#2c1c18",
+        "#160a08"
+      ],
+      "enemyPool": [
+        "cinder_imp",
+        "wyrm_spawn",
+        "hollow_marcher",
+        "scale_skitter",
+        "hive_warden"
+      ],
       "torchRadius": 3
     },
     {
       "id": "black_apiary",
       "name": "The Black Apiary",
       "atmosphere": "Madu di sini hitam. Madu di sini bergerak.",
-      "wallPalette": ["#2a2a18", "#14140a"],
-      "floorPalette": ["#1c1c10", "#0a0a05"],
-      "enemyPool": ["whisper_hound", "wyrm_spawn", "ink_scribe", "ice_revenant"],
+      "wallPalette": [
+        "#2a2a18",
+        "#14140a"
+      ],
+      "floorPalette": [
+        "#1c1c10",
+        "#0a0a05"
+      ],
+      "enemyPool": [
+        "wyrm_spawn",
+        "ink_scribe",
+        "ice_revenant",
+        "hive_warden",
+        "sting_matron"
+      ],
       "torchRadius": 3
     },
     {
       "id": "empty_heaven",
       "name": "Empty Heaven",
       "atmosphere": "Plafonnya jauh. Plafonnya berbintang. Plafonnya salah.",
-      "wallPalette": ["#242448", "#0a0a28"],
-      "floorPalette": ["#1a1a38", "#080818"],
-      "enemyPool": ["hollow_marcher", "wyrm_spawn", "shadow_wraith", "mirror_thrall"],
+      "wallPalette": [
+        "#242448",
+        "#0a0a28"
+      ],
+      "floorPalette": [
+        "#1a1a38",
+        "#080818"
+      ],
+      "enemyPool": [
+        "wyrm_spawn",
+        "shadow_wraith",
+        "mirror_thrall",
+        "starved_seraph",
+        "banner_void"
+      ],
       "torchRadius": 3
     },
     {
       "id": "the_below",
       "name": "The Below",
       "atmosphere": "Tidak ada di bawah ini. Itulah masalahnya.",
-      "wallPalette": ["#0a0a14", "#040408"],
-      "floorPalette": ["#06060c", "#020204"],
-      "enemyPool": ["the_called", "hollow_marcher", "wyrm_spawn", "shadow_wraith"],
+      "wallPalette": [
+        "#0a0a14",
+        "#040408"
+      ],
+      "floorPalette": [
+        "#06060c",
+        "#020204"
+      ],
+      "enemyPool": [
+        "hollow_marcher",
+        "wyrm_spawn",
+        "shadow_wraith",
+        "null_weaver",
+        "starved_seraph"
+      ],
       "torchRadius": 3,
       "isFinalBiome": true
     }

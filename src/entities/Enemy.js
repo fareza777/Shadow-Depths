@@ -21,7 +21,7 @@ export class Enemy extends Entity {
    */
   constructor(def, behavior, pos, scale = 1) {
     const safeScale = Math.max(0.5, scale);
-    const atkFactor = 1 + (safeScale - 1) * 0.5;
+    const atkFactor = 1 + (safeScale - 1) * (safeScale >= 1.5 ? 0.62 : 0.5);
     const baseHp = def.stats.hp;
     const baseAtk = def.stats.atk;
     const scaledHp = Math.max(1, Math.round(baseHp * safeScale));
