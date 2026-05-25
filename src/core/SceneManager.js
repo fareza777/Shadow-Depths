@@ -51,8 +51,22 @@ export class SceneManager {
   }
 
   render(renderer) {
-    if (this._current && typeof this._current.render === 'function') {
-      this._current.render(renderer);
+    const scene = this._current;
+    if (!scene) return;
+    if (typeof scene.renderWorld === 'function' && typeof scene.renderUI === 'function') {
+      scene.renderWorld(renderer);
+      return;
+    }
+    if (typeof scene.render === 'function') {
+      scene.render(renderer);
+    }
+  }
+
+  /** Screen-space HUD + controls (no camera shake). */
+  renderUI(renderer) {
+    const scene = this._current;
+    if (scene && typeof scene.renderUI === 'function') {
+      scene.renderUI(renderer);
     }
   }
 

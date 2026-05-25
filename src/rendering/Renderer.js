@@ -131,13 +131,10 @@ export class Renderer {
     const ctx = this.ctx;
     fillRect(ctx, 0, 0, this.canvas.width, this.canvas.height, COLOR.bg);
 
-    // Apply shake to EVERYTHING. The world camera is applied separately by
-    // each world-space draw method.
+    // World pass — camera shake applies only to dungeon tiles / entities.
     ctx.save();
     ctx.translate(shake.x, shake.y);
     sceneManager.render(this);
-    // Particles spawn at world coords; clip them to the viewport so a
-    // floating damage number can't drift into HUD or control band.
     ctx.save();
     ctx.beginPath();
     ctx.rect(VIEWPORT_X, VIEWPORT_Y, VIEWPORT_W, VIEWPORT_H);
@@ -145,6 +142,21 @@ export class Renderer {
     this.particles.render(ctx, this._camera);
     ctx.restore();
     ctx.restore();
+
+    // UI pass — fixed screen space (HUD + D-pad never shaken or clipped).
+    this.beginScreenSpace();
+    sceneManager.renderUI(this);
+    this.endScreenSpace();
+  }
+
+  /** Reset transform for HUD / control-band draws. */
+  beginScreenSpace() {
+    this.ctx.save();
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+  }
+
+  endScreenSpace() {
+    this.ctx.restore();
   }
 
   // --- world primitives ----------------------------------------------

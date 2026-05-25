@@ -35,7 +35,7 @@ export class QuickUseBar {
       LAYOUT.quickY - 14,
       QuickUseBar._railWidth(LAYOUT) + pad * 2,
       LAYOUT.quickSlot + 18,
-      '#0a0810ee'
+      '#1a1624ee'
     );
 
     for (let qi = 0; qi < QUICK_SLOT_COUNT; qi++) {

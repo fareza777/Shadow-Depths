@@ -130,10 +130,10 @@ export class MobileControls {
   _renderBackground(r, LAYOUT) {
     const t = performance.now() / 1000;
     if (LAYOUT.band) {
-      r.drawRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h, '#0a0810');
+      r.drawRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h, '#1a1624');
       MobileControls._drawStoneRelief(r, LAYOUT.band, t);
-      r.drawRect(0, LAYOUT.band.y, CANVAS_WIDTH, 2, COLOR.goldDim);
-      r.drawRect(0, LAYOUT.band.y + 3, CANVAS_WIDTH, 1, '#5a4830');
+      r.drawRect(0, LAYOUT.band.y, CANVAS_WIDTH, 3, COLOR.gold);
+      r.drawRect(0, LAYOUT.band.y + 3, CANVAS_WIDTH, 1, '#8a7048');
       MobileControls._drawTorch(r, LAYOUT.dpadX + LAYOUT.dpadSize + 22, LAYOUT.band.y + 20, t, false);
       MobileControls._drawTorch(r, LAYOUT.actX - 32, LAYOUT.band.y + 20, t, true);
       MobileControls._drawSigil(r, CANVAS_WIDTH / 2, LAYOUT.band.y + CONTROL_HEIGHT - 22, t);
@@ -233,14 +233,14 @@ export class MobileControls {
       padX + padS / 2, padY + padS / 2, 8,
       padX + padS / 2, padY + padS / 2, padS / 2
     );
-    rg.addColorStop(0, '#1e1a28');
-    rg.addColorStop(1, '#0a0810');
+    rg.addColorStop(0, '#3a3048');
+    rg.addColorStop(1, '#1a1624');
     ctx.fillStyle = rg;
     ctx.fillRect(padX, padY, padS, padS);
     ctx.restore();
 
-    r.drawStrokedRect(padX, padY, padS, padS, COLOR.goldDim, 2);
-    r.drawStrokedRect(padX + 3, padY + 3, padS - 6, padS - 6, '#3a3340', 1);
+    r.drawStrokedRect(padX, padY, padS, padS, COLOR.gold, 3);
+    r.drawStrokedRect(padX + 3, padY + 3, padS - 6, padS - 6, '#6a6080', 1);
 
     const cx = LAYOUT.dpadX + LAYOUT.dpadSize / 2;
     const cy = LAYOUT.dpadY + LAYOUT.dpadSize / 2;
@@ -304,9 +304,9 @@ export class MobileControls {
 
       r.drawRect(ax - 1, ay - 1, LAYOUT.actW + 2, LAYOUT.actH + 2, '#0a0810');
       r.drawRect(ax, ay, LAYOUT.actW, LAYOUT.actH,
-        pressed ? COLOR.bgCardHi : (isMenu ? '#2a2228' : '#1a1622'));
+        pressed ? COLOR.bgCardHi : (isMenu ? '#3a2838' : '#2a2438'));
       r.drawStrokedRect(ax, ay, LAYOUT.actW, LAYOUT.actH,
-        pressed ? COLOR.gold : (isMenu ? COLOR.goldDim : '#4a4258'), pressed ? 2 : 1);
+        pressed ? COLOR.gold : COLOR.goldDim, pressed ? 2 : 1);
       if (!pressed) r.drawRect(ax + 2, ay + 2, LAYOUT.actW - 4, 2, '#252030');
       MobileControls._drawActionIcon(r, ACTION_LABELS[i].icon, ax + 18, ay + LAYOUT.actH / 2, pressed, isMenu);
       r.drawText(ACTION_LABELS[i].label, ax + 42, ay + LAYOUT.actH / 2, {

@@ -24,7 +24,7 @@ export class Minimap {
     const innerW = slot.w - pad * 2;
     const innerH = slot.h - pad * 2;
 
-    renderer.drawRect(slot.x, slot.y, slot.w, slot.h, '#0a0810');
+    renderer.drawRect(slot.x, slot.y, slot.w, slot.h, '#1a1624');
     this._drawMapTable(renderer, slot);
     renderer.drawStrokedRect(slot.x, slot.y, slot.w, slot.h, COLOR.goldDim, 1);
     renderer.drawRect(slot.x + 2, slot.y + 2, slot.w - 4, 2, COLOR.goldDim);

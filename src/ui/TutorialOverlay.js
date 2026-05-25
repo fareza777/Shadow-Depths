@@ -5,6 +5,7 @@
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, COLOR, FONT_DISPLAY, FONT_BODY, uiSize
 } from '../config/constants.js';
+import { VIEWPORT_BOTTOM_Y } from './controlBandLayout.js';
 
 const STEPS = [
   {
@@ -57,7 +58,7 @@ export class TutorialOverlay {
     const x = 16;
     const y = Math.floor((CANVAS_HEIGHT - panelH) / 2) - 40;
 
-    r.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 'rgba(0,0,0,0.62)');
+    r.drawRect(0, 0, CANVAS_WIDTH, VIEWPORT_BOTTOM_Y, 'rgba(0,0,0,0.55)');
     r.drawRect(x, y, panelW, panelH, COLOR.bgPanel);
     r.drawStrokedRect(x, y, panelW, panelH, COLOR.gold, 2);
     r.drawRect(x, y, panelW, 3, COLOR.gold);

@@ -141,12 +141,14 @@ export class GameScene {
   update(_dt) { /* turn-based; no per-frame logic */ }
 
   render(renderer) {
-    if (!this.floor || !this.player) return;
-    // Cache renderer for tap→tile conversion in handleInput.
-    if (!this.renderer) this.renderer = renderer;
-    // Camera follows player; world draws use this offset internally.
-    renderer.setCameraFor(this.player.renderX, this.player.renderY);
+    this.renderWorld(renderer);
+    this.renderUI(renderer);
+  }
 
+  renderWorld(renderer) {
+    if (!this.floor || !this.player) return;
+    if (!this.renderer) this.renderer = renderer;
+    renderer.setCameraFor(this.player.renderX, this.player.renderY);
     renderer.drawFloor(this.floor, this.player);
     renderer.drawGroundItems(this.floor);
     renderer.drawTelegraphs(this.floor, this.player);
@@ -154,29 +156,28 @@ export class GameScene {
     const dt = this._lastRenderTime ? (now - this._lastRenderTime) / 1000 : 0;
     this._lastRenderTime = now;
     renderer.drawEntities(this.floor, dt, this.player);
+  }
 
-    // HUD layers (drawn in screen space).
+  renderUI(renderer) {
+    if (!this.floor || !this.player) return;
+    if (!this.renderer) this.renderer = renderer;
+
     this.hud.render(renderer, {
       player: this.player, floor: this.floor,
       floorIndex: this.dungeon.currentIndex,
       totalFloors: this.dungeon.totalFloors,
       mode: this.mode
     });
-    // Control band — background first, then widgets (never paint over them after).
+
     if (this.controls) {
       this.controls.renderBackground(renderer);
       this.minimap.render(renderer, { floor: this.floor, player: this.player });
       if (this.quickUse) this.quickUse.render(renderer, this.player);
       this.controls.renderControls(renderer);
-    } else {
-      this.minimap.render(renderer, { floor: this.floor, player: this.player });
-      if (this.quickUse) this.quickUse.render(renderer, this.player);
     }
-    // Inventory modal on top of HUD.
+
     this.inventoryUI.render(renderer, this.player);
-    // Vigil character sheet sits above inventory and below skill picker.
     if (this.vigil) this.vigil.render(renderer, this.player);
-    // Skill picker on top of EVERYTHING — it blocks all other input.
     if (this.skillPicker) this.skillPicker.render(renderer);
     if (this.pause) this.pause.render(renderer);
     if (this.tutorial?.open) this.tutorial.render(renderer);
