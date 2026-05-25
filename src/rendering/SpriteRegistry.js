@@ -13,6 +13,7 @@
  */
 import { TILE_SIZE, COLOR } from '../config/constants.js';
 import { buildItemSprites, defaultTintForKey } from './itemSprites.js';
+import { buildDungeonTileSprites } from './dungeonTiles.js';
 
 const FALLBACK_COLOR = '#9a8a78';
 
@@ -321,74 +322,6 @@ const PROCEDURAL_SPRITES = {
     ]);
   },
 
-  // --- tiles --------------------------------------------------------
-  tile_wall: (ctx, x, y, s, opts) => {
-    const lit = opts?.wallLit || COLOR.wallLit;
-    const dim = opts?.wallDim || COLOR.wallDim;
-    const base = opts?.dim ? dim : lit;
-    const tx = opts?.tileX ?? 0;
-    const ty = opts?.tileY ?? 0;
-    fillRect(ctx, x, y, s, s, base);
-    // Top/left highlight, bottom/right shadow — carved stone blocks.
-    const hi = shadeColor(base, 22);
-    const lo = shadeColor(base, -28);
-    fillRect(ctx, x, y, s, 2, hi);
-    fillRect(ctx, x, y, 2, s, hi);
-    fillRect(ctx, x + s - 2, y, 2, s, lo);
-    fillRect(ctx, x, y + s - 2, s, 2, lo);
-    // Mortar grid (varies per tile for organic look).
-    const mortar = shadeColor(base, -12);
-    if ((tx + ty) % 2 === 0) {
-      fillRect(ctx, x + s * 0.45, y + 2, 1, s - 4, mortar);
-    } else {
-      fillRect(ctx, x + 2, y + s * 0.42, s - 4, 1, mortar);
-    }
-    if ((tx * 3 + ty) % 5 === 0) {
-      fillRect(ctx, x + s * 0.2, y + s * 0.25, 2, 2, shadeColor(base, -18));
-    }
-    strokeRect(ctx, x, y, s, s, '#00000055', 1);
-  },
-  tile_floor: (ctx, x, y, s, opts) => {
-    const lit = opts?.floorLit || COLOR.floorLit;
-    const dim = opts?.floorDim || COLOR.floorDim;
-    const base = opts?.dim ? dim : lit;
-    const tx = opts?.tileX ?? 0;
-    const ty = opts?.tileY ?? 0;
-    fillRect(ctx, x, y, s, s, base);
-    // Flagstone slabs — lighter center patch, darker seams.
-    const seam = shadeColor(base, -14);
-    const slab = shadeColor(base, 10);
-    if ((tx + ty) % 2 === 0) {
-      fillRect(ctx, x + 2, y + 2, s - 4, s - 4, slab);
-    }
-    fillRect(ctx, x, y + s - 1, s, 1, seam);
-    fillRect(ctx, x + s - 1, y, 1, s, seam);
-    if ((tx * 2 + ty) % 7 === 0) {
-      fillRect(ctx, x + s * 0.35, y + s * 0.4, 2, 2, shadeColor(base, -8));
-    }
-    if ((tx + ty * 2) % 11 === 0) {
-      fillRect(ctx, x + s * 0.15, y + s * 0.7, 3, 1, shadeColor(base, 6));
-    }
-  },
-  tile_stairs_down: (ctx, x, y, s) => {
-    fillRect(ctx, x, y, s, s, COLOR.floorLit);
-    for (let i = 0; i < 4; i++) {
-      const w = s * (0.8 - i * 0.15);
-      fillRect(ctx, x + (s - w) / 2, y + s * 0.2 + i * (s * 0.15), w, s * 0.08, COLOR.stairs);
-    }
-  },
-  tile_stairs_up: (ctx, x, y, s) => {
-    fillRect(ctx, x, y, s, s, COLOR.floorLit);
-    for (let i = 0; i < 4; i++) {
-      const w = s * (0.25 + i * 0.15);
-      fillRect(ctx, x + (s - w) / 2, y + s * 0.2 + i * (s * 0.15), w, s * 0.08, '#a09060');
-    }
-  },
-  tile_door: (ctx, x, y, s) => {
-    fillRect(ctx, x, y, s, s, COLOR.floorLit);
-    fillRect(ctx, x + s * 0.3, y + s * 0.1, s * 0.4, s * 0.8, COLOR.door);
-  },
-
   // --- ranged weapons ----------------------------------------------
   weapon_bow: (ctx, x, y, s) => {
     pixelDraw(ctx, x, y, s, [
@@ -603,7 +536,11 @@ const PROCEDURAL_SPRITES = {
 
 export class SpriteRegistry {
   constructor() {
-    this._sprites = { ...PROCEDURAL_SPRITES, ...buildItemSprites() };
+    this._sprites = {
+      ...PROCEDURAL_SPRITES,
+      ...buildItemSprites(),
+      ...buildDungeonTileSprites()
+    };
   }
 
   /**

@@ -171,34 +171,65 @@ export class Renderer {
       wallLit: def.wallPalette?.[0] || COLOR.wallLit,
       wallDim: def.wallPalette?.[1] || COLOR.wallDim,
       floorLit: def.floorPalette?.[0] || COLOR.floorLit,
-      floorDim: def.floorPalette?.[1] || COLOR.floorDim
+      floorDim: def.floorPalette?.[1] || COLOR.floorDim,
+      biomeId: def.biomeId || ''
     };
 
+    const isWalkSurface = (type) =>
+      type === TILE.FLOOR || type === TILE.DOOR
+      || type === TILE.STAIRS_DOWN || type === TILE.STAIRS_UP;
+
+    const adjFloorAt = (ax, ay) => {
+      const nt = floor.tileAt(ax, ay);
+      return !!(nt && isWalkSurface(nt.type));
+    };
+
+    const toPx = (g) => g * TILE_SIZE;
+
+    // Pass 1 — floors & walkable surfaces.
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
-        if (t.type === TILE.VOID) {
-          if (t.explored) {
-            fillRect(ctx, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, '#06050a');
-          }
-          continue;
-        }
         if (!t.explored) continue;
         const dim = !t.visible;
         const opts = { dim, tileX: x, tileY: y, ...tileOpts };
+        const tx = toPx(x);
+        const ty = toPx(y);
+        if (t.type === TILE.VOID) {
+          this.sprites.draw('tile_void', ctx, tx, ty, opts);
+          continue;
+        }
+        if (t.type === TILE.WALL) continue;
         switch (t.type) {
-          case TILE.WALL:        this.sprites.draw('tile_wall',        ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
-          case TILE.FLOOR:       this.sprites.draw('tile_floor',       ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
-          case TILE.STAIRS_DOWN: this.sprites.draw('tile_stairs_down', ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
-          case TILE.STAIRS_UP:   this.sprites.draw('tile_stairs_up',   ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
-          case TILE.DOOR:        this.sprites.draw('tile_door',        ctx, x * TILE_SIZE, y * TILE_SIZE, opts); break;
+          case TILE.FLOOR:       this.sprites.draw('tile_floor', ctx, tx, ty, opts); break;
+          case TILE.STAIRS_DOWN: this.sprites.draw('tile_stairs_down', ctx, tx, ty, opts); break;
+          case TILE.STAIRS_UP:   this.sprites.draw('tile_stairs_up', ctx, tx, ty, opts); break;
+          case TILE.DOOR:        this.sprites.draw('tile_door', ctx, tx, ty, opts); break;
           default: break;
         }
-        if (dim) {
-          ctx.globalAlpha = 0.55;
-          fillRect(ctx, x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE, '#000');
-          ctx.globalAlpha = 1;
-        }
+        if (dim) Renderer._applyFog(ctx, tx, ty);
+      }
+    }
+
+    // Pass 2 — walls on top with edge lighting toward open floor.
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const t = floor.tiles[y][x];
+        if (t.type !== TILE.WALL || !t.explored) continue;
+        const dim = !t.visible;
+        const opts = {
+          dim, tileX: x, tileY: y, ...tileOpts,
+          adjFloor: {
+            n: adjFloorAt(x, y - 1),
+            s: adjFloorAt(x, y + 1),
+            e: adjFloorAt(x + 1, y),
+            w: adjFloorAt(x - 1, y)
+          }
+        };
+        const tx = toPx(x);
+        const ty = toPx(y);
+        this.sprites.draw('tile_wall', ctx, tx, ty, opts);
+        if (dim) Renderer._applyFog(ctx, tx, ty);
       }
     }
     ctx.restore();
@@ -346,6 +377,16 @@ export class Renderer {
 
   drawRect(x, y, w, h, color) {
     fillRect(this.ctx, x, y, w, h, color);
+  }
+
+  /** Warm fog-of-war tint on explored-but-not-visible tiles. */
+  static _applyFog(ctx, tx, ty) {
+    ctx.save();
+    ctx.globalAlpha = 0.42;
+    fillRect(ctx, tx, ty, TILE_SIZE, TILE_SIZE, '#120e1c');
+    ctx.globalAlpha = 0.18;
+    fillRect(ctx, tx, ty, TILE_SIZE, TILE_SIZE, '#000');
+    ctx.restore();
   }
 
   drawStrokedRect(x, y, w, h, color, line = 1) {
