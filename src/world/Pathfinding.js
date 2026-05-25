@@ -69,7 +69,10 @@ export class Pathfinding {
     const passEnt = opts.canPassEntity;
     const ignoreWalls = !!opts.ignoreWalls;
 
-    while (open.size() > 0) {
+    const maxPops = w * floor.height * 4;
+    let pops = 0;
+    while (open.size() > 0 && pops < maxPops) {
+      pops += 1;
       const currentIdx = open.pop();
       if (currentIdx === goalIdx) {
         return Pathfinding._reconstruct(cameFrom, currentIdx, w);

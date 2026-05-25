@@ -27,6 +27,10 @@ export class VigilScreen {
   constructor({ bus }) {
     this.bus = bus;
     this.open = false;
+    bus.on('request:newRun', () => this.hide());
+    bus.on('scene:switched', ({ to }) => {
+      if (to !== 'game') this.hide();
+    });
   }
 
   show() { this.open = true; }

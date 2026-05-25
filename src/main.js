@@ -125,7 +125,18 @@ async function bootstrap() {
   const mobileControls = new MobileControls({ bus });
   const quickUseBar = new QuickUseBar({ bus });
   const pauseOverlay = new PauseOverlay({ bus });
-  const tutorial = new TutorialOverlay({ metaProgress });
+  const tutorial = new TutorialOverlay({ metaProgress, bus });
+
+  const resetRunModals = () => {
+    skillPicker.hide();
+    pauseOverlay.hide();
+    inventoryUI.hide();
+    vigilScreen.hide();
+  };
+  bus.on('request:newRun', resetRunModals);
+  bus.on('scene:switched', ({ to }) => {
+    if (to === 'title' || to === 'gameover' || to === 'victory') resetRunModals();
+  });
 
   // --- narrative -----------------------------------------------------
   const lore = new LoreDatabase(content.lore);

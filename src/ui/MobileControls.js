@@ -90,7 +90,6 @@ export class MobileControls {
   }
 
   handleTap(canvasX, canvasY, currentTime) {
-    if (this._currentScene !== 'game') return false;
     const LAYOUT = buildLayout();
     for (const b of DPAD_BUTTONS) {
       const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);

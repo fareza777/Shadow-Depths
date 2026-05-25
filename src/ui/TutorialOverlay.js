@@ -25,10 +25,17 @@ export class TutorialOverlay {
   /**
    * @param {{ metaProgress?: { setSetting: Function } }} deps
    */
-  constructor({ metaProgress } = {}) {
+  constructor({ metaProgress, bus } = {}) {
     this.meta = metaProgress || null;
+    this.bus = bus || null;
     this.open = false;
     this._step = 0;
+    if (this.bus) {
+      this.bus.on('request:newRun', () => this.hide());
+      this.bus.on('scene:switched', ({ to }) => {
+        if (to !== 'game') this.hide();
+      });
+    }
   }
 
   show(show = true) {
@@ -78,15 +85,16 @@ export class TutorialOverlay {
 
   handleInput(action) {
     if (!this.open) return false;
-    if (action.type === 'escape') {
+    if (action.type === 'escape' || action.type === 'menu') {
       this.hide();
       return true;
     }
-    if (action.type === 'move' || action.type === 'wait') {
+    if (action.type === 'move' || action.type === 'wait' || action.type === 'confirm'
+        || action.type === 'pickup' || action.type === 'inventory') {
       this._advance();
       return false;
     }
-    if (action.type === 'pointer' || action.type === 'tap' || action.type === 'confirm') {
+    if (action.type === 'pointer' || action.type === 'tap') {
       this._advance();
       return true;
     }

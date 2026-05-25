@@ -44,6 +44,10 @@ export class InventoryUI {
   constructor({ bus }) {
     this.bus = bus;
     this.open = false;
+    bus.on('request:newRun', () => this.hide());
+    bus.on('scene:switched', ({ to }) => {
+      if (to !== 'game') this.hide();
+    });
     this.activeTab = 'all';
     /** Selected slot INDEX in the filtered view (not absolute inventory index). */
     this.selectedFilteredIdx = 0;

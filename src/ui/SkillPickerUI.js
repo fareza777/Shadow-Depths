@@ -42,6 +42,10 @@ export class SkillPickerUI {
       this.pending += Math.max(1, levels || 1);
       if (!this.open) this._present();
     });
+    bus.on('scene:switched', ({ to }) => {
+      if (to !== 'game') this.hide();
+    });
+    bus.on('request:newRun', () => this.hide());
   }
 
   hide() {
@@ -50,7 +54,7 @@ export class SkillPickerUI {
     this.pending = 0;
   }
 
-  /** Touch / mouse tap. */
+  /** Touch / mouse tap — tap anywhere picks (card hit = that card). */
   handleCanvasTap(x, y) {
     if (!this.open) return false;
     for (let i = 0; i < this.choices.length; i++) {
@@ -61,10 +65,11 @@ export class SkillPickerUI {
         return true;
       }
     }
-    return true; // swallow all taps while modal is open
+    this._pickFirstOrHide();
+    return true;
   }
 
-  /** Keyboard input — number keys 1/2/3 + arrow + Enter. */
+  /** D-pad / keys while level-up — never soft-lock; always resolve a pick. */
   handleInput(action) {
     if (!this.open) return false;
     switch (action.type) {
@@ -72,18 +77,26 @@ export class SkillPickerUI {
         if (typeof action.index === 'number' &&
             action.index >= 0 && action.index < this.choices.length) {
           this._pick(this.choices[action.index]);
+        } else {
+          this._pickFirstOrHide();
         }
         return true;
       case 'move':
-        // could implement keyboard selection later — for now consume
-        return true;
+      case 'wait':
       case 'confirm':
       case 'pickup':
-        if (this.choices.length > 0) this._pick(this.choices[0]);
+      case 'menu':
+      case 'escape':
+        this._pickFirstOrHide();
         return true;
       default:
-        return true; // modal eats all other input
+        return true;
     }
+  }
+
+  _pickFirstOrHide() {
+    if (this.choices.length > 0) this._pick(this.choices[0]);
+    else this.hide();
   }
 
   _present() {

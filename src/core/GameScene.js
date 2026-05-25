@@ -99,6 +99,8 @@ export class GameScene {
 
   // --- scene contract -------------------------------------------------
   enter(_opts) {
+    this._resetBlockingUI();
+    this._processingTurn = false;
     const inv = new Inventory(this.balance.player.inventorySlots);
     const { floor, spawns } = this.dungeon.getOrGenerate(0);
     this.player = new Player(this.balance, spawns.player, inv);
@@ -116,6 +118,14 @@ export class GameScene {
     if (this.tutorial && this.state.state.meta?.settings?.showTutorial !== false) {
       this.tutorial.show(true);
     }
+  }
+
+  /** Close singleton modals so a new run cannot inherit a soft-lock. */
+  _resetBlockingUI() {
+    this.skillPicker?.hide();
+    this.pause?.hide();
+    this.inventoryUI?.hide();
+    this.vigil?.hide();
   }
 
   _emitFloorEntered(index, floor) {
@@ -190,16 +200,12 @@ export class GameScene {
     // Skill picker modal takes highest priority — it pops on level-up and
     // must resolve before any other input.
     if (this.skillPicker?.open) {
-      if (action.type === 'escape') {
-        this.skillPicker.hide();
-        return;
-      }
       if (action.type === 'pointer') {
         this.skillPicker.handleCanvasTap(action.x, action.y);
         return;
       }
-      if (action.type === 'tapTile') return;
       if (this.skillPicker.handleInput(action)) return;
+      return;
     }
 
     // Vigil (character) screen — full-canvas modal.
@@ -469,7 +475,8 @@ export class GameScene {
 
   // --- turn management -----------------------------------------------
   _endPlayerTurn(actionTaken) {
-    if (!actionTaken || this._processingTurn) return;
+    if (!actionTaken) return;
+    if (this._processingTurn) return;
     this._processingTurn = true;
     try {
       this._resolvePlayerTurn();

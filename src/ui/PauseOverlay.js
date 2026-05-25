@@ -12,6 +12,10 @@ export class PauseOverlay {
     this.bus = bus;
     this.open = false;
     this.selected = 0; // 0 resume, 1 quit
+    bus.on('request:newRun', () => this.hide());
+    bus.on('scene:switched', ({ to }) => {
+      if (to !== 'game') this.hide();
+    });
   }
 
   show() { this.open = true; this.selected = 0; }
