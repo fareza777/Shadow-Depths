@@ -117,6 +117,7 @@ export class GameScene {
 
     renderer.drawFloor(this.floor);
     renderer.drawGroundItems(this.floor);
+    renderer.drawTelegraphs(this.floor, this.player);
     const now = performance.now();
     const dt = this._lastRenderTime ? (now - this._lastRenderTime) / 1000 : 0;
     this._lastRenderTime = now;

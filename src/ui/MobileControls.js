@@ -8,11 +8,11 @@ import {
 import { getDpadLayout } from './controlBandLayout.js';
 
 const ACTION_LABELS = [
-  { key: 'menu',      label: 'MENU' },
-  { key: 'pickup',    label: 'PICK' },
-  { key: 'descend',   label: 'DOWN' },
-  { key: 'inventory', label: 'BAG'  },
-  { key: 'vigil',     label: 'HERO' }
+  { key: 'menu',      label: 'MENU', icon: 'III' },
+  { key: 'pickup',    label: 'PICK', icon: 'GEM' },
+  { key: 'descend',   label: 'DOWN', icon: 'STAIR' },
+  { key: 'inventory', label: 'BAG',  icon: 'BAG' },
+  { key: 'vigil',     label: 'HERO', icon: 'HELM' }
 ];
 
 const DPAD = getDpadLayout();
@@ -301,11 +301,46 @@ export class MobileControls {
       r.drawStrokedRect(ax, ay, LAYOUT.actW, LAYOUT.actH,
         pressed ? COLOR.gold : (isMenu ? COLOR.goldDim : '#4a4258'), pressed ? 2 : 1);
       if (!pressed) r.drawRect(ax + 2, ay + 2, LAYOUT.actW - 4, 2, '#252030');
-      r.drawText(ACTION_LABELS[i].label, ax + LAYOUT.actW / 2, ay + LAYOUT.actH / 2, {
-        size: uiSize(13), bold: true, align: 'center', baseline: 'middle',
+      MobileControls._drawActionIcon(r, ACTION_LABELS[i].icon, ax + 18, ay + LAYOUT.actH / 2, pressed, isMenu);
+      r.drawText(ACTION_LABELS[i].label, ax + 42, ay + LAYOUT.actH / 2, {
+        size: uiSize(11), bold: true, align: 'left', baseline: 'middle',
         color: pressed ? COLOR.goldHi : (isMenu ? COLOR.gold : COLOR.textPrimary)
       });
     }
+  }
+
+  static _drawActionIcon(r, icon, cx, cy, pressed, isMenu) {
+    const ctx = r.ctx;
+    const col = pressed ? COLOR.goldHi : (isMenu ? COLOR.gold : COLOR.textPrimary);
+    const dim = pressed ? '#5a4830' : '#4a4258';
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.fillStyle = col;
+    ctx.lineWidth = 2;
+    if (icon === 'III') {
+      for (let i = -1; i <= 1; i++) r.drawRect(cx - 7, cy + i * 5 - 1, 14, 2, col);
+    } else if (icon === 'GEM') {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 9); ctx.lineTo(cx + 8, cy); ctx.lineTo(cx, cy + 9); ctx.lineTo(cx - 8, cy);
+      ctx.closePath(); ctx.stroke();
+      r.drawRect(cx - 2, cy - 2, 4, 4, COLOR.goldDim);
+    } else if (icon === 'STAIR') {
+      for (let i = 0; i < 4; i++) {
+        r.drawRect(cx - 10 + i * 4, cy - 8 + i * 4, 14 - i * 2, 2, col);
+      }
+      r.drawRect(cx + 4, cy + 6, 4, 2, dim);
+    } else if (icon === 'BAG') {
+      r.drawRect(cx - 8, cy - 4, 16, 12, dim);
+      r.drawStrokedRect(cx - 8, cy - 4, 16, 12, col, 1);
+      r.drawRect(cx - 4, cy - 8, 8, 4, col);
+    } else if (icon === 'HELM') {
+      r.drawRect(cx - 8, cy - 6, 16, 9, dim);
+      r.drawRect(cx - 6, cy - 8, 12, 3, col);
+      r.drawRect(cx - 5, cy - 1, 10, 2, '#0a0810');
+      r.drawRect(cx - 4, cy, 2, 2, COLOR.textCrit);
+      r.drawRect(cx + 2, cy, 2, 2, COLOR.textCrit);
+    }
+    ctx.restore();
   }
 
   static get geometry() {
