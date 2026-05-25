@@ -4,8 +4,8 @@
  * Layout is tuned for 480×800 portrait canvas. World view fills middle of
  * screen; HUD lives in two strips: top (stats) and just-above-d-pad
  * (messages). Hotkey bar is OMITTED on mobile — players use the inventory
- * modal via the BAG button. Number-key hotkeys (1–9) still work on
- * desktop because KeyboardHandler maps them; HUD just doesn't draw the bar.
+ * modal via the BAG button. Quick-use bar (1–3) sits in the control band;
+ * keys 1–3 use potions, 4–9 map to bag slots 4–9 on desktop.
  */
 import {
   COLOR, CANVAS_WIDTH, HUD_HEIGHT, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize

@@ -47,7 +47,7 @@ export class MessageLog {
       }
     });
 
-    this.bus.on('entity:leveledUp', ({ entity, levels }) => {
+    this.bus.on('entity:leveledUp', ({ entity, levels: _levels }) => {
       if (entity.kind === 'player') this.push(`You feel stronger. (Lv ${entity.level})`, COLOR.textXP);
     });
 

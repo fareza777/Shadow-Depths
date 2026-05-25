@@ -43,7 +43,6 @@ function potion(ctx, x, y, s, color, large = false) {
   const glass = '#a8c8e8';
   const cork = '#6a4a28';
   const w = large ? 14 : 12;
-  const h = large ? 20 : 16;
   const ox = x + (s - w * (s / 32)) / 2;
   const oy = y + s * 0.12;
   const u = s / 32;

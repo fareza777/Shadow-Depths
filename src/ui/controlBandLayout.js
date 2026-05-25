@@ -2,7 +2,7 @@
  * Control-band geometry — D-pad (full size in band) + quick-use above the band edge.
  */
 import {
-  CANVAS_WIDTH, CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
+  CANVAS_HEIGHT, CONTROL_HEIGHT,
   SIDE_CONTROL_WIDTH, IS_LANDSCAPE
 } from '../config/constants.js';
 

@@ -15,10 +15,6 @@
 import { LOG } from '../config/constants.js';
 import { SynthSFX } from './SynthSFX.js';
 
-const EVENT_TO_SFX = {
-  'audio:play': null, // generic — payload.name
-};
-
 export class AudioManager {
   /**
    * @param {{ bus:object, metaProgress:object }} deps

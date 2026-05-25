@@ -51,7 +51,7 @@ export const IS_LANDSCAPE = ORIENTATION_MODE === 'landscape';
 
 // Canvas dims swap with orientation.
 export const CANVAS_WIDTH  = IS_LANDSCAPE ? 800 : 480;
-export const CANVAS_HEIGHT = IS_LANDSCAPE ? 480 : 800;
+export const CANVAS_HEIGHT = IS_LANDSCAPE ? 480 : 1040;
 export const RENDER_WIDTH  = CANVAS_WIDTH;
 export const RENDER_HEIGHT = CANVAS_HEIGHT;
 

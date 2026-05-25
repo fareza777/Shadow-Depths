@@ -320,7 +320,8 @@ export class TitleScreen {
       '  Space / .  wait',
       '  G / Enter  pickup',
       '  >  descend     I/Tab  inventory',
-      '  M  minimap     1-9    hotkeys'
+      '  M  minimap     1-3    quick potions',
+      '  4-9  bag slots'
     ];
     const lineSpacing = IS_LANDSCAPE ? 16 : 22;
     const lineSize    = IS_LANDSCAPE ? 11 : 12;
@@ -807,6 +808,10 @@ export class TitleScreen {
     // Side pillars / arch hints.
     renderer.drawRect(0, 0, 28, h, '#0c0a12');
     renderer.drawRect(w - 28, 0, 28, h, '#0c0a12');
+    for (let y = 22; y < h - 32; y += 42) {
+      renderer.drawRect(8, y, 20, 1, '#24182a');
+      renderer.drawRect(w - 28, y + 18, 20, 1, '#24182a');
+    }
     renderer.drawRect(0, 0, w, 3, COLOR.goldDim);
     renderer.drawRect(0, h - 4, w, 4, '#1a1420');
     // Soft vignette corners.
@@ -824,6 +829,76 @@ export class TitleScreen {
     rg.addColorStop(1, 'transparent');
     ctx.fillStyle = rg;
     ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+
+    this._renderDepthMural(renderer);
+  }
+
+  _renderDepthMural(renderer) {
+    const ctx = renderer.ctx;
+    const w = CANVAS_WIDTH;
+    const h = CANVAS_HEIGHT;
+    const baseY = IS_LANDSCAPE ? h - 138 : h - 316;
+    const cx = w / 2;
+
+    ctx.save();
+    ctx.globalAlpha = IS_LANDSCAPE ? 0.22 : 0.34;
+
+    // Distant ritual door.
+    const doorW = IS_LANDSCAPE ? 120 : 188;
+    const doorH = IS_LANDSCAPE ? 84 : 178;
+    const doorX = cx - doorW / 2;
+    const doorY = baseY + (IS_LANDSCAPE ? 18 : 28);
+    const doorGrad = ctx.createLinearGradient(0, doorY, 0, doorY + doorH);
+    doorGrad.addColorStop(0, '#2a2030');
+    doorGrad.addColorStop(0.55, '#100b18');
+    doorGrad.addColorStop(1, '#050408');
+    ctx.fillStyle = doorGrad;
+    ctx.fillRect(doorX, doorY + 22, doorW, doorH - 22);
+    ctx.beginPath();
+    ctx.arc(cx, doorY + 24, doorW / 2, Math.PI, 0);
+    ctx.lineTo(doorX + doorW, doorY + 36);
+    ctx.lineTo(doorX, doorY + 36);
+    ctx.closePath();
+    ctx.fill();
+    renderer.drawStrokedRect(doorX, doorY + 26, doorW, doorH - 26, '#4a3a50', 1);
+
+    // Glowing seal.
+    ctx.globalAlpha = IS_LANDSCAPE ? 0.28 : 0.42;
+    ctx.strokeStyle = COLOR.goldDim;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cx, doorY + doorH * 0.48, 28, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, doorY + doorH * 0.48 - 22);
+    ctx.lineTo(cx + 22, doorY + doorH * 0.48);
+    ctx.lineTo(cx, doorY + doorH * 0.48 + 22);
+    ctx.lineTo(cx - 22, doorY + doorH * 0.48);
+    ctx.closePath();
+    ctx.stroke();
+
+    // Descending steps toward the player.
+    ctx.globalAlpha = IS_LANDSCAPE ? 0.18 : 0.3;
+    for (let i = 0; i < 7; i++) {
+      const stepW = 52 + i * 34;
+      const stepY = doorY + doorH - 12 + i * 18;
+      renderer.drawRect(cx - stepW / 2, stepY, stepW, 4, i % 2 ? '#1a1220' : '#2a2030');
+      renderer.drawRect(cx - stepW / 2, stepY + 4, stepW, 1, '#5a4830');
+    }
+
+    // Foreground candle sparks.
+    ctx.globalAlpha = 0.44;
+    const t = this._t;
+    for (let i = 0; i < 9; i++) {
+      const sx = 62 + i * 44;
+      const sy = h - 86 - (i % 3) * 11;
+      const flicker = Math.sin(t * 7 + i) * 2;
+      renderer.drawRect(sx - 1, sy + 8, 2, 18, '#4a3424');
+      renderer.drawRect(sx - 3, sy + 5, 6, 4, '#2a1a14');
+      renderer.drawRect(sx - 1, sy + flicker, 2, 8, COLOR.goldHi);
+      renderer.drawRect(sx, sy + 5 + flicker, 1, 4, '#e85a4a');
+    }
     ctx.restore();
   }
 

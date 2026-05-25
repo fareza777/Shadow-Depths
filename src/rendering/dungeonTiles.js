@@ -178,6 +178,28 @@ export function drawVoidTile(ctx, x, y, s, opts = {}) {
 
   if (!seen) {
     fillRect(ctx, x, y, s, s, '#020106');
+    ctx.save();
+    ctx.globalAlpha = 0.34;
+    const g = ctx.createLinearGradient(x, y, x, y + s);
+    g.addColorStop(0, '#0a0710');
+    g.addColorStop(0.5, '#030208');
+    g.addColorStop(1, '#000000');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, s, s);
+    ctx.restore();
+    if ((h >> 3) % 6 === 0) {
+      fillRect(ctx, x + 3, y + ((h >> 5) % 18) + 6, s - 6, 1, '#ffffff04');
+    }
+    if ((h >> 7) % 10 === 0) {
+      fillRect(ctx, x + ((h >> 2) % 20) + 5, y + ((h >> 6) % 20) + 5, 1, 1, '#d4be7a12');
+    }
+    if ((h >> 11) % 17 === 0) {
+      p(ctx, x, y, s, [
+        [6, 24, 7, 4, '#06040a'],
+        [8, 22, 3, 2, '#0c0812'],
+        [21, 25, 5, 3, '#050309']
+      ]);
+    }
     fillRect(ctx, x, y, s, 1, '#000000');
     return;
   }
@@ -225,7 +247,6 @@ export function drawVoidTile(ctx, x, y, s, opts = {}) {
 }
 
 export function drawStairsDownTile(ctx, x, y, s, opts = {}) {
-  const floor = opts.floorLit || '#2e2734';
   drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
   const gold = opts.dim ? shade('#d4be7a', -40) : '#d4be7a';
   const u = s / 32;

@@ -26,7 +26,6 @@ import { findQuickUseSlots } from '../items/quickUse.js';
 import { Dungeon } from '../world/Dungeon.js';
 import { Pathfinding } from '../world/Pathfinding.js';
 import { CombatSystem } from '../combat/CombatSystem.js';
-import { LightingSystem } from '../rendering/LightingSystem.js';
 import { RNG } from './RNG.js';
 
 import { ChaseBehavior } from '../entities/behaviors/ChaseBehavior.js';

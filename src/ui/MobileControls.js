@@ -3,7 +3,7 @@
  */
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, HUD_HEIGHT, CONTROL_HEIGHT,
-  SIDE_CONTROL_WIDTH, IS_LANDSCAPE, COLOR, uiSize
+  IS_LANDSCAPE, COLOR, FONT_DISPLAY, uiSize
 } from '../config/constants.js';
 import { getDpadLayout } from './controlBandLayout.js';
 
@@ -121,15 +121,98 @@ export class MobileControls {
   }
 
   _renderBackground(r) {
+    const t = performance.now() / 1000;
     if (LAYOUT.band) {
       r.drawRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h, '#0a0810');
+      MobileControls._drawStoneRelief(r, LAYOUT.band, t);
       r.drawRect(0, LAYOUT.band.y, CANVAS_WIDTH, 2, COLOR.goldDim);
+      r.drawRect(0, LAYOUT.band.y + 3, CANVAS_WIDTH, 1, '#5a4830');
+      MobileControls._drawTorch(r, LAYOUT.dpadX + LAYOUT.dpadSize + 22, LAYOUT.band.y + 20, t, false);
+      MobileControls._drawTorch(r, LAYOUT.actX - 32, LAYOUT.band.y + 20, t, true);
+      MobileControls._drawSigil(r, CANVAS_WIDTH / 2, LAYOUT.band.y + CONTROL_HEIGHT - 22, t);
     }
     for (const s of LAYOUT.strips) {
       r.drawRect(s.x, s.y, s.w, s.h, '#0a0810');
+      MobileControls._drawStoneRelief(r, s, t);
       if (s.x === 0) r.drawRect(s.x + s.w - 1, s.y, 1, s.h, COLOR.goldDim);
       else r.drawRect(s.x, s.y, 1, s.h, COLOR.goldDim);
     }
+  }
+
+  static _drawStoneRelief(r, rect, time) {
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.globalAlpha = 0.72;
+    for (let y = rect.y + 12; y < rect.y + rect.h; y += 28) {
+      const offset = ((Math.floor((y - rect.y) / 28) % 2) * 18);
+      for (let x = rect.x - offset; x < rect.x + rect.w; x += 54) {
+        r.drawRect(x, y, 50, 1, '#19131f');
+        r.drawRect(x + 1, y + 1, 49, 1, '#14101a');
+      }
+    }
+    ctx.globalAlpha = 0.34;
+    for (let i = 0; i < 18; i++) {
+      const x = rect.x + ((i * 37 + rect.w * 3) % Math.max(1, rect.w));
+      const y = rect.y + 10 + ((i * 23) % Math.max(1, rect.h - 20));
+      r.drawRect(x, y, 2, 2, i % 3 === 0 ? COLOR.goldDim : '#2a2230');
+    }
+    ctx.globalAlpha = 0.12 + Math.sin(time * 1.4) * 0.03;
+    const g = ctx.createRadialGradient(
+      rect.x + rect.w / 2, rect.y + rect.h * 0.52, 8,
+      rect.x + rect.w / 2, rect.y + rect.h * 0.52, rect.w * 0.58
+    );
+    g.addColorStop(0, COLOR.gold);
+    g.addColorStop(1, 'transparent');
+    ctx.fillStyle = g;
+    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    ctx.restore();
+  }
+
+  static _drawTorch(r, x, y, time, flip) {
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    const flicker = Math.sin(time * 8 + x * 0.03) * 2;
+    r.drawRect(x - 2, y + 18, 4, 38, '#3a2418');
+    r.drawRect(x - 5, y + 14, 10, 5, '#6a4428');
+    ctx.globalAlpha = 0.18;
+    const glow = ctx.createRadialGradient(x, y + 12, 3, x, y + 12, 36 + flicker);
+    glow.addColorStop(0, COLOR.goldHi);
+    glow.addColorStop(1, 'transparent');
+    ctx.fillStyle = glow;
+    ctx.fillRect(x - 42, y - 30, 84, 84);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = '#f0d890';
+    ctx.beginPath();
+    ctx.moveTo(x, y + 2 + flicker);
+    ctx.lineTo(x + (flip ? -8 : 8), y + 14);
+    ctx.lineTo(x, y + 26);
+    ctx.lineTo(x + (flip ? 6 : -6), y + 15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#e85a4a';
+    ctx.fillRect(x - 2, y + 13, 4, 8);
+    ctx.restore();
+  }
+
+  static _drawSigil(r, cx, cy, time) {
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.globalAlpha = 0.42 + Math.sin(time * 1.8) * 0.08;
+    ctx.strokeStyle = COLOR.goldDim;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 13);
+    ctx.lineTo(cx + 13, cy);
+    ctx.lineTo(cx, cy + 13);
+    ctx.lineTo(cx - 13, cy);
+    ctx.closePath();
+    ctx.stroke();
+    r.drawText('V', cx, cy - 8, {
+      size: uiSize(11), bold: true, align: 'center',
+      family: FONT_DISPLAY, color: COLOR.goldDim
+    });
+    ctx.restore();
   }
 
   _renderDpad(r) {

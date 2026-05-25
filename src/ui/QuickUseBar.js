@@ -2,7 +2,7 @@
  * QuickUseBar — tap-to-use potions / consumables (row above the D-pad).
  */
 import {
-  COLOR, CANVAS_WIDTH, FONT_DISPLAY, FONT_MONO, uiSize
+  COLOR, FONT_DISPLAY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { findQuickUseSlots } from '../items/quickUse.js';
 import { getQuickUseLayout, QUICK_SLOT_COUNT } from './controlBandLayout.js';

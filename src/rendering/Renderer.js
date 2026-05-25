@@ -412,7 +412,8 @@ export class Renderer {
 
   // --- viewport scaling ----------------------------------------------
   _fitToViewport() {
-    const vw = window.innerWidth, vh = window.innerHeight;
+    const vw = window.visualViewport?.width || window.innerWidth;
+    const vh = window.visualViewport?.height || window.innerHeight;
     const scale = Math.min(vw / CANVAS_WIDTH, vh / CANVAS_HEIGHT);
     this.canvas.style.width  = `${Math.floor(CANVAS_WIDTH * scale)}px`;
     this.canvas.style.height = `${Math.floor(CANVAS_HEIGHT * scale)}px`;

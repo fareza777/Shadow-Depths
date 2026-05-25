@@ -11,7 +11,7 @@
  * data edit + (optionally) a new entry in PROCEDURAL_SPRITES if you want it
  * to look special. Unknown keys fall back to a magenta box — visible bug.
  */
-import { TILE_SIZE, COLOR } from '../config/constants.js';
+import { TILE_SIZE } from '../config/constants.js';
 import { buildItemSprites, defaultTintForKey } from './itemSprites.js';
 import { buildDungeonTileSprites } from './dungeonTiles.js';
 import {
@@ -559,14 +559,3 @@ export function strokeRect(ctx, x, y, w, h, color, line = 1) {
   ctx.lineWidth = line;
   ctx.strokeRect((x | 0) + 0.5, (y | 0) + 0.5, Math.ceil(w) - 1, Math.ceil(h) - 1);
 }
-
-/** Lighten (+) or darken (-) a #rrggbb hex color. */
-function shadeColor(hex, amount) {
-  const h = hex.replace('#', '');
-  if (h.length < 6) return hex;
-  const r = Math.max(0, Math.min(255, parseInt(h.slice(0, 2), 16) + amount));
-  const g = Math.max(0, Math.min(255, parseInt(h.slice(2, 4), 16) + amount));
-  const b = Math.max(0, Math.min(255, parseInt(h.slice(4, 6), 16) + amount));
-  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-}
-

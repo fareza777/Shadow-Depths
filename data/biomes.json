@@ -166,7 +166,7 @@
       "id": "empty_heaven",
       "name": "Empty Heaven",
       "atmosphere": "Plafonnya jauh. Plafonnya berbintang. Plafonnya salah.",
-      "wallPalette": ["#2424488", "#0a0a28"],
+      "wallPalette": ["#242448", "#0a0a28"],
       "floorPalette": ["#1a1a38", "#080818"],
       "enemyPool": ["hollow_marcher", "wyrm_spawn", "shadow_wraith", "mirror_thrall"],
       "torchRadius": 3
