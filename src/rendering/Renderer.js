@@ -370,7 +370,6 @@ export class Renderer {
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
       this._drawEntityGrounding(ctx, e, px, py);
       this.sprites.draw(key, ctx, px, py);
-      this._drawEntityRim(ctx, e, px, py);
 
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {
         const pct = e.stats.hp / e.stats.hpMax;
@@ -409,16 +408,6 @@ export class Renderer {
     ctx.beginPath();
     ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE * 0.82, w / 2, h / 2, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
-  }
-
-  _drawEntityRim(ctx, entity, px, py) {
-    if (entity.kind !== 'player') return;
-    ctx.save();
-    ctx.globalAlpha = 0.2;
-    ctx.strokeStyle = COLOR.gold;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(px + 5.5, py + 4.5, TILE_SIZE - 11, TILE_SIZE - 9);
     ctx.restore();
   }
 

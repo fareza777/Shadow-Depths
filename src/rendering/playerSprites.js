@@ -23,88 +23,100 @@ export const HERO_WOOD     = '#6a4a28';
 export const HERO_STRING   = '#c8b890';
 export const HERO_MACE     = '#8a8a94';
 export const HERO_MACE_HI  = '#b8b8c8';
+export const HERO_MAGIC    = '#9a60ff';
 
 /** Body without weapon — 32×32 design grid. */
 export const HERO_BODY = [
-  [10, 14, 12, 2, HERO_CAPE],
-  [9, 16, 14, 8, HERO_CAPE],
-  [8, 24, 16, 4, HERO_CAPE],
-  [10, 16, 12, 1, HERO_CAPE_HI],
-  [11, 3, 10, 6, HERO_HELMET],
-  [10, 8, 12, 2, HERO_HELM_HI],
-  [11, 10, 10, 3, HERO_VISOR],
+  [9, 12, 14, 3, '#54121d'],
+  [8, 15, 16, 8, HERO_CAPE],
+  [7, 23, 18, 5, '#4a1018'],
+  [9, 15, 14, 1, HERO_CAPE_HI],
+  [12, 2, 8, 2, HERO_HELM_HI],
+  [10, 4, 12, 6, HERO_HELMET],
+  [9, 8, 14, 2, HERO_HELM_HI],
+  [10, 10, 12, 4, HERO_VISOR],
   [13, 11, 2, 2, HERO_EYE],
   [17, 11, 2, 2, HERO_EYE],
-  [14, 13, 4, 1, HERO_HELMET],
-  [7, 14, 4, 4, HERO_PAULDRON],
-  [21, 14, 4, 4, HERO_PAULDRON],
-  [11, 14, 10, 1, HERO_ARMOR_HI],
-  [10, 15, 12, 8, HERO_ARMOR],
-  [11, 15, 10, 1, HERO_ARMOR_HI],
-  [15, 17, 2, 4, HERO_EMBLEM],
-  [11, 22, 10, 1, HERO_BELT],
-  [11, 23, 4, 6, HERO_LEG],
-  [17, 23, 4, 6, HERO_LEG],
-  [11, 23, 4, 1, HERO_BELT],
-  [17, 23, 4, 1, HERO_BELT],
-  [10, 29, 6, 2, HERO_BOOT],
-  [16, 29, 6, 2, HERO_BOOT]
+  [14, 14, 4, 1, HERO_HELMET],
+  [6, 14, 5, 5, HERO_PAULDRON],
+  [21, 14, 5, 5, HERO_PAULDRON],
+  [7, 15, 3, 1, '#b09050'],
+  [22, 15, 3, 1, '#b09050'],
+  [10, 15, 12, 1, HERO_ARMOR_HI],
+  [9, 16, 14, 8, HERO_ARMOR],
+  [11, 17, 10, 1, HERO_ARMOR_HI],
+  [15, 18, 2, 4, HERO_EMBLEM],
+  [14, 19, 4, 1, HERO_EMBLEM],
+  [10, 23, 12, 2, HERO_BELT],
+  [11, 25, 4, 5, HERO_LEG],
+  [17, 25, 4, 5, HERO_LEG],
+  [10, 30, 6, 2, HERO_BOOT],
+  [16, 30, 6, 2, HERO_BOOT]
 ];
 
 const WEAPON_LAYERS = {
   sword: [
-    [24, 7, 2, 18, HERO_BLADE],
-    [24, 7, 1, 18, HERO_BLADE_HI],
-    [22, 24, 6, 2, HERO_GUARD],
-    [25, 26, 1, 3, HERO_HILT],
-    [24, 29, 3, 1, HERO_HILT]
+    [24, 5, 3, 20, HERO_BLADE],
+    [24, 5, 1, 20, HERO_BLADE_HI],
+    [23, 4, 2, 2, HERO_BLADE_HI],
+    [21, 24, 8, 2, HERO_GUARD],
+    [25, 26, 2, 4, HERO_HILT],
+    [24, 30, 4, 1, '#2a180c']
   ],
   bow: [
-    [6, 10, 2, 14, HERO_WOOD],
-    [5, 12, 1, 10, HERO_STRING],
-    [7, 11, 1, 12, '#4a3020'],
-    [8, 9, 2, 2, HERO_WOOD],
-    [8, 22, 2, 2, HERO_WOOD],
-    [9, 14, 1, 6, HERO_STRING],
-    [23, 12, 2, 1, '#8a7060']
+    [5, 7, 3, 19, HERO_WOOD],
+    [4, 10, 1, 13, HERO_STRING],
+    [7, 8, 2, 18, '#4a3020'],
+    [8, 6, 3, 3, HERO_WOOD],
+    [8, 24, 3, 3, HERO_WOOD],
+    [10, 13, 13, 1, '#d8c890'],
+    [22, 12, 2, 3, HERO_BLADE_HI],
+    [18, 11, 2, 5, '#8a7060']
   ],
   crossbow: [
-    [20, 16, 10, 2, HERO_WOOD],
-    [19, 17, 12, 1, '#3a2818'],
-    [28, 15, 2, 4, HERO_MACE],
-    [21, 14, 8, 1, HERO_MACE_HI],
-    [24, 18, 1, 3, HERO_HILT]
+    [18, 15, 12, 3, HERO_WOOD],
+    [17, 18, 14, 2, '#3a2818'],
+    [28, 13, 3, 6, HERO_MACE],
+    [20, 12, 10, 2, HERO_MACE_HI],
+    [22, 16, 9, 1, '#d8c890'],
+    [24, 20, 2, 4, HERO_HILT]
   ],
   mace: [
-    [22, 6, 6, 6, HERO_MACE],
-    [23, 7, 4, 4, HERO_MACE_HI],
-    [24, 12, 2, 14, HERO_HILT],
-    [23, 24, 4, 2, HERO_GUARD]
+    [21, 4, 8, 8, HERO_MACE],
+    [22, 5, 6, 6, HERO_MACE_HI],
+    [20, 7, 10, 2, '#606070'],
+    [24, 12, 3, 15, HERO_HILT],
+    [22, 25, 7, 2, HERO_GUARD]
   ],
   dagger: [
-    [23, 14, 2, 10, HERO_BLADE],
-    [23, 14, 1, 10, HERO_BLADE_HI],
-    [22, 23, 4, 1, HERO_GUARD],
-    [24, 24, 2, 2, HERO_HILT]
+    [23, 13, 3, 11, HERO_BLADE],
+    [23, 13, 1, 11, HERO_BLADE_HI],
+    [22, 12, 2, 2, HERO_BLADE_HI],
+    [21, 23, 6, 1, HERO_GUARD],
+    [24, 24, 2, 3, HERO_HILT]
   ],
   scythe: [
-    [4, 6, 3, 3, HERO_MACE],
-    [5, 4, 8, 4, HERO_BLADE],
-    [6, 4, 6, 1, HERO_BLADE_HI],
-    [7, 8, 2, 16, HERO_HILT],
-    [8, 22, 2, 4, HERO_WOOD]
+    [5, 4, 3, 23, HERO_HILT],
+    [6, 3, 10, 3, HERO_BLADE],
+    [10, 5, 6, 3, HERO_BLADE],
+    [13, 7, 3, 4, HERO_BLADE],
+    [7, 3, 7, 1, HERO_BLADE_HI],
+    [6, 24, 4, 4, HERO_WOOD],
+    [11, 7, 2, 2, HERO_MAGIC]
   ],
   axe: [
-    [22, 8, 5, 5, HERO_MACE],
-    [23, 9, 3, 3, HERO_MACE_HI],
-    [24, 13, 2, 12, HERO_HILT],
-    [23, 24, 4, 2, HERO_GUARD]
+    [24, 10, 3, 16, HERO_HILT],
+    [20, 6, 8, 8, HERO_MACE],
+    [21, 7, 6, 6, HERO_MACE_HI],
+    [28, 9, 3, 5, '#707080'],
+    [22, 24, 8, 2, HERO_GUARD]
   ],
   pick: [
-    [21, 5, 4, 4, HERO_MACE],
-    [22, 6, 2, 2, HERO_MACE_HI],
-    [23, 9, 2, 18, HERO_HILT],
-    [22, 6, 2, 3, HERO_BLADE]
+    [23, 8, 3, 19, HERO_HILT],
+    [18, 5, 12, 3, HERO_MACE],
+    [19, 5, 5, 1, HERO_MACE_HI],
+    [28, 6, 2, 4, HERO_BLADE],
+    [21, 24, 7, 2, HERO_GUARD]
   ]
 };
 
@@ -135,10 +147,31 @@ export function buildPlayerSprites(pixelDraw) {
   for (const [variant, layers] of Object.entries(WEAPON_LAYERS)) {
     const key = variant === 'sword' ? 'player_sword' : `player_${variant}`;
     entries[key] = (ctx, x, y, s) => {
+      drawHeroAura(ctx, x, y, s, variant);
       pixelDraw(ctx, x, y, s, HERO_BODY);
       pixelDraw(ctx, x, y, s, layers);
     };
   }
   entries.player_idle = entries.player_sword;
   return entries;
+}
+
+function drawHeroAura(ctx, x, y, s, variant) {
+  const colors = {
+    bow: '#6ad07c',
+    crossbow: '#7aa6e8',
+    mace: '#d4be7a',
+    dagger: '#e8e0d0',
+    scythe: '#c884e8',
+    axe: '#e85a4a',
+    pick: '#9a8060',
+    sword: '#d4be7a'
+  };
+  ctx.save();
+  ctx.globalAlpha = 0.22;
+  ctx.fillStyle = colors[variant] || colors.sword;
+  ctx.beginPath();
+  ctx.ellipse(x + s / 2, y + s * 0.86, s * 0.34, s * 0.11, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
