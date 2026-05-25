@@ -18,6 +18,7 @@ import {
   COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
+import { Layout } from '../config/layoutMetrics.js';
 
 const HERO_NAME = 'FAJAR';
 const HERO_TITLE = 'THE LAST VIGIL';
@@ -56,6 +57,10 @@ export class VigilScreen {
    */
   handleCanvasTap(canvasX, canvasY, player) {
     if (!this.open) return false;
+    if (this._insideHeaderBack(canvasX, canvasY)) {
+      this.hide();
+      return true;
+    }
     // Equipment card UNEQUIP buttons.
     const cards = this._equipmentCards(player);
     for (const c of cards) {
@@ -81,11 +86,17 @@ export class VigilScreen {
   _closeRect() {
     const w = IS_LANDSCAPE ? 140 : 180;
     const h = IS_LANDSCAPE ? 40  : 48;
+    const screenH = Layout.canvasH || CANVAS_HEIGHT;
     return {
       x: (CANVAS_WIDTH - w) / 2,
-      y: CANVAS_HEIGHT - h - 12,
+      y: screenH - h - 12,
       w, h
     };
+  }
+
+  _insideHeaderBack(x, y) {
+    const h = IS_LANDSCAPE ? 28 : 30;
+    return x >= 0 && x <= 166 && y >= 0 && y <= h;
   }
 
   /**
@@ -101,8 +112,8 @@ export class VigilScreen {
       { slot: 'necklace', label: 'NECKLACE', item: player.necklace },
       { slot: 'ring',   label: 'RING',    item: player.ring }
     ];
-    const cardH = IS_LANDSCAPE ? 52 : 60;
-    const cardGap = 6;
+    const cardH = IS_LANDSCAPE ? 52 : 54;
+    const cardGap = IS_LANDSCAPE ? 6 : 5;
     const cardW = CANVAS_WIDTH - 32;
     const cardX = 16;
     const cardsBaseY = this._cardsBaseY();
@@ -125,7 +136,7 @@ export class VigilScreen {
   /** Top Y of the first equipment card. Depends on what's above. */
   _cardsBaseY() {
     // Portrait: stat block ends ~y434; equipment starts below with gap.
-    return IS_LANDSCAPE ? 210 : 468;
+    return IS_LANDSCAPE ? 210 : 462;
   }
 
   // --- render --------------------------------------------------------
@@ -133,7 +144,7 @@ export class VigilScreen {
     if (!this.open) return;
 
     // Backdrop (warm dark, not pure black per user feedback).
-    renderer.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, COLOR.bg);
+    renderer.drawRect(0, 0, CANVAS_WIDTH, Layout.canvasH || CANVAS_HEIGHT, COLOR.bg);
 
     if (IS_LANDSCAPE) this._renderLandscape(renderer, player);
     else              this._renderPortrait(renderer, player);

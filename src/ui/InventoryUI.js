@@ -15,6 +15,7 @@ import {
   COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
+import { Layout } from '../config/layoutMetrics.js';
 
 const TABS = [
   { id: 'all',     label: 'ALL'    },
@@ -37,7 +38,7 @@ const DETAIL_H = IS_LANDSCAPE ? 110 : 140;
 const BTN_H    = IS_LANDSCAPE ? 36 : 44;
 const BTN_GAP  = 8;
 const BTN_PAD  = 12;
-const BOTTOM_RESERVED = IS_LANDSCAPE ? 12 : 96;
+const BOTTOM_RESERVED = IS_LANDSCAPE ? 12 : 16;
 
 export class InventoryUI {
   /** @param {{ bus: object }} deps */
@@ -142,6 +143,10 @@ export class InventoryUI {
 
   handleCanvasTap(canvasX, canvasY, player) {
     if (!this.open) return false;
+    if (this._insideHeaderBack(canvasX, canvasY)) {
+      this.hide();
+      return true;
+    }
 
     // 1. Tabs.
     const tabIdx = this._tabHitTest(canvasX, canvasY);
@@ -224,7 +229,8 @@ export class InventoryUI {
     const count = 3;
     const totalW = CANVAS_WIDTH - BTN_PAD * 2;
     const w = (totalW - BTN_GAP * (count - 1)) / count;
-    const y = CANVAS_HEIGHT - BTN_H - BTN_PAD - BOTTOM_RESERVED;
+    const screenH = Layout.canvasH || CANVAS_HEIGHT;
+    const y = screenH - BTN_H - BTN_PAD - BOTTOM_RESERVED;
     return [
       { x: BTN_PAD,                        y, w, h: BTN_H, key: 'use' },
       { x: BTN_PAD + (w + BTN_GAP),        y, w, h: BTN_H, key: 'drop' },
@@ -232,16 +238,22 @@ export class InventoryUI {
     ];
   }
 
+  _insideHeaderBack(x, y) {
+    const h = IS_LANDSCAPE ? 30 : 38;
+    return x >= 0 && x <= 154 && y >= 0 && y <= h;
+  }
+
   // --- render --------------------------------------------------------
   render(renderer, player) {
     if (!this.open) return;
 
     const ctx = renderer.ctx;
-    const g = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
+    const screenH = Layout.canvasH || CANVAS_HEIGHT;
+    const g = ctx.createLinearGradient(0, 0, 0, screenH);
     g.addColorStop(0, '#1e1828');
     g.addColorStop(1, '#0e0c14');
     ctx.fillStyle = g;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.fillRect(0, 0, CANVAS_WIDTH, screenH);
     renderer.drawRect(0, 0, CANVAS_WIDTH, 2, COLOR.goldDim);
 
     this._renderHeader(renderer, player);
