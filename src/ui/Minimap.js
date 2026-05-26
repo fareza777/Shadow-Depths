@@ -84,7 +84,14 @@ export class Minimap {
       const t = floor.tileAt(e.x, e.y);
       if (!t || !t.visible) continue;
       if (!this._insideBounds(e.x, e.y, bounds)) continue;
-      renderer.drawRect(x + (e.x - bounds.x0) * px, y + (e.y - bounds.y0) * px, px, px, COLOR.enemy);
+      const ex = x + (e.x - bounds.x0) * px;
+      const ey = y + (e.y - bounds.y0) * px;
+      const boss = e.defId?.startsWith('boss_');
+      const subboss = e.defId?.startsWith('subboss_');
+      renderer.drawRect(ex, ey, px, px, boss ? COLOR.goldHi : subboss ? '#c080ff' : COLOR.enemy);
+      if (boss || subboss) {
+        renderer.drawStrokedRect(ex - 2, ey - 2, px + 4, px + 4, boss ? COLOR.gold : '#c080ff', 1);
+      }
     }
 
     if (player) {

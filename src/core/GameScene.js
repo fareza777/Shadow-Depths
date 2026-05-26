@@ -91,10 +91,12 @@ export class GameScene {
     this.player = null;
     this.floor = null;
     this._floorBanner = null;
+    this._lootToast = null;
     this._processingTurn = false;
     this._busHandlers = [];
     this._wireCommands();
     this._wireDeathCleanup();
+    this._wirePresentationEvents();
   }
 
   exit() {
@@ -179,8 +181,38 @@ export class GameScene {
     this.bus.emit('floor:entered', {
       index,
       name: def.name,
+      biomeId: def.biomeId || null,
       specialEnemyId: def.specialEnemyId || null,
       floorNumber: index + 1
+    });
+  }
+
+  _wirePresentationEvents() {
+    this._listen('item:pickedUp', ({ item }) => {
+      if (!item) return;
+      this._lootToast = {
+        item,
+        startedAt: performance.now(),
+        duration: 2100
+      };
+    });
+    this._listen('entity:died', ({ entity }) => {
+      const id = entity?.defId || '';
+      if (!id.startsWith('boss_') && !id.startsWith('subboss_')) return;
+      const boss = id.startsWith('boss_');
+      this._floorBanner = {
+        startedAt: performance.now(),
+        duration: boss ? 3400 : 2600,
+        title: boss ? 'BOSS VANQUISHED' : 'GUARDIAN BROKEN',
+        name: entity.name || 'The Depths Recoil',
+        subtitle: boss
+          ? 'The seal cracks. The way below answers.'
+          : 'The lesser seal falls silent.',
+        accent: boss ? COLOR.goldHi : '#c080ff',
+        boss,
+        subboss: !boss,
+        victory: true
+      };
     });
   }
 
@@ -232,6 +264,9 @@ export class GameScene {
     if (this.vigil) this.vigil.render(renderer, this.player);
     if (this.skillPicker) this.skillPicker.render(renderer);
     if (this.pause) this.pause.render(renderer);
+    this._renderBossBar(renderer);
+    this._renderLootToast(renderer);
+    this._renderDangerVignette(renderer);
     this._renderFloorBanner(renderer);
     if (this.tutorial?.open) this.tutorial.render(renderer);
   }
@@ -248,8 +283,8 @@ export class GameScene {
         : isSubboss ? 'SUBBOSS FLOOR'
         : `FLOOR ${index + 1}`,
       name: isBoss || isSubboss ? (special?.name || def.name) : def.name,
-      subtitle: isBoss ? 'The dungeon seals behind you.'
-        : isSubboss ? 'An elite guardian is awake.'
+      subtitle: isBoss ? 'The dungeon seals behind you. Defeat the ruler below.'
+        : isSubboss ? 'An elite guardian is awake. The path narrows.'
         : (def.atmosphere || `Depth ${index + 1} of ${this.dungeon.totalFloors}`),
       accent: isBoss ? '#d4be7a' : isSubboss ? '#c080ff' : COLOR.goldDim,
       boss: isBoss,
@@ -303,6 +338,98 @@ export class GameScene {
       ctx.lineTo(x + w - 48, y + h / 2);
       ctx.stroke();
     }
+    ctx.restore();
+  }
+
+  _renderBossBar(r) {
+    const boss = this.floor?.enemies?.().find((e) =>
+      !e.isDead && (e.defId?.startsWith('boss_') || e.defId?.startsWith('subboss_')));
+    if (!boss || this._floorBanner) return;
+    const isBoss = boss.defId.startsWith('boss_');
+    const w = isBoss ? Layout.canvasW - 56 : Layout.canvasW - 96;
+    const h = isBoss ? 25 : 20;
+    const x = (Layout.canvasW - w) / 2;
+    const y = Layout.hud + 8;
+    const pct = Math.max(0, Math.min(1, boss.stats.hp / boss.stats.hpMax));
+    const accent = isBoss ? COLOR.gold : '#c080ff';
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.globalAlpha = 0.92;
+    r.drawRect(x - 4, y - 4, w + 8, h + 8, '#050307dd');
+    r.drawRect(x, y, w, h, '#1b1420ee');
+    r.drawStrokedRect(x, y, w, h, accent, isBoss ? 2 : 1);
+    r.drawRect(x + 3, y + h - 8, w - 6, 5, '#2a1018');
+    r.drawRect(x + 3, y + h - 8, (w - 6) * pct, 5, isBoss ? '#b84a3c' : '#8a60d0');
+    r.drawText(isBoss ? 'BOSS' : 'ELITE', x + 9, y + 5, {
+      size: uiSize(8), bold: true, family: FONT_MONO, color: accent
+    });
+    r.drawText(boss.name || boss.defId, x + w / 2, y + 4, {
+      size: uiSize(isBoss ? 11 : 10), bold: true, align: 'center',
+      family: FONT_DISPLAY, color: COLOR.textPrimary
+    });
+    r.drawText(`${boss.stats.hp}/${boss.stats.hpMax}`, x + w - 8, y + 5, {
+      size: uiSize(8), bold: true, align: 'right', family: FONT_MONO, color: COLOR.textMuted
+    });
+    ctx.restore();
+  }
+
+  _renderLootToast(r) {
+    if (!this._lootToast) return;
+    const age = performance.now() - this._lootToast.startedAt;
+    if (age > this._lootToast.duration) {
+      this._lootToast = null;
+      return;
+    }
+    const item = this._lootToast.item;
+    const alpha = Math.min(1, age / 180, (this._lootToast.duration - age) / 260);
+    const y = Math.round(Layout.hud + 26 + Math.sin(age * 0.006) * 2);
+    const w = Math.min(Layout.canvasW - 44, 330);
+    const h = 62;
+    const x = (Layout.canvasW - w) / 2;
+    const rarity = GameScene._rarityColor(item.rarity);
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    r.drawRect(x - 4, y - 4, w + 8, h + 8, '#050307cc');
+    r.drawRect(x, y, w, h, '#231c2aee');
+    r.drawStrokedRect(x, y, w, h, rarity, 2);
+    r.drawRect(x + 7, y + 7, 48, 48, '#100c16');
+    r.drawStrokedRect(x + 7, y + 7, 48, 48, COLOR.borderSoft, 1);
+    if (r.sprites) r.sprites.draw(item.spriteKey, r.ctx, x + 11, y + 11, { size: 40 });
+    r.drawText('RELIC FOUND', x + 66, y + 8, {
+      size: uiSize(8), bold: true, family: FONT_MONO, color: rarity
+    });
+    this._drawFittedBannerText(r, item.name || item.id, x + 66, y + 22, w - 78, {
+      size: uiSize(13), minSize: uiSize(9), bold: true,
+      family: FONT_DISPLAY, color: COLOR.textPrimary
+    });
+    const hint = GameScene._itemStatLine(item) || (item.lore || '').replace(/[“”"]/g, '');
+    this._drawFittedBannerText(r, hint, x + 66, y + 43, w - 78, {
+      size: uiSize(9), minSize: uiSize(8), italic: true,
+      family: FONT_BODY, color: COLOR.textMuted
+    });
+    ctx.restore();
+  }
+
+  _renderDangerVignette(r) {
+    const hpPct = this.player?.stats?.hpMax ? this.player.stats.hp / this.player.stats.hpMax : 1;
+    if (hpPct > 0.35) return;
+    const pulse = 0.38 + Math.sin(performance.now() * 0.012) * 0.12;
+    const alpha = (0.35 - hpPct) * 0.9 + pulse * 0.18;
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0.08, Math.min(0.34, alpha));
+    ctx.strokeStyle = '#b83838';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(5, 5, Layout.canvasW - 10, Layout.canvasH - 10);
+    const g = ctx.createRadialGradient(
+      Layout.canvasW / 2, Layout.canvasH / 2, Layout.canvasW * 0.24,
+      Layout.canvasW / 2, Layout.canvasH / 2, Layout.canvasW * 0.76
+    );
+    g.addColorStop(0, 'transparent');
+    g.addColorStop(1, '#8a1010');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, Layout.canvasW, Layout.canvasH);
     ctx.restore();
   }
 
@@ -890,6 +1017,26 @@ export class GameScene {
     this.floor.addItem(this.player.x, this.player.y, item);
     this.bus.emit('item:dropped', { item });
     this._saveRun();
+  }
+
+  static _rarityColor(rarity) {
+    switch (rarity) {
+      case 'uncommon': return COLOR.itemUncommon;
+      case 'rare': return COLOR.itemRare;
+      case 'epic': return COLOR.itemEpic;
+      default: return COLOR.goldDim;
+    }
+  }
+
+  static _itemStatLine(item) {
+    const parts = [];
+    const s = item?.stats || {};
+    if (s.atk) parts.push(`${s.atk > 0 ? '+' : ''}${s.atk} ATK`);
+    if (s.def) parts.push(`${s.def > 0 ? '+' : ''}${s.def} DEF`);
+    if (s.dex) parts.push(`${s.dex > 0 ? '+' : ''}${s.dex} DEX`);
+    if (s.hpMaxBonus) parts.push(`+${s.hpMaxBonus} HP`);
+    if (s.attackRange) parts.push(`RANGE ${s.attackRange}`);
+    return parts.join('   ');
   }
 
   _saveRun() {

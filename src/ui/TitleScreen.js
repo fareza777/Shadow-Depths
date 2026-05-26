@@ -192,8 +192,7 @@ export class TitleScreen {
     if (item.id === 'continue') {
       const run = this.state.state.run || {};
       const floor = (run.floorIndex || 0) + 1;
-      const hp = Number.isFinite(run.hp) ? ` · HP ${run.hp}` : '';
-      return `F${floor} · Lv ${run.level || 1}${hp}`;
+      return `F${floor}/100 · Lv ${run.level || 1}`;
     }
     if (item.id === 'newRun') return 'permadeath';
     if (item.id === 'shop') {

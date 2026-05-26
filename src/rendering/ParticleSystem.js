@@ -2,7 +2,6 @@
  * ParticleSystem — sparks, rings, hit flashes, floating combat text.
  */
 import { COLOR, TIMING, TILE_SIZE } from '../config/constants.js';
-import { fillRect } from './SpriteRegistry.js';
 
 const MAX_PARTICLES = 256;
 
@@ -65,10 +64,18 @@ export class ParticleSystem {
       this.spawnSparks(by.renderX, by.renderY, '#d0c050', 8, { spread: 0.65, life: 0.4, glow: true });
       this.spawnRingBurst(by.renderX, by.renderY, '#d4be7a', 0.28, 0.7);
     });
-    this.bus.on('item:pickedUp', ({ by }) => {
+    this.bus.on('item:pickedUp', ({ by, item }) => {
       if (!by) return;
-      this.spawnSparks(by.renderX, by.renderY, '#d4be7a', 10, { spread: 0.9, life: 0.45, glow: true });
-      this.spawnRingBurst(by.renderX, by.renderY, '#ffe8a0', 0.32, 0.75);
+      const color = ParticleSystem._rarityColor(item?.rarity);
+      this.spawnSparks(by.renderX, by.renderY, color, item?.rarity === 'epic' ? 18 : 10, {
+        spread: item?.rarity === 'epic' ? 1.25 : 0.9,
+        life: item?.rarity === 'epic' ? 0.62 : 0.45,
+        glow: true
+      });
+      this.spawnRingBurst(by.renderX, by.renderY, color, item?.rarity === 'epic' ? 0.48 : 0.32, 0.75);
+      if (item?.rarity === 'rare' || item?.rarity === 'epic') {
+        this.spawnRingBurst(by.renderX, by.renderY, '#ffffff', 0.24, 1.05);
+      }
     });
   }
 
@@ -266,5 +273,14 @@ export class ParticleSystem {
 
   clear() {
     this._particles.length = 0;
+  }
+
+  static _rarityColor(rarity) {
+    switch (rarity) {
+      case 'uncommon': return COLOR.itemUncommon;
+      case 'rare': return COLOR.itemRare;
+      case 'epic': return COLOR.itemEpic;
+      default: return COLOR.goldHi;
+    }
   }
 }

@@ -66,10 +66,12 @@ export class MetaProgress {
         this._discover('discoveredEnemies', entity.defId);
       }
     });
-    this.bus.on('floor:entered', ({ index: _i, name }) => {
+    this.bus.on('floor:entered', ({ index: _i, name, biomeId }) => {
       // Map biome name → biome id by slug. Cheap; we want to know which
       // biomes the player has set foot in.
-      if (typeof name === 'string') {
+      if (biomeId) {
+        this._discover('discoveredBiomes', biomeId);
+      } else if (typeof name === 'string') {
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
         this._discover('discoveredBiomes', slug);
       }

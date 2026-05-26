@@ -24,7 +24,7 @@
     {
       "id": "halls_of_echoes",
       "name": "Halls of Echoes",
-      "atmosphere": "Aula besar pecah, gema langkah kaki sendiri menjadi ancaman.",
+      "atmosphere": "Broken halls return every footstep as a warning.",
       "wallPalette": [
         "#3a3548",
         "#1a1828"
@@ -66,7 +66,7 @@
     {
       "id": "drowning_caves",
       "name": "The Drowning Caves",
-      "atmosphere": "Air merembes dari langit-langit. Sesekali yang merembes bukan air.",
+      "atmosphere": "Water seeps from the ceiling. Sometimes it is not water.",
       "wallPalette": [
         "#2a3a44",
         "#101820"
@@ -87,7 +87,7 @@
     {
       "id": "ashen_wastes",
       "name": "The Ashen Wastes",
-      "atmosphere": "Bukan abu kayu. Sesuatu yang lebih besar, lebih lama.",
+      "atmosphere": "This is not wood ash. It belongs to something older.",
       "wallPalette": [
         "#3a3030",
         "#1c1414"
@@ -108,7 +108,7 @@
     {
       "id": "mirror_vaults",
       "name": "The Mirror Vaults",
-      "atmosphere": "Cermin menempel di setiap dinding. Wajahmu tidak selalu di dalamnya.",
+      "atmosphere": "Mirrors cling to every wall. Your face is not always in them.",
       "wallPalette": [
         "#34384a",
         "#16182a"
@@ -129,7 +129,7 @@
     {
       "id": "sundered_library",
       "name": "The Sundered Library",
-      "atmosphere": "Halaman demi halaman gugur seperti daun musim mati.",
+      "atmosphere": "Pages fall like leaves from a dead season.",
       "wallPalette": [
         "#3a3428",
         "#1c1810"
@@ -150,7 +150,7 @@
     {
       "id": "frostbite_mines",
       "name": "Frostbite Mines",
-      "atmosphere": "Tambang tua. Yang ditambang bukan logam.",
+      "atmosphere": "Old mines. Metal was not the only thing taken here.",
       "wallPalette": [
         "#2a3a48",
         "#0e1828"
@@ -171,7 +171,7 @@
     {
       "id": "bloodroot_hollow",
       "name": "Bloodroot Hollow",
-      "atmosphere": "Akar-akar di sini meminum bukan air.",
+      "atmosphere": "The roots here drink something other than water.",
       "wallPalette": [
         "#3a2424",
         "#1c1010"
@@ -192,7 +192,7 @@
     {
       "id": "iron_sepulchre",
       "name": "Iron Sepulchre",
-      "atmosphere": "Setiap makam terkunci dari dalam.",
+      "atmosphere": "Every tomb is locked from the inside.",
       "wallPalette": [
         "#3a3a44",
         "#1a1a24"
@@ -213,7 +213,7 @@
     {
       "id": "whispering_reach",
       "name": "The Whispering Reach",
-      "atmosphere": "Suara-suara di telingamu menyebut nama. Bukan namamu.",
+      "atmosphere": "Voices at your ear speak a name. Not yours.",
       "wallPalette": [
         "#34304a",
         "#1a162a"
@@ -234,7 +234,7 @@
     {
       "id": "cinder_court",
       "name": "Cinder Court",
-      "atmosphere": "Tahta-tahta kosong. Singgasana-singgasana yang masih hangat.",
+      "atmosphere": "Empty thrones remain warm.",
       "wallPalette": [
         "#48342a",
         "#241612"
@@ -255,7 +255,7 @@
     {
       "id": "sunken_chapel",
       "name": "The Sunken Chapel",
-      "atmosphere": "Doa-doa di sini sudah dilupakan. Tidak oleh segalanya.",
+      "atmosphere": "The prayers here were forgotten. Not by everything.",
       "wallPalette": [
         "#243a3a",
         "#101c1c"
@@ -276,7 +276,7 @@
     {
       "id": "veiled_garden",
       "name": "The Veiled Garden",
-      "atmosphere": "Tirai-tirai bergerak meski tidak ada angin.",
+      "atmosphere": "Veils stir where no wind should pass.",
       "wallPalette": [
         "#3a2a3a",
         "#1c121c"
@@ -297,7 +297,7 @@
     {
       "id": "salt_tombs",
       "name": "Salt Tombs",
-      "atmosphere": "Tubuh diawetkan. Wajah tidak.",
+      "atmosphere": "Bodies are preserved. Faces are not.",
       "wallPalette": [
         "#3a3a3a",
         "#1c1c1c"
@@ -318,7 +318,7 @@
     {
       "id": "hollow_kings_march",
       "name": "Hollow King's March",
-      "atmosphere": "Mereka masih berbaris. Sudah jauh sebelum kau lahir.",
+      "atmosphere": "They still march, and did so long before you were born.",
       "wallPalette": [
         "#34344a",
         "#16162a"
@@ -339,7 +339,7 @@
     {
       "id": "wyrms_throat",
       "name": "Wyrm's Throat",
-      "atmosphere": "Lorong ini bernafas.",
+      "atmosphere": "The corridor breathes.",
       "wallPalette": [
         "#3a2a24",
         "#1c1410"
@@ -360,7 +360,7 @@
     {
       "id": "black_apiary",
       "name": "The Black Apiary",
-      "atmosphere": "Madu di sini hitam. Madu di sini bergerak.",
+      "atmosphere": "The honey here is black. The honey here moves.",
       "wallPalette": [
         "#2a2a18",
         "#14140a"
@@ -381,7 +381,7 @@
     {
       "id": "empty_heaven",
       "name": "Empty Heaven",
-      "atmosphere": "Plafonnya jauh. Plafonnya berbintang. Plafonnya salah.",
+      "atmosphere": "The ceiling is distant, starry, and wrong.",
       "wallPalette": [
         "#242448",
         "#0a0a28"
@@ -402,7 +402,7 @@
     {
       "id": "the_below",
       "name": "The Below",
-      "atmosphere": "Tidak ada di bawah ini. Itulah masalahnya.",
+      "atmosphere": "There is nothing below this. That is the problem.",
       "wallPalette": [
         "#0a0a14",
         "#040408"

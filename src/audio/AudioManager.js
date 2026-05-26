@@ -35,6 +35,7 @@ export class AudioManager {
       if (isMiss) return;
       if (attacker?.kind === 'player') this.play(isCrit ? 'crit' : 'playerAttack');
       else this.play('hit');
+      this._vibrate(isCrit ? [18, 24, 28] : 12);
     });
     this.bus.on('entity:damaged', ({ entity, source }) => {
       // Only synth for the player getting smacked; enemy hits already
@@ -44,9 +45,21 @@ export class AudioManager {
       }
     });
     this.bus.on('entity:died', () => this.play('death'));
-    this.bus.on('entity:leveledUp', () => this.play('levelUp'));
-    this.bus.on('item:used', () => this.play('drink'));
-    this.bus.on('item:pickedUp', () => this.play('pickup'));
+    this.bus.on('entity:died', ({ entity }) => {
+      if (entity?.defId?.startsWith?.('boss_')) this._vibrate([28, 34, 48]);
+    });
+    this.bus.on('entity:leveledUp', () => {
+      this.play('levelUp');
+      this._vibrate([18, 24, 18]);
+    });
+    this.bus.on('item:used', () => {
+      this.play('drink');
+      this._vibrate(10);
+    });
+    this.bus.on('item:pickedUp', ({ item }) => {
+      this.play('pickup');
+      this._vibrate(item?.rarity === 'epic' ? [16, 22, 28] : 8);
+    });
     this.bus.on('entity:moved', ({ entity }) => {
       if (entity?.kind === 'player') this.play('footstep');
     });
@@ -81,6 +94,12 @@ export class AudioManager {
   }
   setMuted(m) { this._muted = !!m; }
   toggleMuted() { this._muted = !this._muted; return this._muted; }
+
+  _vibrate(pattern) {
+    if (this.meta?.state?.settings?.vibration === false) return;
+    if (typeof navigator === 'undefined' || typeof navigator.vibrate !== 'function') return;
+    try { navigator.vibrate(pattern); } catch { /* unsupported gesture/device */ }
+  }
 
   _ensureCtx() {
     if (this._ctx) return true;

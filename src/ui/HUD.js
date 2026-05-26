@@ -87,6 +87,7 @@ export class HUD {
           { size: uiSize(11), bold: true, align: 'right', color: COLOR.textXP, family: FONT_MONO });
       }
       this._drawFloorChip(r, floor, floorIndex);
+      this._drawDepthMeter(r, floorIndex, totalFloors);
     }
 
     let chipX = 8;
@@ -154,6 +155,20 @@ export class HUD {
       size: uiSize(9), bold: true, align: 'center',
       family: FONT_MONO, color: col
     });
+  }
+
+  _drawDepthMeter(r, floorIndex, totalFloors) {
+    const x = Layout.canvasW - 18;
+    const y = TOP_PAD + 58;
+    const h = 42;
+    const pct = Math.max(0, Math.min(1, (floorIndex + 1) / Math.max(1, totalFloors)));
+    r.drawRect(x, y, 6, h, '#0a0810');
+    r.drawStrokedRect(x, y, 6, h, COLOR.goldDim, 1);
+    r.drawRect(x + 2, y + 2 + (h - 4) * (1 - pct), 2, (h - 4) * pct, COLOR.gold);
+    for (let i = 1; i < 10; i++) {
+      const ty = y + Math.round((h - 2) * (i / 10));
+      r.drawRect(x - (i % 5 === 0 ? 5 : 3), ty, i % 5 === 0 ? 4 : 2, 1, COLOR.goldDim);
+    }
   }
 
   static _skillAbbr(id) {

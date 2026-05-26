@@ -151,8 +151,7 @@ export class Dungeon {
     return map;
   }
 
-  _specialEnemyForFloor(floorIndex) {
-    const floorN = floorIndex + 1;
+  _specialEnemyForFloor(floorN) {
     if (floorN < 5) return null;
     const tier = Math.min(
       SUBBOSS_IDS.length - 1,

@@ -16,7 +16,7 @@
       "index": 1,
       "name": "Halls of Echoes",
       "subtitle": "Floor 2",
-      "atmosphere": "Aula besar pecah, gema langkah kaki sendiri menjadi ancaman.",
+      "atmosphere": "Broken halls return every footstep as a warning.",
       "enemyPool": ["goblin_scout", "cave_bat", "skeleton_archer", "stone_golem"],
       "enemyCount": 5,
       "itemCount": 5,

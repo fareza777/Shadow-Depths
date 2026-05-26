@@ -225,9 +225,24 @@ function drawEquipmentAccents(ctx, x, y, s, entity, pixelDraw) {
   }
   if (necklace) {
     pixels.push([14, 16, 4, 1, HERO_EMBLEM], [15, 17, 2, 2, '#fff0a0']);
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = necklace.includes('void') || necklace.includes('night') ? HERO_MAGIC : HERO_EMBLEM;
+    ctx.beginPath();
+    ctx.arc(x + s / 2, y + s * 0.57, s * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
   if (ring) {
     pixels.push([22, 20, 2, 2, ring.includes('speed') ? '#60d080' : HERO_EMBLEM]);
+    ctx.save();
+    ctx.globalAlpha = 0.28;
+    ctx.strokeStyle = ring.includes('speed') ? '#60d080' : HERO_EMBLEM;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x + s * 0.72, y + s * 0.62, s * 0.08, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
   if (pixels.length) pixelDraw(ctx, x, y, s, pixels);
 }
