@@ -96,7 +96,8 @@ export class Game {
       content: this.content,
       balance: this.balance,
       seed: opts.seed,
-      mode: opts.mode || 'normal'
+      mode: opts.mode || 'normal',
+      heroKind: opts.heroKind || this.meta?.state?.settings?.lastHero || 'vigil'
     });
     this.state.setScene('game');
     this.scenes.switch('game', scene, opts);

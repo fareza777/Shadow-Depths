@@ -15,17 +15,31 @@ export class Player extends Entity {
    * @param {object} balance merged balance config
    * @param {{ x:number, y:number }} pos
    * @param {import('../items/Inventory.js').Inventory} inventory
+   * @param {{ heroKind?:string, heroOverrides?:object }} [opts]
    */
-  constructor(balance, pos, inventory) {
+  constructor(balance, pos, inventory, opts = {}) {
     const p = balance.player;
+    const hero = opts.heroOverrides || null;
+    // Hero-specific starting stat overrides (vigil, hollow, etc.).
+    const baseAtk = hero?.atk ?? p.startATK;
+    const baseDef = hero?.def ?? p.startDEF;
+    const baseDex = hero?.dex ?? p.startDEX;
+    const baseHp  = hero?.hp  ?? p.startHP;
     super({
       id: 'player',
       kind: 'player',
       x: pos.x,
       y: pos.y,
-      stats: { hp: p.startHP, hpMax: p.startHP, atk: p.startATK, def: p.startDEF, dex: p.startDEX }
+      stats: { hp: baseHp, hpMax: baseHp, atk: baseAtk, def: baseDef, dex: baseDex }
     });
     this.balance = balance;
+    this.heroKind = opts.heroKind || 'vigil';
+    // Personal torch override — pilgrim sees 8 tiles, reaver only 3.
+    if (hero && Number.isFinite(hero.torchRadius)) {
+      this.torchRadius = hero.torchRadius;
+    }
+    // Render swap — Renderer.drawEntities reads spriteKey.
+    this.spriteKey = `hero_${this.heroKind}`;
     this.gold = p.startGold;
     this.xp = 0;
     this.level = 1;

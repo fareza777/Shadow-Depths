@@ -42,7 +42,14 @@ const LAYOUT = IS_LANDSCAPE
 
 export class TitleScreen {
   /** @param {{ bus:object, state:object, content:object, metaProgress:object }} deps */
-  constructor({ bus, state, content, metaProgress }) {
+  constructor({ bus, state, content, metaProgress, characterSelect }) {
+    this.characterSelect = characterSelect || null;
+    if (bus && this.characterSelect) {
+      bus.on('request:openCharacterSelect', (opts) => {
+        this.modal = null; // close any open menu modal
+        this.characterSelect.show(opts || {});
+      });
+    }
     this.bus = bus;
     this.state = state;
     this.content = content || {};
@@ -72,6 +79,13 @@ export class TitleScreen {
     this._renderBackdrop(renderer);
     const menuItems = this._menuItems();
     if (this.selected >= menuItems.length) this.selected = 0;
+
+    // If the character picker is up, render it FULL-PANEL on top of the
+    // title and skip the rest of the title decoration entirely.
+    if (this.characterSelect?.open) {
+      this.characterSelect.render(renderer);
+      return;
+    }
 
     for (const p of this._particles) {
       const ctx = renderer.ctx;
@@ -227,6 +241,15 @@ export class TitleScreen {
 
   // --- input ---------------------------------------------------------
   handleInput(action) {
+    // Character picker steals input first when open.
+    if (this.characterSelect?.open) {
+      if (action.type === 'pointer') {
+        this.characterSelect.handleCanvasTap(action.x, action.y);
+        return;
+      }
+      this.characterSelect.handleInput(action);
+      return;
+    }
     if (this.modal) {
       if (action.type === 'escape' || action.type === 'inventory') {
         this.modal = null; return;
@@ -286,10 +309,14 @@ export class TitleScreen {
 
   _activate(id) {
     if (id === 'continue') this.bus.emit('request:continueRun', {});
-    else if (id === 'newRun') this.bus.emit('request:newRun', {});
+    else if (id === 'newRun') {
+      // Open the character picker; it emits request:newRun with heroKind.
+      this.bus.emit('request:openCharacterSelect', { mode: 'normal' });
+    }
     else if (id === 'daily') {
       const seed = TitleScreen.dailySeed();
-      this.bus.emit('request:newRun', { seed, mode: 'daily' });
+      // Same picker, but the daily seed is attached when the player chooses.
+      this.bus.emit('request:openCharacterSelect', { mode: 'daily', seed });
     }
     else if (id === 'shop') this.modal = 'shop';
     else if (id === 'codex') {
@@ -749,6 +776,9 @@ export class TitleScreen {
 
   // --- hit-test ------------------------------------------------------
   hitTest(x, y) {
+    // Character picker handles its own raw-pointer taps — let them pass
+    // through as `pointer` actions rather than packaging a buttonIndex.
+    if (this.characterSelect?.open) return -1;
     // Modal-specific hit tests first.
     if (this.modal === 'shop') {
       const g = this._shopGeometry();

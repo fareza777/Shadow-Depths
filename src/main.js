@@ -34,6 +34,7 @@ import { InventoryUI } from './ui/InventoryUI.js';
 import { SkillPickerUI } from './ui/SkillPickerUI.js';
 import { VigilScreen } from './ui/VigilScreen.js';
 import { TitleScreen } from './ui/TitleScreen.js';
+import { CharacterSelect } from './ui/CharacterSelect.js';
 import { GameOverScreen } from './ui/GameOverScreen.js';
 import { VictoryScreen } from './ui/VictoryScreen.js';
 import { MobileControls } from './ui/MobileControls.js';
@@ -122,6 +123,7 @@ async function bootstrap() {
   const inventoryUI = new InventoryUI({ bus });
   const skillPicker = new SkillPickerUI({ bus, content });
   const vigilScreen = new VigilScreen({ bus });
+  const characterSelect = new CharacterSelect({ bus, metaProgress });
   const mobileControls = new MobileControls({ bus });
   const quickUseBar = new QuickUseBar({ bus });
   const pauseOverlay = new PauseOverlay({ bus });
@@ -146,7 +148,7 @@ async function bootstrap() {
 
   // --- scene factories ----------------------------------------------
   const sceneFactories = {
-    title: (deps) => new TitleScreen({ ...deps, metaProgress }),
+    title: (deps) => new TitleScreen({ ...deps, metaProgress, characterSelect }),
     game: (deps) => new GameScene({
       ...deps, hud, minimap, inventoryUI, skillPicker, vigilScreen,
       lighting, renderer, mobileControls, quickUseBar, pauseOverlay, tutorial

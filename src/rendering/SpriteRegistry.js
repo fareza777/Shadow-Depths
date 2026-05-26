@@ -20,6 +20,7 @@ import {
   HERO_EMBLEM, HERO_EYE, HERO_HELMET, HERO_HELM_HI, HERO_PAULDRON, HERO_VISOR
 } from './playerSprites.js';
 import { buildEnemySprites } from './enemySprites.js';
+import { HERO_ORDER, drawHeroSprite } from './heroSprites.js';
 
 const FALLBACK_COLOR = '#9a8a78';
 
@@ -267,12 +268,21 @@ const PROCEDURAL_SPRITES = {
   }
 };
 
+// Hero sprite variants — one entry per kind. Each kind also doubles as
+// the Vigil-screen portrait (same grid, just rendered larger).
+const HERO_SPRITES = {};
+for (const kind of HERO_ORDER) {
+  HERO_SPRITES[`hero_${kind}`]    = (ctx, x, y, s) => drawHeroSprite(ctx, x, y, s, kind);
+  HERO_SPRITES[`portrait_${kind}`] = (ctx, x, y, s) => drawHeroSprite(ctx, x, y, s, kind);
+}
+
 export class SpriteRegistry {
   constructor() {
     this._sprites = {
       ...PROCEDURAL_SPRITES,
       ...buildItemSprites(),
-      ...buildDungeonTileSprites()
+      ...buildDungeonTileSprites(),
+      ...HERO_SPRITES
     };
   }
 

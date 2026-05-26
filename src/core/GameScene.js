@@ -21,6 +21,13 @@ import {
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
 import { Player } from '../entities/Player.js';
+import { heroDef } from '../rendering/heroSprites.js';
+
+/** Per-hero stat overrides (atk/def/dex/torchRadius) for new Player(). */
+function heroStatOverrides(kind) {
+  const def = heroDef(kind);
+  return def ? { ...def.stats } : null;
+}
 import { Enemy } from '../entities/Enemy.js';
 import { Inventory } from '../items/Inventory.js';
 import { ItemFactory } from '../items/ItemFactory.js';
@@ -76,6 +83,7 @@ export class GameScene {
 
     this.seed = this.resumeSnapshot?.seed ?? deps.seed ?? RNG.newSeed();
     this.mode = this.resumeSnapshot?.mode || deps.mode || 'normal'; // 'normal' | 'daily'
+    this.heroKind = this.resumeSnapshot?.heroKind || deps.heroKind || 'vigil';
     this.rng = new RNG(this.seed, 'run');
     this.pathfinding = new Pathfinding();
     this.combat = new CombatSystem({
@@ -118,7 +126,7 @@ export class GameScene {
     }
     const inv = new Inventory(this.balance.player.inventorySlots);
     const { floor, spawns } = this.dungeon.getOrGenerate(0);
-    this.player = new Player(this.balance, spawns.player, inv);
+    this.player = new Player(this.balance, spawns.player, inv, { heroKind: this.heroKind, heroOverrides: heroStatOverrides(this.heroKind) });
     this.player.snapRender();
     floor.addEntity(this.player);
 
@@ -127,7 +135,7 @@ export class GameScene {
     this._applyMetaUnlocks();
 
     this.floor = floor;
-    this.lighting.compute(this.floor, this.player);
+    this.lighting.compute(this.floor, this.player, this.player.torchRadius);
     this.state.setRun({ seed: this.seed, floorIndex: 0, mode: this.mode });
     this._emitFloorEntered(0, floor);
     this._saveRun();
@@ -146,14 +154,17 @@ export class GameScene {
 
     const inv = new Inventory(snapshot.player?.inventorySize || this.balance.player.inventorySlots);
     inv.loadSnapshot(snapshot.player?.inventory || [], this.itemFactory);
-    this.player = new Player(this.balance, snapshot.player?.pos || spawns.player, inv);
+    this.player = new Player(this.balance, snapshot.player?.pos || spawns.player, inv, {
+      heroKind: this.heroKind,
+      heroOverrides: heroStatOverrides(this.heroKind)
+    });
     this._restorePlayerSnapshot(this.player, snapshot.player || {});
     this.player.snapRender();
     floor.addEntity(this.player);
 
     this.floor = floor;
     this.pathfinding.invalidate();
-    this.lighting.compute(this.floor, this.player);
+    this.lighting.compute(this.floor, this.player, this.player.torchRadius);
     this.state.setRun({
       seed: this.seed,
       floorIndex,
@@ -710,7 +721,7 @@ export class GameScene {
     this._spawnFloorEntities(floor, spawns);
     this.floor = floor;
     this.pathfinding.invalidate();
-    this.lighting.compute(this.floor, this.player);
+    this.lighting.compute(this.floor, this.player, this.player.torchRadius);
     this.state.patch('run.floorIndex', this.dungeon.currentIndex);
     this._emitFloorEntered(this.dungeon.currentIndex, floor);
     this._saveRun();
@@ -829,7 +840,7 @@ export class GameScene {
     // body that couldn't input. Bug from v0.2.0 first playtest.
     if (this.player.isDead) { this._endRun(false); return; }
     this.pathfinding.invalidate();
-    this.lighting.compute(this.floor, this.player);
+    this.lighting.compute(this.floor, this.player, this.player.torchRadius);
     this._refreshEnemyIntents();
 
     if (this.player.stats.hp < this.player.stats.hpMax) this.floor.clearedWithoutDamage = false;
