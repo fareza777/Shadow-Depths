@@ -39,9 +39,11 @@ export class TouchHandler {
       }
     }
 
-    if (name === 'game') {
-      this.bus.emit('input:action', { type: 'pointer', x, y });
-    }
+    // Always emit a raw pointer fallback so any scene that needs precise
+    // coordinates (e.g. CharacterSelect carousel, GameScene tap-to-walk)
+    // can handle it. Previously this was gated to 'game' only, which
+    // silently dropped every tap on the title's CharacterSelect modal.
+    this.bus.emit('input:action', { type: 'pointer', x, y });
   }
 
   _toCanvas(ev) {
