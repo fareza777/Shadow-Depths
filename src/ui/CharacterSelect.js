@@ -88,15 +88,21 @@ export class CharacterSelect {
       this.hide();
       return true;
     }
+    // 1. Bottom action row — PREV / CHOOSE / NEXT.
     const b = this._buttonLayout();
-    if (CharacterSelect._inside(canvasX, canvasY, b.prev)) { this._prev(); return true; }
+    if (CharacterSelect._inside(canvasX, canvasY, b.prev))   { this._prev();  return true; }
     if (CharacterSelect._inside(canvasX, canvasY, b.choose)) { this._choose(); return true; }
-    if (CharacterSelect._inside(canvasX, canvasY, b.next)) { this._next(); return true; }
-    // Tap on left/right half of portrait area = prev/next.
-    const portrait = this._portraitRect();
-    if (canvasY >= portrait.y && canvasY <= portrait.y + portrait.h) {
-      if (canvasX < portrait.x) { this._prev(); return true; }
-      if (canvasX > portrait.x + portrait.w) { this._next(); return true; }
+    if (CharacterSelect._inside(canvasX, canvasY, b.next))   { this._next();  return true; }
+    // 2. Whole carousel area — left half = prev, right half = next.
+    //    Generous hit zones make this work even on very small screens
+    //    where the labelled side buttons are hard to hit accurately.
+    const buttonRowTop = b.prev.y - 8;
+    const headerBottom = 60;
+    if (canvasY >= headerBottom && canvasY <= buttonRowTop) {
+      const mid = CANVAS_WIDTH / 2;
+      if (canvasX < mid) { this._prev(); return true; }
+      this._next();
+      return true;
     }
     return true;
   }
