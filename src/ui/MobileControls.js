@@ -11,7 +11,7 @@
  * Minimap renders into the center cutout.
  */
 import {
-  CANVAS_WIDTH, CANVAS_HEIGHT, COLOR, FONT_DISPLAY, FONT_MONO, uiSize
+  FONT_DISPLAY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
 import { getDpadLayout, getQuickUseLayout } from './controlBandLayout.js';
@@ -180,13 +180,14 @@ export class MobileControls {
   handleTap(canvasX, canvasY, currentTime) {
     if (this._currentScene !== 'game') return false;
     const LAYOUT = buildLayout();
+    const hitPad = LAYOUT.portrait ? 7 : 2;
 
     // D-pad buttons.
     for (const b of DPAD_BUTTONS) {
       const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
-      if (canvasX >= bx && canvasX <= bx + LAYOUT.dpadBtn &&
-          canvasY >= by && canvasY <= by + LAYOUT.dpadBtn) {
+      if (canvasX >= bx - hitPad && canvasX <= bx + LAYOUT.dpadBtn + hitPad &&
+          canvasY >= by - hitPad && canvasY <= by + LAYOUT.dpadBtn + hitPad) {
         this._flash(`dpad:${b.dir}`, currentTime);
         this.bus.emit('input:action', b.emit);
         return true;
@@ -315,20 +316,10 @@ export class MobileControls {
   // --- D-pad -----------------------------------------------------------
   _renderDpad(r, LAYOUT) {
     const ctx = r.ctx;
-    const padX = LAYOUT.dpadX - 8;
-    const padY = LAYOUT.dpadY - 8;
-    const padS = LAYOUT.dpadSize + 16;
-    // Dark recessed background well behind D-pad.
-    const wg = ctx.createRadialGradient(
-      padX + padS / 2, padY + padS / 2, 6,
-      padX + padS / 2, padY + padS / 2, padS / 2);
-    wg.addColorStop(0, '#150f1a');
-    wg.addColorStop(1, '#080510');
-    ctx.fillStyle = wg;
-    ctx.fillRect(padX, padY, padS, padS);
-    ctx.strokeStyle = IRON.ink;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(padX, padY, padS, padS);
+    const padX = LAYOUT.dpadX - 10;
+    const padY = LAYOUT.dpadY - 10;
+    const padS = LAYOUT.dpadSize + 20;
+    this._drawDpadBackplate(ctx, padX, padY, padS, performance.now() / 1000);
 
     // Iron lattice behind buttons.
     drawIronLattice(ctx, LAYOUT.dpadX, LAYOUT.dpadY, LAYOUT.dpadSize);
@@ -375,6 +366,70 @@ export class MobileControls {
         ctx.shadowBlur = 0;
       }
     }
+  }
+
+  _drawDpadBackplate(ctx, x, y, size, time) {
+    ctx.save();
+    drawIronPlate(ctx, x, y, size, size, {
+      rivets: false,
+      dark: false
+    });
+
+    // Brass inner rail, so the D-pad reads as a mounted metal module.
+    ctx.strokeStyle = IRON.brassDark;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 4, y + 4, size - 8, size - 8);
+    ctx.strokeStyle = 'rgba(241,212,154,0.28)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 7, y + 7, size - 14, size - 14);
+
+    // Recessed square well just below the lattice, no pure black void.
+    const wellPad = Math.round(size * 0.12);
+    const wellX = x + wellPad;
+    const wellY = y + wellPad;
+    const wellS = size - wellPad * 2;
+    const g = ctx.createRadialGradient(
+      x + size / 2, y + size / 2, 8,
+      x + size / 2, y + size / 2, size * 0.58
+    );
+    g.addColorStop(0, 'rgba(74,60,68,0.72)');
+    g.addColorStop(0.58, 'rgba(42,34,48,0.58)');
+    g.addColorStop(1, 'rgba(10,8,16,0.34)');
+    ctx.fillStyle = g;
+    ctx.fillRect(wellX, wellY, wellS, wellS);
+    ctx.strokeStyle = IRON.ink;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(wellX, wellY, wellS, wellS);
+
+    // Plate seams and tiny hammered scratches matching the reference.
+    ctx.globalAlpha = 0.36;
+    ctx.strokeStyle = IRON.plateHi;
+    ctx.beginPath();
+    ctx.moveTo(x + size * 0.5, y + 12);
+    ctx.lineTo(x + size * 0.5, y + size - 12);
+    ctx.moveTo(x + 12, y + size * 0.5);
+    ctx.lineTo(x + size - 12, y + size * 0.5);
+    ctx.stroke();
+    ctx.globalAlpha = 0.22;
+    for (let i = 0; i < 10; i++) {
+      const sx = x + 18 + ((i * 31 + Math.sin(time + i) * 4) % Math.max(1, size - 36));
+      const sy = y + 18 + ((i * 47) % Math.max(1, size - 36));
+      ctx.fillStyle = i % 3 === 0 ? IRON.brassDark : IRON.plateHi;
+      ctx.fillRect(sx, sy, 14, 1);
+      ctx.fillRect(sx + 4, sy + 5, 1, 8);
+    }
+    ctx.globalAlpha = 1;
+
+    // More visible module rivets around the D-pad plate.
+    const r = 3;
+    const points = [
+      [x + 8, y + 8], [x + size / 2, y + 7], [x + size - 8, y + 8],
+      [x + 8, y + size / 2], [x + size - 8, y + size / 2],
+      [x + 8, y + size - 8], [x + size / 2, y + size - 7], [x + size - 8, y + size - 8]
+    ];
+    for (const [rx, ry] of points) drawIronRivet(ctx, rx, ry, r);
+
+    ctx.restore();
   }
 
   // --- Action stack (AIM / CAST / MENU / DOWN) ------------------------

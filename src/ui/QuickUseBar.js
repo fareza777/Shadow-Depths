@@ -7,14 +7,14 @@
  *       when their action is currently available.
  */
 import {
-  COLOR, FONT_DISPLAY, FONT_MONO, uiSize
+  FONT_DISPLAY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { findQuickUseSlots } from '../items/quickUse.js';
 import {
   getQuickUseLayout, QUICK_SLOT_COUNT, getViewportBottomY
 } from './controlBandLayout.js';
 import {
-  IRON, drawIronPlate, drawIronRivet, drawBrassRivet
+  IRON, drawIronPlate, drawBrassRivet
 } from './ironHud.js';
 
 export class QuickUseBar {
