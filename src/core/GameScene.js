@@ -22,6 +22,7 @@ import {
 import { Layout } from '../config/layoutMetrics.js';
 import { Player } from '../entities/Player.js';
 import { heroDef } from '../rendering/heroSprites.js';
+import { HERO_SPELLS } from '../config/heroSpells.js';
 
 /** Per-hero stat overrides (atk/def/dex/torchRadius) for new Player(). */
 function heroStatOverrides(kind) {
@@ -52,39 +53,6 @@ const BEHAVIORS = {
   erratic: ErraticBehavior,
   heavy: HeavyBehavior,
   phase: PhaseBehavior
-};
-
-const HERO_SPELLS = {
-  vigil: {
-    name: 'Bulwark',
-    cooldown: 7,
-    description: 'Heal and raise DEF for a few turns.'
-  },
-  hollow: {
-    name: 'Siphon',
-    cooldown: 6,
-    range: 6,
-    description: 'Drain the nearest visible enemy.'
-  },
-  inquisitor: {
-    name: 'Lantern',
-    cooldown: 7,
-    range: 6,
-    radius: 1,
-    description: 'Burn a small cluster around a target.'
-  },
-  reaver: {
-    name: 'Bone Storm',
-    cooldown: 5,
-    radius: 2,
-    description: 'Damage nearby enemies.'
-  },
-  pilgrim: {
-    name: 'Sanctuary',
-    cooldown: 8,
-    radius: 3,
-    description: 'Heal and reveal nearby ground.'
-  }
 };
 
 export class GameScene {
@@ -730,11 +698,13 @@ export class GameScene {
     const kind = this.player.heroKind;
     const power = this.player.magicPower || 0;
     let used = false;
+    let fx = { kind, name: state.name, color: state.color };
 
     if (kind === 'vigil') {
       const healed = this.player.heal(4 + Math.floor(this.player.level / 4) + power);
       if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
       this.player.applyStatus({ id: 'def_buff', value: 2 + Math.floor(power / 4), duration: 3 });
+      fx = { ...fx, center: { x: this.player.x, y: this.player.y }, radius: 1.4 };
       used = true;
     } else if (kind === 'hollow') {
       const target = state.target;
@@ -742,6 +712,7 @@ export class GameScene {
       const dealt = this._dealSpellDamage(target, 5 + Math.floor(this.player.level / 3) + power, state.name);
       const healed = this.player.heal(Math.ceil(dealt * (0.45 + (this.player.spellLifesteal || 0))));
       if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
+      fx = { ...fx, target: { x: target.x, y: target.y } };
       used = dealt > 0;
     } else if (kind === 'inquisitor') {
       const target = state.target;
@@ -751,6 +722,7 @@ export class GameScene {
         4 + Math.floor(this.player.level / 4) + power,
         state.name
       ) > 0;
+      fx = { ...fx, center: { x: target.x, y: target.y }, radius: state.radius };
     } else if (kind === 'reaver') {
       used = this._damageEnemiesInRadius(
         this.player.x, this.player.y, state.radius,
@@ -758,17 +730,19 @@ export class GameScene {
         state.name
       ) > 0;
       if (used) this.player.applyStatus({ id: 'atk_buff', value: 1, duration: 2 });
+      fx = { ...fx, center: { x: this.player.x, y: this.player.y }, radius: state.radius };
     } else if (kind === 'pilgrim') {
       const healed = this.player.heal(5 + Math.floor(this.player.level / 5) + power);
       if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
       this._revealAround(this.player.x, this.player.y, state.radius + Math.floor(power / 3));
+      fx = { ...fx, center: { x: this.player.x, y: this.player.y }, radius: state.radius + Math.floor(power / 3) };
       used = true;
     }
 
     if (!used) return;
     const cd = Math.max(3, state.baseCooldown - (this.player.spellCooldownReduction || 0));
     this.player.spellCooldown = cd + 1;
-    this.bus.emit('spell:cast', { entity: this.player, spell: state.name });
+    this.bus.emit('spell:cast', { entity: this.player, spell: state.name, fx });
     this._endPlayerTurn(true);
   }
 

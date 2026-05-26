@@ -18,6 +18,7 @@ import {
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
+import { HERO_SPELLS } from '../config/heroSpells.js';
 import { HERO_ORDER, HERO_DEFS } from '../rendering/heroSprites.js';
 import {
   drawIronPanel, drawIronPlate, drawIronActionButton,
@@ -243,7 +244,7 @@ export class CharacterSelect {
     ctx.shadowColor = IRON_PALETTE.brass + '55';
     ctx.shadowBlur = 12;
     drawFittedSpacedText(ctx, def.name.toUpperCase(), CANVAS_WIDTH / 2, nameY,
-      CANVAS_WIDTH - 30, 2);
+      CANVAS_WIDTH - 48, 1.4);
     ctx.restore();
 
     // Italic subtitle.
@@ -278,8 +279,11 @@ export class CharacterSelect {
       cx += chipW[i] + 6;
     }
 
+    const spellY = tagsY + 32;
+    this._renderSpellCard(r, def, spellY);
+
     // Stat strip — ATK / DEF / DEX / TORCH.
-    const statsY = tagsY + 30;
+    const statsY = spellY + 58;
     const cells = [
       ['ATK',   def.stats.atk],
       ['DEF',   def.stats.def],
@@ -307,6 +311,34 @@ export class CharacterSelect {
         ctx.fillRect(cx2, statsY - 2, 1, 44);
       }
     }
+  }
+
+  _renderSpellCard(r, def, y) {
+    const ctx = r.ctx;
+    const spell = HERO_SPELLS[def.kind];
+    if (!spell) return;
+    const x = 54;
+    const w = CANVAS_WIDTH - 108;
+    const h = 42;
+    drawIronPlate(ctx, x, y, w, h, { rivets: false, glow: spell.color });
+    ctx.save();
+    ctx.font = `bold ${uiSize(9)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = spell.color || IRON_PALETTE.brass;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    drawSpacedText(ctx, 'MAGIC', x + 36, y + 7, 1.5);
+    ctx.restore();
+    r.drawText(spell.name.toUpperCase(), x + 76, y + 6, {
+      size: uiSize(11), bold: true, family: FONT_DISPLAY,
+      color: IRON_PALETTE.bone
+    });
+    const meta = `CD ${spell.cooldown}${spell.range ? `  RNG ${spell.range}` : ''}${spell.radius ? `  AREA ${spell.radius}` : ''}`;
+    r.drawText(meta, x + w - 10, y + 7, {
+      size: uiSize(8), bold: true, align: 'right',
+      family: FONT_MONO, color: IRON_PALETTE.boneDim
+    });
+    drawFittedPlainText(ctx, spell.description, x + 76, y + 25, w - 88,
+      uiSize(9), FONT_BODY, IRON_PALETTE.boneDim);
   }
 
   _renderButtons(r) {
@@ -339,11 +371,27 @@ function drawFittedSpacedText(ctx, text, centerX, centerY, maxW, preferredSpacin
     ctx.textAlign = prevAlign;
     return;
   }
-  const scale = Math.max(0.78, maxW / spacedWidth(ctx, text, 0));
+  const scale = Math.max(0.58, maxW / spacedWidth(ctx, text, 0));
   ctx.save();
   ctx.translate(centerX, centerY);
   ctx.scale(scale, 1);
   drawSpacedText(ctx, text, 0, 0, 0);
   ctx.restore();
   ctx.textAlign = prevAlign;
+}
+
+function drawFittedPlainText(ctx, text, x, y, maxW, preferredSize, family, color) {
+  let size = preferredSize;
+  ctx.font = `italic ${size}px ${family}`;
+  while (size > 9 && ctx.measureText(text).width > maxW) {
+    size -= 1;
+    ctx.font = `italic ${size}px ${family}`;
+  }
+  ctx.save();
+  ctx.font = `italic ${size}px ${family}`;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(text, x, y);
+  ctx.restore();
 }

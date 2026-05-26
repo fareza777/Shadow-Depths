@@ -77,6 +77,40 @@ export class ParticleSystem {
         this.spawnRingBurst(by.renderX, by.renderY, '#ffffff', 0.24, 1.05);
       }
     });
+    this.bus.on('spell:cast', ({ entity, fx }) => {
+      if (!entity) return;
+      this.spawnSpellBurst(entity, fx || {});
+    });
+  }
+
+  spawnSpellBurst(caster, fx) {
+    const color = fx.color || '#d4be7a';
+    const cx = fx.center?.x ?? caster.renderX;
+    const cy = fx.center?.y ?? caster.renderY;
+    const radius = Math.max(1, fx.radius || 1);
+    this.spawnRingBurst(caster.renderX, caster.renderY, color, 0.42, 1.1);
+    this.spawnSparks(caster.renderX, caster.renderY, color, 16, { spread: 1.1, life: 0.55, glow: true });
+
+    if (fx.kind === 'hollow' && fx.target) {
+      this._pushBeam(caster.renderX, caster.renderY, fx.target.x, fx.target.y, color, 0.34, 5);
+      this.spawnRingBurst(fx.target.x, fx.target.y, '#c080ff', 0.46, 1.0);
+      this.spawnSparks(fx.target.x, fx.target.y, '#9a60ff', 18, { spread: 1.15, life: 0.62, glow: true });
+    } else if (fx.kind === 'inquisitor') {
+      this._pushRune(cx, cy, color, radius, 0.62, 'flare');
+      this.spawnRingBurst(cx, cy, color, 0.56, 1.7 + radius * 0.35);
+      this.spawnSparks(cx, cy, '#ff8844', 26, { spread: 1.8, life: 0.7, glow: true });
+    } else if (fx.kind === 'reaver') {
+      this._pushRune(cx, cy, color, radius, 0.55, 'storm');
+      for (let i = 0; i < 3; i++) this.spawnRingBurst(cx, cy, i % 2 ? '#8a8098' : color, 0.46 + i * 0.08, 1.2 + i * 0.55);
+      this.spawnSparks(cx, cy, '#e8e0d0', 24, { spread: 2.0, life: 0.58, glow: true });
+    } else if (fx.kind === 'pilgrim') {
+      this._pushRune(cx, cy, color, radius, 0.72, 'sanctuary');
+      this.spawnRingBurst(cx, cy, color, 0.72, 1.8 + radius * 0.35);
+      this.spawnSparks(cx, cy, '#fff2c0', 20, { spread: 1.6, life: 0.75, glow: true });
+    } else {
+      this._pushRune(cx, cy, color, radius, 0.58, 'ward');
+      this.spawnRingBurst(cx, cy, '#80b0ff', 0.58, 1.45);
+    }
   }
 
   spawnHitFlash(tileX, tileY, strong = false) {
@@ -191,6 +225,35 @@ export class ParticleSystem {
     });
   }
 
+  _pushBeam(x0, y0, x1, y1, color, life, width = 4) {
+    if (this._particles.length >= MAX_PARTICLES) this._particles.shift();
+    this._particles.push({
+      kind: 'beam',
+      x: (x0 + 0.5) * TILE_SIZE,
+      y: (y0 + 0.5) * TILE_SIZE,
+      x2: (x1 + 0.5) * TILE_SIZE,
+      y2: (y1 + 0.5) * TILE_SIZE,
+      vx: 0, vy: 0,
+      life, maxLife: life,
+      color,
+      size: width
+    });
+  }
+
+  _pushRune(tileX, tileY, color, radiusTiles, life, variant) {
+    if (this._particles.length >= MAX_PARTICLES) this._particles.shift();
+    this._particles.push({
+      kind: 'rune',
+      x: (tileX + 0.5) * TILE_SIZE,
+      y: (tileY + 0.5) * TILE_SIZE,
+      vx: 0, vy: 0,
+      life, maxLife: life,
+      color,
+      size: TILE_SIZE * Math.max(0.7, radiusTiles * 0.55),
+      variant
+    });
+  }
+
   /** @param {number} dt seconds */
   update(dt) {
     const next = [];
@@ -251,6 +314,51 @@ export class ParticleSystem {
         ctx.globalAlpha = alpha * 0.55;
         ctx.fillStyle = p.color;
         ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+      } else if (p.kind === 'beam') {
+        const pulse = 1 - t;
+        ctx.globalAlpha = alpha * 0.9;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.size + pulse * 5;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 14;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        const mx = (p.x + p.x2) / 2;
+        const my = (p.y + p.y2) / 2 - TILE_SIZE * 0.18;
+        ctx.quadraticCurveTo(mx, my, p.x2, p.y2);
+        ctx.stroke();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#fff2c0';
+        ctx.lineWidth = Math.max(1, p.size * 0.35);
+        ctx.stroke();
+      } else if (p.kind === 'rune') {
+        const grow = 0.75 + (1 - t) * 0.55;
+        const rad = p.size * grow;
+        ctx.translate(p.x, p.y);
+        ctx.rotate((1 - t) * Math.PI * (p.variant === 'storm' ? 1.6 : 0.35));
+        ctx.globalAlpha = alpha * 0.55;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.variant === 'sanctuary' ? 3 : 2;
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 18;
+        ctx.beginPath();
+        ctx.arc(0, 0, rad, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = alpha * 0.42;
+        for (let i = 0; i < 6; i++) {
+          const a = (Math.PI * 2 * i) / 6;
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(a) * rad * 0.28, Math.sin(a) * rad * 0.28);
+          ctx.lineTo(Math.cos(a) * rad, Math.sin(a) * rad);
+          ctx.stroke();
+        }
+        if (p.variant === 'flare') {
+          ctx.globalAlpha = alpha * 0.22;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(0, 0, rad * 0.72, 0, Math.PI * 2);
+          ctx.fill();
+        }
       } else {
         const pop = p.pop ? 1 + (1 - t) * 0.35 : 1;
         const px = 14 * (p.scale ?? 1) * pop;

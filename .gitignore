@@ -22,3 +22,5 @@ Thumbs.db
 # Build artifacts
 *.log
 npm-debug.log*
+
+.vercel
