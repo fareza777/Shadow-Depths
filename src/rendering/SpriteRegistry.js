@@ -21,6 +21,7 @@ import {
 } from './playerSprites.js';
 import { buildEnemySprites } from './enemySprites.js';
 import { HERO_ORDER, drawHeroSprite, drawHeroEquipment } from './heroSprites.js';
+import { paintWeaponAffix } from './weaponComposer.js';
 
 const FALLBACK_COLOR = '#9a8a78';
 
@@ -303,10 +304,15 @@ export class SpriteRegistry {
     const fn = this._sprites[key];
     if (fn) {
       fn(ctx, x, y, size, opts);
-      return;
+    } else {
+      // Inferred item draw: classify by key prefix and tint by rarity if given.
+      this._drawInferredItem(key, ctx, x, y, size, opts);
     }
-    // Inferred item draw: classify by key prefix and tint by rarity if given.
-    this._drawInferredItem(key, ctx, x, y, size, opts);
+    // Affix overlay for weapons — adds gem socket (prefix) + blade glow
+    // (suffix) so a rolled item is visually distinct from its base.
+    if (opts.affixes && (key === 'player_sword' || key.startsWith('weapon_'))) {
+      paintWeaponAffix(ctx, x, y, size, opts.affixes);
+    }
   }
 
   _drawInferredItem(key, ctx, x, y, s, opts) {

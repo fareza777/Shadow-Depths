@@ -378,7 +378,7 @@ export class Renderer {
       const ix = x * TILE_SIZE;
       const iy = y * TILE_SIZE;
       this._drawItemGlow(ctx, ix, iy, top.spriteKey);
-      this.sprites.draw(top.spriteKey, ctx, ix, iy);
+      this.sprites.draw(top.spriteKey, ctx, ix, iy, { affixes: top.def?.affixes || null });
       if (stack.length > 1) {
         this._tinyBadge(ctx, x * TILE_SIZE + TILE_SIZE - 10, y * TILE_SIZE + TILE_SIZE - 10, `${stack.length}`);
       }

@@ -1045,7 +1045,9 @@ export class GameScene {
       floor.addEntity(enemy);
     }
     for (const s of spawns.items) {
-      const item = this.itemFactory.create(s.defId, 1);
+      const item = s.affixes
+        ? this.itemFactory.createWithAffix(s.defId, s.affixes, 1)
+        : this.itemFactory.create(s.defId, 1);
       if (item) floor.addItem(s.x, s.y, item);
     }
   }
@@ -1255,7 +1257,12 @@ export class GameScene {
   }
 
   _playerSnapshot() {
-    const itemSnap = (item) => (item ? { id: item.id, count: item.count || 1 } : null);
+    const itemSnap = (item) => {
+      if (!item) return null;
+      const s = { id: item.id, count: item.count || 1 };
+      if (item.def?.affixes) s.affixes = item.def.affixes;
+      return s;
+    };
     return {
       pos: { x: this.player.x, y: this.player.y },
       stats: { ...this.player.stats },
@@ -1297,7 +1304,11 @@ export class GameScene {
       const [x, y] = key.split(',').map(Number);
       items.push({
         x, y,
-        stack: stack.map((item) => ({ id: item.id, count: item.count || 1 }))
+        stack: stack.map((item) => {
+          const snap = { id: item.id, count: item.count || 1 };
+          if (item.def?.affixes) snap.affixes = item.def.affixes;
+          return snap;
+        })
       });
     }
     const enemies = floor.enemies().map((e) => ({
@@ -1347,7 +1358,7 @@ export class GameScene {
     player.spellLifesteal = snap.spellLifesteal || 0;
     player.critSkillBonus = snap.critSkillBonus || 0;
     player.statusEffects = Array.isArray(snap.statusEffects) ? snap.statusEffects.map((e) => ({ ...e })) : [];
-    const make = (s) => (s?.id ? this.itemFactory.create(s.id, s.count || 1) : null);
+    const make = (s) => (s?.id ? this.itemFactory.fromSnapshot(s) : null);
     const eq = snap.equipment || {};
     player.weapon = make(eq.weapon);
     player.armor = make(eq.armor);
@@ -1368,7 +1379,7 @@ export class GameScene {
     }
     for (const it of snap.items || []) {
       for (const itemSnap of it.stack || []) {
-        const item = this.itemFactory.create(itemSnap.id, itemSnap.count || 1);
+        const item = this.itemFactory.fromSnapshot(itemSnap);
         if (item) floor.addItem(it.x, it.y, item);
       }
     }

@@ -17,6 +17,7 @@ import {
   TILE, GRID_WIDTH, GRID_HEIGHT
 } from '../config/constants.js';
 import { Floor } from './Floor.js';
+import { rollItemAffixes } from '../items/itemGenerator.js';
 
 const MAX_DEPTH = 4; // 2^4 = up to 16 leaf rooms
 const MIN_LEAF_SIZE = 7; // must fit roomMin (4) + 1 padding on each side
@@ -277,7 +278,12 @@ export class DungeonGenerator {
       const tile = this._randomTileInRoom(floor, room);
       if (!tile) continue;
       const defId = this.rng.weightedPick(weighted);
-      spawns.push({ x: tile.x, y: tile.y, defId });
+      // Roll affix at spawn time so save/load and codex stay deterministic.
+      const baseDef = itemDefs[defId];
+      const affixes = baseDef ? rollItemAffixes(baseDef, floorIndex + 1, this.rng) : null;
+      const entry = { x: tile.x, y: tile.y, defId };
+      if (affixes) entry.affixes = affixes;
+      spawns.push(entry);
     }
     return spawns;
   }

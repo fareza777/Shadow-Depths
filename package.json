@@ -10,7 +10,8 @@
     "preview": "vite preview --host",
     "lint": "eslint src --ext .js",
     "deploy": "vercel --prod",
-    "deploy:preview": "vercel"
+    "deploy:preview": "vercel",
+    "sim": "node scripts/sim.js"
   },
   "devDependencies": {
     "eslint": "^9.0.0",

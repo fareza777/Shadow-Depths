@@ -412,11 +412,12 @@ export function drawEquipRow(renderer, x, y, w, h, slot, item) {
     ctx.fillStyle = rg;
     ctx.fillRect(iconX + 1, iconY + 1, ico - 2, ico - 2);
     ctx.restore();
-    // Actual item sprite. Padded 2px inside the slot frame.
+    // Actual item sprite. Padded 2px inside the slot frame. Affix overlay
+    // (gem socket / blade glow) layers on top via SpriteRegistry.draw.
     if (item.spriteKey && renderer.sprites?.draw) {
       renderer.sprites.draw(item.spriteKey, ctx,
         iconX + 2, iconY + 2,
-        { size: ico - 4, tint: col });
+        { size: ico - 4, tint: col, affixes: item.def?.affixes || null });
     } else {
       ctx.fillStyle = col;
       ctx.font = `${Math.round(ico * 0.65)}px serif`;

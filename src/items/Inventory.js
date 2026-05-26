@@ -105,7 +105,13 @@ export class Inventory {
 
   /** Serialize to a save-friendly snapshot. */
   toSnapshot() {
-    return this.slots.map((s) => (s ? { id: s.id, count: s.count } : null));
+    return this.slots.map((s) => {
+      if (!s) return null;
+      const snap = { id: s.id, count: s.count };
+      // Rolled items carry affix data so they rehydrate identical on reload.
+      if (s.def?.affixes) snap.affixes = s.def.affixes;
+      return snap;
+    });
   }
 
   /** Inverse of toSnapshot(). Mutates this inventory in place. */
