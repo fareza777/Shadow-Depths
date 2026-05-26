@@ -145,6 +145,11 @@ export class HUD {
    * Dark plate with brass border, animated shimmer sweeping across the
    * floor name, "FLOOR N OF M" subtitle wrapped between brass hairlines.
    */
+  /**
+   * Engraved floor nameplate — no box border, only brass piping above &
+   * below the title with a hammered inset plate behind the name. Matches
+   * the iron-portcullis vocabulary used elsewhere in the HUD.
+   */
   _drawFloorBanner(r, name, floorIndex, totalFloors) {
     const ctx = r.ctx;
     const x = 8;
@@ -152,34 +157,59 @@ export class HUD {
     const w = Layout.canvasW - 32;
     const h = 30;
     const t = hudNow();
+    const cx = Layout.canvasW / 2;
+    const upper = name.toUpperCase();
 
-    // Background plate
     ctx.save();
+
+    // Hammered inset plate (subtle — sits flush with the HUD bg).
     const g = ctx.createLinearGradient(0, y, 0, y + h);
-    g.addColorStop(0, IRON.plate0);
-    g.addColorStop(1, IRON.ink);
+    g.addColorStop(0, 'rgba(8,6,12,0.55)');
+    g.addColorStop(0.5, 'rgba(20,16,28,0.30)');
+    g.addColorStop(1, 'rgba(8,6,12,0.55)');
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
-    // Brass border
-    ctx.strokeStyle = `${BRASS_DARK}cc`;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-    // Top bevel + bottom shadow
-    ctx.fillStyle = `${IRON.plateHi}88`;
-    ctx.fillRect(x + 1, y + 1, w - 2, 1);
-    ctx.fillStyle = IRON.ink;
-    ctx.fillRect(x + 1, y + h - 2, w - 2, 1);
 
-    // Gilt shimmer sweep — moves L→R across the banner.
+    // Brass piping above + below (gradient fade to transparent at ends).
+    const pipeFn = (py) => {
+      const lg = ctx.createLinearGradient(x, py, x + w, py);
+      lg.addColorStop(0,    'rgba(212,172,108,0)');
+      lg.addColorStop(0.18, BRASS_DARK);
+      lg.addColorStop(0.5,  BRASS_HI);
+      lg.addColorStop(0.82, BRASS_DARK);
+      lg.addColorStop(1,    'rgba(212,172,108,0)');
+      ctx.fillStyle = lg;
+      ctx.fillRect(x, py, w, 1);
+    };
+    pipeFn(y);
+    pipeFn(y + h - 1);
+
+    // Tiny brass studs at the four corners (no boxed border).
+    const studs = [
+      [x + 6, y + 4], [x + w - 6, y + 4],
+      [x + 6, y + h - 4], [x + w - 6, y + h - 4]
+    ];
+    for (const [sx, sy] of studs) {
+      const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 2);
+      sg.addColorStop(0, BRASS_HI);
+      sg.addColorStop(0.6, BRASS_DARK);
+      sg.addColorStop(1, IRON.ink);
+      ctx.fillStyle = sg;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Gilt sweep — soft band moves across, scoped to plate by clip.
     ctx.save();
     ctx.beginPath();
-    ctx.rect(x + 1, y + 1, w - 2, h - 2);
+    ctx.rect(x, y + 1, w, h - 2);
     ctx.clip();
     const sweepPhase = ((t * 0.22) % 1);
     const sweepX = x - w * 0.4 + sweepPhase * w * 1.8;
     const sweepG = ctx.createLinearGradient(sweepX, 0, sweepX + w * 0.45, 0);
     sweepG.addColorStop(0,    'rgba(212,172,108,0)');
-    sweepG.addColorStop(0.5,  'rgba(212,172,108,0.22)');
+    sweepG.addColorStop(0.5,  'rgba(212,172,108,0.10)');
     sweepG.addColorStop(1,    'rgba(212,172,108,0)');
     ctx.fillStyle = sweepG;
     ctx.fillRect(x, y, w, h);
@@ -189,13 +219,10 @@ export class HUD {
     ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const cx = Layout.canvasW / 2;
     const labelY = y + 11;
-    const upper = name.toUpperCase();
     // Engraved back-shadow
     ctx.fillStyle = IRON.ink;
     ctx.fillText(upper, cx + 1, labelY + 1);
-    // Sliding brass gradient fills the glyph directly.
     const tw = ctx.measureText(upper).width;
     const phase = (t * 0.18) % 1;
     const gx = cx - tw / 2 - tw * 0.3 + phase * tw * 1.6;
@@ -209,15 +236,13 @@ export class HUD {
     ctx.fillText(upper, cx, labelY);
 
     // Subtitle: ── FLOOR N OF M ──
-    const subY = y + h - 6;
+    const subY = y + h - 7;
     const sub = `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
     ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
     ctx.textAlign = 'center';
     ctx.fillStyle = IRON.boneDim;
     ctx.fillText(sub, cx, subY);
     const subW = ctx.measureText(sub).width;
-    // Brass hairlines either side.
-    const lineY = subY;
     const lineL = cx - subW / 2 - 8;
     const lineR = cx + subW / 2 + 8;
     const lineLen = 50;
@@ -225,12 +250,12 @@ export class HUD {
     lg1.addColorStop(0, 'rgba(212,172,108,0)');
     lg1.addColorStop(1, BRASS);
     ctx.fillStyle = lg1;
-    ctx.fillRect(lineL - lineLen, lineY, lineLen, 1);
+    ctx.fillRect(lineL - lineLen, subY, lineLen, 1);
     const lg2 = ctx.createLinearGradient(lineR, 0, lineR + lineLen, 0);
     lg2.addColorStop(0, BRASS);
     lg2.addColorStop(1, 'rgba(212,172,108,0)');
     ctx.fillStyle = lg2;
-    ctx.fillRect(lineR, lineY, lineLen, 1);
+    ctx.fillRect(lineR, subY, lineLen, 1);
 
     ctx.restore();
   }
