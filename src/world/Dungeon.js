@@ -21,9 +21,10 @@
 import { LOG } from '../config/constants.js';
 import { DungeonGenerator } from './DungeonGenerator.js';
 
-const FLOORS_PER_BIOME = 5;
+// 10 biomes × 10 floors each = 100 total floors. Matches biome-tiles.jsx.
+const FLOORS_PER_BIOME = 10;
 const TOTAL_FLOORS = 100;
-const ROMAN = ['I', 'II', 'III', 'IV', 'V'];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
 const SUBBOSS_IDS = [
   'subboss_cairn_knight',
   'subboss_veil_stalker',

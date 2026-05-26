@@ -26,6 +26,7 @@ import {
   Layout, syncLayoutFromWindow, viewportX, viewportY, viewportW, viewportH
 } from '../config/layoutMetrics.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
+import { drawBiomeWall, drawBiomeFloor, hasBiome } from './biomeTiles.js';
 
 export class Renderer {
   /**
@@ -257,6 +258,12 @@ export class Renderer {
       }
     }
 
+    // Use biome tile atlas if this floor's biomeId matches one of our 10
+    // hand-designed biomes. Otherwise fall back to the legacy sprite
+    // registry tiles.
+    const biomeId = tileOpts.biomeId;
+    const useBiome = !!biomeId && hasBiome(biomeId);
+
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
@@ -267,10 +274,22 @@ export class Renderer {
         const ty = toPx(y);
         if (t.type === TILE.VOID || t.type === TILE.WALL) continue;
         switch (t.type) {
-          case TILE.FLOOR:       this.sprites.draw('tile_floor', ctx, tx, ty, opts); break;
-          case TILE.STAIRS_DOWN: this.sprites.draw('tile_stairs_down', ctx, tx, ty, opts); break;
-          case TILE.STAIRS_UP:   this.sprites.draw('tile_stairs_up', ctx, tx, ty, opts); break;
-          case TILE.DOOR:        this.sprites.draw('tile_door', ctx, tx, ty, opts); break;
+          case TILE.FLOOR:
+            if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+            else this.sprites.draw('tile_floor', ctx, tx, ty, opts);
+            break;
+          case TILE.STAIRS_DOWN:
+            if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+            this.sprites.draw('tile_stairs_down', ctx, tx, ty, opts);
+            break;
+          case TILE.STAIRS_UP:
+            if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+            this.sprites.draw('tile_stairs_up', ctx, tx, ty, opts);
+            break;
+          case TILE.DOOR:
+            if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+            this.sprites.draw('tile_door', ctx, tx, ty, opts);
+            break;
           default: break;
         }
         if (dim) Renderer._applyFog(ctx, tx, ty);
@@ -294,7 +313,11 @@ export class Renderer {
         };
         const tx = toPx(x);
         const ty = toPx(y);
-        this.sprites.draw('tile_wall', ctx, tx, ty, opts);
+        if (useBiome) {
+          drawBiomeWall(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+        } else {
+          this.sprites.draw('tile_wall', ctx, tx, ty, opts);
+        }
         if (dim) Renderer._applyFog(ctx, tx, ty);
       }
     }

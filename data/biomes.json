@@ -3,421 +3,151 @@
     {
       "id": "forgotten_crypts",
       "name": "The Forgotten Crypts",
-      "atmosphere": "Abandoned catacombs, dust, bone, and the last rites of a forgotten burial order.",
-      "wallPalette": [
-        "#3a3340",
-        "#1a1820"
-      ],
-      "floorPalette": [
-        "#2a2630",
-        "#15131a"
-      ],
-      "enemyPool": [
-        "goblin_scout",
-        "cave_bat",
-        "skeleton_archer",
-        "shroud_crawler",
-        "candle_licker"
-      ],
-      "torchRadius": 5
-    },
-    {
-      "id": "halls_of_echoes",
-      "name": "Halls of Echoes",
-      "atmosphere": "Broken halls return every footstep as a warning.",
-      "wallPalette": [
-        "#3a3548",
-        "#1a1828"
-      ],
-      "floorPalette": [
-        "#2c2838",
-        "#16141e"
-      ],
-      "enemyPool": [
-        "skeleton_archer",
-        "cave_bat",
-        "stone_golem",
-        "bell_haunt",
-        "marrow_hound"
-      ],
+      "subtitle": "Where the kings forgot themselves.",
+      "atmosphere": "Where the kings forgot themselves.",
+      "palette": {
+        "bg": "#1a161e", "ambient": "#4a7eb8", "torchTint": "#b8935a",
+        "wallCap": "#9a8c98", "wallCapOpacity": 0.55,
+        "grain": "#08070c", "dust": "#7a6e80"
+      },
+      "wallPalette": ["#403a48", "#1a161e"],
+      "floorPalette": ["#221e26", "#15131a"],
+      "enemyPool": ["goblin_scout", "cave_bat", "skeleton_archer"],
       "torchRadius": 5
     },
     {
       "id": "bone_garden",
       "name": "The Bone Garden",
-      "atmosphere": "Something grows between the bones. It is not a plant.",
-      "wallPalette": [
-        "#3a3340",
-        "#181420"
-      ],
-      "floorPalette": [
-        "#2a2538",
-        "#14101a"
-      ],
-      "enemyPool": [
-        "stone_golem",
-        "shadow_wraith",
-        "cave_bat",
-        "grave_moss",
-        "ossuary_moth"
-      ],
+      "subtitle": "Sown by the worst harvest.",
+      "atmosphere": "Sown by the worst harvest.",
+      "palette": {
+        "bg": "#1a1410", "ambient": "#c4503a", "torchTint": "#d4ac6c",
+        "wallCap": "#9a7e5a", "wallCapOpacity": 0.55,
+        "grain": "#1a0808", "dust": "#7a5a3a"
+      },
+      "wallPalette": ["#5a4838", "#1a1410"],
+      "floorPalette": ["#241c14", "#181410"],
+      "enemyPool": ["skeleton_archer", "shadow_wraith", "rotbringer", "cave_bat"],
+      "torchRadius": 5
+    },
+    {
+      "id": "frozen_halls",
+      "name": "The Frozen Halls",
+      "subtitle": "It is not cold here. It is patient.",
+      "atmosphere": "It is not cold here. It is patient.",
+      "palette": {
+        "bg": "#0c1018", "ambient": "#7faafa", "torchTint": "#bfd6ff",
+        "wallCap": "#bfd6ff", "wallCapOpacity": 0.55,
+        "grain": "#0a0e16", "dust": "#7faafa"
+      },
+      "wallPalette": ["#2a3a4a", "#0c1018"],
+      "floorPalette": ["#22324a", "#1a2638"],
+      "enemyPool": ["ice_revenant", "deep_lurker", "stone_golem", "shadow_wraith"],
       "torchRadius": 4
     },
     {
-      "id": "drowning_caves",
-      "name": "The Drowning Caves",
-      "atmosphere": "Water seeps from the ceiling. Sometimes it is not water.",
-      "wallPalette": [
-        "#2a3a44",
-        "#101820"
-      ],
-      "floorPalette": [
-        "#1a2a30",
-        "#0a1218"
-      ],
-      "enemyPool": [
-        "deep_lurker",
-        "shadow_wraith",
-        "rotbringer",
-        "brine_leech",
-        "echo_knight"
-      ],
+      "id": "sunken_forest",
+      "name": "The Sunken Forest",
+      "subtitle": "The trees grew here. Then the ceiling came.",
+      "atmosphere": "The trees grew here. Then the ceiling came.",
+      "palette": {
+        "bg": "#0c1408", "ambient": "#88c656", "torchTint": "#c4ff7f",
+        "wallCap": "#88c656", "wallCapOpacity": 0.55,
+        "grain": "#08100a", "dust": "#88c656"
+      },
+      "wallPalette": ["#3a4828", "#0c1408"],
+      "floorPalette": ["#1f2614", "#1a2010"],
+      "enemyPool": ["cave_bat", "rotbringer", "bloodroot_fiend", "deep_lurker"],
       "torchRadius": 4
     },
     {
-      "id": "ashen_wastes",
-      "name": "The Ashen Wastes",
-      "atmosphere": "This is not wood ash. It belongs to something older.",
-      "wallPalette": [
-        "#3a3030",
-        "#1c1414"
-      ],
-      "floorPalette": [
-        "#2a2220",
-        "#150d0d"
-      ],
-      "enemyPool": [
-        "cinder_imp",
-        "stone_golem",
-        "rotbringer",
-        "ash_warden",
-        "ember_shade"
-      ],
+      "id": "iron_stronghold",
+      "name": "The Iron Stronghold",
+      "subtitle": "Built by hands that forgot soft things.",
+      "atmosphere": "Built by hands that forgot soft things.",
+      "palette": {
+        "bg": "#1a1620", "ambient": "#ff8844", "torchTint": "#ffd4a8",
+        "wallCap": "#9a8e9a", "wallCapOpacity": 0.55,
+        "grain": "#08060c", "dust": "#6a5e6a"
+      },
+      "wallPalette": ["#4a3c44", "#1a1218"],
+      "floorPalette": ["#221c26", "#181420"],
+      "enemyPool": ["iron_sentinel", "hollow_marcher", "ash_warden", "stone_golem"],
       "torchRadius": 4
+    },
+    {
+      "id": "sun_cursed_sands",
+      "name": "The Sun-Cursed Sands",
+      "subtitle": "Even the dunes are tombs.",
+      "atmosphere": "Even the dunes are tombs.",
+      "palette": {
+        "bg": "#1c140a", "ambient": "#ffaa44", "torchTint": "#ffe488",
+        "wallCap": "#d4ac6c", "wallCapOpacity": 0.55,
+        "grain": "#1a0e04", "dust": "#a07840"
+      },
+      "wallPalette": ["#7a5828", "#1c140a"],
+      "floorPalette": ["#42301a", "#3a2a14"],
+      "enemyPool": ["cinder_imp", "ash_warden", "mirror_thrall", "skeleton_archer"],
+      "torchRadius": 5
     },
     {
       "id": "mirror_vaults",
       "name": "The Mirror Vaults",
-      "atmosphere": "Mirrors cling to every wall. Your face is not always in them.",
-      "wallPalette": [
-        "#34384a",
-        "#16182a"
-      ],
-      "floorPalette": [
-        "#26283a",
-        "#10101e"
-      ],
-      "enemyPool": [
-        "mirror_thrall",
-        "shadow_wraith",
-        "cinder_imp",
-        "ash_warden",
-        "glass_twin"
-      ],
+      "subtitle": "You watch yourself unmaking.",
+      "atmosphere": "You watch yourself unmaking.",
+      "palette": {
+        "bg": "#08060c", "ambient": "#d4ac6c", "torchTint": "#fff2c0",
+        "wallCap": "#d4ac6c", "wallCapOpacity": 0.55,
+        "grain": "#08070c", "dust": "#d4ac6c"
+      },
+      "wallPalette": ["#2a2236", "#15101e"],
+      "floorPalette": ["#120e18", "#0a0810"],
+      "enemyPool": ["mirror_thrall", "ink_scribe", "shadow_wraith", "whisper_hound"],
       "torchRadius": 4
     },
     {
-      "id": "sundered_library",
-      "name": "The Sundered Library",
-      "atmosphere": "Pages fall like leaves from a dead season.",
-      "wallPalette": [
-        "#3a3428",
-        "#1c1810"
-      ],
-      "floorPalette": [
-        "#2c2820",
-        "#16140e"
-      ],
-      "enemyPool": [
-        "rotbringer",
-        "ink_scribe",
-        "shadow_wraith",
-        "page_gnawer",
-        "lexicon_wraith"
-      ],
-      "torchRadius": 5
-    },
-    {
-      "id": "frostbite_mines",
-      "name": "Frostbite Mines",
-      "atmosphere": "Old mines. Metal was not the only thing taken here.",
-      "wallPalette": [
-        "#2a3a48",
-        "#0e1828"
-      ],
-      "floorPalette": [
-        "#1a2a38",
-        "#080e18"
-      ],
-      "enemyPool": [
-        "ice_revenant",
-        "stone_golem",
-        "deep_lurker",
-        "ash_warden",
-        "frost_crawler"
-      ],
+      "id": "magma_foundry",
+      "name": "The Magma Foundry",
+      "subtitle": "Something is being forged. It is not weapons.",
+      "atmosphere": "Something is being forged. It is not weapons.",
+      "palette": {
+        "bg": "#1a0808", "ambient": "#ff5530", "torchTint": "#ffa040",
+        "wallCap": "#c4503a", "wallCapOpacity": 0.55,
+        "grain": "#000000", "dust": "#ff5530"
+      },
+      "wallPalette": ["#2e1818", "#1a0808"],
+      "floorPalette": ["#1f120c", "#170c08"],
+      "enemyPool": ["cinder_imp", "ash_warden", "iron_sentinel", "bloodroot_fiend"],
       "torchRadius": 4
     },
     {
-      "id": "bloodroot_hollow",
-      "name": "Bloodroot Hollow",
-      "atmosphere": "The roots here drink something other than water.",
-      "wallPalette": [
-        "#3a2424",
-        "#1c1010"
-      ],
-      "floorPalette": [
-        "#2c1c1c",
-        "#160a0a"
-      ],
-      "enemyPool": [
-        "bloodroot_fiend",
-        "rotbringer",
-        "cinder_imp",
-        "ink_scribe",
-        "vein_stalker"
-      ],
+      "id": "drowned_catacombs",
+      "name": "The Drowned Catacombs",
+      "subtitle": "The dead were buried wet.",
+      "atmosphere": "The dead were buried wet.",
+      "palette": {
+        "bg": "#0a1620", "ambient": "#6acaba", "torchTint": "#a8e0d4",
+        "wallCap": "#a8e0d4", "wallCapOpacity": 0.55,
+        "grain": "#040a0e", "dust": "#a8e0d4"
+      },
+      "wallPalette": ["#324848", "#0a1620"],
+      "floorPalette": ["#10202a", "#0c1820"],
+      "enemyPool": ["deep_lurker", "rotbringer", "shadow_wraith", "ice_revenant"],
       "torchRadius": 4
     },
     {
-      "id": "iron_sepulchre",
-      "name": "Iron Sepulchre",
-      "atmosphere": "Every tomb is locked from the inside.",
-      "wallPalette": [
-        "#3a3a44",
-        "#1a1a24"
-      ],
-      "floorPalette": [
-        "#2a2a34",
-        "#14141c"
-      ],
-      "enemyPool": [
-        "iron_sentinel",
-        "ash_warden",
-        "stone_golem",
-        "mirror_thrall",
-        "rust_prophet"
-      ],
-      "torchRadius": 4
-    },
-    {
-      "id": "whispering_reach",
-      "name": "The Whispering Reach",
-      "atmosphere": "Voices at your ear speak a name. Not yours.",
-      "wallPalette": [
-        "#34304a",
-        "#1a162a"
-      ],
-      "floorPalette": [
-        "#26223a",
-        "#100c1e"
-      ],
-      "enemyPool": [
-        "shadow_wraith",
-        "mirror_thrall",
-        "ink_scribe",
-        "chain_ghost",
-        "ear_worm"
-      ],
-      "torchRadius": 3
-    },
-    {
-      "id": "cinder_court",
-      "name": "Cinder Court",
-      "atmosphere": "Empty thrones remain warm.",
-      "wallPalette": [
-        "#48342a",
-        "#241612"
-      ],
-      "floorPalette": [
-        "#382820",
-        "#1a0e0a"
-      ],
-      "enemyPool": [
-        "iron_sentinel",
-        "ash_warden",
-        "bloodroot_fiend",
-        "hymn_wretch",
-        "ember_shade"
-      ],
-      "torchRadius": 4
-    },
-    {
-      "id": "sunken_chapel",
-      "name": "The Sunken Chapel",
-      "atmosphere": "The prayers here were forgotten. Not by everything.",
-      "wallPalette": [
-        "#243a3a",
-        "#101c1c"
-      ],
-      "floorPalette": [
-        "#1a2c2c",
-        "#0a1414"
-      ],
-      "enemyPool": [
-        "whisper_hound",
-        "rotbringer",
-        "iron_sentinel",
-        "hymn_wretch",
-        "salt_ghoul"
-      ],
-      "torchRadius": 4
-    },
-    {
-      "id": "veiled_garden",
-      "name": "The Veiled Garden",
-      "atmosphere": "Veils stir where no wind should pass.",
-      "wallPalette": [
-        "#3a2a3a",
-        "#1c121c"
-      ],
-      "floorPalette": [
-        "#2c202c",
-        "#160a14"
-      ],
-      "enemyPool": [
-        "mirror_thrall",
-        "whisper_hound",
-        "ink_scribe",
-        "vein_stalker",
-        "glass_twin"
-      ],
-      "torchRadius": 3
-    },
-    {
-      "id": "salt_tombs",
-      "name": "Salt Tombs",
-      "atmosphere": "Bodies are preserved. Faces are not.",
-      "wallPalette": [
-        "#3a3a3a",
-        "#1c1c1c"
-      ],
-      "floorPalette": [
-        "#2c2c2c",
-        "#161616"
-      ],
-      "enemyPool": [
-        "iron_sentinel",
-        "ash_warden",
-        "whisper_hound",
-        "salt_ghoul",
-        "frost_crawler"
-      ],
-      "torchRadius": 4
-    },
-    {
-      "id": "hollow_kings_march",
-      "name": "Hollow King's March",
-      "atmosphere": "They still march, and did so long before you were born.",
-      "wallPalette": [
-        "#34344a",
-        "#16162a"
-      ],
-      "floorPalette": [
-        "#26263a",
-        "#10101e"
-      ],
-      "enemyPool": [
-        "iron_sentinel",
-        "hollow_marcher",
-        "shadow_wraith",
-        "ash_warden",
-        "banner_void"
-      ],
-      "torchRadius": 3
-    },
-    {
-      "id": "wyrms_throat",
-      "name": "Wyrm's Throat",
-      "atmosphere": "The corridor breathes.",
-      "wallPalette": [
-        "#3a2a24",
-        "#1c1410"
-      ],
-      "floorPalette": [
-        "#2c1c18",
-        "#160a08"
-      ],
-      "enemyPool": [
-        "cinder_imp",
-        "wyrm_spawn",
-        "hollow_marcher",
-        "scale_skitter",
-        "hive_warden"
-      ],
-      "torchRadius": 3
-    },
-    {
-      "id": "black_apiary",
-      "name": "The Black Apiary",
-      "atmosphere": "The honey here is black. The honey here moves.",
-      "wallPalette": [
-        "#2a2a18",
-        "#14140a"
-      ],
-      "floorPalette": [
-        "#1c1c10",
-        "#0a0a05"
-      ],
-      "enemyPool": [
-        "wyrm_spawn",
-        "ink_scribe",
-        "ice_revenant",
-        "hive_warden",
-        "sting_matron"
-      ],
-      "torchRadius": 3
-    },
-    {
-      "id": "empty_heaven",
-      "name": "Empty Heaven",
-      "atmosphere": "The ceiling is distant, starry, and wrong.",
-      "wallPalette": [
-        "#242448",
-        "#0a0a28"
-      ],
-      "floorPalette": [
-        "#1a1a38",
-        "#080818"
-      ],
-      "enemyPool": [
-        "wyrm_spawn",
-        "shadow_wraith",
-        "mirror_thrall",
-        "starved_seraph",
-        "banner_void"
-      ],
-      "torchRadius": 3
-    },
-    {
-      "id": "the_below",
-      "name": "The Below",
-      "atmosphere": "There is nothing below this. That is the problem.",
-      "wallPalette": [
-        "#0a0a14",
-        "#040408"
-      ],
-      "floorPalette": [
-        "#06060c",
-        "#020204"
-      ],
-      "enemyPool": [
-        "hollow_marcher",
-        "wyrm_spawn",
-        "shadow_wraith",
-        "null_weaver",
-        "starved_seraph"
-      ],
+      "id": "void_sanctum",
+      "name": "The Void Sanctum",
+      "subtitle": "You are very small here. The void is patient.",
+      "atmosphere": "You are very small here. The void is patient.",
+      "palette": {
+        "bg": "#04020a", "ambient": "#9a40e8", "torchTint": "#c08aff",
+        "wallCap": "#c08aff", "wallCapOpacity": 0.6,
+        "grain": "#04020a", "dust": "#c08aff"
+      },
+      "wallPalette": ["#1a1024", "#04020a"],
+      "floorPalette": ["#0c0612", "#040208"],
+      "enemyPool": ["the_called", "hollow_marcher", "wyrm_spawn", "shadow_wraith"],
       "torchRadius": 3,
       "isFinalBiome": true
     }
