@@ -54,6 +54,39 @@ const BEHAVIORS = {
   phase: PhaseBehavior
 };
 
+const HERO_SPELLS = {
+  vigil: {
+    name: 'Bulwark',
+    cooldown: 7,
+    description: 'Heal and raise DEF for a few turns.'
+  },
+  hollow: {
+    name: 'Siphon',
+    cooldown: 6,
+    range: 6,
+    description: 'Drain the nearest visible enemy.'
+  },
+  inquisitor: {
+    name: 'Lantern',
+    cooldown: 7,
+    range: 6,
+    radius: 1,
+    description: 'Burn a small cluster around a target.'
+  },
+  reaver: {
+    name: 'Bone Storm',
+    cooldown: 5,
+    radius: 2,
+    description: 'Damage nearby enemies.'
+  },
+  pilgrim: {
+    name: 'Sanctuary',
+    cooldown: 8,
+    radius: 3,
+    description: 'Heal and reveal nearby ground.'
+  }
+};
+
 export class GameScene {
   /**
    * @param {{
@@ -277,9 +310,11 @@ export class GameScene {
       const itemsHere = (this.floor?.itemsAt &&
         this.floor.itemsAt(this.player.x, this.player.y)) || [];
       const aimTarget = MobileControls.computeAimTarget(this.player, this.floor);
+      const spellState = this._spellState();
       this.controls.setContext({
         aimTarget,
-        castReady: false, // no magic system yet — CAST stays disabled
+        castReady: spellState.ready,
+        spell: spellState,
         canDescend,
         pickAvailable: itemsHere.length > 0
       });
@@ -562,8 +597,7 @@ export class GameScene {
         // Iron HUD AIM button: auto-attack nearest visible enemy in range.
         return this._playerAimAttack();
       case 'cast':
-        // Reserved — no magic system yet (Iron HUD button stays disabled).
-        return;
+        return this._playerCastSpell();
       case 'minimap':    return this.minimap.toggle();
       case 'quickUse':   return this._playerQuickUse(action.index);
       case 'useSlot':    return this._playerUseSlot(action.index);
@@ -669,6 +703,128 @@ export class GameScene {
       { floor: this.floor, player: this.player }
     );
     this._endPlayerTurn(true);
+  }
+
+  _spellState() {
+    const def = HERO_SPELLS[this.player?.heroKind || this.heroKind];
+    if (!def || !this.player) return { ready: false, name: '', cooldown: 0 };
+    const cooldown = Math.max(0, this.player.spellCooldown || 0);
+    const needsTarget = ['hollow', 'inquisitor', 'reaver'].includes(this.player.heroKind);
+    const target = this.player.heroKind === 'reaver'
+      ? this._nearestVisibleEnemy(def.radius || 2, false)
+      : needsTarget
+        ? this._nearestVisibleEnemy(def.range || 6, this.player.heroKind === 'hollow')
+        : null;
+    return {
+      ...def,
+      baseCooldown: def.cooldown,
+      cooldown,
+      ready: cooldown <= 0 && (!needsTarget || !!target),
+      target
+    };
+  }
+
+  _playerCastSpell() {
+    const state = this._spellState();
+    if (!state.ready) return;
+    const kind = this.player.heroKind;
+    const power = this.player.magicPower || 0;
+    let used = false;
+
+    if (kind === 'vigil') {
+      const healed = this.player.heal(4 + Math.floor(this.player.level / 4) + power);
+      if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
+      this.player.applyStatus({ id: 'def_buff', value: 2 + Math.floor(power / 4), duration: 3 });
+      used = true;
+    } else if (kind === 'hollow') {
+      const target = state.target;
+      if (!target) return;
+      const dealt = this._dealSpellDamage(target, 5 + Math.floor(this.player.level / 3) + power, state.name);
+      const healed = this.player.heal(Math.ceil(dealt * (0.45 + (this.player.spellLifesteal || 0))));
+      if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
+      used = dealt > 0;
+    } else if (kind === 'inquisitor') {
+      const target = state.target;
+      if (!target) return;
+      used = this._damageEnemiesInRadius(
+        target.x, target.y, state.radius,
+        4 + Math.floor(this.player.level / 4) + power,
+        state.name
+      ) > 0;
+    } else if (kind === 'reaver') {
+      used = this._damageEnemiesInRadius(
+        this.player.x, this.player.y, state.radius,
+        3 + Math.floor(this.player.totalAtk() / 2) + power,
+        state.name
+      ) > 0;
+      if (used) this.player.applyStatus({ id: 'atk_buff', value: 1, duration: 2 });
+    } else if (kind === 'pilgrim') {
+      const healed = this.player.heal(5 + Math.floor(this.player.level / 5) + power);
+      if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
+      this._revealAround(this.player.x, this.player.y, state.radius + Math.floor(power / 3));
+      used = true;
+    }
+
+    if (!used) return;
+    const cd = Math.max(3, state.baseCooldown - (this.player.spellCooldownReduction || 0));
+    this.player.spellCooldown = cd + 1;
+    this.bus.emit('spell:cast', { entity: this.player, spell: state.name });
+    this._endPlayerTurn(true);
+  }
+
+  _nearestVisibleEnemy(range, requireLineOfSight = false) {
+    let best = null;
+    let bestDist = Infinity;
+    for (const e of this.floor.enemies()) {
+      if (e.isDead) continue;
+      const t = this.floor.tileAt(e.x, e.y);
+      if (!t || !t.visible) continue;
+      const dist = Math.abs(e.x - this.player.x) + Math.abs(e.y - this.player.y);
+      if (dist > range || dist >= bestDist) continue;
+      if (requireLineOfSight && !hasLineOfSight(this.floor, this.player, e)) continue;
+      best = e;
+      bestDist = dist;
+    }
+    return best;
+  }
+
+  _damageEnemiesInRadius(cx, cy, radius, amount, spellName) {
+    let total = 0;
+    for (const e of [...this.floor.enemies()]) {
+      if (e.isDead) continue;
+      const dist = Math.abs(e.x - cx) + Math.abs(e.y - cy);
+      if (dist > radius) continue;
+      const dealt = this._dealSpellDamage(e, amount, spellName);
+      total += dealt;
+    }
+    if (total > 0 && this.player.spellLifesteal > 0) {
+      const healed = this.player.heal(Math.ceil(total * this.player.spellLifesteal));
+      if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
+    }
+    return total;
+  }
+
+  _dealSpellDamage(target, amount, spellName) {
+    const dealt = target.takeDamage(amount);
+    this.bus.emit('entity:attacked', {
+      attacker: this.player, target, damage: dealt,
+      isCrit: false, isMiss: false, kind: 'magic'
+    });
+    this.bus.emit('entity:damaged', { entity: target, amount: dealt, source: spellName, isCrit: false });
+    if (target.isDead) {
+      this.combat._handleDeath(target, this.player, { floor: this.floor, floorIndex: this.dungeon.currentIndex });
+    }
+    return dealt;
+  }
+
+  _revealAround(cx, cy, radius) {
+    for (let y = cy - radius; y <= cy + radius; y++) {
+      for (let x = cx - radius; x <= cx + radius; x++) {
+        if (Math.abs(x - cx) + Math.abs(y - cy) > radius) continue;
+        const tile = this.floor.tileAt(x, y);
+        if (tile) tile.explored = true;
+      }
+    }
   }
 
   /** Generous tap hit on adjacent foe (sprite larger than one tile). */
@@ -1152,6 +1308,11 @@ export class GameScene {
       regenEveryNTurns: this.player.regenEveryNTurns,
       regenAmount: this.player.regenAmount,
       turnsSinceRegen: this.player._turnsSinceRegen,
+      magicPower: this.player.magicPower,
+      spellCooldown: this.player.spellCooldown,
+      spellCooldownReduction: this.player.spellCooldownReduction,
+      spellLifesteal: this.player.spellLifesteal,
+      critSkillBonus: this.player.critSkillBonus,
       statusEffects: this.player.statusEffects.map((e) => ({ ...e }))
     };
   }
@@ -1206,6 +1367,11 @@ export class GameScene {
     player.regenEveryNTurns = snap.regenEveryNTurns || 0;
     player.regenAmount = snap.regenAmount || 0;
     player._turnsSinceRegen = snap.turnsSinceRegen || 0;
+    player.magicPower = snap.magicPower || 0;
+    player.spellCooldown = snap.spellCooldown || 0;
+    player.spellCooldownReduction = snap.spellCooldownReduction || 0;
+    player.spellLifesteal = snap.spellLifesteal || 0;
+    player.critSkillBonus = snap.critSkillBonus || 0;
     player.statusEffects = Array.isArray(snap.statusEffects) ? snap.statusEffects.map((e) => ({ ...e })) : [];
     const make = (s) => (s?.id ? this.itemFactory.create(s.id, s.count || 1) : null);
     const eq = snap.equipment || {};

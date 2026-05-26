@@ -83,6 +83,11 @@ export class Player extends Entity {
     this.regenEveryNTurns = 0;   // 5 means heal 3 every 5 turns; 0 disables
     this.regenAmount      = 0;
     this._turnsSinceRegen = 0;
+    this.magicPower = 0;
+    this.spellCooldown = 0;
+    this.spellCooldownReduction = 0;
+    this.spellLifesteal = 0;
+    this.critSkillBonus = 0;
   }
 
   /**
@@ -130,6 +135,74 @@ export class Player extends Entity {
         this.regenEveryNTurns = 5;
         this.regenAmount = 3;
         return true;
+      case 'iron_vitality':
+        this.stats.hpMax += 10;
+        this.heal(10);
+        return true;
+      case 'brutal_training':
+        this.stats.atk += 2;
+        this.stats.def = Math.max(0, this.stats.def - 1);
+        return true;
+      case 'guarded_footwork':
+        this.stats.def += 1;
+        this.stats.dex += 1;
+        return true;
+      case 'torchbearer':
+        this.torchRadius += 1;
+        return true;
+      case 'keen_eye':
+        this.stats.dex += 1;
+        this.skillRangeBonus += 1;
+        return true;
+      case 'arcane_focus':
+        this.magicPower += 2;
+        return true;
+      case 'runic_haste':
+        this.spellCooldownReduction += 1;
+        return true;
+      case 'soul_channel':
+        this.spellLifesteal += 0.20;
+        return true;
+      case 'deadly_precision':
+        this.critSkillBonus += 0.05;
+        return true;
+      case 'field_mender':
+        this.regenEveryNTurns = this.regenEveryNTurns > 0
+          ? Math.min(this.regenEveryNTurns, 4)
+          : 4;
+        this.regenAmount += 1;
+        return true;
+      case 'satchel_master':
+        if (this.inventory) {
+          for (let i = 0; i < 2; i++) {
+            this.inventory.size += 1;
+            this.inventory.slots.push(null);
+          }
+        }
+        return true;
+      case 'vigil_oath':
+        this.stats.hpMax += 6;
+        this.stats.def += 1;
+        this.heal(6);
+        return true;
+      case 'hollow_hunger':
+        this.spellLifesteal += 0.25;
+        this.magicPower += 1;
+        return true;
+      case 'inquisitor_flame':
+        this.magicPower += 3;
+        return true;
+      case 'reaver_bone_rite':
+        this.stats.atk += 1;
+        this.magicPower += 1;
+        return true;
+      case 'pilgrim_ember':
+        this.torchRadius += 1;
+        this.regenEveryNTurns = this.regenEveryNTurns > 0
+          ? Math.min(this.regenEveryNTurns, 5)
+          : 5;
+        this.regenAmount += 1;
+        return true;
       default:
         return false;
     }
@@ -140,6 +213,7 @@ export class Player extends Entity {
    * that need a regular tick (currently just Second Wind regen).
    */
   passiveTurnTick() {
+    if (this.spellCooldown > 0) this.spellCooldown -= 1;
     if (this.regenEveryNTurns > 0) {
       this._turnsSinceRegen += 1;
       if (this._turnsSinceRegen >= this.regenEveryNTurns) {
@@ -260,7 +334,7 @@ export class Player extends Entity {
     const c = this.balance.combat;
     let bonus = 0;
     for (const p of this.equippedPieces()) bonus += (p.stats?.critBonus || 0);
-    return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + bonus);
+    return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + bonus + this.critSkillBonus);
   }
 
   /** Effective ranged attack range (weapon range + long_reach skill bonus). */

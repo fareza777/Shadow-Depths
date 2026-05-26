@@ -69,6 +69,123 @@
       "description": "Heal 3 HP every 5 turns.",
       "rarity": "rare",
       "spriteKey": "skill_wind"
+    },
+    {
+      "id": "iron_vitality",
+      "name": "Iron Vitality",
+      "description": "+10 max HP. Heals 10 immediately.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_shield"
+    },
+    {
+      "id": "brutal_training",
+      "name": "Brutal Training",
+      "description": "+2 ATK, -1 DEF.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_sword"
+    },
+    {
+      "id": "guarded_footwork",
+      "name": "Guarded Footwork",
+      "description": "+1 DEF and +1 DEX.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_speed"
+    },
+    {
+      "id": "torchbearer",
+      "name": "Torchbearer",
+      "description": "+1 torch radius.",
+      "rarity": "common",
+      "spriteKey": "skill_wind"
+    },
+    {
+      "id": "keen_eye",
+      "name": "Keen Eye",
+      "description": "+1 DEX and +1 ranged weapon range.",
+      "rarity": "rare",
+      "spriteKey": "skill_reach"
+    },
+    {
+      "id": "arcane_focus",
+      "name": "Arcane Focus",
+      "description": "+2 magic power for hero spells.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book"
+    },
+    {
+      "id": "runic_haste",
+      "name": "Runic Haste",
+      "description": "Hero spell cooldowns are 1 turn shorter.",
+      "rarity": "rare",
+      "spriteKey": "skill_wind"
+    },
+    {
+      "id": "soul_channel",
+      "name": "Soul Channel",
+      "description": "Hero spell damage heals you for 20%.",
+      "rarity": "rare",
+      "spriteKey": "skill_blood"
+    },
+    {
+      "id": "deadly_precision",
+      "name": "Deadly Precision",
+      "description": "+5% crit chance.",
+      "rarity": "rare",
+      "spriteKey": "skill_sword"
+    },
+    {
+      "id": "field_mender",
+      "name": "Field Mender",
+      "description": "Improve passive regeneration.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_wind"
+    },
+    {
+      "id": "satchel_master",
+      "name": "Satchel Master",
+      "description": "+2 inventory slots.",
+      "rarity": "rare",
+      "spriteKey": "skill_bag"
+    },
+    {
+      "id": "vigil_oath",
+      "name": "Vigil Oath",
+      "description": "Knight only: +6 max HP, +1 DEF, heal 6.",
+      "rarity": "epic",
+      "spriteKey": "skill_shield",
+      "hero": "vigil"
+    },
+    {
+      "id": "hollow_hunger",
+      "name": "Hollow Hunger",
+      "description": "Crusader only: stronger spell drain.",
+      "rarity": "epic",
+      "spriteKey": "skill_blood",
+      "hero": "hollow"
+    },
+    {
+      "id": "inquisitor_flame",
+      "name": "Inquisitor Flame",
+      "description": "Inquisitor only: +3 magic power.",
+      "rarity": "epic",
+      "spriteKey": "skill_book",
+      "hero": "inquisitor"
+    },
+    {
+      "id": "reaver_bone_rite",
+      "name": "Bone Rite",
+      "description": "Reaver only: +1 ATK and +1 magic power.",
+      "rarity": "epic",
+      "spriteKey": "skill_sword",
+      "hero": "reaver"
+    },
+    {
+      "id": "pilgrim_ember",
+      "name": "Pilgrim Ember",
+      "description": "Pilgrim only: +1 torch and better regen.",
+      "rarity": "epic",
+      "spriteKey": "skill_wind",
+      "hero": "pilgrim"
     }
   ]
 }

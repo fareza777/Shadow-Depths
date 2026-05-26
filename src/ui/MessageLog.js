@@ -60,6 +60,10 @@ export class MessageLog {
       if (by?.kind === 'player') this.push(`You use the ${item.name}.`);
     });
 
+    this.bus.on('spell:cast', ({ entity, spell }) => {
+      if (entity?.kind === 'player') this.push(`You cast ${spell}.`, COLOR.textXP);
+    });
+
     this.bus.on('inventory:full', () => this.push(`Your pack is full.`, COLOR.textMuted));
 
     this.bus.on('player:revived', () => this.push(`You wake again. The charm is spent.`, COLOR.textHeal));

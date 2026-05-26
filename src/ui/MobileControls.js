@@ -502,6 +502,7 @@ export class MobileControls {
   _renderCastButton(r, a, pressed, ready) {
     const ctx = r.ctx;
     const cy = a.y + a.h / 2;
+    const spell = this._ctx?.spell || null;
     // Rune medallion on left.
     drawBrassJewel(ctx, a.x + 18, cy, 13, {
       pressed,
@@ -512,7 +513,11 @@ export class MobileControls {
     r.drawText('CAST', a.x + 38, a.y + 8, {
       size: uiSize(11), bold: true, family: FONT_DISPLAY, color: labelCol
     });
-    r.drawText(ready ? 'tap to cast' : 'no spell', a.x + 38, a.y + a.h - 10, {
+    const sub = spell
+      ? (spell.cooldown > 0 ? `cooldown ${spell.cooldown}` : MobileControls._truncate(spell.name, 10))
+      : 'no spell';
+    r.drawText(ready ? MobileControls._truncate(spell?.name || 'ready', 10) : sub,
+      a.x + 38, a.y + a.h - 10, {
       size: uiSize(9), italic: !ready, family: FONT_MONO,
       color: ready ? IRON.rune : IRON.boneDim
     });

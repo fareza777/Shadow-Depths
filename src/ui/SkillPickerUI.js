@@ -113,7 +113,8 @@ export class SkillPickerUI {
     }
     // Filter out skills the player already has (no duplicates).
     const owned = new Set(this.player.skills || []);
-    const available = pool.filter((s) => !owned.has(s.id));
+    const available = pool.filter((s) =>
+      !owned.has(s.id) && (!s.hero || s.hero === this.player.heroKind));
     if (available.length === 0) {
       // No more skills to offer ever — just absorb the level-ups.
       this.pending = 0;

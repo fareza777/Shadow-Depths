@@ -99,7 +99,7 @@ export class HUD {
     const reviveResv = p.reviveCharges > 0 ? 70 : 0;
     const rightLimit = Layout.canvasW - 12 - reviveResv;
     for (const eff of p.statusEffects) {
-      const label = `${eff.id} ${eff.value}×${eff.duration}`;
+      const label = HUD._statusLabel(eff);
       const w = 8 + label.length * 6;
       if (chipX + w > rightLimit) break;
       const bg = eff.id === 'poison' ? '#2a4a30'
@@ -135,6 +135,13 @@ export class HUD {
         if (sx > Layout.canvasW - 8) break;
       }
     }
+  }
+
+  static _statusLabel(eff) {
+    if (eff.id === 'poison') return `POISON ${eff.value}x${eff.duration}`;
+    if (eff.id === 'atk_buff') return `ATK +${eff.value} ${eff.duration}T`;
+    if (eff.id === 'def_buff') return `DEF +${eff.value} ${eff.duration}T`;
+    return `${eff.id.toUpperCase()} ${eff.duration}T`;
   }
 
   _drawFramedBar(r, x, y, w, h, value, max, fill, bg, label) {
