@@ -23,7 +23,9 @@
  *   floor:descended     { fromIndex, toIndex }
  */
 import { LOG } from '../config/constants.js';
-import { StatusEffects } from './StatusEffects.js';
+// StatusEffects is reachable through the EffectRegistry's 'applyStatus' handler.
+import { applyEffect } from './EffectRegistry.js';
+import { fireTriggers } from './TriggerSystem.js';
 import { hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
 
 export class CombatSystem {
@@ -133,45 +135,68 @@ export class CombatSystem {
       finalDamage = Math.max(1, Math.round(finalDamage * (1 - target.damageReduction)));
     }
     const isCrit = raw.isCrit;
+    const hpPctBefore = target.stats.hp / Math.max(1, target.stats.hpMax);
     const dealt = target.takeDamage(finalDamage);
+    const hpPctAfter = target.stats.hp / Math.max(1, target.stats.hpMax);
 
     this.bus.emit('entity:attacked', { attacker, target, damage: dealt, isCrit, isMiss: false, kind });
     this.bus.emit('entity:damaged', { entity: target, amount: dealt, source: attacker, isCrit });
 
-    // Attacker on-hit effects (weapon for player, def list for enemy).
+    // Attacker on-hit effects via EffectRegistry (weapon onHit list + skill lifesteal).
     this._applyAttackerOnHit(attacker, target, dealt);
-    // Enemy-on-player passives.
+    // Enemy-on-player legacy onHitPlayer list — apply each through the registry.
     if (attacker.kind === 'enemy' && target.kind === 'player' && attacker.onHitPlayer) {
-      for (const eff of attacker.onHitPlayer) this._applyOnHit(eff, target);
+      for (const eff of attacker.onHitPlayer) {
+        applyEffect(eff, {
+          source: 'enemy', sourceRef: attacker,
+          actor: attacker, target,
+          floor: ctx.floor, bus: this.bus,
+          damageDealt: dealt
+        });
+      }
     }
+
+    // ── Trigger proc system ────────────────────────────────────────
+    // Fire attacker triggers (onHit, onCrit, onKill).
+    const trigCtx = {
+      actor: attacker, target, floor: ctx.floor,
+      bus: this.bus, rng: this.rng, damageDealt: dealt
+    };
+    fireTriggers('onHit', trigCtx);
+    if (isCrit) fireTriggers('onCrit', trigCtx);
+    if (target.isDead) fireTriggers('onKill', trigCtx);
+    // Fire defender triggers (onDamaged, onHpBelow).
+    const defCtx = {
+      actor: target, target: attacker, floor: ctx.floor,
+      bus: this.bus, rng: this.rng, damageDealt: dealt,
+      hpPctBefore, hpPctAfter
+    };
+    if (dealt > 0) fireTriggers('onDamaged', defCtx);
+    fireTriggers('onHpBelow', defCtx);
 
     if (target.isDead) this._handleDeath(target, attacker, ctx);
   }
 
   _applyAttackerOnHit(attacker, target, dealt) {
-    // Player weapon onHit (e.g. lifesteal).
-    let totalLifestealPct = 0;
+    // Player weapon onHit (lifesteal, status proc, etc.) — every entry goes
+    // through the EffectRegistry. Old shape was a list of bare effect specs.
     if (attacker.kind === 'player' && attacker.weapon?.onHit) {
       for (const eff of attacker.weapon.onHit) {
-        if (eff.type === 'lifesteal') totalLifestealPct += (eff.value || 0);
+        applyEffect(eff, {
+          source: 'weapon', sourceRef: attacker.weapon,
+          actor: attacker, target,
+          bus: this.bus, damageDealt: dealt
+        });
       }
     }
-    // Bloodthirst skill — adds flat lifesteal on every hit.
+    // Bloodthirst skill — flat lifesteal on every hit. Routed through the
+    // same registry so the heal event has consistent shape.
     if (attacker.kind === 'player' && attacker.skillLifesteal > 0) {
-      totalLifestealPct += attacker.skillLifesteal;
-    }
-    if (totalLifestealPct > 0) {
-      const healed = attacker.heal(Math.ceil(dealt * totalLifestealPct));
-      if (healed > 0) this.bus.emit('entity:healed', { entity: attacker, amount: healed, source: attacker.weapon || 'skill' });
-    }
-  }
-
-  _applyOnHit(eff, victim) {
-    if (eff.type === 'drainXP' && victim.kind === 'player') {
-      victim.drainXP(eff.value || 0);
-      this.bus.emit('entity:xpGained', { entity: victim, amount: -(eff.value || 0), source: 'drain' });
-    } else if (eff.type === 'applyStatus') {
-      StatusEffects.apply(victim, eff, this.bus);
+      applyEffect({ type: 'lifesteal', value: attacker.skillLifesteal }, {
+        source: 'skill', sourceRef: 'bloodthirst',
+        actor: attacker, target,
+        bus: this.bus, damageDealt: dealt
+      });
     }
   }
 
@@ -241,58 +266,20 @@ export class CombatSystem {
   }
 
   _applyItemEffect(eff, item, player, floor, throwTarget) {
-    switch (eff.type) {
-      case 'heal': {
-        const healed = player.heal(eff.value);
-        if (healed > 0) this.bus.emit('entity:healed', { entity: player, amount: healed, source: item });
-        return healed > 0;
-      }
-      case 'maxHP': {
-        player.stats.hpMax += eff.value;
-        player.heal(eff.value);
-        this.bus.emit('entity:healed', { entity: player, amount: eff.value, source: item });
-        return true;
-      }
-      case 'grantXP': {
-        const levels = player.gainXP(eff.value);
-        this.bus.emit('entity:xpGained', { entity: player, amount: eff.value, source: item });
-        if (levels > 0) this.bus.emit('entity:leveledUp', { entity: player, levels });
-        return true;
-      }
-      case 'applyStatus':
-        return StatusEffects.apply(player, eff, this.bus);
-      case 'revealFloor':
-        floor.revealAll();
-        this.bus.emit('floor:revealed', { floor });
-        return true;
-      case 'autoReviveOnce':
-        player.reviveCharges += 1;
-        return true;
-      case 'aoe_damage':
-        return this._applyAOE(eff, item, player, floor, throwTarget);
-      default:
-        console.warn(LOG.ITEM, `unknown effect type "${eff.type}"`);
-        return false;
-    }
-  }
-
-  _applyAOE(eff, item, player, floor, throwTarget) {
-    if (!throwTarget) return false;
-    const radius = eff.radius ?? 1;
-    let any = false;
-    for (let dy = -radius; dy <= radius; dy++) {
-      for (let dx = -radius; dx <= radius; dx++) {
-        const x = throwTarget.x + dx, y = throwTarget.y + dy;
-        const ent = floor.entityAt(x, y);
-        if (!ent) continue;
-        if (ent.kind === 'player' && !eff.friendlyFire) continue;
-        const dealt = ent.takeDamage(eff.value);
-        this.bus.emit('entity:damaged', { entity: ent, amount: dealt, source: item, isCrit: false });
-        if (ent.isDead) this._handleDeath(ent, player, { floor, floorIndex: floor.definition?.index });
-        any = true;
-      }
-    }
-    return any;
+    // All consumable / scroll / throwable effects flow through the
+    // EffectRegistry. Adding a new effect type = registerEffect() in any
+    // module — no edit to CombatSystem.
+    return applyEffect(eff, {
+      source: 'item',
+      sourceRef: item,
+      actor: player,
+      target: player,
+      floor,
+      throwTarget,
+      bus: this.bus,
+      onKill: (ent, killer) =>
+        this._handleDeath(ent, killer, { floor, floorIndex: floor.definition?.index })
+    });
   }
 
   // --- end-of-turn ----------------------------------------------------

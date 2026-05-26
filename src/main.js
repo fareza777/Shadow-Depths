@@ -61,6 +61,8 @@ import balanceData from '../data/balance.json';
 import biomesData  from '../data/biomes.json';
 import skillsData  from '../data/skills.json';
 import shopData    from '../data/shop.json';
+import { HERO_SPELLS } from './config/heroSpells.js';
+import { validateContent, logValidationReport } from './content/validators.js';
 
 async function bootstrap() {
   console.log(LOG.CORE, 'Shadow Depths v0.1.0 — bootstrap');
@@ -85,6 +87,16 @@ async function bootstrap() {
     shop: shopData
   };
   const balance = mergeBalance(content.balance) || DEFAULT_BALANCE;
+
+  // Content validation runs once at boot. Failures are warnings, not
+  // fatal, so the game still loads even when a single entry is malformed.
+  logValidationReport(validateContent({
+    items: content.items,
+    enemies: content.enemies,
+    skills: content.skills,
+    biomes: content.biomes,
+    heroSpells: HERO_SPELLS
+  }));
 
   // --- meta progress -------------------------------------------------
   const metaProgress = new MetaProgress({ saveManager, balance, eventBus: bus });
