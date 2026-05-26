@@ -23,7 +23,7 @@ export function syncLayoutFromWindow(canvas) {
     Layout.canvasW = 480;
     Layout.canvasH = Math.max(760, Math.min(1100, Math.round(vh * (480 / vw))));
     Layout.hud = 112;
-    Layout.control = Math.max(210, Math.round(Layout.canvasH * 0.26));
+    Layout.control = Math.max(270, Math.round(Layout.canvasH * 0.29));
     Layout.sideW = 0;
     Layout.portrait = true;
   } else {

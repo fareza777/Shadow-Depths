@@ -95,11 +95,12 @@ export class MobileControls {
 
   handleTap(canvasX, canvasY, currentTime) {
     const LAYOUT = buildLayout();
+    const hitPad = Layout.portrait ? 6 : 2;
     for (const b of DPAD_BUTTONS) {
       const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
-      if (canvasX >= bx && canvasX <= bx + LAYOUT.dpadBtn &&
-          canvasY >= by && canvasY <= by + LAYOUT.dpadBtn) {
+      if (canvasX >= bx - hitPad && canvasX <= bx + LAYOUT.dpadBtn + hitPad &&
+          canvasY >= by - hitPad && canvasY <= by + LAYOUT.dpadBtn + hitPad) {
         this._flash(`dpad:${b.col},${b.row}`, currentTime);
         this.bus.emit('input:action', b.emit);
         return true;

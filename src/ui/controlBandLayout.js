@@ -16,12 +16,12 @@ export function getViewportBottomY() {
 
 function portraitBandMetrics() {
   const bandY = getViewportBottomY();
-  const quickSlot = 44;
+  const quickSlot = 48;
   const quickGap = 4;
   const quickY = bandY + 6;
   const quickRowH = quickSlot + 12;
-  const dpadBtn = 50;
-  const dpadGap = 4;
+  const dpadBtn = 58;
+  const dpadGap = 5;
   const dpadSize = dpadBtn * 3 + dpadGap * 2;
   const dpadX = 10;
   const dpadY = quickY + quickRowH + 8;
@@ -61,7 +61,7 @@ export function getDpadLayout() {
 
 export function getQuickUseLayout() {
   const dpad = getDpadLayout();
-  const quickSlot = Layout.portrait ? 44 : 40;
+  const quickSlot = Layout.portrait ? 48 : 40;
   const quickGap = Layout.portrait ? 4 : 6;
   const quickRowW = QUICK_SLOT_COUNT * quickSlot + (QUICK_SLOT_COUNT - 1) * quickGap;
 
