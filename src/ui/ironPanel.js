@@ -438,7 +438,8 @@ export function drawEquipRow(renderer, x, y, w, h, slot, item) {
   } else {
     ctx.font = `bold 12px ${FONT_DISPLAY}`;
     ctx.fillStyle = boneDark;
-    drawSpacedText(ctx, '— EMPTY —', tx, y + h / 2 + 4, 2);
+    ctx.textAlign = 'center';
+    drawSpacedText(ctx, '— EMPTY —', tx + 48, y + h / 2 + 4, 2);
   }
 
   // UNEQUIP chip on the right (only when filled).

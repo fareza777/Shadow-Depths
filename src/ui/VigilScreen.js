@@ -12,12 +12,12 @@
  *   8. CLOSE button anchored at the bottom
  */
 import {
-  COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
-  FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
+  CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
+  FONT_DISPLAY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
 import {
-  drawIronPanel, drawIronPlate, drawIronRivet, drawBrassRivet,
+  drawIronPanel, drawIronPlate, drawBrassRivet,
   drawInsetCard, drawProgressBar, drawIronActionButton,
   drawEquipRow, drawSpacedText, IRON_PALETTE
 } from './ironPanel.js';
@@ -95,8 +95,8 @@ export class VigilScreen {
       { slot: 'necklace', item: player.necklace },
       { slot: 'ring',     item: player.ring }
     ];
-    const cardH = IS_LANDSCAPE ? 50 : 56;
-    const cardGap = 6;
+    const cardH = IS_LANDSCAPE ? 50 : 48;
+    const cardGap = IS_LANDSCAPE ? 6 : 5;
     const cardW = CANVAS_WIDTH - 32;
     const cardX = 16;
     const cardsBaseY = this._cardsBaseY();
@@ -117,7 +117,7 @@ export class VigilScreen {
   }
 
   _cardsBaseY() {
-    return IS_LANDSCAPE ? 210 : 478;
+    return IS_LANDSCAPE ? 210 : 512;
   }
 
   // --- render -------------------------------------------------------
@@ -149,10 +149,9 @@ export class VigilScreen {
     ctx.save();
     ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
     ctx.fillStyle = IRON_PALETTE.brass;
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    drawSpacedText(ctx, 'THE VIGIL',
-      60 + ctx.measureText('THE VIGIL').width / 2, 37, 4);
+    drawSpacedText(ctx, 'THE VIGIL', 112, 37, 3);
     ctx.restore();
     drawIronPlate(ctx, CANVAS_WIDTH - 70, 22, 60, 30, { rivets: false });
     ctx.save();
@@ -204,9 +203,9 @@ export class VigilScreen {
       IRON_PALETTE.brass);
 
     // 4. Portrait well (brass-bordered, corner rivets).
-    const portraitSize = 132;
+    const portraitSize = 112;
     const px = (CANVAS_WIDTH - portraitSize) / 2;
-    const py = 186;
+    const py = 184;
     const pg = ctx.createRadialGradient(
       px + portraitSize / 2, py + portraitSize * 0.3, 4,
       px + portraitSize / 2, py + portraitSize / 2, portraitSize * 0.8);
@@ -224,7 +223,7 @@ export class VigilScreen {
     ctx.restore();
     // Hero portrait sprite.
     const sprSize = portraitSize - 24;
-    r.sprites.draw('portrait_hero', r.ctx,
+    r.sprites.draw(`portrait_${p.heroKind || 'vigil'}`, r.ctx,
       px + (portraitSize - sprSize) / 2,
       py + (portraitSize - sprSize) / 2,
       { size: sprSize });
@@ -250,7 +249,7 @@ export class VigilScreen {
       p.stats.hp, p.stats.hpMax, IRON_PALETTE.blood);
 
     // 6. Stats table (recessed card).
-    this._renderStatTable(r, p, hpY + 40);
+    this._renderStatTable(r, p, hpY + 38);
 
     // 7. Equipment header + rows.
     const cards = this._equipmentCards(p);
@@ -258,10 +257,9 @@ export class VigilScreen {
     ctx.save();
     ctx.font = `${uiSize(10)}px ${FONT_MONO}`;
     ctx.fillStyle = IRON_PALETTE.brass;
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    drawSpacedText(ctx, 'EQUIPMENT',
-      16 + ctx.measureText('EQUIPMENT').width / 2, equipHeaderY, 3);
+    drawSpacedText(ctx, 'EQUIPMENT', 64, equipHeaderY, 2);
     ctx.restore();
     const filledCount = cards.filter((c) => c.item).length;
     r.drawText(`${filledCount} / ${cards.length} equipped`,
@@ -284,12 +282,12 @@ export class VigilScreen {
       ['LIFESTEAL',   `${Math.round((p.lifesteal || 0) * 100)}%`],
       ['TORCH',       `${p.torchRadius || 5} TILES`]
     ];
-    const rowH = 22;
-    const tableH = rowH * rows.length + 14;
+    const rowH = IS_LANDSCAPE ? 22 : 18;
+    const tableH = rowH * rows.length + 10;
     drawInsetCard(ctx, tableX, baseY, tableW, tableH);
 
     for (let i = 0; i < rows.length; i++) {
-      const y = baseY + 8 + i * rowH;
+      const y = baseY + 5 + i * rowH;
       // hairline divider
       if (i < rows.length - 1) {
         ctx.fillStyle = IRON_PALETTE.plate2;
@@ -297,7 +295,7 @@ export class VigilScreen {
       }
       // key (left)
       ctx.save();
-      ctx.font = `${uiSize(11)}px ${FONT_DISPLAY}`;
+      ctx.font = `${uiSize(IS_LANDSCAPE ? 11 : 9)}px ${FONT_DISPLAY}`;
       ctx.fillStyle = IRON_PALETTE.boneDim;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
@@ -307,7 +305,7 @@ export class VigilScreen {
       ctx.restore();
       // value (right, mono bold)
       r.drawText(rows[i][1], tableX + tableW - 14, y + rowH / 2, {
-        size: uiSize(12), bold: true, align: 'right', baseline: 'middle',
+        size: uiSize(IS_LANDSCAPE ? 12 : 10), bold: true, align: 'right', baseline: 'middle',
         family: FONT_MONO, color: IRON_PALETTE.bone
       });
     }
@@ -327,10 +325,9 @@ export class VigilScreen {
     ctx.save();
     ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
     ctx.fillStyle = IRON_PALETTE.brass;
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    drawSpacedText(ctx, 'THE VIGIL',
-      50 + ctx.measureText('THE VIGIL').width / 2, 27, 4);
+    drawSpacedText(ctx, 'THE VIGIL', 92, 27, 3);
     ctx.restore();
     r.drawText(HERO_NAME, CANVAS_WIDTH / 2, 60, {
       size: uiSize(20), bold: true, align: 'center',
@@ -343,7 +340,7 @@ export class VigilScreen {
     ctx.strokeStyle = IRON_PALETTE.brass;
     ctx.lineWidth = 2;
     ctx.strokeRect(px + 1, py + 1, ps - 2, ps - 2);
-    r.sprites.draw('portrait_hero', r.ctx, px + 8, py + 8, { size: ps - 16 });
+    r.sprites.draw(`portrait_${p.heroKind || 'vigil'}`, r.ctx, px + 8, py + 8, { size: ps - 16 });
     drawBrassRivet(ctx, px + 5, py + 5, 2.5);
     drawBrassRivet(ctx, px + ps - 5, py + 5, 2.5);
     drawBrassRivet(ctx, px + 5, py + ps - 5, 2.5);

@@ -57,9 +57,9 @@ function buildLayout() {
   let actX, actY, actW, actH, actGap, actStackH;
   if (portrait) {
     actW = 110;
-    actH = 40;
     actGap = 5;
-    actStackH = actH * 2 + actGap * 1 + 32 * 2 + actGap; // 2 large + 2 small
+    actH = Math.floor((dpad.dpadSize - actGap * 3) / 4);
+    actStackH = actH * 4 + actGap * 3;
     actX = Layout.canvasW - actW - 10;
     actY = dpad.dpadY;
   } else {
@@ -108,20 +108,15 @@ function buildLayout() {
  * and render to share.
  */
 function actionRects(LAYOUT) {
-  const small = 32;
   const out = [];
   let y = LAYOUT.actY;
-  // AIM
   out.push({ ...ACTION_LABELS[0], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
   y += LAYOUT.actH + LAYOUT.actGap;
-  // CAST
   out.push({ ...ACTION_LABELS[1], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
   y += LAYOUT.actH + LAYOUT.actGap;
-  // MENU
-  out.push({ ...ACTION_LABELS[2], x: LAYOUT.actX, y, w: LAYOUT.actW, h: small });
-  y += small + LAYOUT.actGap;
-  // DOWN
-  out.push({ ...ACTION_LABELS[3], x: LAYOUT.actX, y, w: LAYOUT.actW, h: small });
+  out.push({ ...ACTION_LABELS[2], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
+  y += LAYOUT.actH + LAYOUT.actGap;
+  out.push({ ...ACTION_LABELS[3], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
   return out;
 }
 

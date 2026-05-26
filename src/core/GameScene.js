@@ -293,14 +293,14 @@ export class GameScene {
       this.controls.renderControls(renderer);
     }
 
-    this.inventoryUI.render(renderer, this.player);
-    if (this.vigil) this.vigil.render(renderer, this.player);
-    if (this.skillPicker) this.skillPicker.render(renderer);
-    if (this.pause) this.pause.render(renderer);
     this._renderBossBar(renderer);
     this._renderLootToast(renderer);
     this._renderDangerVignette(renderer);
     this._renderFloorBanner(renderer);
+    this.inventoryUI.render(renderer, this.player);
+    if (this.vigil) this.vigil.render(renderer, this.player);
+    if (this.skillPicker) this.skillPicker.render(renderer);
+    if (this.pause) this.pause.render(renderer);
     if (this.tutorial?.open) this.tutorial.render(renderer);
   }
 

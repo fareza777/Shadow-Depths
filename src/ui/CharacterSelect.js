@@ -173,8 +173,8 @@ export class CharacterSelect {
     ctx.fillStyle = IRON_PALETTE.brass;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    drawSpacedText(ctx, 'CHOOSE YOUR VIGIL',
-      60 + ctx.measureText('CHOOSE YOUR VIGIL').width / 2, 37, 4);
+    drawFittedSpacedText(ctx, 'CHOOSE YOUR VIGIL', CANVAS_WIDTH / 2, 37,
+      CANVAS_WIDTH - 132, 3);
     ctx.restore();
 
     // Slot indicator (1 / 5) on the right.
@@ -236,14 +236,14 @@ export class CharacterSelect {
     // Hero name — big spaced serif, brass glow.
     const nameY = p.y + p.h + 24;
     ctx.save();
-    ctx.font = `bold ${uiSize(22)}px ${FONT_DISPLAY}`;
+    ctx.font = `bold ${uiSize(20)}px ${FONT_DISPLAY}`;
     ctx.fillStyle = IRON_PALETTE.bone;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = IRON_PALETTE.brass + '55';
     ctx.shadowBlur = 12;
-    drawSpacedText(ctx, def.name.toUpperCase(),
-      CANVAS_WIDTH / 2, nameY, 3);
+    drawFittedSpacedText(ctx, def.name.toUpperCase(), CANVAS_WIDTH / 2, nameY,
+      CANVAS_WIDTH - 30, 2);
     ctx.restore();
 
     // Italic subtitle.
@@ -321,4 +321,29 @@ export class CharacterSelect {
       accent: IRON_PALETTE.brass, fontSize: 18, rivets: false
     });
   }
+}
+
+function spacedWidth(ctx, text, spacing) {
+  let total = 0;
+  for (const ch of text) total += ctx.measureText(ch).width + spacing;
+  return Math.max(0, total - spacing);
+}
+
+function drawFittedSpacedText(ctx, text, centerX, centerY, maxW, preferredSpacing) {
+  let spacing = preferredSpacing;
+  while (spacing > 0 && spacedWidth(ctx, text, spacing) > maxW) spacing -= 0.5;
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = 'center';
+  if (spacedWidth(ctx, text, spacing) <= maxW) {
+    drawSpacedText(ctx, text, centerX, centerY, spacing);
+    ctx.textAlign = prevAlign;
+    return;
+  }
+  const scale = Math.max(0.78, maxW / spacedWidth(ctx, text, 0));
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.scale(scale, 1);
+  drawSpacedText(ctx, text, 0, 0, 0);
+  ctx.restore();
+  ctx.textAlign = prevAlign;
 }

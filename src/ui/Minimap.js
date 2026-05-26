@@ -27,9 +27,9 @@ export class Minimap {
 
     this._drawMapFrame(renderer, slot);
 
-    const headerH = uiSize(28);
+    const headerH = uiSize(26);
     const mapTop = innerY + headerH + 3;
-    const mapH = innerH - headerH - uiSize(22);
+    const mapH = Math.max(24, innerY + innerH - mapTop - 5);
     const bounds = this._exploredBounds(floor, player);
     const bw = bounds.x1 - bounds.x0 + 1;
     const bh = bounds.y1 - bounds.y0 + 1;
@@ -44,7 +44,7 @@ export class Minimap {
     const mapFrameX = innerX + 6;
     const mapFrameY = mapTop - 3;
     const mapFrameW = innerW - 12;
-    const mapFrameH = mapH + 6;
+    const mapFrameH = innerY + innerH - mapFrameY - 6;
     renderer.drawRect(mapFrameX, mapFrameY, mapFrameW, mapFrameH, '#030206');
     renderer.drawStrokedRect(mapFrameX, mapFrameY, mapFrameW, mapFrameH, IRON.brassDark, 1);
     renderer.drawStrokedRect(mapFrameX + 3, mapFrameY + 3, mapFrameW - 6, mapFrameH - 6, '#4a4258', 1);
@@ -159,21 +159,6 @@ export class Minimap {
       family: FONT_DISPLAY, color: COLOR.gold
     });
 
-    const compassY = slot.y + slot.h - 21;
-    ctx.globalAlpha = 0.55;
-    r.drawText('N', slot.x + slot.w / 2, compassY, {
-      size: uiSize(11), bold: true, align: 'center', baseline: 'middle',
-      family: FONT_DISPLAY, color: COLOR.goldDim
-    });
-    ctx.beginPath();
-    ctx.moveTo(slot.x + slot.w / 2, compassY - 18);
-    ctx.lineTo(slot.x + slot.w / 2 + 7, compassY - 5);
-    ctx.lineTo(slot.x + slot.w / 2, compassY - 9);
-    ctx.lineTo(slot.x + slot.w / 2 - 7, compassY - 5);
-    ctx.closePath();
-    ctx.strokeStyle = COLOR.goldDim;
-    ctx.stroke();
-    ctx.globalAlpha = 1;
     drawIronRivet(ctx, slot.x + 7, slot.y + 7, 2.4);
     drawIronRivet(ctx, slot.x + slot.w - 7, slot.y + 7, 2.4);
     drawIronRivet(ctx, slot.x + 7, slot.y + slot.h - 7, 2.4);
