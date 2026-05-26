@@ -30,12 +30,17 @@ export const IRON = {
  * Mimics CSS `linear-gradient(180deg, plate1 → plate0)` + inset shadows.
  */
 export function drawIronPlate(ctx, x, y, w, h, opts = {}) {
-  const { pressed = false, glow = null, rivets = true } = opts;
-  // Background gradient
+  const { pressed = false, glow = null, rivets = true, dark = false } = opts;
+  // Background gradient. `dark` (used for lattice bars + center boss)
+  // shifts the palette one step darker so the bars read as background
+  // frame instead of competing with the button surfaces above.
   const g = ctx.createLinearGradient(x, y, x, y + h);
   if (pressed) {
     g.addColorStop(0, IRON.plate0);
-    g.addColorStop(1, IRON.plate2);
+    g.addColorStop(1, '#0a0810');
+  } else if (dark) {
+    g.addColorStop(0, IRON.plate2);
+    g.addColorStop(1, '#0d0a13');
   } else {
     g.addColorStop(0, IRON.plate1);
     g.addColorStop(1, IRON.plate0);
@@ -167,33 +172,59 @@ export function drawBrassJewel(ctx, cx, cy, r, opts = {}) {
 
 /**
  * Wrought-iron lattice bars behind the D-pad. Each bar is rendered as a
- * proper IronPlate (bevel + hammered noise + rivets), matching the
- * button surfaces above so the whole portcullis reads as one piece of
- * forged iron.
+ * proper IronPlate (bevel + hammered noise + studded rivets along its
+ * length), matching the button surfaces above so the whole portcullis
+ * reads as one piece of forged iron.
+ *
+ * The bars are intentionally a SHADE darker than the button plates so
+ * the buttons sit visually on top of the frame.
  */
 export function drawIronLattice(ctx, x, y, size) {
   const cx = x + size / 2;
   const cy = y + size / 2;
-  const barT = Math.max(8, size * 0.14);   // bar thickness
-  const barL = size * 0.8;                 // bar length
-  const centerS = Math.max(barT + 2, size * 0.26); // center plate side
+  const barT = Math.max(10, Math.round(size * 0.16));   // bar thickness
+  const barL = size * 0.82;                              // bar length
+  const centerS = Math.max(barT + 6, Math.round(size * 0.28));
 
-  // Horizontal bar — full iron plate (rivets at both ends).
-  drawIronPlate(ctx, x + size * 0.1, cy - barT / 2, barL, barT, { rivets: false });
-  // Bar-end rivets so they read as bolted to the portcullis frame.
-  drawIronRivet(ctx, x + size * 0.1 + 5, cy, 2.2);
-  drawIronRivet(ctx, x + size * 0.1 + barL - 5, cy, 2.2);
+  const hX = x + size * 0.09;
+  const vY = y + size * 0.09;
+  const rivetSpacing = barL / 4; // 3 interior + 2 ends = 5 rivets per bar
 
-  // Vertical bar — same treatment.
-  drawIronPlate(ctx, cx - barT / 2, y + size * 0.1, barT, barL, { rivets: false });
-  drawIronRivet(ctx, cx, y + size * 0.1 + 5, 2.2);
-  drawIronRivet(ctx, cx, y + size * 0.1 + barL - 5, 2.2);
-
-  // Center boss plate — slightly bigger iron plate with its own rivets
-  // (where horizontal + vertical bars cross). This is the focal "joint".
-  drawIronPlate(ctx, cx - centerS / 2, cy - centerS / 2, centerS, centerS, {
-    rivets: true
+  // Horizontal bar
+  drawIronPlate(ctx, hX, cy - barT / 2, barL, barT, {
+    rivets: false,
+    dark: true
   });
+  for (let i = 0; i <= 4; i++) {
+    const rx = hX + i * rivetSpacing;
+    drawIronRivet(ctx, Math.min(hX + barL - 4, Math.max(hX + 4, rx)), cy, 2.4);
+  }
+
+  // Vertical bar
+  drawIronPlate(ctx, cx - barT / 2, vY, barT, barL, {
+    rivets: false,
+    dark: true
+  });
+  for (let i = 0; i <= 4; i++) {
+    const ry = vY + i * rivetSpacing;
+    drawIronRivet(ctx, cx, Math.min(vY + barL - 4, Math.max(vY + 4, ry)), 2.4);
+  }
+
+  // Center boss plate — slightly bigger iron plate with corner rivets,
+  // where horizontal + vertical bars cross.
+  drawIronPlate(ctx, cx - centerS / 2, cy - centerS / 2, centerS, centerS, {
+    rivets: true,
+    dark: true
+  });
+
+  // Outer dark stroke around each bar so they pop against the button
+  // surrounds.
+  ctx.save();
+  ctx.strokeStyle = IRON.ink;
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(hX, cy - barT / 2, barL, barT);
+  ctx.strokeRect(cx - barT / 2, vY, barT, barL);
+  ctx.restore();
 }
 
 /** Brass piping line — gradient gold accent (top/bottom of HUD panel). */
