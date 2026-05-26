@@ -16,6 +16,11 @@ import {
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
+import {
+  drawIronPanel, drawIronPlate, drawIronSlot, drawInsetCard,
+  drawIronActionButton, drawSpacedText, IRON_PALETTE,
+  rarityColor as ironRarity
+} from './ironPanel.js';
 
 const TABS = [
   { id: 'all',     label: 'ALL'    },
@@ -246,15 +251,10 @@ export class InventoryUI {
   // --- render --------------------------------------------------------
   render(renderer, player) {
     if (!this.open) return;
-
-    const ctx = renderer.ctx;
     const screenH = Layout.canvasH || CANVAS_HEIGHT;
-    const g = ctx.createLinearGradient(0, 0, 0, screenH);
-    g.addColorStop(0, '#1e1828');
-    g.addColorStop(1, '#0e0c14');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, CANVAS_WIDTH, screenH);
-    renderer.drawRect(0, 0, CANVAS_WIDTH, 2, COLOR.goldDim);
+
+    // Full-bleed iron panel chrome covers the entire modal area.
+    drawIronPanel(renderer.ctx, 0, 0, CANVAS_WIDTH, screenH);
 
     this._renderHeader(renderer, player);
     this._renderTabs(renderer, player);
@@ -264,37 +264,61 @@ export class InventoryUI {
   }
 
   _renderHeader(r, player) {
-    const top = IS_LANDSCAPE ? 6 : 16;
-    // Top bar with back arrow.
-    r.drawRect(0, 0, CANVAS_WIDTH, IS_LANDSCAPE ? 30 : 38, COLOR.bgPanel);
-    r.drawText('◀ SATCHEL', 12, top,
-      { size: uiSize(14), family: FONT_DISPLAY, color: COLOR.gold });
+    const ctx = r.ctx;
+    // Iron back button (left).
+    drawIronPlate(ctx, 10, 18, 38, 38, { rivets: true });
+    r.drawText('◀', 29, 37, {
+      size: uiSize(18), align: 'center', baseline: 'middle',
+      family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
+
+    // SATCHEL title + count.
+    ctx.save();
+    ctx.font = `bold ${uiSize(16)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = IRON_PALETTE.bone;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    drawSpacedText.call(null, ctx, 'SATCHEL', 60 + ctx.measureText('SATCHEL').width / 2, 22, 4);
+    ctx.restore();
     const filled = player.inventory.slots.filter(Boolean).length;
-    r.drawText(`${filled} / ${player.inventory.size}`,
-      CANVAS_WIDTH / 2, top, {
-        size: uiSize(13), align: 'center', family: FONT_MONO, color: COLOR.textPrimary
-      });
-    r.drawText(`◈ ${player.gold}`, CANVAS_WIDTH - 12, top,
-      { size: uiSize(13), align: 'right', family: FONT_MONO, color: COLOR.textXP });
+    r.drawText(`${filled} / ${player.inventory.size}`, 60, 44, {
+      size: uiSize(10), family: FONT_MONO, color: IRON_PALETTE.boneDim
+    });
+
+    // Coins pill (right) — small iron plate w/ brass accent.
+    const coinText = `${player.gold}`;
+    ctx.font = `bold ${uiSize(13)}px ${FONT_MONO}`;
+    const coinW = Math.max(56, ctx.measureText(`◈${coinText}`).width + 22);
+    const coinX = CANVAS_WIDTH - coinW - 12;
+    drawIronPlate(ctx, coinX, 22, coinW, 30, { rivets: false, glow: IRON_PALETTE.brass });
+    r.drawText('◈', coinX + 10, 37, {
+      size: uiSize(13), baseline: 'middle', family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
+    r.drawText(coinText, coinX + coinW - 10, 37, {
+      size: uiSize(13), bold: true, align: 'right', baseline: 'middle',
+      family: FONT_MONO, color: IRON_PALETTE.brass
+    });
   }
 
   _renderTabs(r, player) {
     const g = this._tabsGeometry();
+    const ctx = r.ctx;
     for (let i = 0; i < TABS.length; i++) {
       const x = g.baseX + i * g.tabW;
       const active = TABS[i].id === this.activeTab;
-      const count = this._countForTab(player, TABS[i].id);
-      r.drawRect(x + 2, g.y, g.tabW - 4, TAB_H, active ? COLOR.bgCardHi : COLOR.bgCard);
-      r.drawStrokedRect(x + 2, g.y, g.tabW - 4, TAB_H,
-        active ? COLOR.gold : COLOR.borderSoft, active ? 2 : 1);
-      r.drawText(TABS[i].label, x + g.tabW / 2, g.y + TAB_H / 2 - 4,
-        { size: uiSize(11), bold: true, align: 'center', baseline: 'middle',
-          family: FONT_DISPLAY, color: active ? COLOR.gold : COLOR.textMuted });
-      if (count > 0) {
-        r.drawText(String(count), x + g.tabW / 2, g.y + TAB_H - 8,
-          { size: uiSize(11), align: 'center', baseline: 'middle',
-            family: FONT_MONO, color: COLOR.textMuted });
-      }
+      drawIronPlate(ctx, x + 2, g.y, g.tabW - 4, TAB_H, {
+        pressed: active,
+        glow: active ? IRON_PALETTE.brass : null,
+        rivets: false
+      });
+      ctx.save();
+      ctx.font = `bold ${uiSize(11)}px ${FONT_DISPLAY}`;
+      ctx.fillStyle = active ? IRON_PALETTE.brass : IRON_PALETTE.boneDim;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      drawSpacedText(ctx, TABS[i].label.toUpperCase(),
+        x + g.tabW / 2, g.y + TAB_H / 2, 2);
+      ctx.restore();
     }
   }
 
@@ -308,9 +332,9 @@ export class InventoryUI {
   }
 
   _renderGrid(r, player) {
+    const ctx = r.ctx;
     const view = this._filteredView(player);
     const grid = this._gridGeometry();
-    // Always reserve grid space (max slots = inventory.size).
     const maxSlots = this.activeTab === 'all'
       ? player.inventory.size
       : Math.max(view.length, COLS);
@@ -319,99 +343,140 @@ export class InventoryUI {
       const cy = grid.startY + Math.floor(i / COLS) * (SLOT_SIZE + SLOT_PADDING);
       const entry = view[i];
       const sel = i === this.selectedFilteredIdx;
-      const rarityCol = entry?.item ? rarityColor(entry.item.rarity) : COLOR.borderSoft;
-      const inset = 2;
-      r.drawRect(cx, cy, SLOT_SIZE, SLOT_SIZE, '#0e0c12');
-      r.drawRect(cx + inset, cy + inset, SLOT_SIZE - inset * 2, SLOT_SIZE - inset * 2,
-        sel ? COLOR.bgCardHi : COLOR.bgCard);
-      r.drawStrokedRect(cx + inset, cy + inset, SLOT_SIZE - inset * 2, SLOT_SIZE - inset * 2,
-        sel ? COLOR.gold : rarityCol, sel ? 2 : 1);
-      if (entry?.item) {
-        r.drawRect(cx + 4, cy + SLOT_SIZE - 6, SLOT_SIZE - 8, 2, '#00000055');
-      }
+      // Iron recessed slot with rarity-coloured border (or brass when selected).
+      drawIronSlot(ctx, cx, cy, SLOT_SIZE, SLOT_SIZE, {
+        selected: sel,
+        rarity: entry?.item?.rarity,
+        empty: !entry?.item
+      });
+      // Slot index badge top-left.
       if (entry && this.activeTab === 'all') {
-        r.drawText(String(entry.slotIndex + 1), cx + 6, cy + 5,
-          { size: uiSize(10), family: FONT_MONO, color: COLOR.textMuted });
+        r.drawText(String(entry.slotIndex + 1), cx + 8, cy + 6,
+          { size: uiSize(10), family: FONT_MONO, color: IRON_PALETTE.brass });
       }
       if (entry?.item) {
-        const pad = 10;
+        const pad = 14;
         const icon = SLOT_SIZE - pad * 2;
         r.sprites.draw(entry.item.spriteKey, r.ctx, cx + pad, cy + pad, { size: icon });
+        // Equipped badge.
+        const isEq = entry.item === player.weapon || entry.item === player.armor
+                  || entry.item === player.helm   || entry.item === player.legs
+                  || entry.item === player.necklace || entry.item === player.ring;
+        if (isEq) {
+          r.drawRect(cx + SLOT_SIZE - 18, cy + 6, 14, 14, IRON_PALETTE.brass);
+          r.drawStrokedRect(cx + SLOT_SIZE - 18, cy + 6, 14, 14, IRON_PALETTE.ink, 1);
+          r.drawText('E', cx + SLOT_SIZE - 11, cy + 13, {
+            size: uiSize(9), bold: true, align: 'center', baseline: 'middle',
+            family: FONT_MONO, color: IRON_PALETTE.ink
+          });
+        }
+        // Stack count.
         if (entry.item.stackable && entry.item.count > 1) {
-          r.drawRect(cx + SLOT_SIZE - 26, cy + SLOT_SIZE - 18, 22, 14, '#0a0810cc');
           r.drawText(`×${entry.item.count}`, cx + SLOT_SIZE - 8, cy + SLOT_SIZE - 8,
             { size: uiSize(11), bold: true, align: 'right', baseline: 'bottom',
-              family: FONT_MONO, color: COLOR.textPrimary });
+              family: FONT_MONO, color: IRON_PALETTE.bone });
         }
-        const rarity = (entry.item.rarity || 'common').charAt(0).toUpperCase();
-        const badgeX = cx + SLOT_SIZE - 22;
-        const badgeY = cy + 5;
-        r.drawRect(badgeX, badgeY, 16, 14, rarityCol);
-        r.drawStrokedRect(badgeX, badgeY, 16, 14, '#00000066', 1);
-        r.drawText(rarity, badgeX + 8, badgeY + 7,
-          { size: uiSize(10), bold: true, align: 'center', baseline: 'middle',
-            family: FONT_DISPLAY, color: '#0a0608' });
       }
     }
   }
 
   _renderDetailCard(r, player) {
+    const ctx = r.ctx;
     const sel = this._selectedItem(player);
     const buttons = this._buttonLayout();
     const cardY = buttons[0].y - DETAIL_H - 8;
     const cardX = 12;
     const cardW = CANVAS_WIDTH - 24;
-    r.drawRect(cardX, cardY, cardW, DETAIL_H, COLOR.bgCard);
-    r.drawStrokedRect(cardX, cardY, cardW, DETAIL_H,
-      sel ? rarityColor(sel.rarity) : COLOR.borderSoft, sel ? 2 : 1);
+    drawInsetCard(ctx, cardX, cardY, cardW, DETAIL_H, {
+      borderColor: sel ? ironRarity(sel.rarity) : IRON_PALETTE.plate2
+    });
 
     if (!sel) {
       r.drawText('— no item selected —', CANVAS_WIDTH / 2, cardY + DETAIL_H / 2,
-        { size: uiSize(14), italic: true, align: 'center', baseline: 'middle',
-          family: FONT_BODY, color: COLOR.textMuted });
+        { size: uiSize(13), italic: true, align: 'center', baseline: 'middle',
+          family: FONT_BODY, color: IRON_PALETTE.boneDim });
       return;
     }
 
-    // Icon on the left.
-    const iconSize = DETAIL_H - 24;
-    const iconX = cardX + 12;
-    const iconY = cardY + 12;
-    r.drawRect(iconX, iconY, iconSize, iconSize, COLOR.bgPanelAlt);
-    r.sprites.draw(sel.spriteKey, r.ctx, iconX, iconY, { size: iconSize });
+    const col = ironRarity(sel.rarity);
+    // Icon recess on the left (matches mock — square with rarity border + glow).
+    const iconSize = DETAIL_H - 28;
+    const iconX = cardX + 14;
+    const iconY = cardY + 14;
+    ctx.fillStyle = IRON_PALETTE.ink;
+    ctx.fillRect(iconX, iconY, iconSize, iconSize);
+    ctx.save();
+    ctx.shadowColor = col;
+    ctx.shadowBlur = 10;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(iconX + 0.5, iconY + 0.5, iconSize - 1, iconSize - 1);
+    ctx.restore();
+    r.sprites.draw(sel.spriteKey, r.ctx, iconX + 4, iconY + 4, { size: iconSize - 8 });
 
-    // Name + rarity chip on right of icon.
+    // Name (rarity-coloured, display serif).
     const textX = iconX + iconSize + 14;
-    r.drawText(sel.name, textX, cardY + 12,
-      { size: uiSize(17), bold: true, family: FONT_DISPLAY, color: rarityColor(sel.rarity) });
-    // Rarity chip.
-    const rarityW = 60;
-    const chipY = cardY + 36;
-    r.drawRect(textX, chipY, rarityW, 16, rarityColor(sel.rarity));
-    r.drawText(sel.rarity.toUpperCase(), textX + rarityW / 2, chipY + 8,
-      { size: 9, bold: true, align: 'center', baseline: 'middle',
-        family: FONT_DISPLAY, color: '#0a0608' });
-    // Type chip next to rarity.
-    const typeChip = sel.slot ? sel.slot.toUpperCase() : sel.type.toUpperCase();
-    r.drawText(typeChip, textX + rarityW + 8, chipY + 8,
-      { size: 9, bold: true, baseline: 'middle',
-        family: FONT_DISPLAY, color: COLOR.textMuted });
-    // Equipped chip.
-    if ((sel === player.weapon) || (sel === player.armor) ||
-        (sel === player.helm)   || (sel === player.legs) ||
-        (sel === player.necklace) || (sel === player.ring)) {
-      r.drawText('EQUIPPED', textX + rarityW + 100, chipY + 8,
-        { size: 9, bold: true, baseline: 'middle',
-          family: FONT_DISPLAY, color: COLOR.gold });
+    ctx.save();
+    ctx.font = `bold ${uiSize(14)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = col;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    drawSpacedText(ctx, sel.name.toUpperCase(),
+      textX + ctx.measureText(sel.name.toUpperCase()).width / 2, cardY + 16, 1.5);
+    ctx.restore();
+
+    // type · rarity sublabel.
+    const sub = `${(sel.slot || sel.type || '').toUpperCase()} · ${sel.rarity.toUpperCase()}`;
+    ctx.save();
+    ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
+    ctx.fillStyle = IRON_PALETTE.boneDim;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    drawSpacedText(ctx, sub,
+      textX + ctx.measureText(sub).width / 2, cardY + 36, 1.5);
+    ctx.restore();
+
+    // Equipped chip (small brass tag).
+    const isEq = sel === player.weapon || sel === player.armor
+              || sel === player.helm || sel === player.legs
+              || sel === player.necklace || sel === player.ring;
+    if (isEq) {
+      const chipW = 64, chipH = 16;
+      const chipX = cardX + cardW - chipW - 12;
+      const chipY = cardY + 14;
+      ctx.fillStyle = IRON_PALETTE.brass;
+      ctx.fillRect(chipX, chipY, chipW, chipH);
+      ctx.strokeStyle = IRON_PALETTE.ink;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(chipX + 0.5, chipY + 0.5, chipW - 1, chipH - 1);
+      ctx.save();
+      ctx.font = `bold ${uiSize(9)}px ${FONT_DISPLAY}`;
+      ctx.fillStyle = IRON_PALETTE.ink;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      drawSpacedText(ctx, 'EQUIPPED', chipX + chipW / 2, chipY + chipH / 2, 1.5);
+      ctx.restore();
     }
 
     // Stat line.
-    r.drawText(this._fitLine(r, this._statLine(sel), cardW - (textX - cardX) - 12, uiSize(13)),
-      textX, cardY + 62,
-      { size: uiSize(13), family: FONT_MONO, color: COLOR.textPrimary });
-    this._drawWrappedText(r, sel.lore || '', textX, cardY + 84,
-      cardW - (textX - cardX) - 12, 2, {
-        size: uiSize(12), italic: true, family: FONT_BODY, color: COLOR.textMuted
+    r.drawText(this._fitLine(r, this._statLine(sel), cardW - (textX - cardX) - 14, uiSize(11)),
+      textX, cardY + 52,
+      { size: uiSize(11), family: FONT_MONO, color: IRON_PALETTE.bone });
+
+    // Lore quote in a brass-left-trim box (matches mock).
+    if (sel.lore) {
+      const loreY = cardY + 72;
+      const loreH = DETAIL_H - (loreY - cardY) - 10;
+      const loreX = textX;
+      const loreW = cardW - (textX - cardX) - 14;
+      ctx.fillStyle = IRON_PALETTE.ink;
+      ctx.fillRect(loreX, loreY, loreW, loreH);
+      ctx.fillStyle = IRON_PALETTE.brass;
+      ctx.fillRect(loreX, loreY, 2, loreH);
+      this._drawWrappedText(r, `"${sel.lore}"`, loreX + 8, loreY + 6, loreW - 12, 2, {
+        size: uiSize(10), italic: true, family: FONT_BODY, color: IRON_PALETTE.boneDim
       });
+    }
   }
 
   _renderActionButtons(r, player) {
@@ -420,21 +485,20 @@ export class InventoryUI {
     const isEquipped = sel && (sel === player.weapon || sel === player.armor ||
                                 sel === player.helm   || sel === player.legs ||
                                 sel === player.necklace || sel === player.ring);
-    const labels = [
-      { text: !sel ? 'USE' : (sel.slot ? (isEquipped ? 'EQUIP' : 'EQUIP') : 'USE'),
-        enabled: !!sel },
-      { text: 'DROP',  enabled: !!sel },
-      { text: 'CLOSE', enabled: true }
+    const useLabel = !sel ? 'USE'
+      : sel.slot ? (isEquipped ? 'UNEQUIP' : 'EQUIP')
+      : 'USE';
+    const items = [
+      { text: useLabel, enabled: !!sel, accent: sel ? IRON_PALETTE.ember : null },
+      { text: 'DROP',   enabled: !!sel },
+      { text: 'CLOSE',  enabled: true,  accent: IRON_PALETTE.brass }
     ];
     for (let i = 0; i < buttons.length; i++) {
       const b = buttons[i];
-      const enabled = labels[i].enabled;
-      r.drawRect(b.x, b.y, b.w, b.h, enabled ? COLOR.bgCardHi : COLOR.bgPanelAlt);
-      r.drawStrokedRect(b.x, b.y, b.w, b.h, enabled ? COLOR.gold : COLOR.borderSoft, enabled ? 2 : 1);
-      r.drawText(labels[i].text, b.x + b.w / 2, b.y + b.h / 2,
-        { size: uiSize(15), bold: true, align: 'center', baseline: 'middle',
-          family: FONT_DISPLAY,
-          color: enabled ? COLOR.textPrimary : COLOR.textMuted });
+      drawIronActionButton(r, b.x, b.y, b.w, b.h, items[i].text, {
+        disabled: !items[i].enabled,
+        accent: items[i].accent
+      });
     }
   }
 

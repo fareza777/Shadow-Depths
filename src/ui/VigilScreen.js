@@ -1,24 +1,26 @@
 /**
- * VigilScreen — full-canvas character sheet, modeled on the mock.
+ * VigilScreen — character sheet rendered in the wrought-iron vocabulary.
  *
- * Sections, top to bottom:
- *   1. Header: "THE LAST VIGIL" + character name (Fajar) + LV + XP bar.
- *   2. Portrait (large player sprite drawn at 4×).
- *   3. Big HP bar with numeric.
- *   4. Stat grid: ATTACK · DEFENSE · DEXTERITY · CRIT · LIFESTEAL · TORCH.
- *   5. Boons & Afflictions chip row (active status effects).
- *   6. Equipment card list — one card per equipment slot.
- *      Each card has the piece name, stats, lore, and UNEQUIP button.
- *
- * Opened from in-game via a new "VIGIL" tap on the inventory action row
- * or a button on the HUD. Not a standalone scene — it's a canvas modal
- * managed by GameScene, like InventoryUI.
+ * Match for iron-screens.jsx photo 2:
+ *   1. Top bar: ◀ back   THE VIGIL   RUN
+ *   2. Italic "THE LAST VIGIL" + huge spaced name "FAJAR"
+ *   3. LV chip + EXPERIENCE label + XP bar
+ *   4. Portrait inside brass-bordered well with corner rivets
+ *   5. HP bar (thick, blood red)
+ *   6. Stats table — 6 rows, key on left + value on right, hairlines
+ *   7. Equipment list — one row per slot, brass UNEQUIP chip if filled
+ *   8. CLOSE button anchored at the bottom
  */
 import {
   COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
+import {
+  drawIronPanel, drawIronPlate, drawIronRivet, drawBrassRivet,
+  drawInsetCard, drawProgressBar, drawIronActionButton,
+  drawEquipRow, drawSpacedText, IRON_PALETTE
+} from './ironPanel.js';
 
 const HERO_NAME = 'FAJAR';
 const HERO_TITLE = 'THE LAST VIGIL';
@@ -38,30 +40,21 @@ export class VigilScreen {
   hide() { this.open = false; }
   toggle() { this.open = !this.open; }
 
-  /**
-   * @param {import('../entities/Player.js').Player} player
-   * @param {{ type:string, dx?:number, dy?:number, index?:number }} input
-   */
   handleInput(player, input) {
     if (!this.open) return false;
     if (input.type === 'vigil' || input.type === 'inventory' || input.type === 'escape') {
       this.hide();
       return true;
     }
-    return true; // swallow all other input while open
+    return true;
   }
 
-  /**
-   * Canvas tap. Tap a card's UNEQUIP button to unequip that slot, or
-   * tap CLOSE to dismiss the modal.
-   */
   handleCanvasTap(canvasX, canvasY, player) {
     if (!this.open) return false;
     if (this._insideHeaderBack(canvasX, canvasY)) {
       this.hide();
       return true;
     }
-    // Equipment card UNEQUIP buttons.
     const cards = this._equipmentCards(player);
     for (const c of cards) {
       if (!c.item) continue;
@@ -72,7 +65,6 @@ export class VigilScreen {
         return true;
       }
     }
-    // Close button.
     const close = this._closeRect();
     if (canvasX >= close.x && canvasX <= close.x + close.w &&
         canvasY >= close.y && canvasY <= close.y + close.h) {
@@ -82,44 +74,35 @@ export class VigilScreen {
     return true;
   }
 
-  // --- layout helpers -----------------------------------------------
+  // --- geometry -----------------------------------------------------
   _closeRect() {
-    const w = IS_LANDSCAPE ? 140 : 180;
-    const h = IS_LANDSCAPE ? 40  : 48;
+    const w = IS_LANDSCAPE ? 200 : 240;
+    const h = IS_LANDSCAPE ? 40  : 50;
     const screenH = Layout.canvasH || CANVAS_HEIGHT;
-    return {
-      x: (CANVAS_WIDTH - w) / 2,
-      y: screenH - h - 12,
-      w, h
-    };
+    return { x: (CANVAS_WIDTH - w) / 2, y: screenH - h - 16, w, h };
   }
 
   _insideHeaderBack(x, y) {
-    const h = IS_LANDSCAPE ? 28 : 30;
-    return x >= 0 && x <= 166 && y >= 0 && y <= h;
+    return x >= 6 && x <= 54 && y >= 14 && y <= 58;
   }
 
-  /**
-   * Compute card geometry for each equipment slot. Returns objects with
-   * { slot, item, x, y, w, h, unequipBtn }.
-   */
   _equipmentCards(player) {
     const slots = [
-      { slot: 'weapon', label: 'WEAPON',  item: player.weapon },
-      { slot: 'helm',   label: 'HELM',    item: player.helm },
-      { slot: 'armor',  label: 'ARMOR',   item: player.armor },
-      { slot: 'legs',   label: 'LEGS',    item: player.legs },
-      { slot: 'necklace', label: 'NECKLACE', item: player.necklace },
-      { slot: 'ring',   label: 'RING',    item: player.ring }
+      { slot: 'weapon',   item: player.weapon },
+      { slot: 'helm',     item: player.helm },
+      { slot: 'armor',    item: player.armor },
+      { slot: 'legs',     item: player.legs },
+      { slot: 'necklace', item: player.necklace },
+      { slot: 'ring',     item: player.ring }
     ];
-    const cardH = IS_LANDSCAPE ? 52 : 54;
-    const cardGap = IS_LANDSCAPE ? 6 : 5;
+    const cardH = IS_LANDSCAPE ? 50 : 56;
+    const cardGap = 6;
     const cardW = CANVAS_WIDTH - 32;
     const cardX = 16;
     const cardsBaseY = this._cardsBaseY();
     for (let i = 0; i < slots.length; i++) {
       const y = cardsBaseY + i * (cardH + cardGap);
-      const btnW = 80, btnH = 28;
+      const btnW = 76, btnH = 26;
       slots[i].x = cardX;
       slots[i].y = y;
       slots[i].w = cardW;
@@ -133,235 +116,250 @@ export class VigilScreen {
     return slots;
   }
 
-  /** Top Y of the first equipment card. Depends on what's above. */
   _cardsBaseY() {
-    // Portrait: stat block ends ~y434; equipment starts below with gap.
-    return IS_LANDSCAPE ? 210 : 462;
+    return IS_LANDSCAPE ? 210 : 478;
   }
 
-  // --- render --------------------------------------------------------
+  // --- render -------------------------------------------------------
   render(renderer, player) {
     if (!this.open) return;
-
-    // Backdrop (warm dark, not pure black per user feedback).
-    renderer.drawRect(0, 0, CANVAS_WIDTH, Layout.canvasH || CANVAS_HEIGHT, COLOR.bg);
+    const screenH = Layout.canvasH || CANVAS_HEIGHT;
+    // Full-bleed iron panel chrome.
+    drawIronPanel(renderer.ctx, 0, 0, CANVAS_WIDTH, screenH);
 
     if (IS_LANDSCAPE) this._renderLandscape(renderer, player);
     else              this._renderPortrait(renderer, player);
 
-    // Close button (anchored to canvas bottom in both layouts).
+    // CLOSE button.
     const close = this._closeRect();
-    renderer.drawRect(close.x, close.y, close.w, close.h, COLOR.bgCard);
-    renderer.drawStrokedRect(close.x, close.y, close.w, close.h, COLOR.gold, 2);
-    renderer.drawText('CLOSE', close.x + close.w / 2, close.y + close.h / 2,
-      { size: uiSize(15), bold: true, align: 'center', baseline: 'middle',
-        family: FONT_DISPLAY, color: COLOR.textPrimary });
+    drawIronActionButton(renderer, close.x, close.y, close.w, close.h, 'CLOSE',
+      { accent: IRON_PALETTE.brass, fontSize: 14 });
   }
 
-  // ---- PORTRAIT layout ----------------------------------------------
+  // ---- portrait layout ---------------------------------------------
   _renderPortrait(r, p) {
-    // 1. Header bar.
-    r.drawRect(0, 0, CANVAS_WIDTH, 30, COLOR.bgPanel);
-    r.drawText('◀ THE VIGIL', 12, 15,
-      { size: uiSize(13), align: 'left', baseline: 'middle', family: FONT_DISPLAY, color: COLOR.gold });
-    r.drawText('RUN', CANVAS_WIDTH - 12, 15,
-      { size: uiSize(12), align: 'right', baseline: 'middle', family: FONT_MONO, color: COLOR.textMuted });
+    const ctx = r.ctx;
 
-    r.drawText(HERO_TITLE, CANVAS_WIDTH / 2, 50,
-      { size: uiSize(13), align: 'center', family: FONT_BODY, italic: true, color: COLOR.textMuted });
-    r.drawText(HERO_NAME, CANVAS_WIDTH / 2, 76,
-      { size: uiSize(30), bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
+    // 1. Top bar: back plate left + title middle + RUN plate right.
+    drawIronPlate(ctx, 10, 18, 38, 38, { rivets: true });
+    r.drawText('◀', 29, 37, {
+      size: uiSize(18), align: 'center', baseline: 'middle',
+      family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
+    ctx.save();
+    ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = IRON_PALETTE.brass;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    drawSpacedText(ctx, 'THE VIGIL',
+      60 + ctx.measureText('THE VIGIL').width / 2, 37, 4);
+    ctx.restore();
+    drawIronPlate(ctx, CANVAS_WIDTH - 70, 22, 60, 30, { rivets: false });
+    ctx.save();
+    ctx.font = `bold ${uiSize(11)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = IRON_PALETTE.blood;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    drawSpacedText(ctx, 'RUN', CANVAS_WIDTH - 40, 37, 3);
+    ctx.restore();
 
-    // 3. Level + XP bar.
-    const xpNeed = p.xpToNext();
-    const xpMaxed = !Number.isFinite(xpNeed);
-    const lvY = 114;
-    r.drawRect(16, lvY - 2, 64, 20, COLOR.bgCardHi);
-    r.drawStrokedRect(16, lvY - 2, 64, 20, COLOR.goldDim, 1);
-    r.drawText(`LV ${p.level}`, 48, lvY + 8,
-      { size: uiSize(13), bold: true, align: 'center', baseline: 'middle',
-        family: FONT_MONO, color: COLOR.textPrimary });
-    r.drawText(xpMaxed ? 'XP MAX' : `XP ${p.xp} / ${xpNeed}`, CANVAS_WIDTH - 16, lvY + 2,
-      { size: uiSize(12), align: 'right', family: FONT_MONO, color: COLOR.textMuted });
-    r.drawBar(16, lvY + 24, CANVAS_WIDTH - 32, 7, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
+    // 2. Subtitle (italic) + huge name.
+    r.drawText(HERO_TITLE, CANVAS_WIDTH / 2, 78, {
+      size: uiSize(12), italic: true, align: 'center', baseline: 'middle',
+      family: FONT_DISPLAY, color: IRON_PALETTE.boneDim
+    });
+    ctx.save();
+    ctx.font = `bold ${uiSize(34)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = IRON_PALETTE.bone;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = IRON_PALETTE.brass + '55';
+    ctx.shadowBlur = 16;
+    drawSpacedText(ctx, HERO_NAME, CANVAS_WIDTH / 2, 110, 8);
+    ctx.restore();
 
-    // 4. Portrait area (large player sprite scaled up).
-    const portraitY = 160;
-    const portraitSize = 96;
-    const portraitX = (CANVAS_WIDTH - portraitSize) / 2;
-    r.drawRect(portraitX, portraitY, portraitSize, portraitSize, COLOR.bgCard);
-    r.drawStrokedRect(portraitX, portraitY, portraitSize, portraitSize, COLOR.gold, 2);
-    r.sprites.draw('portrait_hero', r.ctx, portraitX, portraitY, { size: portraitSize });
+    // 3. LV chip + XP bar.
+    const lvY = 142;
+    const xpVal = p.xp || 0;
+    const xpMax = p.xpToNext();
+    drawIronPlate(ctx, 16, lvY, 70, 28, { rivets: false, glow: IRON_PALETTE.brass });
+    ctx.save();
+    ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = IRON_PALETTE.brass;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    drawSpacedText(ctx, `LV ${p.level}`, 51, lvY + 14, 2);
+    ctx.restore();
+
+    r.drawText('EXPERIENCE', 96, lvY + 4, {
+      size: uiSize(9), family: FONT_MONO, color: IRON_PALETTE.boneDim
+    });
+    const xpLabel = Number.isFinite(xpMax) ? `XP ${xpVal} / ${xpMax}` : `XP ${xpVal}`;
+    r.drawText(xpLabel, CANVAS_WIDTH - 16, lvY + 4, {
+      size: uiSize(9), align: 'right', family: FONT_MONO, color: IRON_PALETTE.boneDim
+    });
+    drawProgressBar(ctx, 96, lvY + 18,
+      CANVAS_WIDTH - 16 - 96, 6,
+      xpVal, Number.isFinite(xpMax) ? xpMax : Math.max(1, xpVal),
+      IRON_PALETTE.brass);
+
+    // 4. Portrait well (brass-bordered, corner rivets).
+    const portraitSize = 132;
+    const px = (CANVAS_WIDTH - portraitSize) / 2;
+    const py = 186;
+    const pg = ctx.createRadialGradient(
+      px + portraitSize / 2, py + portraitSize * 0.3, 4,
+      px + portraitSize / 2, py + portraitSize / 2, portraitSize * 0.8);
+    pg.addColorStop(0, IRON_PALETTE.plate2);
+    pg.addColorStop(1, IRON_PALETTE.ink);
+    ctx.fillStyle = pg;
+    ctx.fillRect(px, py, portraitSize, portraitSize);
+    // Inner glow.
+    ctx.save();
+    ctx.shadowColor = IRON_PALETTE.brass + '55';
+    ctx.shadowBlur = 14;
+    ctx.strokeStyle = IRON_PALETTE.brass;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(px + 1, py + 1, portraitSize - 2, portraitSize - 2);
+    ctx.restore();
+    // Hero portrait sprite.
+    const sprSize = portraitSize - 24;
+    r.sprites.draw('portrait_hero', r.ctx,
+      px + (portraitSize - sprSize) / 2,
+      py + (portraitSize - sprSize) / 2,
+      { size: sprSize });
+    // Corner rivets.
+    drawBrassRivet(ctx, px + 6, py + 6, 3);
+    drawBrassRivet(ctx, px + portraitSize - 6, py + 6, 3);
+    drawBrassRivet(ctx, px + 6, py + portraitSize - 6, 3);
+    drawBrassRivet(ctx, px + portraitSize - 6, py + portraitSize - 6, 3);
 
     // 5. HP bar.
-    const hpY = 270;
-    r.drawText(`HP ${p.stats.hp} / ${p.stats.hpMax}`, 16, hpY,
-      { size: uiSize(14), bold: true, family: FONT_DISPLAY, color: COLOR.textPrimary });
-    r.drawBar(16, hpY + 18, CANVAS_WIDTH - 32, 10, p.stats.hp, p.stats.hpMax,
-      COLOR.hpBar, COLOR.hpBarBg);
+    const hpY = py + portraitSize + 20;
+    ctx.save();
+    ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = IRON_PALETTE.bone;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    drawSpacedText(ctx, 'HP', 18 + ctx.measureText('HP').width / 2, hpY, 2);
+    ctx.restore();
+    r.drawText(`${p.stats.hp} / ${p.stats.hpMax}`, CANVAS_WIDTH - 16, hpY, {
+      size: uiSize(13), bold: true, align: 'right', family: FONT_MONO, color: IRON_PALETTE.bone
+    });
+    drawProgressBar(ctx, 16, hpY + 18, CANVAS_WIDTH - 32, 10,
+      p.stats.hp, p.stats.hpMax, IRON_PALETTE.blood);
 
-    // 6. Stat block.
-    this._renderStatBlock(r, p, 302);
+    // 6. Stats table (recessed card).
+    this._renderStatTable(r, p, hpY + 40);
 
-    // 7. Equipment cards.
-    this._renderEquipmentCards(r, p);
-  }
-
-  // ---- LANDSCAPE layout ----------------------------------------------
-  _renderLandscape(r, p) {
-    // Header bar.
-    r.drawRect(0, 0, CANVAS_WIDTH, 28, COLOR.bgPanel);
-    r.drawText('◀ THE VIGIL', 12, 14,
-      { size: 12, align: 'left', baseline: 'middle', family: FONT_DISPLAY, color: COLOR.gold });
-
-    // Left side: portrait + name + LV + HP.
-    const portraitSize = 80;
-    r.drawRect(16, 40, portraitSize, portraitSize, COLOR.bgCard);
-    r.drawStrokedRect(16, 40, portraitSize, portraitSize, COLOR.gold, 2);
-    r.sprites.draw(p.displaySpriteKey(), r.ctx, 16, 40, { size: portraitSize });
-
-    r.drawText(HERO_NAME, 110, 44,
-      { size: 22, bold: true, family: FONT_DISPLAY, color: COLOR.gold });
-    r.drawText(`LV.${p.level}`, 110, 74,
-      { size: 13, family: FONT_DISPLAY, color: COLOR.textPrimary });
-    const xpNeed = p.xpToNext();
-    const xpMaxed = !Number.isFinite(xpNeed);
-    r.drawText(xpMaxed ? 'XP MAX' : `XP ${p.xp} / ${xpNeed}`, 162, 76,
-      { size: 11, family: FONT_MONO, color: COLOR.textMuted });
-    r.drawBar(110, 96, 200, 6, xpMaxed ? 1 : p.xp, xpMaxed ? 1 : xpNeed, COLOR.xpBar, COLOR.xpBarBg);
-    r.drawText(`HP ${p.stats.hp} / ${p.stats.hpMax}`, 110, 108,
-      { size: 12, bold: true, family: FONT_DISPLAY });
-    r.drawBar(110, 126, 200, 8, p.stats.hp, p.stats.hpMax, COLOR.hpBar, COLOR.hpBarBg);
-
-    // Right side of upper area: stat block.
-    this._renderStatBlock(r, p, 40, 340);
-
-    // Equipment cards at bottom.
-    this._renderEquipmentCards(r, p);
-  }
-
-  // ---- shared sections ----------------------------------------------
-  _renderStatBlock(r, p, baseY, startX = 16) {
-    const lineH = IS_LANDSCAPE ? 20 : 24;
-    const labelW = 110;
-    const lines = [
-      ['ATTACK',     p.totalAtk(),  ''],
-      ['DEFENSE',    p.totalDef(),  ''],
-      ['DEXTERITY',  p.totalDex(),  ''],
-      ['CRIT CHANCE',`${Math.round(p.critChance() * 100)}%`, ''],
-      ['LIFESTEAL',  `${Math.round((p.skillLifesteal + (p.weapon?.onHit?.[0]?.value || 0)) * 100)}%`, ''],
-      ['TORCH',      '5 tiles',    '']
-    ];
-    for (let i = 0; i < lines.length; i++) {
-      const [label, value] = lines[i];
-      const y = baseY + i * lineH;
-      r.drawText(label, startX, y,
-        { size: uiSize(IS_LANDSCAPE ? 12 : 13), family: FONT_DISPLAY, color: COLOR.textMuted });
-      r.drawText(String(value),
-        IS_LANDSCAPE ? startX + labelW + 60 : CANVAS_WIDTH - 16, y,
-        { size: uiSize(IS_LANDSCAPE ? 13 : 14), bold: true, family: FONT_MONO,
-          align: IS_LANDSCAPE ? 'left' : 'right', color: COLOR.gold });
-    }
-    // Boons strip below stats.
-    if (p.statusEffects?.length > 0 || p.reviveCharges > 0) {
-      const bx0 = startX;
-      const by = baseY + lines.length * lineH + 4;
-      r.drawText('BOONS & AFFLICTIONS', bx0, by,
-        { size: 10, family: FONT_DISPLAY, color: COLOR.textMuted });
-      let chipX = bx0;
-      const chipY = by + 14;
-      for (const eff of (p.statusEffects || [])) {
-        const label = `${eff.id} ${eff.value}×${eff.duration}t`;
-        const w = 10 + label.length * 5.5;
-        const bg = eff.id === 'poison' ? '#2a4a30'
-                : (eff.id === 'atk_buff' ? '#4a2a20' : '#1e3a52');
-        r.drawRect(chipX, chipY, w, 14, bg);
-        r.drawText(label, chipX + 5, chipY + 1, { size: 9, family: FONT_MONO });
-        chipX += w + 4;
-      }
-      if (p.reviveCharges > 0) {
-        const label = `revive ×${p.reviveCharges}`;
-        const w = 10 + label.length * 5.5;
-        r.drawRect(chipX, chipY, w, 14, '#4a3818');
-        r.drawText(label, chipX + 5, chipY + 1,
-          { size: 9, family: FONT_MONO, color: COLOR.textHeal });
-      }
-    }
-  }
-
-  _renderEquipmentCards(r, p) {
+    // 7. Equipment header + rows.
     const cards = this._equipmentCards(p);
-    // Section header.
-    const headerY = this._cardsBaseY() - 22;
-    r.drawText('EQUIPMENT', 16, headerY,
-      { size: uiSize(13), family: FONT_DISPLAY, color: COLOR.textMuted });
-    r.drawText(`${cards.filter((c) => c.item).length} / ${cards.length} equipped`,
-      CANVAS_WIDTH - 16, headerY + 2,
-      { size: uiSize(12), align: 'right', italic: true, family: FONT_BODY, color: COLOR.textMuted });
-
-    for (const card of cards) {
-      const sel = !!card.item;
-      r.drawRect(card.x, card.y, card.w, card.h,
-        sel ? COLOR.bgCard : COLOR.bgPanelAlt);
-      r.drawStrokedRect(card.x, card.y, card.w, card.h,
-        sel ? rarityColor(card.item.rarity) : COLOR.borderSoft, sel ? 2 : 1);
-
-      // Slot icon — small inset on the left.
-      const iconSize = card.h - 14;
-      const iconX = card.x + 8;
-      const iconY = card.y + 7;
-      r.drawRect(iconX, iconY, iconSize, iconSize, COLOR.bgPanelAlt);
-      if (card.item) {
-        r.sprites.draw(card.item.spriteKey, r.ctx, iconX, iconY, { size: iconSize });
-      }
-
-      // Slot label + item name.
-      const textX = iconX + iconSize + 10;
-      r.drawText(card.label, textX, card.y + 6,
-        { size: uiSize(11), family: FONT_DISPLAY, color: COLOR.textMuted });
-      r.drawText(card.item ? card.item.name : '— empty —',
-        textX, card.y + 24,
-        { size: uiSize(14), bold: true, family: FONT_DISPLAY,
-          color: card.item ? rarityColor(card.item.rarity) : COLOR.textMuted });
-      if (card.item) {
-        r.drawText(this._statLine(card.item), textX, card.y + 42,
-          { size: uiSize(11), italic: true, family: FONT_BODY, color: COLOR.textMuted });
-      }
-
-      // UNEQUIP button (only for filled slots).
-      if (card.item) {
-        const b = card.unequipBtn;
-        r.drawRect(b.x, b.y, b.w, b.h, COLOR.bgPanelAlt);
-        r.drawStrokedRect(b.x, b.y, b.w, b.h, COLOR.borderSoft, 1);
-        r.drawText('UNEQUIP', b.x + b.w / 2, b.y + b.h / 2,
-          { size: 10, bold: true, align: 'center', baseline: 'middle',
-            family: FONT_DISPLAY, color: COLOR.textPrimary });
-      }
+    const equipHeaderY = this._cardsBaseY() - 20;
+    ctx.save();
+    ctx.font = `${uiSize(10)}px ${FONT_MONO}`;
+    ctx.fillStyle = IRON_PALETTE.brass;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    drawSpacedText(ctx, 'EQUIPMENT',
+      16 + ctx.measureText('EQUIPMENT').width / 2, equipHeaderY, 3);
+    ctx.restore();
+    const filledCount = cards.filter((c) => c.item).length;
+    r.drawText(`${filledCount} / ${cards.length} equipped`,
+      CANVAS_WIDTH - 16, equipHeaderY, {
+        size: uiSize(9), align: 'right', family: FONT_MONO, color: IRON_PALETTE.boneDim
+      });
+    for (const c of cards) {
+      drawEquipRow(r, c.x, c.y, c.w, c.h, c.slot, c.item);
     }
   }
 
-  _statLine(item) {
-    const parts = [];
-    if (item.stats?.atk)   parts.push(`+${item.stats.atk} ATK`);
-    if (item.stats?.def)   parts.push(`+${item.stats.def} DEF`);
-    if (item.stats?.dex)   parts.push(`${item.stats.dex >= 0 ? '+' : ''}${item.stats.dex} DEX`);
-    if (item.stats?.critBonus) parts.push(`+${Math.round(item.stats.critBonus * 100)}% CRIT`);
-    if (item.stats?.attackRange && item.stats.attackRange > 1) {
-      parts.push(`Rng ${item.stats.attackRange}`);
-    }
-    if (item.stats?.hpMaxBonus) parts.push(`+${item.stats.hpMaxBonus} max HP`);
-    if (item.onHit?.[0]?.type === 'lifesteal') {
-      parts.push(`Lifesteal ${Math.round(item.onHit[0].value * 100)}%`);
-    }
-    return parts.join('   ') || (item.type || '');
-  }
-}
+  _renderStatTable(r, p, baseY) {
+    const ctx = r.ctx;
+    const tableX = 16, tableW = CANVAS_WIDTH - 32;
+    const rows = [
+      ['ATTACK',      String(p.totalAtk ? p.totalAtk() : (p.stats.atk + (p.weapon?.stats?.atk || 0)))],
+      ['DEFENSE',     String(p.totalDef ? p.totalDef() : (p.stats.def + (p.armor?.stats?.def || 0)))],
+      ['DEXTERITY',   String(p.stats.dex || 0)],
+      ['CRIT CHANCE', `${Math.round((p.critChance ? p.critChance() : 0.05) * 100)}%`],
+      ['LIFESTEAL',   `${Math.round((p.lifesteal || 0) * 100)}%`],
+      ['TORCH',       `${p.torchRadius || 5} TILES`]
+    ];
+    const rowH = 22;
+    const tableH = rowH * rows.length + 14;
+    drawInsetCard(ctx, tableX, baseY, tableW, tableH);
 
-function rarityColor(r) {
-  switch (r) {
-    case 'uncommon': return COLOR.itemUncommon;
-    case 'rare':     return COLOR.itemRare;
-    case 'epic':     return COLOR.itemEpic;
-    default:         return COLOR.itemCommon;
+    for (let i = 0; i < rows.length; i++) {
+      const y = baseY + 8 + i * rowH;
+      // hairline divider
+      if (i < rows.length - 1) {
+        ctx.fillStyle = IRON_PALETTE.plate2;
+        ctx.fillRect(tableX + 12, y + rowH - 1, tableW - 24, 1);
+      }
+      // key (left)
+      ctx.save();
+      ctx.font = `${uiSize(11)}px ${FONT_DISPLAY}`;
+      ctx.fillStyle = IRON_PALETTE.boneDim;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      drawSpacedText(ctx, rows[i][0],
+        tableX + 14 + ctx.measureText(rows[i][0]).width / 2,
+        y + rowH / 2, 2);
+      ctx.restore();
+      // value (right, mono bold)
+      r.drawText(rows[i][1], tableX + tableW - 14, y + rowH / 2, {
+        size: uiSize(12), bold: true, align: 'right', baseline: 'middle',
+        family: FONT_MONO, color: IRON_PALETTE.bone
+      });
+    }
+  }
+
+  // ---- landscape layout --------------------------------------------
+  _renderLandscape(r, p) {
+    // Match portrait visual vocabulary but in two columns (portrait left,
+    // stats + equipment right). Reuses the same primitives.
+    const ctx = r.ctx;
+    // Top bar (slim).
+    drawIronPlate(ctx, 8, 12, 30, 30, { rivets: true });
+    r.drawText('◀', 23, 27, {
+      size: uiSize(15), align: 'center', baseline: 'middle',
+      family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
+    ctx.save();
+    ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = IRON_PALETTE.brass;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    drawSpacedText(ctx, 'THE VIGIL',
+      50 + ctx.measureText('THE VIGIL').width / 2, 27, 4);
+    ctx.restore();
+    r.drawText(HERO_NAME, CANVAS_WIDTH / 2, 60, {
+      size: uiSize(20), bold: true, align: 'center',
+      family: FONT_DISPLAY, color: IRON_PALETTE.bone
+    });
+    // Portrait box left.
+    const ps = 96, px = 16, py = 80;
+    ctx.fillStyle = IRON_PALETTE.ink;
+    ctx.fillRect(px, py, ps, ps);
+    ctx.strokeStyle = IRON_PALETTE.brass;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(px + 1, py + 1, ps - 2, ps - 2);
+    r.sprites.draw('portrait_hero', r.ctx, px + 8, py + 8, { size: ps - 16 });
+    drawBrassRivet(ctx, px + 5, py + 5, 2.5);
+    drawBrassRivet(ctx, px + ps - 5, py + 5, 2.5);
+    drawBrassRivet(ctx, px + 5, py + ps - 5, 2.5);
+    drawBrassRivet(ctx, px + ps - 5, py + ps - 5, 2.5);
+    // HP next to portrait.
+    const hpX = px + ps + 16;
+    const hpY = py + 12;
+    r.drawText(`HP  ${p.stats.hp} / ${p.stats.hpMax}`, hpX, hpY, {
+      size: uiSize(11), bold: true, family: FONT_DISPLAY, color: IRON_PALETTE.bone
+    });
+    drawProgressBar(ctx, hpX, hpY + 16, CANVAS_WIDTH - hpX - 16, 8,
+      p.stats.hp, p.stats.hpMax, IRON_PALETTE.blood);
+    // Stats inside the gap.
+    this._renderStatTable(r, p, py + ps + 16);
+    // Equipment list.
+    const cards = this._equipmentCards(p);
+    for (const c of cards) drawEquipRow(r, c.x, c.y, c.w, c.h, c.slot, c.item);
   }
 }
