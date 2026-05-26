@@ -942,33 +942,23 @@ export class TitleScreen {
     ctx.font = `bold ${size}px ${FONT_DISPLAY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    const w = ctx.measureText(text).width + 24;
-    const h = size * 1.1;
-    const left = cx - w / 2;
+    const w = ctx.measureText(text).width;
     // Engraved back-shadow.
     ctx.fillStyle = IRON.ink;
     ctx.fillText(text, cx + 2, y + 2);
-    // Drop-shadow glow underneath the brass fill.
-    ctx.shadowColor = 'rgba(212,172,108,0.45)';
-    ctx.shadowBlur = 14;
-    ctx.fillStyle = BRASS_DARK;
-    ctx.fillText(text, cx, y);
-    ctx.shadowBlur = 0;
-    // Sliding brass gradient with a hot bright band in the middle.
+    // Sliding brass gradient — bright band sweeps across the glyph.
     const phase = (this._t * 0.22) % 1;
-    const gx0 = left - w * 0.5 + phase * w * 2;
-    const grad = ctx.createLinearGradient(gx0, 0, gx0 + w, 0);
+    const gx0 = cx - w / 2 - w * 0.4 + phase * w * 1.8;
+    const grad = ctx.createLinearGradient(gx0, 0, gx0 + w * 0.8, 0);
     grad.addColorStop(0,     BRASS_DARK);
     grad.addColorStop(0.40,  BRASS_HI);
     grad.addColorStop(0.50,  BRASS_WHITE);
     grad.addColorStop(0.60,  BRASS_HI);
     grad.addColorStop(1,     BRASS_DARK);
-    // Re-paint the text shape with the moving gradient on top of the
-    // dark brass body. Using globalCompositeOperation 'source-atop' keeps
-    // the fill bounded to the previously painted glyph pixels.
-    ctx.globalCompositeOperation = 'source-atop';
+    ctx.shadowColor = 'rgba(212,172,108,0.45)';
+    ctx.shadowBlur = 14;
     ctx.fillStyle = grad;
-    ctx.fillRect(left, y - 2, w, h);
+    ctx.fillText(text, cx, y);
     ctx.restore();
   }
 

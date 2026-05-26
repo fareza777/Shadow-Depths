@@ -191,14 +191,12 @@ export class HUD {
     ctx.textBaseline = 'middle';
     const cx = Layout.canvasW / 2;
     const labelY = y + 11;
+    const upper = name.toUpperCase();
     // Engraved back-shadow
     ctx.fillStyle = IRON.ink;
-    ctx.fillText(name.toUpperCase(), cx + 1, labelY + 1);
-    // Brass body
-    ctx.fillStyle = BRASS_DARK;
-    ctx.fillText(name.toUpperCase(), cx, labelY);
-    // Sliding bright band on top
-    const tw = ctx.measureText(name.toUpperCase()).width;
+    ctx.fillText(upper, cx + 1, labelY + 1);
+    // Sliding brass gradient fills the glyph directly.
+    const tw = ctx.measureText(upper).width;
     const phase = (t * 0.18) % 1;
     const gx = cx - tw / 2 - tw * 0.3 + phase * tw * 1.6;
     const tg = ctx.createLinearGradient(gx, 0, gx + tw * 0.6, 0);
@@ -207,11 +205,8 @@ export class HUD {
     tg.addColorStop(0.5,  BRASS_WHITE);
     tg.addColorStop(0.6,  BRASS_HI);
     tg.addColorStop(1,    BRASS_DARK);
-    ctx.save();
-    ctx.globalCompositeOperation = 'source-atop';
     ctx.fillStyle = tg;
-    ctx.fillRect(x, labelY - 10, w, 20);
-    ctx.restore();
+    ctx.fillText(upper, cx, labelY);
 
     // Subtitle: ── FLOOR N OF M ──
     const subY = y + h - 6;
