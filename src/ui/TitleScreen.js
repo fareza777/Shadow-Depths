@@ -15,6 +15,7 @@ import {
   COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
+import { Layout } from '../config/layoutMetrics.js';
 
 const MENU = [
   { id: 'newRun',   icon: '+', label: 'NEW DESCENT',  sub: 'Permadeath' },
@@ -324,7 +325,7 @@ export class TitleScreen {
     const h = IS_LANDSCAPE ? 40  : 48;
     const y = typeof explicitY === 'number'
       ? explicitY
-      : (IS_LANDSCAPE ? CANVAS_HEIGHT - 56 : CANVAS_HEIGHT - 120);
+      : (IS_LANDSCAPE ? CANVAS_HEIGHT - 56 : Layout.canvasH - 72);
     return { x: (CANVAS_WIDTH - w) / 2, y, w, h };
   }
   _renderModalCloseButton(r, explicitY) {
@@ -488,10 +489,12 @@ export class TitleScreen {
 
   // --- Codex modal --------------------------------------------------
   _codexGeometry() {
+    const canvasH = Layout.canvasH || CANVAS_HEIGHT;
+    const canvasW = Layout.canvasW || CANVAS_WIDTH;
     const modalX = 12;
     const modalY = 16;
-    const modalW = CANVAS_WIDTH - 24;
-    const modalH = CANVAS_HEIGHT - 32;
+    const modalW = canvasW - 24;
+    const modalH = canvasH - 32;
     const tabH = IS_LANDSCAPE ? 28 : 32;
     const tabY = modalY + (IS_LANDSCAPE ? 48 : 56);
     const listY = tabY + tabH + 8;
