@@ -1,5 +1,10 @@
 /**
- * QuickUseBar — tap-to-use potions / consumables (row above the D-pad).
+ * QuickUseBar — top row of the Iron Portcullis HUD.
+ *
+ * Left: 3 iron quick-slot plates (auto-filled with the player's first
+ *       stackable consumables/throwables). Numbered 1-3, with count badge.
+ * Right: 3 iron nav buttons (HERO / BAG / PICK) with brass-trimmed accent
+ *       when their action is currently available.
  */
 import {
   COLOR, FONT_DISPLAY, FONT_MONO, uiSize
@@ -8,16 +13,23 @@ import { findQuickUseSlots } from '../items/quickUse.js';
 import {
   getQuickUseLayout, QUICK_SLOT_COUNT, getViewportBottomY
 } from './controlBandLayout.js';
+import {
+  IRON, drawIronPlate, drawIronRivet, drawBrassRivet
+} from './ironHud.js';
 
 export class QuickUseBar {
   constructor({ bus }) {
     this.bus = bus;
     this._pressed = -1;
     this._pressedUntil = 0;
+    /** Optional context (player, pickAvailable) set per render frame. */
+    this._ctx = null;
     bus.on('tick', ({ time }) => {
       if (this._pressed >= 0 && time > this._pressedUntil) this._pressed = -1;
     });
   }
+
+  setContext(ctx) { this._ctx = ctx; }
 
   /**
    * @param {import('../rendering/Renderer.js').Renderer} renderer
@@ -28,153 +40,149 @@ export class QuickUseBar {
     const LAYOUT = getQuickUseLayout();
     const slots = findQuickUseSlots(player.inventory);
     const inv = player.inventory;
-
-    const pad = 4;
     const ctx = renderer.ctx;
-    const railX = LAYOUT.quickX - pad;
-    const railY = LAYOUT.quickY - 14;
-    const railW = QuickUseBar._railWidth(LAYOUT) + pad * 2;
-    const railH = LAYOUT.quickSlot + 18;
-    ctx.save();
-    const rail = ctx.createLinearGradient(railX, railY, railX, railY + railH);
-    rail.addColorStop(0, '#2b2533ee');
-    rail.addColorStop(0.5, '#191421ee');
-    rail.addColorStop(1, '#09070dee');
-    ctx.fillStyle = rail;
-    ctx.fillRect(railX, railY, railW, railH);
-    ctx.globalAlpha = 0.35;
-    renderer.drawRect(railX + 4, railY + 3, railW - 8, 1, COLOR.goldDim);
-    renderer.drawRect(railX + 8, railY + railH - 4, railW - 16, 1, '#ffffff20');
-    ctx.restore();
-    renderer.drawRect(
-      railX,
-      railY,
-      railW,
-      1,
-      '#0a0810'
-    );
 
+    // Subtle "QUICK" label above the slot row.
+    renderer.drawText('QUICK', LAYOUT.quickX + LAYOUT.quickRowW / 2,
+      LAYOUT.quickY - 8, {
+        size: uiSize(8), align: 'center', family: FONT_DISPLAY, color: IRON.brass
+      });
+
+    // 1) Render quick slots as iron plates.
     for (let qi = 0; qi < QUICK_SLOT_COUNT; qi++) {
       const rect = LAYOUT.quickRects[qi];
       const invIdx = slots[qi];
       const item = invIdx >= 0 ? inv.getSlot(invIdx) : null;
+      const filled = !!item;
       const pressed = this._pressed === qi;
-      const rarity = item ? QuickUseBar._rarityColor(item.rarity) : COLOR.borderSoft;
-
-      renderer.drawRect(rect.x - 1, rect.y - 1, rect.w + 2, rect.h + 2, '#0a0810');
-      const sg = ctx.createLinearGradient(rect.x, rect.y, rect.x, rect.y + rect.h);
-      sg.addColorStop(0, pressed ? '#4a3e52' : (item ? '#312a38' : '#211b29'));
-      sg.addColorStop(1, pressed ? '#22182a' : '#100d16');
-      ctx.fillStyle = sg;
-      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-      renderer.drawStrokedRect(rect.x, rect.y, rect.w, rect.h,
-        pressed ? COLOR.gold : (item ? rarity : COLOR.borderSoft), pressed ? 2 : 1);
-      if (!pressed) {
-        renderer.drawRect(rect.x + 3, rect.y + 3, rect.w - 6, 2, item ? '#ffffff24' : '#ffffff12');
-        renderer.drawRect(rect.x + rect.w - 4, rect.y + 5, 1, rect.h - 10, '#00000066');
-      }
-      if (item) {
-        renderer.drawRect(rect.x + 2, rect.y + rect.h - 5, rect.w - 4, 2, rarity);
-        renderer.drawRect(rect.x + rect.w - 5, rect.y + 5, 2, rect.h - 12, '#00000070');
+      drawIronPlate(ctx, rect.x, rect.y, rect.w, rect.h, {
+        pressed,
+        glow: filled ? `${IRON.ember}55` : null,
+        rivets: true
+      });
+      if (!filled) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = '#0a0810';
+        ctx.fillRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
+        ctx.restore();
       }
 
-      renderer.drawRect(rect.x + 2, rect.y + 2, 14, 14, '#0a0810cc');
-      renderer.drawText(String(qi + 1), rect.x + 9, rect.y + 9,
-        { size: uiSize(10), bold: true, align: 'center', baseline: 'middle',
-          family: FONT_DISPLAY, color: COLOR.gold });
+      // Engraved slot number in corner.
+      renderer.drawText(String(qi + 1), rect.x + 6, rect.y + 5, {
+        size: uiSize(9), family: FONT_MONO, color: IRON.brass
+      });
 
-      if (item && renderer.sprites) {
-        const pad = 8;
+      // Icon centered (if filled).
+      if (filled && renderer.sprites) {
+        const pad = 10;
         const icon = rect.w - pad * 2;
-        renderer.sprites.draw(item.spriteKey, renderer.ctx,
-          rect.x + pad, rect.y + pad, { size: icon });
+        renderer.sprites.draw(item.spriteKey, ctx, rect.x + pad, rect.y + pad,
+          { size: icon });
+        // Count badge bottom-right.
         if (item.stackable && item.count > 1) {
-          renderer.drawRect(rect.x + rect.w - 22, rect.y + rect.h - 16, 20, 12, '#0a0810dd');
-          renderer.drawText(`×${item.count}`, rect.x + rect.w - 6, rect.y + rect.h - 6,
-            { size: uiSize(10), bold: true, align: 'right', baseline: 'bottom', family: FONT_MONO });
-        }
-        if (pressed) {
           ctx.save();
-          ctx.globalAlpha = 0.35;
-          ctx.strokeStyle = COLOR.goldHi;
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(rect.x + rect.w / 2, rect.y + rect.h / 2, rect.w * 0.38, 0, Math.PI * 2);
-          ctx.stroke();
+          ctx.shadowColor = IRON.ink;
+          ctx.shadowBlur = 0;
+          ctx.shadowOffsetY = 1;
+          renderer.drawText(`×${item.count}`, rect.x + rect.w - 4, rect.y + rect.h - 4, {
+            size: uiSize(10), bold: true, align: 'right', baseline: 'bottom',
+            family: FONT_MONO, color: IRON.bone
+          });
           ctx.restore();
         }
       } else {
-        renderer.drawText('—', rect.x + rect.w / 2, rect.y + rect.h / 2,
-          { size: uiSize(12), align: 'center', baseline: 'middle',
-            color: COLOR.textMuted, family: FONT_MONO });
+        renderer.drawText('—', rect.x + rect.w / 2, rect.y + rect.h / 2, {
+          size: uiSize(14), align: 'center', baseline: 'middle',
+          family: 'serif', color: IRON.boneDim
+        });
       }
     }
 
-    renderer.drawText('QUICK', LAYOUT.quickX + LAYOUT.quickRowW / 2, LAYOUT.quickY - 10,
-      { size: uiSize(9), align: 'center', family: FONT_MONO, color: COLOR.textMuted });
-    this._renderActionButtons(renderer, LAYOUT);
+    // 2) Render nav buttons (HERO / BAG / PICK).
+    this._renderNavButtons(renderer, LAYOUT);
   }
 
-  _renderActionButtons(r, LAYOUT) {
+  _renderNavButtons(r, LAYOUT) {
+    const ctx = r.ctx;
+    const pickAvail = !!this._ctx?.pickAvailable;
     for (let i = 0; i < LAYOUT.actionRects.length; i++) {
       const rect = LAYOUT.actionRects[i];
+      const isPick = rect.type === 'pickup';
+      const available = isPick ? pickAvail : true;
       const pressed = this._pressed === QUICK_SLOT_COUNT + i;
-      r.drawRect(rect.x - 1, rect.y - 1, rect.w + 2, rect.h + 2, '#0a0810');
-      r.drawRect(rect.x, rect.y, rect.w, rect.h, pressed ? COLOR.bgCardHi : COLOR.bgCard);
-      r.drawStrokedRect(rect.x, rect.y, rect.w, rect.h,
-        pressed ? COLOR.gold : COLOR.goldDim, pressed ? 2 : 1);
-      if (!pressed) r.drawRect(rect.x + 2, rect.y + 2, rect.w - 4, 2, '#252030');
-      if (i > 0) r.drawRect(rect.x - LAYOUT.quickGap / 2 - 1, rect.y + 7, 1, rect.h - 14, '#d4be7a2c');
-      this._drawActionGlyph(r, rect.type, rect.x + rect.w / 2, rect.y + 17, pressed);
-      r.drawText(rect.label, rect.x + rect.w / 2, rect.y + rect.h - 13, {
-        size: uiSize(8), bold: true, align: 'center', baseline: 'middle',
-        family: FONT_DISPLAY, color: pressed ? COLOR.goldHi : COLOR.textPrimary
+      const glow = available && isPick ? `${IRON.ember}66` : null;
+      drawIronPlate(ctx, rect.x, rect.y, rect.w, rect.h, { pressed, glow });
+      if (!available) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = '#0a0810';
+        ctx.fillRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
+        ctx.restore();
+      }
+      // Glyph (icon) + label.
+      this._renderNavGlyph(r, rect.type, rect.x + 18, rect.y + rect.h / 2, pressed, available);
+      const color = pressed ? IRON.brassHi
+                  : !available ? IRON.boneDim
+                  : (isPick ? IRON.ember : IRON.bone);
+      r.drawText(rect.label, rect.x + 38, rect.y + rect.h / 2, {
+        size: uiSize(11), bold: true, baseline: 'middle',
+        family: FONT_DISPLAY, color
       });
     }
   }
 
-  _drawActionGlyph(r, type, cx, cy, pressed) {
+  _renderNavGlyph(r, type, cx, cy, pressed, available) {
     const ctx = r.ctx;
-    const col = pressed ? COLOR.goldHi : COLOR.gold;
+    const col = pressed ? IRON.brassHi : (available ? IRON.brass : IRON.boneDim);
     ctx.save();
-    ctx.strokeStyle = col;
-    ctx.fillStyle = col;
-    ctx.lineWidth = 2;
     if (type === 'vigil') {
-      r.drawRect(cx - 8, cy - 6, 16, 9, '#3a3040');
-      r.drawRect(cx - 6, cy - 8, 12, 3, col);
-      r.drawRect(cx - 5, cy - 1, 10, 2, '#0a0810');
-      r.drawRect(cx - 4, cy, 2, 2, COLOR.textCrit);
-      r.drawRect(cx + 2, cy, 2, 2, COLOR.textCrit);
+      // Helmet glyph (HERO).
+      ctx.fillStyle = IRON.plate2;
+      ctx.fillRect(cx - 8, cy - 6, 16, 9);
+      ctx.fillStyle = col;
+      ctx.fillRect(cx - 6, cy - 8, 12, 3);
+      ctx.fillStyle = IRON.ink;
+      ctx.fillRect(cx - 5, cy - 1, 10, 2);
+      ctx.fillStyle = IRON.ember;
+      ctx.fillRect(cx - 4, cy, 2, 2);
+      ctx.fillRect(cx + 2, cy, 2, 2);
     } else if (type === 'inventory') {
-      r.drawRect(cx - 8, cy - 4, 16, 12, '#3a3040');
-      r.drawStrokedRect(cx - 8, cy - 4, 16, 12, col, 1);
-      r.drawRect(cx - 4, cy - 8, 8, 4, col);
-    } else {
+      // Pouch glyph (BAG).
+      ctx.fillStyle = IRON.plate2;
+      ctx.fillRect(cx - 8, cy - 4, 16, 12);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx - 8, cy - 4, 16, 12);
+      ctx.fillStyle = col;
+      ctx.fillRect(cx - 4, cy - 8, 8, 4);
+      drawBrassRivet(ctx, cx, cy + 2, 2);
+    } else if (type === 'pickup') {
+      // Gem glyph (PICK).
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(cx, cy - 9); ctx.lineTo(cx + 8, cy); ctx.lineTo(cx, cy + 9); ctx.lineTo(cx - 8, cy);
-      ctx.closePath(); ctx.stroke();
-      r.drawRect(cx - 2, cy - 2, 4, 4, COLOR.goldDim);
+      ctx.moveTo(cx, cy - 9);
+      ctx.lineTo(cx + 8, cy);
+      ctx.lineTo(cx, cy + 9);
+      ctx.lineTo(cx - 8, cy);
+      ctx.closePath();
+      ctx.stroke();
+      ctx.fillStyle = available ? IRON.ember : IRON.brassDark;
+      ctx.fillRect(cx - 2, cy - 2, 4, 4);
     }
     ctx.restore();
   }
 
-  /**
-   * @param {number} canvasX
-   * @param {number} canvasY
-   * @param {number} [time]
-   * @param {import('../items/Inventory.js').Inventory} [inventory]
-   */
   hitTest(canvasX, canvasY, time, inventory) {
     if (canvasY < getViewportBottomY()) return -1;
     const LAYOUT = getQuickUseLayout();
-
     const slots = inventory ? findQuickUseSlots(inventory) : [];
     for (let i = 0; i < LAYOUT.quickRects.length; i++) {
       const r = LAYOUT.quickRects[i];
       if (canvasX >= r.x && canvasX <= r.x + r.w &&
           canvasY >= r.y && canvasY <= r.y + r.h) {
-        if (slots[i] === undefined) return -1;
+        if (slots[i] === undefined || slots[i] < 0) return -1;
         this._pressed = i;
         this._pressedUntil = (time ?? performance.now() / 1000) + 0.12;
         return i;
@@ -193,20 +201,4 @@ export class QuickUseBar {
   }
 
   static get layout() { return getQuickUseLayout(); }
-
-  static _railWidth(layout) {
-    const L = layout || getQuickUseLayout();
-    if (!L.actionRects.length) return L.quickRowW;
-    const last = L.actionRects[L.actionRects.length - 1];
-    return last.x + last.w - L.quickX;
-  }
-
-  static _rarityColor(rarity) {
-    switch (rarity) {
-      case 'uncommon': return COLOR.itemUncommon;
-      case 'rare': return COLOR.itemRare;
-      case 'epic': return COLOR.itemEpic;
-      default: return COLOR.goldDim;
-    }
-  }
 }

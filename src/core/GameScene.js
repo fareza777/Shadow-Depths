@@ -255,6 +255,28 @@ export class GameScene {
     }
 
     if (this.controls) {
+      // Tell the iron HUD what's actionable this frame so AIM / DOWN /
+      // PICK render in their "ready" state (ember glow) vs disabled.
+      const stairs = this.floor && this.player &&
+        this.floor.tileAt &&
+        this.floor.tileAt(this.player.x, this.player.y);
+      const canDescend = !!(stairs && typeof stairs.isStairsDown === 'function'
+        ? stairs.isStairsDown()
+        : stairs && stairs.type === 4 /* TILE.STAIRS_DOWN */);
+      const itemsHere = (this.floor?.itemsAt &&
+        this.floor.itemsAt(this.player.x, this.player.y)) || [];
+      const aimTarget = MobileControls.computeAimTarget(this.player, this.floor);
+      this.controls.setContext({
+        aimTarget,
+        castReady: false, // no magic system yet — CAST stays disabled
+        canDescend,
+        pickAvailable: itemsHere.length > 0
+      });
+      if (this.quickUse) {
+        this.quickUse.setContext({
+          pickAvailable: itemsHere.length > 0
+        });
+      }
       this.controls.renderBackground(renderer);
       this._renderControlBandContent(renderer);
       this.controls.renderControls(renderer);
@@ -525,6 +547,12 @@ export class GameScene {
       case 'menu':
         if (this.pause) this.pause.show();
         return;
+      case 'aim':
+        // Iron HUD AIM button: auto-attack nearest visible enemy in range.
+        return this._playerAimAttack();
+      case 'cast':
+        // Reserved — no magic system yet (Iron HUD button stays disabled).
+        return;
       case 'minimap':    return this.minimap.toggle();
       case 'quickUse':   return this._playerQuickUse(action.index);
       case 'useSlot':    return this._playerUseSlot(action.index);
@@ -603,6 +631,29 @@ export class GameScene {
     if (!ent || ent.kind !== 'enemy' || ent.isDead) return;
     this.combat.execute(
       { type: 'attack', target: { x: tx, y: ty } },
+      this.player,
+      { floor: this.floor, player: this.player }
+    );
+    this._endPlayerTurn(true);
+  }
+
+  /**
+   * AIM button — execute a ranged attack against the nearest visible
+   * enemy in range with line of sight. No-op if no valid target.
+   */
+  _playerAimAttack() {
+    const target = MobileControls.computeAimTarget(this.player, this.floor);
+    if (!target) return;
+    const range = typeof this.player.effectiveRange === 'function'
+      ? this.player.effectiveRange() : 1;
+    if (range <= 1) {
+      // No ranged weapon — fall back to melee if adjacent.
+      const dist = Math.abs(target.x - this.player.x) + Math.abs(target.y - this.player.y);
+      if (dist === 1) this._attackEnemyAt(target.x, target.y);
+      return;
+    }
+    this.combat.execute(
+      { type: 'ranged', target: { x: target.x, y: target.y } },
       this.player,
       { floor: this.floor, player: this.player }
     );

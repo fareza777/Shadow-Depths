@@ -1,62 +1,38 @@
 /**
- * MobileControls — ornate D-pad + action buttons.
+ * MobileControls — Iron Portcullis bottom HUD.
+ *
+ * Renders the wrought-iron control band that matches the reference
+ * mock (iron-hud.jsx photo 1): hammered iron panel with brass-trimmed
+ * corner gussets, perimeter rivet studs, horizontal seam strap between
+ * rows, iron-lattice D-pad on the left, and a stack of AIM / CAST /
+ * MENU / DOWN buttons on the right.
+ *
+ * QuickUseBar handles the top row (3 quick slots + HERO/BAG/PICK nav).
+ * Minimap renders into the center cutout.
  */
+import {
+  CANVAS_WIDTH, CANVAS_HEIGHT, COLOR, FONT_DISPLAY, FONT_MONO, uiSize
+} from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
-import { COLOR, FONT_DISPLAY, uiSize } from '../config/constants.js';
-import { getDpadLayout } from './controlBandLayout.js';
+import { getDpadLayout, getQuickUseLayout } from './controlBandLayout.js';
+import {
+  IRON,
+  drawIronPlate, drawIronLattice, drawBrassJewel,
+  drawBrassPiping, drawPerimeterStuds, drawSeamStrap, drawCornerGusset,
+  drawReticle, dirArrowGlyph, deltaToDir, drawIronRivet
+} from './ironHud.js';
 
-/** Right strip — MENU + stairs only; PICK/BAG/HERO live on QuickUseBar. */
+// Stacked action buttons on the right column.
+//   AIM  — auto-target nearest visible enemy (ranged weapons primarily)
+//   CAST — magic spell (no system yet — renders disabled "no spell")
+//   MENU — pause overlay
+//   DOWN — descend stairs (only enabled on stair tiles)
 const ACTION_LABELS = [
-  { key: 'menu',    label: 'MENU', icon: 'III' },
-  { key: 'descend', label: 'DOWN', icon: 'STAIR' }
+  { key: 'aim',     label: 'AIM',  variant: 'aim' },
+  { key: 'cast',    label: 'CAST', variant: 'cast' },
+  { key: 'menu',    label: 'MENU', variant: 'side' },
+  { key: 'descend', label: 'DOWN', variant: 'side' }
 ];
-
-function buildLayout() {
-  const DPAD = getDpadLayout();
-  if (!Layout.portrait) {
-    const stripW = DPAD.stripW;
-    const { dpadBtn, dpadGap, dpadSize, dpadX, dpadY } = DPAD;
-    const actW = 100;
-    const actH = 36;
-    const actGap = 5;
-    const actCount = ACTION_LABELS.length;
-    const actStackH = actH * actCount + actGap * (actCount - 1);
-    const actX = Layout.canvasW - stripW + (stripW - actW) / 2;
-    const actY = Layout.hud + 10;
-    return {
-      isLandscape: true, band: null,
-      dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
-      actW, actH, actGap, actStackH, actX, actY,
-      centerRect: { x: 6, y: dpadY + dpadSize + 10, w: stripW - 12,
-        h: Layout.canvasH - (dpadY + dpadSize + 10) - 10 },
-      msgRect: { x: Layout.canvasW - stripW + 6, y: actY + actStackH + 10,
-        w: stripW - 12, h: Layout.canvasH - (actY + actStackH + 10) - 10 },
-      strips: [
-        { x: 0, y: Layout.hud, w: stripW, h: Layout.canvasH - Layout.hud },
-        { x: Layout.canvasW - stripW, y: Layout.hud, w: stripW, h: Layout.canvasH - Layout.hud }
-      ]
-    };
-  }
-  const bandY = DPAD.bandY;
-  const { dpadBtn, dpadGap, dpadSize, dpadX, dpadY } = DPAD;
-  const actW = 78;
-  const actH = 38;
-  const actGap = 4;
-  const actStackH = actH * ACTION_LABELS.length + actGap * (ACTION_LABELS.length - 1);
-  const actX = Layout.canvasW - actW - 10;
-  const actY = bandY + Layout.control - actStackH - 12;
-  return {
-    isLandscape: false,
-    band: { x: 0, y: bandY, w: Layout.canvasW, h: Layout.control },
-    dpadBtn, dpadGap, dpadSize, dpadX, dpadY,
-    actW, actH, actGap, actStackH, actX, actY,
-    centerRect: {
-      x: dpadX + dpadSize + 14, y: bandY + 10,
-      w: actX - (dpadX + dpadSize) - 28, h: Layout.control - 20
-    },
-    msgRect: null, strips: []
-  };
-}
 
 const DPAD_BUTTONS = [
   { col: 1, row: 0, dir: 'up',    emit: { type: 'move', dx: 0, dy: -1 } },
@@ -66,56 +42,188 @@ const DPAD_BUTTONS = [
   { col: 1, row: 2, dir: 'down',  emit: { type: 'move', dx: 0, dy: 1 } }
 ];
 
+/**
+ * Compute the runtime layout — read from Layout (window-synced) so a
+ * rotation or canvas resize is picked up without rebuilding the module.
+ */
+function buildLayout() {
+  const dpad = getDpadLayout();
+  const quick = getQuickUseLayout();
+  const portrait = !dpad.isLandscape;
+  const bandY = portrait ? dpad.bandY : Layout.hud;
+  const bandH = portrait ? Layout.canvasH - bandY : Layout.canvasH - Layout.hud;
+
+  // Right-stack action column geometry.
+  let actX, actY, actW, actH, actGap, actStackH;
+  if (portrait) {
+    actW = 110;
+    actH = 40;
+    actGap = 5;
+    actStackH = actH * 2 + actGap * 1 + 32 * 2 + actGap; // 2 large + 2 small
+    actX = Layout.canvasW - actW - 10;
+    actY = dpad.dpadY;
+  } else {
+    actW = 116;
+    actH = 36;
+    actGap = 4;
+    actStackH = actH * 4 + actGap * 3;
+    actX = Layout.canvasW - dpad.stripW + (dpad.stripW - actW) / 2;
+    actY = Layout.hud + 10;
+  }
+
+  // Center cutout — minimap slot between D-pad and action column.
+  const centerRect = portrait
+    ? {
+        x: dpad.dpadX + dpad.dpadSize + 8,
+        y: dpad.dpadY,
+        w: actX - (dpad.dpadX + dpad.dpadSize) - 16,
+        h: dpad.dpadSize
+      }
+    : {
+        x: 6,
+        y: dpad.dpadY + dpad.dpadSize + 10,
+        w: dpad.stripW - 12,
+        h: Layout.canvasH - (dpad.dpadY + dpad.dpadSize + 10) - 10
+      };
+
+  // Side bars (landscape only) and band (portrait only)
+  const band = portrait ? { x: 0, y: bandY, w: Layout.canvasW, h: bandH } : null;
+  const strips = portrait ? [] : [
+    { x: 0, y: Layout.hud, w: dpad.stripW, h: bandH },
+    { x: Layout.canvasW - dpad.stripW, y: Layout.hud, w: dpad.stripW, h: bandH }
+  ];
+
+  return {
+    portrait, dpad, quick, band, strips,
+    dpadBtn: dpad.dpadBtn, dpadGap: dpad.dpadGap, dpadSize: dpad.dpadSize,
+    dpadX: dpad.dpadX, dpadY: dpad.dpadY,
+    actX, actY, actW, actH, actGap, actStackH,
+    centerRect
+  };
+}
+
+/**
+ * Per-action rects given a built LAYOUT. AIM + CAST are bigger (actH),
+ * MENU + DOWN are smaller (32). Returns absolute positions for hit-test
+ * and render to share.
+ */
+function actionRects(LAYOUT) {
+  const small = 32;
+  const out = [];
+  let y = LAYOUT.actY;
+  // AIM
+  out.push({ ...ACTION_LABELS[0], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
+  y += LAYOUT.actH + LAYOUT.actGap;
+  // CAST
+  out.push({ ...ACTION_LABELS[1], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
+  y += LAYOUT.actH + LAYOUT.actGap;
+  // MENU
+  out.push({ ...ACTION_LABELS[2], x: LAYOUT.actX, y, w: LAYOUT.actW, h: small });
+  y += small + LAYOUT.actGap;
+  // DOWN
+  out.push({ ...ACTION_LABELS[3], x: LAYOUT.actX, y, w: LAYOUT.actW, h: small });
+  return out;
+}
+
 export class MobileControls {
   constructor({ bus }) {
     this.bus = bus;
     this._currentScene = 'title';
     this._pressedKey = null;
     this._pressedClearedAt = 0;
+    /** Optional per-frame context set by GameScene before render. */
+    this._ctx = null;
     bus.on('scene:switched', ({ to }) => { this._currentScene = to; });
     bus.on('tick', ({ time }) => {
       if (this._pressedKey && time > this._pressedClearedAt) this._pressedKey = null;
     });
   }
 
+  /**
+   * GameScene sets player + floor + canDescend each frame so AIM/CAST/DOWN
+   * can compute their enabled / target state.
+   */
+  setContext(ctx) { this._ctx = ctx; }
+
   render(renderer) {
+    if (this._currentScene !== 'game') return;
     this.renderBackground(renderer);
     this.renderControls(renderer);
   }
 
+  /**
+   * Paint the wrought-iron panel chrome (band, gussets, studs, seam).
+   * Called BEFORE quick slots / minimap so they sit on top of the iron.
+   */
   renderBackground(renderer) {
-    this._renderBackground(renderer, buildLayout());
+    if (this._currentScene !== 'game') return;
+    const LAYOUT = buildLayout();
+    this._renderPanel(renderer, LAYOUT);
   }
 
+  /**
+   * Paint the interactive controls (D-pad arms, brass center jewel, AIM /
+   * CAST / MENU / DOWN stack). Called AFTER quick slots so the controls
+   * sit on top of any background art.
+   */
   renderControls(renderer) {
+    if (this._currentScene !== 'game') return;
     const LAYOUT = buildLayout();
     this._renderDpad(renderer, LAYOUT);
-    this._renderActions(renderer, LAYOUT);
+    this._renderActionStack(renderer, LAYOUT);
   }
 
+  /**
+   * Hit-test. Returns true when a button consumed the tap so the world
+   * tap-to-walk path is skipped.
+   */
   handleTap(canvasX, canvasY, currentTime) {
+    if (this._currentScene !== 'game') return false;
     const LAYOUT = buildLayout();
-    const hitPad = Layout.portrait ? 6 : 2;
+
+    // D-pad buttons.
     for (const b of DPAD_BUTTONS) {
       const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
-      if (canvasX >= bx - hitPad && canvasX <= bx + LAYOUT.dpadBtn + hitPad &&
-          canvasY >= by - hitPad && canvasY <= by + LAYOUT.dpadBtn + hitPad) {
-        this._flash(`dpad:${b.col},${b.row}`, currentTime);
+      if (canvasX >= bx && canvasX <= bx + LAYOUT.dpadBtn &&
+          canvasY >= by && canvasY <= by + LAYOUT.dpadBtn) {
+        this._flash(`dpad:${b.dir}`, currentTime);
         this.bus.emit('input:action', b.emit);
         return true;
       }
     }
-    for (let i = 0; i < ACTION_LABELS.length; i++) {
-      const ax = LAYOUT.actX;
-      const ay = LAYOUT.actY + i * (LAYOUT.actH + LAYOUT.actGap);
-      if (canvasX >= ax && canvasX <= ax + LAYOUT.actW &&
-          canvasY >= ay && canvasY <= ay + LAYOUT.actH) {
-        this._flash(`act:${i}`, currentTime);
-        this.bus.emit('input:action', { type: ACTION_LABELS[i].key });
+
+    // Action stack.
+    const acts = actionRects(LAYOUT);
+    for (let i = 0; i < acts.length; i++) {
+      const a = acts[i];
+      if (canvasX >= a.x && canvasX <= a.x + a.w &&
+          canvasY >= a.y && canvasY <= a.y + a.h) {
+        // Gate disabled buttons (CAST without spell, DOWN without stairs).
+        if (a.key === 'cast' && !this._ctx?.castReady) {
+          this._flash(`act:${a.key}`, currentTime);
+          return true;
+        }
+        if (a.key === 'descend' && !this._ctx?.canDescend) {
+          this._flash(`act:${a.key}`, currentTime);
+          return true;
+        }
+        if (a.key === 'aim' && !this._ctx?.aimTarget) {
+          this._flash(`act:${a.key}`, currentTime);
+          return true;
+        }
+        this._flash(`act:${a.key}`, currentTime);
+        // AIM is a special action: emit a custom action so GameScene can
+        // execute the ranged attack against the cached aim target.
+        if (a.key === 'aim') {
+          this.bus.emit('input:action', { type: 'aim' });
+        } else {
+          this.bus.emit('input:action', { type: a.key });
+        }
         return true;
       }
     }
+
     return false;
   }
 
@@ -124,302 +232,297 @@ export class MobileControls {
     this._pressedClearedAt = (time ?? performance.now() / 1000) + 0.12;
   }
 
-  _renderBackground(r, LAYOUT) {
-    const t = performance.now() / 1000;
+  // --- panel chrome ----------------------------------------------------
+  _renderPanel(r, LAYOUT) {
+    const ctx = r.ctx;
     if (LAYOUT.band) {
-      const ctx = r.ctx;
-      ctx.save();
+      // Base dark fill with subtle vignette.
       const g = ctx.createLinearGradient(0, LAYOUT.band.y, 0, LAYOUT.band.y + LAYOUT.band.h);
-      g.addColorStop(0, '#211a28');
-      g.addColorStop(0.45, '#17121d');
-      g.addColorStop(1, '#09070d');
+      g.addColorStop(0, '#1f1820');
+      g.addColorStop(0.45, '#120c14');
+      g.addColorStop(0.75, '#0c080e');
+      g.addColorStop(1, '#1a1218');
       ctx.fillStyle = g;
       ctx.fillRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, LAYOUT.band.h);
-      ctx.restore();
-      MobileControls._drawStoneRelief(r, LAYOUT.band, t);
-      r.drawRect(0, LAYOUT.band.y, Layout.canvasW, 3, COLOR.gold);
-      r.drawRect(0, LAYOUT.band.y + 3, Layout.canvasW, 1, '#8a7048');
-      MobileControls._drawTorch(r, LAYOUT.dpadX + LAYOUT.dpadSize + 22, LAYOUT.band.y + 20, t, false);
-      MobileControls._drawTorch(r, LAYOUT.actX - 32, LAYOUT.band.y + 20, t, true);
-      MobileControls._drawSigil(r, Layout.canvasW / 2, LAYOUT.band.y + Layout.control - 22, t);
+
+      // Hammered iron noise overlay.
+      MobileControls._drawHammered(ctx, LAYOUT.band);
+
+      // Border + brass piping.
+      ctx.fillStyle = IRON.ink;
+      ctx.fillRect(LAYOUT.band.x, LAYOUT.band.y, LAYOUT.band.w, 3);
+      drawBrassPiping(ctx, LAYOUT.band.x + 24, LAYOUT.band.y + 11, LAYOUT.band.w - 48);
+      drawBrassPiping(ctx, LAYOUT.band.x + 24, LAYOUT.band.y + LAYOUT.band.h - 11,
+        LAYOUT.band.w - 48);
+
+      // Perimeter studs (top + bottom).
+      drawPerimeterStuds(ctx, LAYOUT.band, 'top', 7);
+      drawPerimeterStuds(ctx, LAYOUT.band, 'bottom', 7);
+      drawPerimeterStuds(ctx, LAYOUT.band, 'left', 5);
+      drawPerimeterStuds(ctx, LAYOUT.band, 'right', 5);
+
+      // Corner gussets.
+      const gz = 26;
+      drawCornerGusset(ctx, LAYOUT.band.x + 6, LAYOUT.band.y + 6, gz, gz, 'tl');
+      drawCornerGusset(ctx, LAYOUT.band.x + LAYOUT.band.w - gz - 6, LAYOUT.band.y + 6, gz, gz, 'tr');
+      drawCornerGusset(ctx, LAYOUT.band.x + 6, LAYOUT.band.y + LAYOUT.band.h - gz - 6, gz, gz, 'bl');
+      drawCornerGusset(ctx, LAYOUT.band.x + LAYOUT.band.w - gz - 6, LAYOUT.band.y + LAYOUT.band.h - gz - 6, gz, gz, 'br');
+
+      // Seam strap between top quick-slot row and D-pad row.
+      const seamY = LAYOUT.dpadY - 10;
+      drawSeamStrap(ctx, LAYOUT.band.x + 12, seamY, LAYOUT.band.w - 24);
     }
     for (const s of LAYOUT.strips) {
-      r.drawRect(s.x, s.y, s.w, s.h, '#0a0810');
-      MobileControls._drawStoneRelief(r, s, t);
-      if (s.x === 0) r.drawRect(s.x + s.w - 1, s.y, 1, s.h, COLOR.goldDim);
-      else r.drawRect(s.x, s.y, 1, s.h, COLOR.goldDim);
+      const g = ctx.createLinearGradient(s.x, s.y, s.x, s.y + s.h);
+      g.addColorStop(0, '#1f1820');
+      g.addColorStop(1, '#0c080e');
+      ctx.fillStyle = g;
+      ctx.fillRect(s.x, s.y, s.w, s.h);
+      MobileControls._drawHammered(ctx, s);
+      drawPerimeterStuds(ctx, s, 'top', 3);
+      drawPerimeterStuds(ctx, s, 'bottom', 3);
     }
   }
 
-  static _drawStoneRelief(r, rect, time) {
-    const ctx = r.ctx;
+  static _drawHammered(ctx, rect) {
     ctx.save();
-    ctx.globalAlpha = 0.72;
-    for (let y = rect.y + 12; y < rect.y + rect.h; y += 28) {
-      const offset = ((Math.floor((y - rect.y) / 28) % 2) * 18);
-      for (let x = rect.x - offset; x < rect.x + rect.w; x += 54) {
-        r.drawRect(x, y, 50, 1, '#19131f');
-        r.drawRect(x + 1, y + 1, 49, 1, '#14101a');
-      }
+    ctx.globalAlpha = 0.10;
+    for (const [px, py] of [
+      [0.08, 0.18], [0.30, 0.12], [0.68, 0.22], [0.92, 0.38],
+      [0.18, 0.48], [0.52, 0.62], [0.82, 0.78]
+    ]) {
+      const cx = rect.x + rect.w * px;
+      const cy = rect.y + rect.h * py;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rect.w * 0.14);
+      g.addColorStop(0, '#aaa0aa');
+      g.addColorStop(1, 'rgba(170,160,170,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     }
-    ctx.globalAlpha = 0.34;
-    for (let i = 0; i < 26; i++) {
-      const x = rect.x + ((i * 37 + rect.w * 3) % Math.max(1, rect.w));
-      const y = rect.y + 10 + ((i * 23) % Math.max(1, rect.h - 20));
-      r.drawRect(x, y, 2, 2, i % 3 === 0 ? COLOR.goldDim : '#2a2230');
+    ctx.globalAlpha = 0.30;
+    for (const [px, py] of [[0.22, 0.86], [0.64, 0.90], [0.92, 0.12], [0.06, 0.70]]) {
+      const cx = rect.x + rect.w * px;
+      const cy = rect.y + rect.h * py;
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rect.w * 0.18);
+      g.addColorStop(0, 'rgba(15,10,15,0.6)');
+      g.addColorStop(1, 'rgba(15,10,15,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     }
-    ctx.globalAlpha = 0.18;
-    for (let i = 0; i < 7; i++) {
-      const cx = rect.x + 36 + ((i * 67 + Math.sin(time * 0.4 + i) * 5) % Math.max(1, rect.w - 72));
-      const cy = rect.y + 38 + ((i * 31) % Math.max(1, rect.h - 76));
-      ctx.strokeStyle = i % 2 ? '#6a6080' : COLOR.goldDim;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - 8);
-      ctx.lineTo(cx + 8, cy);
-      ctx.lineTo(cx, cy + 8);
-      ctx.lineTo(cx - 8, cy);
-      ctx.closePath();
-      ctx.stroke();
-      r.drawRect(cx - 1, cy - 1, 2, 2, '#d4be7a55');
-    }
-    ctx.globalAlpha = 0.12;
-    for (let i = 0; i < 6; i++) {
-      const x = rect.x + 18 + i * Math.max(36, rect.w / 6);
-      const y = rect.y + rect.h - 28 + Math.sin(time + i) * 2;
-      r.drawRect(x, y, 24, 1, '#ffffff55');
-      r.drawRect(x + 8, y + 5, 38, 1, COLOR.goldDim);
-    }
-    ctx.globalAlpha = 0.12 + Math.sin(time * 1.4) * 0.03;
-    const g = ctx.createRadialGradient(
-      rect.x + rect.w / 2, rect.y + rect.h * 0.52, 8,
-      rect.x + rect.w / 2, rect.y + rect.h * 0.52, rect.w * 0.58
-    );
-    g.addColorStop(0, COLOR.gold);
-    g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g;
-    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     ctx.restore();
   }
 
-  static _drawTorch(r, x, y, time, flip) {
-    const ctx = r.ctx;
-    ctx.save();
-    ctx.globalAlpha = 0.8;
-    const flicker = Math.sin(time * 8 + x * 0.03) * 2;
-    r.drawRect(x - 2, y + 18, 4, 38, '#3a2418');
-    r.drawRect(x - 5, y + 14, 10, 5, '#6a4428');
-    ctx.globalAlpha = 0.18;
-    const glow = ctx.createRadialGradient(x, y + 12, 3, x, y + 12, 36 + flicker);
-    glow.addColorStop(0, COLOR.goldHi);
-    glow.addColorStop(1, 'transparent');
-    ctx.fillStyle = glow;
-    ctx.fillRect(x - 42, y - 30, 84, 84);
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = '#f0d890';
-    ctx.beginPath();
-    ctx.moveTo(x, y + 2 + flicker);
-    ctx.lineTo(x + (flip ? -8 : 8), y + 14);
-    ctx.lineTo(x, y + 26);
-    ctx.lineTo(x + (flip ? 6 : -6), y + 15);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = '#e85a4a';
-    ctx.fillRect(x - 2, y + 13, 4, 8);
-    ctx.restore();
-  }
-
-  static _drawSigil(r, cx, cy, time) {
-    const ctx = r.ctx;
-    ctx.save();
-    ctx.globalAlpha = 0.42 + Math.sin(time * 1.8) * 0.08;
-    ctx.strokeStyle = COLOR.goldDim;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - 13);
-    ctx.lineTo(cx + 13, cy);
-    ctx.lineTo(cx, cy + 13);
-    ctx.lineTo(cx - 13, cy);
-    ctx.closePath();
-    ctx.stroke();
-    r.drawText('V', cx, cy - 8, {
-      size: uiSize(11), bold: true, align: 'center',
-      family: FONT_DISPLAY, color: COLOR.goldDim
-    });
-    ctx.restore();
-  }
-
+  // --- D-pad -----------------------------------------------------------
   _renderDpad(r, LAYOUT) {
     const ctx = r.ctx;
-    const padX = LAYOUT.dpadX - 10;
-    const padY = LAYOUT.dpadY - 10;
-    const padS = LAYOUT.dpadSize + 20;
-
-    ctx.save();
-    const rg = ctx.createRadialGradient(
-      padX + padS / 2, padY + padS / 2, 8,
-      padX + padS / 2, padY + padS / 2, padS / 2
-    );
-    rg.addColorStop(0, '#3a3048');
-    rg.addColorStop(1, '#1a1624');
-    ctx.fillStyle = rg;
+    const padX = LAYOUT.dpadX - 8;
+    const padY = LAYOUT.dpadY - 8;
+    const padS = LAYOUT.dpadSize + 16;
+    // Dark recessed background well behind D-pad.
+    const wg = ctx.createRadialGradient(
+      padX + padS / 2, padY + padS / 2, 6,
+      padX + padS / 2, padY + padS / 2, padS / 2);
+    wg.addColorStop(0, '#150f1a');
+    wg.addColorStop(1, '#080510');
+    ctx.fillStyle = wg;
     ctx.fillRect(padX, padY, padS, padS);
-    ctx.restore();
+    ctx.strokeStyle = IRON.ink;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(padX, padY, padS, padS);
 
-    r.drawStrokedRect(padX, padY, padS, padS, COLOR.gold, 3);
-    r.drawStrokedRect(padX + 3, padY + 3, padS - 6, padS - 6, '#6a6080', 1);
-    ctx.save();
-    ctx.globalAlpha = 0.24;
-    for (let i = 0; i < 8; i++) {
-      const x = padX + 14 + ((i * 29) % Math.max(1, padS - 28));
-      const y = padY + 12 + ((i * 41) % Math.max(1, padS - 24));
-      r.drawRect(x, y, 12, 1, i % 2 ? '#ffffff33' : '#00000088');
-      if (i % 3 === 0) r.drawRect(x + 3, y + 4, 1, 9, '#00000077');
-    }
-    ctx.restore();
+    // Iron lattice behind buttons.
+    drawIronLattice(ctx, LAYOUT.dpadX, LAYOUT.dpadY, LAYOUT.dpadSize);
 
-    const cx = LAYOUT.dpadX + LAYOUT.dpadSize / 2;
-    const cy = LAYOUT.dpadY + LAYOUT.dpadSize / 2;
-    const armW = LAYOUT.dpadBtn + LAYOUT.dpadGap - 2;
-    r.drawRect(cx - armW / 2, LAYOUT.dpadY, armW, LAYOUT.dpadSize, '#141018');
-    r.drawRect(LAYOUT.dpadX, cy - armW / 2, LAYOUT.dpadSize, armW, '#141018');
-
+    // Buttons.
     for (const b of DPAD_BUTTONS) {
       const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
-      const pressed = this._pressedKey === `dpad:${b.col},${b.row}`;
-      const isCenter = b.dir === 'wait';
-
-      if (isCenter) {
-        const sz = LAYOUT.dpadBtn;
-        this._drawRelicButton(r, bx, by, sz, sz, pressed, true);
-        r.drawStrokedRect(bx, by, sz, sz, pressed ? COLOR.gold : '#7a7088', pressed ? 2 : 1);
-        const gem = pressed ? COLOR.goldHi : COLOR.gold;
-        r.drawRect(bx + sz * 0.3, by + sz * 0.3, sz * 0.4, sz * 0.4, gem);
-        r.drawRect(bx + sz * 0.38, by + sz * 0.38, sz * 0.24, sz * 0.24, '#fff8e0');
+      const pressed = this._pressedKey === `dpad:${b.dir}`;
+      if (b.dir === 'wait') {
+        // Brass center jewel for WAIT.
+        const cx = bx + LAYOUT.dpadBtn / 2;
+        const cy = by + LAYOUT.dpadBtn / 2;
+        const r2 = LAYOUT.dpadBtn * 0.42;
+        drawBrassJewel(ctx, cx, cy, r2, {
+          pressed,
+          variant: 'brass',
+          glyph: '✷'
+        });
       } else {
-        this._drawRelicButton(r, bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn, pressed, false);
-        r.drawStrokedRect(bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn,
-          pressed ? COLOR.gold : '#8a8098', pressed ? 2 : 1);
-        if (!pressed) {
-          r.drawRect(bx + 2, by + 2, LAYOUT.dpadBtn - 4, 3, '#252030');
+        drawIronPlate(ctx, bx, by, LAYOUT.dpadBtn, LAYOUT.dpadBtn, {
+          pressed,
+          glow: pressed ? IRON.ember : null
+        });
+        // Arrow glyph (bone color, ember when pressed).
+        const cx = bx + LAYOUT.dpadBtn / 2;
+        const cy = by + LAYOUT.dpadBtn / 2;
+        const a = LAYOUT.dpadBtn * 0.24;
+        ctx.fillStyle = pressed ? IRON.ember : IRON.bone;
+        ctx.shadowColor = pressed ? `${IRON.ember}aa` : IRON.ink;
+        ctx.shadowBlur = pressed ? 8 : 0;
+        ctx.beginPath();
+        if (b.dir === 'up') {
+          ctx.moveTo(cx, cy - a); ctx.lineTo(cx - a, cy + a * 0.6); ctx.lineTo(cx + a, cy + a * 0.6);
+        } else if (b.dir === 'down') {
+          ctx.moveTo(cx, cy + a); ctx.lineTo(cx - a, cy - a * 0.6); ctx.lineTo(cx + a, cy - a * 0.6);
+        } else if (b.dir === 'left') {
+          ctx.moveTo(cx - a, cy); ctx.lineTo(cx + a * 0.6, cy - a); ctx.lineTo(cx + a * 0.6, cy + a);
+        } else {
+          ctx.moveTo(cx + a, cy); ctx.lineTo(cx - a * 0.6, cy - a); ctx.lineTo(cx - a * 0.6, cy + a);
         }
-        MobileControls._drawArrow(r, bx, by, LAYOUT.dpadBtn, b.dir, pressed);
+        ctx.closePath();
+        ctx.fill();
+        ctx.shadowBlur = 0;
       }
     }
   }
 
-  _drawRelicButton(r, x, y, w, h, pressed, center) {
+  // --- Action stack (AIM / CAST / MENU / DOWN) ------------------------
+  _renderActionStack(r, LAYOUT) {
     const ctx = r.ctx;
-    ctx.save();
-    const g = ctx.createLinearGradient(x, y, x, y + h);
-    g.addColorStop(0, pressed ? '#4e415a' : '#373040');
-    g.addColorStop(0.52, center ? '#292436' : '#262134');
-    g.addColorStop(1, '#110e18');
-    ctx.fillStyle = g;
-    ctx.fillRect(x, y, w, h);
-    ctx.globalAlpha = pressed ? 0.38 : 0.2;
-    r.drawRect(x + 4, y + 4, w - 8, 2, COLOR.goldDim);
-    r.drawRect(x + 6, y + h - 5, w - 12, 1, '#000000aa');
-    ctx.globalAlpha = 0.18;
-    r.drawRect(x + 9, y + 10, 12, 1, '#ffffff66');
-    r.drawRect(x + w - 16, y + 12, 1, 15, '#000000aa');
-    ctx.restore();
+    const acts = actionRects(LAYOUT);
+    const aimTarget = this._ctx?.aimTarget || null;
+    const castReady = !!this._ctx?.castReady;
+    const canDescend = !!this._ctx?.canDescend;
+
+    for (const a of acts) {
+      const pressed = this._pressedKey === `act:${a.key}`;
+      const enabled = (a.key === 'aim') ? !!aimTarget
+                    : (a.key === 'cast') ? castReady
+                    : (a.key === 'descend') ? canDescend
+                    : true;
+      const glow = enabled
+        ? (a.key === 'aim'  ? `${IRON.ember}99`
+         : a.key === 'cast' ? `${IRON.rune}aa`
+         : a.key === 'descend' ? `${IRON.brass}66`
+         : null)
+        : null;
+      drawIronPlate(ctx, a.x, a.y, a.w, a.h, { pressed, glow });
+      if (!enabled) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.fillStyle = '#0a0810';
+        ctx.fillRect(a.x + 1, a.y + 1, a.w - 2, a.h - 2);
+        ctx.restore();
+      }
+      if (a.variant === 'aim') {
+        this._renderAimButton(r, a, pressed, enabled, aimTarget);
+      } else if (a.variant === 'cast') {
+        this._renderCastButton(r, a, pressed, castReady);
+      } else {
+        this._renderSideButton(r, a, pressed, enabled);
+      }
+    }
   }
 
-  static _drawArrow(r, bx, by, sz, dir, pressed) {
+  _renderAimButton(r, a, pressed, enabled, target) {
     const ctx = r.ctx;
-    const col = pressed ? COLOR.goldHi : COLOR.textPrimary;
-    const cx = bx + sz / 2;
-    const cy = by + sz / 2;
-    const a = sz * 0.22;
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    if (dir === 'up') {
-      ctx.moveTo(cx, cy - a); ctx.lineTo(cx - a, cy + a * 0.6); ctx.lineTo(cx + a, cy + a * 0.6);
-    } else if (dir === 'down') {
-      ctx.moveTo(cx, cy + a); ctx.lineTo(cx - a, cy - a * 0.6); ctx.lineTo(cx + a, cy - a * 0.6);
-    } else if (dir === 'left') {
-      ctx.moveTo(cx - a, cy); ctx.lineTo(cx + a * 0.6, cy - a); ctx.lineTo(cx + a * 0.6, cy + a);
+    const cy = a.y + a.h / 2;
+    drawReticle(ctx, a.x + 18, cy, 13, enabled);
+    const labelCol = enabled ? IRON.bone : IRON.boneDim;
+    r.drawText('AIM', a.x + 38, a.y + 8, {
+      size: uiSize(11), bold: true, family: FONT_DISPLAY, color: labelCol
+    });
+    if (target) {
+      const sub = `${MobileControls._truncate(target.name, 8)} · ${target.distance}t`;
+      r.drawText(sub, a.x + 38, a.y + a.h - 10, {
+        size: uiSize(9), family: FONT_MONO, color: IRON.ember
+      });
+      if (target.dir) {
+        r.drawText(dirArrowGlyph(target.dir), a.x + a.w - 14, cy, {
+          size: uiSize(12), bold: true, align: 'center', baseline: 'middle',
+          color: IRON.brass
+        });
+      }
     } else {
-      ctx.moveTo(cx + a, cy); ctx.lineTo(cx - a * 0.6, cy - a); ctx.lineTo(cx - a * 0.6, cy + a);
-    }
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  _renderActions(r, LAYOUT) {
-    for (let i = 0; i < ACTION_LABELS.length; i++) {
-      const ax = LAYOUT.actX;
-      const ay = LAYOUT.actY + i * (LAYOUT.actH + LAYOUT.actGap);
-      const pressed = this._pressedKey === `act:${i}`;
-      const isMenu = ACTION_LABELS[i].key === 'menu';
-
-      r.drawRect(ax - 1, ay - 1, LAYOUT.actW + 2, LAYOUT.actH + 2, '#0a0810');
-      const ctx = r.ctx;
-      ctx.save();
-      const g = ctx.createLinearGradient(ax, ay, ax, ay + LAYOUT.actH);
-      g.addColorStop(0, pressed ? '#4a3a50' : (isMenu ? '#3a2838' : '#30283c'));
-      g.addColorStop(1, isMenu ? '#1a111c' : '#14101a');
-      ctx.fillStyle = g;
-      ctx.fillRect(ax, ay, LAYOUT.actW, LAYOUT.actH);
-      ctx.restore();
-      r.drawStrokedRect(ax, ay, LAYOUT.actW, LAYOUT.actH,
-        pressed ? COLOR.gold : COLOR.goldDim, pressed ? 2 : 1);
-      if (!pressed) {
-        r.drawRect(ax + 2, ay + 2, LAYOUT.actW - 4, 2, isMenu ? '#d4be7a25' : '#ffffff18');
-        r.drawRect(ax + 5, ay + LAYOUT.actH - 5, LAYOUT.actW - 10, 1, '#00000099');
-      }
-      MobileControls._drawActionIcon(r, ACTION_LABELS[i].icon, ax + 18, ay + LAYOUT.actH / 2, pressed, isMenu);
-      r.drawText(ACTION_LABELS[i].label, ax + 42, ay + LAYOUT.actH / 2, {
-        size: uiSize(11), bold: true, align: 'left', baseline: 'middle',
-        color: pressed ? COLOR.goldHi : (isMenu ? COLOR.gold : COLOR.textPrimary)
+      r.drawText(enabled ? 'aim ready' : 'no target', a.x + 38, a.y + a.h - 10, {
+        size: uiSize(9), italic: true, family: FONT_MONO, color: IRON.boneDim
       });
     }
   }
 
-  static _drawActionIcon(r, icon, cx, cy, pressed, isMenu) {
+  _renderCastButton(r, a, pressed, ready) {
     const ctx = r.ctx;
-    const col = pressed ? COLOR.goldHi : (isMenu ? COLOR.gold : COLOR.textPrimary);
-    const dim = pressed ? '#5a4830' : '#4a4258';
-    ctx.save();
-    ctx.strokeStyle = col;
+    const cy = a.y + a.h / 2;
+    // Rune medallion on left.
+    drawBrassJewel(ctx, a.x + 18, cy, 13, {
+      pressed,
+      variant: ready ? 'rune' : 'brass',
+      glyph: '✷'
+    });
+    const labelCol = ready ? IRON.bone : IRON.boneDim;
+    r.drawText('CAST', a.x + 38, a.y + 8, {
+      size: uiSize(11), bold: true, family: FONT_DISPLAY, color: labelCol
+    });
+    r.drawText(ready ? 'tap to cast' : 'no spell', a.x + 38, a.y + a.h - 10, {
+      size: uiSize(9), italic: !ready, family: FONT_MONO,
+      color: ready ? IRON.rune : IRON.boneDim
+    });
+  }
+
+  _renderSideButton(r, a, pressed, enabled) {
+    const ctx = r.ctx;
+    const cy = a.y + a.h / 2;
+    const glyph = a.key === 'menu' ? '≡' : '▼';
+    const col = enabled ? (a.key === 'descend' ? IRON.brass : IRON.bone) : IRON.boneDim;
     ctx.fillStyle = col;
-    ctx.lineWidth = 2;
-    if (icon === 'III') {
-      for (let i = -1; i <= 1; i++) r.drawRect(cx - 7, cy + i * 5 - 1, 14, 2, col);
-    } else if (icon === 'GEM') {
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - 9); ctx.lineTo(cx + 8, cy); ctx.lineTo(cx, cy + 9); ctx.lineTo(cx - 8, cy);
-      ctx.closePath(); ctx.stroke();
-      r.drawRect(cx - 2, cy - 2, 4, 4, COLOR.goldDim);
-    } else if (icon === 'STAIR') {
-      for (let i = 0; i < 4; i++) {
-        r.drawRect(cx - 10 + i * 4, cy - 8 + i * 4, 14 - i * 2, 2, col);
-      }
-      r.drawRect(cx + 4, cy + 6, 4, 2, dim);
-    } else if (icon === 'BAG') {
-      r.drawRect(cx - 8, cy - 4, 16, 12, dim);
-      r.drawStrokedRect(cx - 8, cy - 4, 16, 12, col, 1);
-      r.drawRect(cx - 4, cy - 8, 8, 4, col);
-    } else if (icon === 'HELM') {
-      r.drawRect(cx - 8, cy - 6, 16, 9, dim);
-      r.drawRect(cx - 6, cy - 8, 12, 3, col);
-      r.drawRect(cx - 5, cy - 1, 10, 2, '#0a0810');
-      r.drawRect(cx - 4, cy, 2, 2, COLOR.textCrit);
-      r.drawRect(cx + 2, cy, 2, 2, COLOR.textCrit);
+    ctx.font = `bold ${uiSize(15)}px Cinzel, serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(glyph, a.x + 16, cy);
+    r.drawText(a.label, a.x + 32, cy, {
+      size: uiSize(11), bold: true, baseline: 'middle',
+      family: FONT_DISPLAY, color: col
+    });
+    if (enabled && a.key === 'descend') {
+      // Subtle ember dot indicator.
+      drawIronRivet(ctx, a.x + a.w - 8, cy, 2);
     }
-    ctx.restore();
+  }
+
+  // --- helpers ---------------------------------------------------------
+  static _truncate(s, n) {
+    if (!s) return '';
+    return s.length > n ? s.slice(0, n - 1) + '…' : s;
+  }
+
+  static computeAimTarget(player, floor) {
+    if (!player || !floor || typeof floor.enemies !== 'function') return null;
+    const range = typeof player.effectiveRange === 'function'
+      ? player.effectiveRange()
+      : 1;
+    if (range <= 1) return null;
+    let best = null;
+    let bestDist = Infinity;
+    for (const e of floor.enemies()) {
+      const t = floor.tileAt ? floor.tileAt(e.x, e.y) : null;
+      if (t && !t.visible) continue;
+      const dx = e.x - player.x;
+      const dy = e.y - player.y;
+      const dist = Math.abs(dx) + Math.abs(dy);
+      if (dist > range || dist < bestDist === false) {/* nothing */}
+      if (dist <= range && dist < bestDist) {
+        bestDist = dist;
+        best = {
+          x: e.x, y: e.y,
+          name: e.name || 'enemy',
+          distance: dist,
+          dir: deltaToDir(Math.sign(dx), Math.sign(dy))
+        };
+      }
+    }
+    return best;
   }
 
   static get geometry() {
     const LAYOUT = buildLayout();
     return {
-      isLandscape: LAYOUT.isLandscape,
+      isLandscape: !LAYOUT.portrait,
       band: LAYOUT.band,
       dpadRect: { x: LAYOUT.dpadX, y: LAYOUT.dpadY, w: LAYOUT.dpadSize, h: LAYOUT.dpadSize },
       actionRect: { x: LAYOUT.actX, y: LAYOUT.actY, w: LAYOUT.actW, h: LAYOUT.actStackH },
       centerRect: LAYOUT.centerRect,
-      msgRect: LAYOUT.msgRect
+      msgRect: null
     };
   }
 }
