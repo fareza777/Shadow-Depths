@@ -166,36 +166,34 @@ export function drawBrassJewel(ctx, cx, cy, r, opts = {}) {
 }
 
 /**
- * Wrought-iron lattice bars behind the D-pad — horizontal + vertical
- * iron strips with a central square, all gradient-shaded.
+ * Wrought-iron lattice bars behind the D-pad. Each bar is rendered as a
+ * proper IronPlate (bevel + hammered noise + rivets), matching the
+ * button surfaces above so the whole portcullis reads as one piece of
+ * forged iron.
  */
 export function drawIronLattice(ctx, x, y, size) {
   const cx = x + size / 2;
   const cy = y + size / 2;
-  // Horizontal bar
-  const hg = ctx.createLinearGradient(x, cy - size * 0.07, x, cy + size * 0.07);
-  hg.addColorStop(0, IRON.plateHi);
-  hg.addColorStop(0.5, IRON.plate2);
-  hg.addColorStop(1, IRON.ink);
-  ctx.fillStyle = hg;
-  ctx.fillRect(x + size * 0.1, cy - size * 0.07, size * 0.8, size * 0.14);
-  ctx.strokeStyle = IRON.ink;
-  ctx.lineWidth = 2;
-  ctx.strokeRect(x + size * 0.1, cy - size * 0.07, size * 0.8, size * 0.14);
+  const barT = Math.max(8, size * 0.14);   // bar thickness
+  const barL = size * 0.8;                 // bar length
+  const centerS = Math.max(barT + 2, size * 0.26); // center plate side
 
-  // Vertical bar
-  const vg = ctx.createLinearGradient(cx - size * 0.07, y, cx + size * 0.07, y);
-  vg.addColorStop(0, IRON.plateHi);
-  vg.addColorStop(0.5, IRON.plate2);
-  vg.addColorStop(1, IRON.ink);
-  ctx.fillStyle = vg;
-  ctx.fillRect(cx - size * 0.07, y + size * 0.1, size * 0.14, size * 0.8);
-  ctx.strokeRect(cx - size * 0.07, y + size * 0.1, size * 0.14, size * 0.8);
+  // Horizontal bar — full iron plate (rivets at both ends).
+  drawIronPlate(ctx, x + size * 0.1, cy - barT / 2, barL, barT, { rivets: false });
+  // Bar-end rivets so they read as bolted to the portcullis frame.
+  drawIronRivet(ctx, x + size * 0.1 + 5, cy, 2.2);
+  drawIronRivet(ctx, x + size * 0.1 + barL - 5, cy, 2.2);
 
-  // Center plate square
-  ctx.fillStyle = IRON.plate2;
-  ctx.fillRect(cx - size * 0.12, cy - size * 0.12, size * 0.24, size * 0.24);
-  ctx.strokeRect(cx - size * 0.12, cy - size * 0.12, size * 0.24, size * 0.24);
+  // Vertical bar — same treatment.
+  drawIronPlate(ctx, cx - barT / 2, y + size * 0.1, barT, barL, { rivets: false });
+  drawIronRivet(ctx, cx, y + size * 0.1 + 5, 2.2);
+  drawIronRivet(ctx, cx, y + size * 0.1 + barL - 5, 2.2);
+
+  // Center boss plate — slightly bigger iron plate with its own rivets
+  // (where horizontal + vertical bars cross). This is the focal "joint".
+  drawIronPlate(ctx, cx - centerS / 2, cy - centerS / 2, centerS, centerS, {
+    rivets: true
+  });
 }
 
 /** Brass piping line — gradient gold accent (top/bottom of HUD panel). */
