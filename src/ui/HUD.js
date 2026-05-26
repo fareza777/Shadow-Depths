@@ -87,30 +87,37 @@ export class HUD {
 
     if (floor) {
       const name = `${floor.definition.name}`;
-      this._drawFloorBanner(r, name, floorIndex, totalFloors);
-      if (mode === 'daily') {
-        r.drawText('☼ DAILY', Layout.canvasW - 22, TOP_PAD + 84,
-          { size: uiSize(11), bold: true, align: 'right', color: BRASS_HI, family: FONT_MONO });
-      }
+      this._drawFloorBanner(r, name, floorIndex, totalFloors, mode === 'daily');
       this._drawFloorChip(r, floor, floorIndex);
       this._drawDepthMeter(r, floorIndex, totalFloors);
     }
 
     let chipX = 8;
     const chipY = TOP_PAD + 84;
+    // Reserve right-side space for the revive chip + depth meter so the
+    // status chips never collide with them.
+    const reviveResv = p.reviveCharges > 0 ? 70 : 0;
+    const rightLimit = Layout.canvasW - 12 - reviveResv;
     for (const eff of p.statusEffects) {
       const label = `${eff.id} ${eff.value}×${eff.duration}`;
       const w = 8 + label.length * 6;
+      if (chipX + w > rightLimit) break;
       const bg = eff.id === 'poison' ? '#2a4a30'
               : (eff.id === 'atk_buff' ? '#4a2a20' : '#1e3a52');
       r.drawRect(chipX, chipY, w, 14, bg);
       r.drawText(label, chipX + 4, chipY + 1, { size: uiSize(11) });
       chipX += w + 4;
-      if (chipX > Layout.canvasW - 80) break;
     }
     if (p.reviveCharges > 0) {
-      r.drawText(`✦ Revive ×${p.reviveCharges}`, Layout.canvasW - 12, chipY + 1,
-        { size: uiSize(12), color: COLOR.textHeal, align: 'right' });
+      // Render as a bordered chip so it doesn't collide with the depth
+      // column or the BOSS/ELITE floor chip.
+      const label = `✦${p.reviveCharges}`;
+      const rw = 8 + label.length * 7;
+      const rx = Layout.canvasW - rw - 12;
+      r.drawRect(rx, chipY, rw, 14, '#1a2a1a');
+      r.drawStrokedRect(rx, chipY, rw, 14, COLOR.textHeal, 1);
+      r.drawText(label, rx + 4, chipY + 1,
+        { size: uiSize(11), bold: true, color: COLOR.textHeal, family: FONT_MONO });
     }
     // Skill chips — appear under status chips when the player has skills.
     // Compact: 4-char abbreviation per skill so multiple fit on one row.
@@ -150,7 +157,7 @@ export class HUD {
    * below the title with a hammered inset plate behind the name. Matches
    * the iron-portcullis vocabulary used elsewhere in the HUD.
    */
-  _drawFloorBanner(r, name, floorIndex, totalFloors) {
+  _drawFloorBanner(r, name, floorIndex, totalFloors, daily = false) {
     const ctx = r.ctx;
     const x = 8;
     const y = TOP_PAD + 52;
@@ -235,9 +242,11 @@ export class HUD {
     ctx.fillStyle = tg;
     ctx.fillText(upper, cx, labelY);
 
-    // Subtitle: ── FLOOR N OF M ──
+    // Subtitle: ── FLOOR N OF M [· DAILY] ──
     const subY = y + h - 7;
-    const sub = `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
+    const sub = daily
+      ? `FLOOR ${floorIndex + 1} OF ${totalFloors}  ·  ☼ DAILY`
+      : `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
     ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
     ctx.textAlign = 'center';
     ctx.fillStyle = IRON.boneDim;
@@ -284,16 +293,19 @@ export class HUD {
   }
 
   _drawDepthMeter(r, floorIndex, totalFloors) {
-    const x = Layout.canvasW - 18;
-    const y = TOP_PAD + 84;
-    const h = 14;
+    // Thin vertical column on the far-right margin spanning the full HUD.
+    // Lives outside the chip-row exclusion zone so it never overlaps the
+    // DAILY badge or revive counter.
+    const x = Layout.canvasW - 6;
+    const y = TOP_PAD;
+    const h = Layout.hud - TOP_PAD * 2 + 6;
     const pct = Math.max(0, Math.min(1, (floorIndex + 1) / Math.max(1, totalFloors)));
-    r.drawRect(x, y, 6, h, '#0a0810');
-    r.drawStrokedRect(x, y, 6, h, COLOR.goldDim, 1);
-    r.drawRect(x + 2, y + 2 + (h - 4) * (1 - pct), 2, (h - 4) * pct, COLOR.gold);
+    r.drawRect(x, y, 3, h, '#0a0810');
+    r.drawRect(x, y + (h * (1 - pct)), 3, h * pct, COLOR.gold);
+    // 10 notches at 10% intervals
     for (let i = 1; i < 10; i++) {
-      const ty = y + Math.round((h - 2) * (i / 10));
-      r.drawRect(x - (i % 5 === 0 ? 5 : 3), ty, i % 5 === 0 ? 4 : 2, 1, COLOR.goldDim);
+      const ty = y + Math.round(h * (i / 10));
+      r.drawRect(x - (i % 5 === 0 ? 3 : 2), ty, i % 5 === 0 ? 2 : 1, 1, COLOR.goldDim);
     }
   }
 

@@ -399,12 +399,51 @@ export function drawEquipRow(renderer, x, y, w, h, slot, item) {
   ctx.fillRect(iconX, iconY, ico, ico);
   ctx.strokeStyle = has ? col : plate2;
   ctx.strokeRect(iconX + 0.5, iconY + 0.5, ico - 1, ico - 1);
-  // Slot glyph (serif).
-  ctx.fillStyle = has ? col : boneDark;
-  ctx.font = `${Math.round(ico * 0.65)}px serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(slotGlyph(slot), iconX + ico / 2, iconY + ico / 2 + 1);
+  if (has) {
+    // Soft rarity backwash so the sprite reads against the dark slot.
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    const rg = ctx.createRadialGradient(
+      iconX + ico / 2, iconY + ico / 2, 0,
+      iconX + ico / 2, iconY + ico / 2, ico * 0.7
+    );
+    rg.addColorStop(0, col);
+    rg.addColorStop(1, 'transparent');
+    ctx.fillStyle = rg;
+    ctx.fillRect(iconX + 1, iconY + 1, ico - 2, ico - 2);
+    ctx.restore();
+    // Actual item sprite. Padded 2px inside the slot frame.
+    if (item.spriteKey && renderer.sprites?.draw) {
+      renderer.sprites.draw(item.spriteKey, ctx,
+        iconX + 2, iconY + 2,
+        { size: ico - 4, tint: col });
+    } else {
+      ctx.fillStyle = col;
+      ctx.font = `${Math.round(ico * 0.65)}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(slotGlyph(slot), iconX + ico / 2, iconY + ico / 2 + 1);
+    }
+    // Rarity gem in the bottom-right corner of the slot icon.
+    const gemR = Math.max(2, Math.round(ico * 0.10));
+    const gx = iconX + ico - gemR - 2;
+    const gy = iconY + ico - gemR - 2;
+    const gg = ctx.createRadialGradient(gx, gy, 0, gx, gy, gemR);
+    gg.addColorStop(0, '#ffffff');
+    gg.addColorStop(0.5, col);
+    gg.addColorStop(1, ink);
+    ctx.fillStyle = gg;
+    ctx.beginPath();
+    ctx.arc(gx, gy, gemR, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    // Empty slot — show the slot glyph as a faint hint.
+    ctx.fillStyle = boneDark;
+    ctx.font = `${Math.round(ico * 0.65)}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(slotGlyph(slot), iconX + ico / 2, iconY + ico / 2 + 1);
+  }
 
   // Text column.
   const tx = iconX + ico + 10;
