@@ -9,6 +9,16 @@
  */
 import { COLOR, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
+import { IRON } from './ironHud.js';
+
+const BRASS_DARK = '#7a5c2c';
+const BRASS = '#d4ac6c';
+const BRASS_HI = '#f1d49a';
+const BRASS_WHITE = '#fff5d0';
+
+function hudNow() {
+  return (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+}
 
 const TOP_PAD = 10;
 
@@ -77,21 +87,17 @@ export class HUD {
 
     if (floor) {
       const name = `${floor.definition.name}`;
-      const sub = `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
-      r.drawText(name, Layout.canvasW / 2, TOP_PAD + 56,
-        { size: uiSize(13), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
-      r.drawText(sub, Layout.canvasW / 2, TOP_PAD + 74,
-        { size: uiSize(11), bold: true, align: 'center', color: COLOR.textMuted, family: FONT_MONO });
+      this._drawFloorBanner(r, name, floorIndex, totalFloors);
       if (mode === 'daily') {
-        r.drawText('☼ DAILY', Layout.canvasW - 12, TOP_PAD + 58,
-          { size: uiSize(11), bold: true, align: 'right', color: COLOR.textXP, family: FONT_MONO });
+        r.drawText('☼ DAILY', Layout.canvasW - 22, TOP_PAD + 84,
+          { size: uiSize(11), bold: true, align: 'right', color: BRASS_HI, family: FONT_MONO });
       }
       this._drawFloorChip(r, floor, floorIndex);
       this._drawDepthMeter(r, floorIndex, totalFloors);
     }
 
     let chipX = 8;
-    const chipY = TOP_PAD + 82;
+    const chipY = TOP_PAD + 84;
     for (const eff of p.statusEffects) {
       const label = `${eff.id} ${eff.value}×${eff.duration}`;
       const w = 8 + label.length * 6;
@@ -134,9 +140,109 @@ export class HUD {
     }
   }
 
+  /**
+   * Brass-engraved floor banner — matches iron-title-hud.jsx reference.
+   * Dark plate with brass border, animated shimmer sweeping across the
+   * floor name, "FLOOR N OF M" subtitle wrapped between brass hairlines.
+   */
+  _drawFloorBanner(r, name, floorIndex, totalFloors) {
+    const ctx = r.ctx;
+    const x = 8;
+    const y = TOP_PAD + 52;
+    const w = Layout.canvasW - 32;
+    const h = 30;
+    const t = hudNow();
+
+    // Background plate
+    ctx.save();
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, IRON.plate0);
+    g.addColorStop(1, IRON.ink);
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+    // Brass border
+    ctx.strokeStyle = `${BRASS_DARK}cc`;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    // Top bevel + bottom shadow
+    ctx.fillStyle = `${IRON.plateHi}88`;
+    ctx.fillRect(x + 1, y + 1, w - 2, 1);
+    ctx.fillStyle = IRON.ink;
+    ctx.fillRect(x + 1, y + h - 2, w - 2, 1);
+
+    // Gilt shimmer sweep — moves L→R across the banner.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x + 1, y + 1, w - 2, h - 2);
+    ctx.clip();
+    const sweepPhase = ((t * 0.22) % 1);
+    const sweepX = x - w * 0.4 + sweepPhase * w * 1.8;
+    const sweepG = ctx.createLinearGradient(sweepX, 0, sweepX + w * 0.45, 0);
+    sweepG.addColorStop(0,    'rgba(212,172,108,0)');
+    sweepG.addColorStop(0.5,  'rgba(212,172,108,0.22)');
+    sweepG.addColorStop(1,    'rgba(212,172,108,0)');
+    ctx.fillStyle = sweepG;
+    ctx.fillRect(x, y, w, h);
+    ctx.restore();
+
+    // Floor name with brass-shimmer gradient.
+    ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const cx = Layout.canvasW / 2;
+    const labelY = y + 11;
+    // Engraved back-shadow
+    ctx.fillStyle = IRON.ink;
+    ctx.fillText(name.toUpperCase(), cx + 1, labelY + 1);
+    // Brass body
+    ctx.fillStyle = BRASS_DARK;
+    ctx.fillText(name.toUpperCase(), cx, labelY);
+    // Sliding bright band on top
+    const tw = ctx.measureText(name.toUpperCase()).width;
+    const phase = (t * 0.18) % 1;
+    const gx = cx - tw / 2 - tw * 0.3 + phase * tw * 1.6;
+    const tg = ctx.createLinearGradient(gx, 0, gx + tw * 0.6, 0);
+    tg.addColorStop(0,    BRASS_DARK);
+    tg.addColorStop(0.4,  BRASS_HI);
+    tg.addColorStop(0.5,  BRASS_WHITE);
+    tg.addColorStop(0.6,  BRASS_HI);
+    tg.addColorStop(1,    BRASS_DARK);
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = tg;
+    ctx.fillRect(x, labelY - 10, w, 20);
+    ctx.restore();
+
+    // Subtitle: ── FLOOR N OF M ──
+    const subY = y + h - 6;
+    const sub = `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
+    ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = IRON.boneDim;
+    ctx.fillText(sub, cx, subY);
+    const subW = ctx.measureText(sub).width;
+    // Brass hairlines either side.
+    const lineY = subY;
+    const lineL = cx - subW / 2 - 8;
+    const lineR = cx + subW / 2 + 8;
+    const lineLen = 50;
+    const lg1 = ctx.createLinearGradient(lineL - lineLen, 0, lineL, 0);
+    lg1.addColorStop(0, 'rgba(212,172,108,0)');
+    lg1.addColorStop(1, BRASS);
+    ctx.fillStyle = lg1;
+    ctx.fillRect(lineL - lineLen, lineY, lineLen, 1);
+    const lg2 = ctx.createLinearGradient(lineR, 0, lineR + lineLen, 0);
+    lg2.addColorStop(0, BRASS);
+    lg2.addColorStop(1, 'rgba(212,172,108,0)');
+    ctx.fillStyle = lg2;
+    ctx.fillRect(lineR, lineY, lineLen, 1);
+
+    ctx.restore();
+  }
+
   _drawFloorChip(r, floor, floorIndex) {
     const special = floor?.definition?.specialEnemyId || '';
-    const y = TOP_PAD + 72;
+    const y = TOP_PAD + 84;
     if ((floorIndex + 1) % 20 === 0) {
       r.drawRect(8, y, 62, 16, '#0a1018');
       r.drawStrokedRect(8, y, 62, 16, '#80b0e0', 1);
@@ -159,8 +265,8 @@ export class HUD {
 
   _drawDepthMeter(r, floorIndex, totalFloors) {
     const x = Layout.canvasW - 18;
-    const y = TOP_PAD + 58;
-    const h = 42;
+    const y = TOP_PAD + 84;
+    const h = 14;
     const pct = Math.max(0, Math.min(1, (floorIndex + 1) / Math.max(1, totalFloors)));
     r.drawRect(x, y, 6, h, '#0a0810');
     r.drawStrokedRect(x, y, 6, h, COLOR.goldDim, 1);

@@ -16,6 +16,12 @@ import {
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
+import { IRON, drawIronRivet, drawBrassRivet, drawBrassPiping } from './ironHud.js';
+
+const BRASS_DARK = '#7a5c2c';
+const BRASS = '#d4ac6c';
+const BRASS_HI = '#f1d49a';
+const BRASS_WHITE = '#fff5d0';
 
 const MENU = [
   { id: 'newRun',   icon: '+', label: 'NEW DESCENT',  sub: 'Permadeath' },
@@ -67,11 +73,21 @@ export class TitleScreen {
   update(dt) {
     this._t += dt;
     for (const p of this._particles) {
-      p.y += p.vy * dt;
-      p.x += p.vx * dt;
-      if (p.y > CANVAS_HEIGHT) p.y = -4;
-      if (p.x < 0) p.x = CANVAS_WIDTH;
-      if (p.x > CANVAS_WIDTH) p.x = 0;
+      // Rising embers — gentle drift up + horizontal wobble + fade in/out.
+      p.life += dt;
+      p.y -= p.vy * dt;
+      p.x += Math.sin(p.life * 1.4 + p.phase) * 8 * dt;
+      p.alpha = Math.max(0, Math.min(p.peak, p.peak - Math.abs(p.life / p.duration - 0.5) * p.peak * 2));
+      if (p.life > p.duration) {
+        // Respawn at the bottom with a fresh trajectory.
+        p.life = 0;
+        p.x = Math.random() * CANVAS_WIDTH;
+        p.y = CANVAS_HEIGHT + 8;
+        p.vy = 22 + Math.random() * 26;
+        p.duration = 5 + Math.random() * 4;
+        p.phase = Math.random() * Math.PI * 2;
+        p.peak = 0.5 + Math.random() * 0.4;
+      }
     }
   }
 
@@ -87,18 +103,17 @@ export class TitleScreen {
       return;
     }
 
-    for (const p of this._particles) {
-      const ctx = renderer.ctx;
-      ctx.globalAlpha = p.alpha;
-      renderer.drawRect(p.x, p.y, p.size, p.size, p.color);
-      ctx.globalAlpha = 1;
-    }
+    // Rising embers (instead of falling dust)
+    this._renderEmbers(renderer);
+
+    // Brass ornament row above title — lines + ✶ + diamond + ✶ + lines
+    this._renderTitleOrnament(renderer, LAYOUT.logoY - 22);
 
     const titleSize = TitleScreen._fitTitleSize(renderer, 'SHADOW DEPTHS', uiSize(LAYOUT.logoSize));
-    renderer.drawText('SHADOW DEPTHS', CANVAS_WIDTH / 2, LAYOUT.logoY,
-      { size: titleSize, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
+    this._renderShimmerTitle(renderer, 'SHADOW DEPTHS', CANVAS_WIDTH / 2, LAYOUT.logoY, titleSize);
+
     renderer.drawText('✦  ·  ✦', CANVAS_WIDTH / 2, LAYOUT.ornY,
-      { size: uiSize(16), align: 'center', color: COLOR.goldDim, family: FONT_DISPLAY });
+      { size: uiSize(16), align: 'center', color: BRASS_DARK, family: FONT_DISPLAY });
     renderer.drawText('a melancholic descent', CANVAS_WIDTH / 2, LAYOUT.tagY,
       { size: uiSize(LAYOUT.tagSize), italic: true, align: 'center',
         family: FONT_BODY, color: COLOR.textMuted });
@@ -154,49 +169,90 @@ export class TitleScreen {
       const y = LAYOUT.baseY + i * (rowH + LAYOUT.rowGap);
       const selected = i === this.selected;
       ctx.save();
-      const g = ctx.createLinearGradient(x, y, x + rowW, y + rowH);
+      // Iron-plate vertical gradient (selected rows shift one step lighter).
+      const g = ctx.createLinearGradient(x, y, x, y + rowH);
       if (selected) {
-        g.addColorStop(0, '#3a3042');
-        g.addColorStop(0.48, '#2a2330');
-        g.addColorStop(1, '#1b1620');
+        g.addColorStop(0, IRON.plate1);
+        g.addColorStop(1, IRON.plate0);
       } else {
-        g.addColorStop(0, COLOR.bgCard);
-        g.addColorStop(1, '#211b27');
+        g.addColorStop(0, IRON.plate0);
+        g.addColorStop(1, IRON.ink);
       }
       ctx.fillStyle = g;
       ctx.fillRect(x, y, rowW, rowH);
+
+      // Hammered noise highlight.
+      ctx.globalAlpha = 0.06;
+      ctx.fillStyle = '#a09aa0';
+      const rg = ctx.createRadialGradient(x + rowW * 0.25, y + rowH * 0.3, 0,
+        x + rowW * 0.25, y + rowH * 0.3, rowW * 0.4);
+      rg.addColorStop(0, 'rgba(170,160,170,0.7)');
+      rg.addColorStop(1, 'rgba(170,160,170,0)');
+      ctx.fillStyle = rg;
+      ctx.fillRect(x, y, rowW, rowH);
+      ctx.globalAlpha = 1;
+
       if (selected) {
-        const shimmerX = x + 72 + ((Math.sin(t * 2.2) + 1) * 0.5) * (rowW - 184);
-        ctx.globalAlpha = 0.28;
-        r.drawRect(shimmerX, y + rowH - 9, 38, 1, COLOR.goldHi);
-        r.drawRect(shimmerX + 12, y + rowH - 6, 52, 1, COLOR.goldDim);
-        ctx.globalAlpha = 1;
-        r.drawRect(x, y, 3, rowH, COLOR.gold);
-        r.drawRect(x + rowW - 3, y, 3, rowH, COLOR.goldDim);
+        // Animated pulse-glow halo around selected row.
+        const pulse = 0.5 + 0.5 * Math.sin(t * 1.8);
+        ctx.shadowColor = BRASS;
+        ctx.shadowBlur = 8 + pulse * 14;
+        ctx.strokeStyle = BRASS;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x + 0.5, y + 0.5, rowW - 1, rowH - 1);
+        ctx.shadowBlur = 0;
+        // Underline beneath label.
+        ctx.fillStyle = BRASS;
+        ctx.fillRect(x + 60, y + rowH - 12, 40, 1);
+      } else {
+        ctx.strokeStyle = IRON.ink;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x + 0.5, y + 0.5, rowW - 1, rowH - 1);
+      }
+      // Top bevel highlight + bottom shadow.
+      ctx.fillStyle = `${IRON.plateHi}88`;
+      ctx.fillRect(x + 1, y + 1, rowW - 2, 1);
+      ctx.fillStyle = IRON.ink;
+      ctx.fillRect(x + 1, y + rowH - 2, rowW - 2, 1);
+      // Corner rivets for selected rows (matches jsx).
+      if (selected) {
+        drawBrassRivet(ctx, x + 5, y + 5, 2.5);
+        drawBrassRivet(ctx, x + rowW - 5, y + 5, 2.5);
+        drawBrassRivet(ctx, x + 5, y + rowH - 5, 2.5);
+        drawBrassRivet(ctx, x + rowW - 5, y + rowH - 5, 2.5);
       }
       ctx.restore();
-      r.drawStrokedRect(x, y, rowW, rowH,
-        selected ? COLOR.gold : COLOR.borderSoft, selected ? 2 : 1);
-      r.drawRect(x + 6, y + 5, rowW - 12, 1, selected ? '#f0d89033' : '#ffffff12');
 
       const iconCx = x + 32;
-      r.drawRect(x + 10, y + 8, 44, rowH - 16, selected ? COLOR.bgPanelAlt : COLOR.bgPanel);
-      r.drawText(item.icon, iconCx, y + rowH / 2,
-        { size: uiSize(20), bold: true, align: 'center', baseline: 'middle',
-          family: FONT_DISPLAY, color: selected ? COLOR.goldHi : COLOR.gold });
+      // Icon glow on selected — drop-shadow on the glyph itself.
+      if (selected) {
+        ctx.save();
+        ctx.shadowColor = BRASS;
+        ctx.shadowBlur = 6;
+        r.drawText(item.icon, iconCx, y + rowH / 2,
+          { size: uiSize(22), bold: true, align: 'center', baseline: 'middle',
+            family: FONT_DISPLAY, color: BRASS });
+        ctx.restore();
+      } else {
+        r.drawText(item.icon, iconCx, y + rowH / 2,
+          { size: uiSize(20), bold: true, align: 'center', baseline: 'middle',
+            family: FONT_DISPLAY, color: IRON.boneDim });
+      }
       r.drawText(item.label, x + 62, y + rowH / 2,
         { size: uiSize(16), bold: true, align: 'left', baseline: 'middle',
-          family: FONT_DISPLAY, color: COLOR.textPrimary });
+          family: FONT_DISPLAY, color: selected ? BRASS_HI : IRON.bone });
       const sub = this._statusFor(item);
       if (sub) {
-        r.drawText(sub, x + rowW - (selected ? 48 : 12), y + rowH / 2,
+        r.drawText(sub, x + rowW - (selected ? 36 : 12), y + rowH / 2,
           { size: uiSize(12), italic: true, align: 'right', baseline: 'middle',
-            family: FONT_BODY, color: COLOR.textMuted });
+            family: FONT_BODY, color: selected ? BRASS : COLOR.textMuted });
       }
       if (selected) {
-        r.drawText('>', x + rowW - 31, y + rowH / 2 - 1, {
-          size: uiSize(12), bold: true, align: 'center', baseline: 'middle',
-          family: FONT_MONO, color: COLOR.goldHi
+        // Bobbing arrow chevron on selected row (matches jsx sd-bob).
+        const bob = Math.sin(this._t * 3.9) * 2;
+        r.drawText('›', x + rowW - 18, y + rowH / 2 + bob, {
+          size: uiSize(22), bold: true, align: 'center', baseline: 'middle',
+          family: FONT_DISPLAY, color: BRASS
         });
       }
     }
@@ -872,6 +928,102 @@ export class TitleScreen {
     return size;
   }
 
+  /**
+   * SHADOW DEPTHS rendered with an animated brass gradient that sweeps
+   * left→right (matches `sd-shimmer` keyframe in iron-title-hud.jsx).
+   * We achieve the gradient-on-text effect on canvas by:
+   *   1. drawing the engraved back-shadow (ink + 2px offset)
+   *   2. clipping to the text shape and filling with a sliding linear
+   *      gradient that includes a hot bright-gold band.
+   */
+  _renderShimmerTitle(renderer, text, cx, y, size) {
+    const ctx = renderer.ctx;
+    ctx.save();
+    ctx.font = `bold ${size}px ${FONT_DISPLAY}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    const w = ctx.measureText(text).width + 24;
+    const h = size * 1.1;
+    const left = cx - w / 2;
+    // Engraved back-shadow.
+    ctx.fillStyle = IRON.ink;
+    ctx.fillText(text, cx + 2, y + 2);
+    // Drop-shadow glow underneath the brass fill.
+    ctx.shadowColor = 'rgba(212,172,108,0.45)';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = BRASS_DARK;
+    ctx.fillText(text, cx, y);
+    ctx.shadowBlur = 0;
+    // Sliding brass gradient with a hot bright band in the middle.
+    const phase = (this._t * 0.22) % 1;
+    const gx0 = left - w * 0.5 + phase * w * 2;
+    const grad = ctx.createLinearGradient(gx0, 0, gx0 + w, 0);
+    grad.addColorStop(0,     BRASS_DARK);
+    grad.addColorStop(0.40,  BRASS_HI);
+    grad.addColorStop(0.50,  BRASS_WHITE);
+    grad.addColorStop(0.60,  BRASS_HI);
+    grad.addColorStop(1,     BRASS_DARK);
+    // Re-paint the text shape with the moving gradient on top of the
+    // dark brass body. Using globalCompositeOperation 'source-atop' keeps
+    // the fill bounded to the previously painted glyph pixels.
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = grad;
+    ctx.fillRect(left, y - 2, w, h);
+    ctx.restore();
+  }
+
+  /** Ornamental row above title: ─── ✶ ◆ ✶ ─── */
+  _renderTitleOrnament(renderer, y) {
+    const ctx = renderer.ctx;
+    const cx = CANVAS_WIDTH / 2;
+    ctx.save();
+    // Left line
+    const lineG1 = ctx.createLinearGradient(cx - 90, 0, cx - 24, 0);
+    lineG1.addColorStop(0, 'rgba(212,172,108,0)');
+    lineG1.addColorStop(1, BRASS);
+    ctx.fillStyle = lineG1;
+    ctx.fillRect(cx - 90, y, 66, 1);
+    // Right line
+    const lineG2 = ctx.createLinearGradient(cx + 24, 0, cx + 90, 0);
+    lineG2.addColorStop(0, BRASS);
+    lineG2.addColorStop(1, 'rgba(212,172,108,0)');
+    ctx.fillStyle = lineG2;
+    ctx.fillRect(cx + 24, y, 66, 1);
+    // Flickering stars + center diamond
+    const flick1 = 0.7 + 0.3 * Math.sin(this._t * 2.5);
+    const flick2 = 0.7 + 0.3 * Math.sin(this._t * 3.1 + 1.2);
+    ctx.globalAlpha = flick1;
+    renderer.drawText('✶', cx - 16, y - 6,
+      { size: 13, align: 'center', color: BRASS, family: FONT_DISPLAY, bold: true });
+    ctx.globalAlpha = flick2;
+    renderer.drawText('✶', cx + 16, y - 6,
+      { size: 13, align: 'center', color: BRASS, family: FONT_DISPLAY, bold: true });
+    ctx.globalAlpha = 1;
+    // Center diamond (rotated square with shadow glow)
+    ctx.save();
+    ctx.translate(cx, y);
+    ctx.rotate(Math.PI / 4);
+    ctx.shadowColor = BRASS;
+    ctx.shadowBlur = 6;
+    ctx.fillStyle = BRASS;
+    ctx.fillRect(-3, -3, 6, 6);
+    ctx.restore();
+    ctx.restore();
+  }
+
+  _renderEmbers(renderer) {
+    const ctx = renderer.ctx;
+    ctx.save();
+    for (const p of this._particles) {
+      ctx.globalAlpha = p.alpha;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 4;
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x, p.y, p.size, p.size);
+    }
+    ctx.restore();
+  }
+
   _renderBackdrop(renderer) {
     const ctx = renderer.ctx;
     const w = CANVAS_WIDTH;
@@ -991,15 +1143,20 @@ export class TitleScreen {
 
   static _seedParticles() {
     const arr = [];
-    for (let i = 0; i < 30; i++) {
+    const tints = [BRASS_HI, BRASS, '#ff8844'];
+    for (let i = 0; i < 18; i++) {
+      const duration = 5 + Math.random() * 4;
       arr.push({
         x: Math.random() * CANVAS_WIDTH,
         y: Math.random() * CANVAS_HEIGHT,
-        vx: (Math.random() - 0.5) * 4,
-        vy: 3 + Math.random() * 8,
+        vy: 22 + Math.random() * 26,
         size: 1 + Math.floor(Math.random() * 2),
-        alpha: 0.2 + Math.random() * 0.4,
-        color: ['#3a2c20', '#2a2438', '#1c1a28'][Math.floor(Math.random() * 3)]
+        peak: 0.5 + Math.random() * 0.4,
+        alpha: 0,
+        color: tints[i % tints.length],
+        life: Math.random() * duration,
+        duration,
+        phase: Math.random() * Math.PI * 2
       });
     }
     return arr;

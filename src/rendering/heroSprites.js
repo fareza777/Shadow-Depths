@@ -288,3 +288,118 @@ export function drawHeroSprite(ctx, ox, oy, size, kind) {
 export function heroDef(kind) {
   return HERO_DEFS[kind] || HERO_DEFS.vigil;
 }
+
+// ── Equipment overlay (cape / helm / weapon tints) ────────────────────
+// Painted on top of the base hero grid using normalized 0-1 coords so the
+// same patches scale to any render size. Layers are picked by rarity color
+// of the equipped item so upgrades visually read on the avatar.
+
+const RARITY_TINT = {
+  common:   { core: '#9a949e', hi: '#cfc2a4', dark: '#5a5240' },
+  uncommon: { core: '#88c656', hi: '#bff0a0', dark: '#3a5818' },
+  rare:     { core: '#7faafa', hi: '#bfd6ff', dark: '#2a4a7a' },
+  epic:     { core: '#c884e8', hi: '#e8c4ff', dark: '#5a2a7a' },
+  legendary:{ core: '#d4ac6c', hi: '#f1d49a', dark: '#7a5c2c' }
+};
+function tintFor(item) {
+  if (!item) return null;
+  return RARITY_TINT[item.rarity] || RARITY_TINT.common;
+}
+
+function pxRect(ctx, ox, oy, size, nx, ny, nw, nh, color) {
+  const u = size / 32;
+  ctx.fillStyle = color;
+  ctx.fillRect(ox + nx * u, oy + ny * u, Math.max(1, nw * u + 0.6), Math.max(1, nh * u + 0.6));
+}
+
+/**
+ * Paint equipment accents on top of the hero base grid.
+ * Helm  → recolored visor across the top of head
+ * Armor → recolored chest plate
+ * Weapon→ small held weapon glyph beside the hand
+ * Ring  → glint on the hand
+ */
+export function drawHeroEquipment(ctx, ox, oy, size, entity, time = 0) {
+  if (!entity) return;
+  const helm = tintFor(entity.helm);
+  const armor = tintFor(entity.armor);
+  const ring = tintFor(entity.ring);
+  const weapon = entity.weapon || null;
+
+  // Helm visor band — sits at row 6-8 across the head.
+  if (helm) {
+    pxRect(ctx, ox, oy, size, 11, 6,  10, 2, helm.core);
+    pxRect(ctx, ox, oy, size, 11, 6,  10, 1, helm.hi);
+    // Crown studs
+    pxRect(ctx, ox, oy, size, 13, 5,   1, 1, helm.hi);
+    pxRect(ctx, ox, oy, size, 18, 5,   1, 1, helm.hi);
+  }
+  // Armor chest plate across rows 13-16.
+  if (armor) {
+    pxRect(ctx, ox, oy, size, 9,  13, 14, 3, armor.core);
+    pxRect(ctx, ox, oy, size, 9,  13, 14, 1, armor.hi);
+    pxRect(ctx, ox, oy, size, 15, 14,  2, 2, armor.dark);
+  }
+  // Ring glint near right hand (row 19).
+  if (ring) {
+    pxRect(ctx, ox, oy, size, 22, 19,  1, 1, ring.hi);
+    pxRect(ctx, ox, oy, size, 22, 20,  1, 1, ring.core);
+  }
+  // Weapon held to the right of the body, glyph depends on weapon kind.
+  if (weapon) {
+    drawHeldWeapon(ctx, ox, oy, size, weapon, time);
+  }
+}
+
+function drawHeldWeapon(ctx, ox, oy, size, weapon, time) {
+  const key = (weapon.spriteKey || weapon.id || '').toLowerCase();
+  const t = tintFor(weapon) || RARITY_TINT.common;
+  const wobble = Math.sin(time * 2.3) * 0.4;
+  const u = size / 32;
+  // bow / crossbow → vertical arc string
+  if (/bow|crossbow/.test(key)) {
+    ctx.strokeStyle = t.core;
+    ctx.lineWidth = Math.max(1, u * 0.8);
+    ctx.beginPath();
+    ctx.moveTo(ox + 26 * u, oy + (12 + wobble) * u);
+    ctx.quadraticCurveTo(ox + 30 * u, oy + 18 * u, ox + 26 * u, oy + (24 + wobble) * u);
+    ctx.stroke();
+    ctx.strokeStyle = t.hi;
+    ctx.lineWidth = Math.max(1, u * 0.3);
+    ctx.beginPath();
+    ctx.moveTo(ox + 26 * u, oy + (12 + wobble) * u);
+    ctx.lineTo(ox + 26 * u, oy + (24 + wobble) * u);
+    ctx.stroke();
+    return;
+  }
+  // staff / scythe → vertical pole + accent at top
+  if (/staff|scythe/.test(key)) {
+    pxRect(ctx, ox, oy, size, 26, 10, 1, 16, t.dark);
+    pxRect(ctx, ox, oy, size, 27, 10, 1, 16, t.core);
+    pxRect(ctx, ox, oy, size, 25, 8, 4, 3, t.core);
+    pxRect(ctx, ox, oy, size, 25, 8, 4, 1, t.hi);
+    return;
+  }
+  // dagger / axe / mace / sword / default — short blade beside body
+  if (/dagger/.test(key)) {
+    pxRect(ctx, ox, oy, size, 26, 14, 1, 6, t.core);
+    pxRect(ctx, ox, oy, size, 25, 19, 3, 1, t.dark);
+    return;
+  }
+  if (/axe|hatchet/.test(key)) {
+    pxRect(ctx, ox, oy, size, 26, 12, 1, 10, '#5a3a20');
+    pxRect(ctx, ox, oy, size, 27, 12, 3, 3, t.core);
+    pxRect(ctx, ox, oy, size, 27, 12, 3, 1, t.hi);
+    return;
+  }
+  if (/mace|brand/.test(key)) {
+    pxRect(ctx, ox, oy, size, 26, 14, 1, 8, '#5a3a20');
+    pxRect(ctx, ox, oy, size, 25, 11, 3, 3, t.core);
+    pxRect(ctx, ox, oy, size, 25, 11, 3, 1, t.hi);
+    return;
+  }
+  // default sword
+  pxRect(ctx, ox, oy, size, 26, 11, 1, 11, t.core);
+  pxRect(ctx, ox, oy, size, 26, 11, 1, 2, t.hi);
+  pxRect(ctx, ox, oy, size, 25, 21, 3, 1, t.dark);
+}
