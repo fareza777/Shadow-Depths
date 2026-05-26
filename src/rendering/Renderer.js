@@ -27,6 +27,7 @@ import {
 } from '../config/layoutMetrics.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
 import { drawBiomeWall, drawBiomeFloor, hasBiome } from './biomeTiles.js';
+import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
 
 export class Renderer {
   /**
@@ -698,18 +699,10 @@ export class Renderer {
   _drawViewportAbyss(ctx, def = {}) {
     const time = this._timeSec || 0;
     const biome = def.biomeId || '';
-    let top = '#08060e';
-    let mid = '#030208';
-    let haze = '#1a1220';
-    if (biome.includes('drowning') || biome.includes('sunken')) {
-      top = '#050a12'; mid = '#02050a'; haze = '#123040';
-    } else if (biome.includes('frost') || biome.includes('salt')) {
-      top = '#080a14'; mid = '#03040a'; haze = '#203048';
-    } else if (biome.includes('ashen') || biome.includes('cinder')) {
-      top = '#0c0806'; mid = '#030201'; haze = '#3a2418';
-    } else if (biome.includes('empty') || biome.includes('below')) {
-      top = '#02020a'; mid = '#000004'; haze = '#181048';
-    }
+    const pal = getAbyssPalette(biome);
+    const top = pal.top;
+    const mid = pal.mid;
+    const haze = pal.haze;
 
     const vx = viewportX();
     const vy = viewportY();
@@ -738,7 +731,7 @@ export class Renderer {
       const drift = Math.sin(time * 0.28 + i * 1.7) * 6;
       const x = vx + 16 + ((i * 43 + time * 7) % Math.max(1, vw - 32));
       const y = vy + 42 + ((i * 71 + drift) % Math.max(1, vh - 84));
-      fillRect(ctx, x, y, 1, 1, Renderer._biomeMoteColor(biome, i));
+      fillRect(ctx, x, y, 1, 1, i % 3 === 0 ? pal.mote : '#ffffff14');
     }
 
     ctx.globalAlpha = 0.12;
@@ -768,67 +761,8 @@ export class Renderer {
   _drawBiomeBackdropDetails(ctx, def = {}) {
     const biome = def.biomeId || '';
     const time = this._timeSec || 0;
-    const vx = viewportX();
-    const vy = viewportY();
-    const vw = viewportW();
-    const vh = viewportH();
-    ctx.save();
-    if (biome.includes('drowning') || biome.includes('sunken')) {
-      ctx.globalAlpha = 0.12;
-      ctx.strokeStyle = '#7ac0d8';
-      for (let i = 0; i < 7; i++) {
-        const y = vy + 34 + ((i * 61 + time * 8) % Math.max(1, vh - 68));
-        ctx.beginPath();
-        ctx.moveTo(vx + 18, y);
-        ctx.quadraticCurveTo(vx + vw * 0.5, y + Math.sin(time + i) * 8, vx + vw - 18, y + 2);
-        ctx.stroke();
-      }
-    } else if (biome.includes('ashen') || biome.includes('cinder') || biome.includes('wyrm')) {
-      ctx.globalAlpha = 0.22;
-      for (let i = 0; i < 18; i++) {
-        const x = vx + ((i * 29 + time * (9 + i % 4)) % Math.max(1, vw));
-        const y = vy + ((i * 53 - time * 18) % Math.max(1, vh));
-        fillRect(ctx, x, y, 2, 2, i % 4 === 0 ? '#e85a4a55' : '#d4be7a33');
-      }
-    } else if (biome.includes('frost') || biome.includes('salt')) {
-      ctx.globalAlpha = 0.18;
-      for (let i = 0; i < 16; i++) {
-        const x = vx + ((i * 41 + Math.sin(time * 0.8 + i) * 16) % Math.max(1, vw));
-        const y = vy + ((i * 37 + time * 10) % Math.max(1, vh));
-        fillRect(ctx, x, y, 2, 1, '#b8d8ff55');
-      }
-    } else if (biome.includes('empty') || biome.includes('below')) {
-      ctx.globalAlpha = 0.18;
-      ctx.strokeStyle = '#d4be7a55';
-      for (let i = 0; i < 4; i++) {
-        const cx = vx + vw * (0.18 + i * 0.21);
-        const cy = vy + 80 + ((time * 4 + i * 97) % Math.max(1, vh - 160));
-        ctx.beginPath();
-        ctx.moveTo(cx, cy - 9);
-        ctx.lineTo(cx + 9, cy);
-        ctx.lineTo(cx, cy + 9);
-        ctx.lineTo(cx - 9, cy);
-        ctx.closePath();
-        ctx.stroke();
-      }
-    } else if (biome.includes('library')) {
-      ctx.globalAlpha = 0.12;
-      for (let i = 0; i < 10; i++) {
-        const x = vx + ((i * 47 + time * 12) % Math.max(1, vw));
-        const y = vy + ((i * 71 + Math.sin(time + i) * 7) % Math.max(1, vh));
-        fillRect(ctx, x, y, 10, 1, '#d8ccb055');
-        fillRect(ctx, x + 1, y + 2, 7, 1, '#6a543055');
-      }
-    }
-    ctx.restore();
-  }
-
-  static _biomeMoteColor(biome, i) {
-    if (biome.includes('drowning') || biome.includes('sunken')) return i % 3 === 0 ? '#7ac0d833' : '#ffffff14';
-    if (biome.includes('ashen') || biome.includes('cinder')) return i % 3 === 0 ? '#e85a4a33' : '#d4be7a22';
-    if (biome.includes('frost') || biome.includes('salt')) return i % 3 === 0 ? '#b8d8ff33' : '#ffffff16';
-    if (biome.includes('empty') || biome.includes('below')) return i % 3 === 0 ? '#c080ff30' : '#ffffff18';
-    return i % 3 === 0 ? '#d4be7a22' : '#ffffff14';
+    const v = { x: viewportX(), y: viewportY(), w: viewportW(), h: viewportH() };
+    drawBiomeDecorations(ctx, v, biome, time);
   }
 
   // --- viewport scaling ----------------------------------------------
