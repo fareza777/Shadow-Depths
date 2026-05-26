@@ -103,7 +103,18 @@ export class Dungeon {
     for (let i = 0; i < TOTAL_FLOORS; i++) {
       const override = this.overrides[i];
       if (override) {
-        out.push({ ...override, index: i, isFinalFloor: i === TOTAL_FLOORS - 1 });
+        // Even when a floor is hand-authored in floors.json we still want
+        // the biome's detailed tile renderer. Compute the biome the same
+        // way the procedural branch does and stamp biomeId onto the
+        // override so Renderer.drawFloor dispatches to biomeTiles.js.
+        const biomeIdx = Math.min(biomeCount - 1, Math.floor(i / FLOORS_PER_BIOME) % biomeCount);
+        const biome = this.biomes[biomeIdx];
+        out.push({
+          ...override,
+          index: i,
+          biomeId: override.biomeId || biome?.id || 'forgotten_crypts',
+          isFinalFloor: i === TOTAL_FLOORS - 1
+        });
         continue;
       }
 
