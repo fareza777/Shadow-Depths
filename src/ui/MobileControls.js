@@ -370,18 +370,26 @@ export class MobileControls {
 
   _drawDpadBackplate(ctx, x, y, size, time) {
     ctx.save();
-    drawIronPlate(ctx, x, y, size, size, {
-      rivets: false,
-      dark: false
-    });
+    const base = ctx.createLinearGradient(x, y, x, y + size);
+    base.addColorStop(0, '#332b38');
+    base.addColorStop(0.48, '#211a26');
+    base.addColorStop(1, '#0d0a12');
+    ctx.fillStyle = base;
+    ctx.fillRect(x, y, size, size);
+    ctx.strokeStyle = IRON.ink;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x + 1, y + 1, size - 2, size - 2);
+    ctx.strokeStyle = '#5a5060';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 4.5, y + 4.5, size - 9, size - 9);
 
     // Brass inner rail, so the D-pad reads as a mounted metal module.
-    ctx.strokeStyle = IRON.brassDark;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x + 4, y + 4, size - 8, size - 8);
-    ctx.strokeStyle = 'rgba(241,212,154,0.28)';
+    ctx.strokeStyle = 'rgba(122,94,52,0.72)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(x + 7, y + 7, size - 14, size - 14);
+    ctx.strokeRect(x + 7.5, y + 7.5, size - 15, size - 15);
+    ctx.strokeStyle = 'rgba(241,212,154,0.18)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 10.5, y + 10.5, size - 21, size - 21);
 
     // Recessed square well just below the lattice, no pure black void.
     const wellPad = Math.round(size * 0.12);
@@ -392,9 +400,9 @@ export class MobileControls {
       x + size / 2, y + size / 2, 8,
       x + size / 2, y + size / 2, size * 0.58
     );
-    g.addColorStop(0, 'rgba(74,60,68,0.72)');
-    g.addColorStop(0.58, 'rgba(42,34,48,0.58)');
-    g.addColorStop(1, 'rgba(10,8,16,0.34)');
+    g.addColorStop(0, 'rgba(62,52,70,0.72)');
+    g.addColorStop(0.58, 'rgba(36,30,42,0.62)');
+    g.addColorStop(1, 'rgba(8,6,12,0.42)');
     ctx.fillStyle = g;
     ctx.fillRect(wellX, wellY, wellS, wellS);
     ctx.strokeStyle = IRON.ink;
@@ -403,7 +411,7 @@ export class MobileControls {
 
     // Plate seams and tiny hammered scratches matching the reference.
     ctx.globalAlpha = 0.36;
-    ctx.strokeStyle = IRON.plateHi;
+    ctx.strokeStyle = 'rgba(106,94,106,0.72)';
     ctx.beginPath();
     ctx.moveTo(x + size * 0.5, y + 12);
     ctx.lineTo(x + size * 0.5, y + size - 12);
@@ -414,7 +422,7 @@ export class MobileControls {
     for (let i = 0; i < 10; i++) {
       const sx = x + 18 + ((i * 31 + Math.sin(time + i) * 4) % Math.max(1, size - 36));
       const sy = y + 18 + ((i * 47) % Math.max(1, size - 36));
-      ctx.fillStyle = i % 3 === 0 ? IRON.brassDark : IRON.plateHi;
+      ctx.fillStyle = i % 3 === 0 ? 'rgba(122,94,52,0.52)' : 'rgba(106,94,106,0.45)';
       ctx.fillRect(sx, sy, 14, 1);
       ctx.fillRect(sx + 4, sy + 5, 1, 8);
     }

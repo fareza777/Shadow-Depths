@@ -3,6 +3,7 @@
  */
 import { COLOR, TILE, FONT_DISPLAY, uiSize } from '../config/constants.js';
 import { MobileControls } from './MobileControls.js';
+import { IRON, drawIronPlate, drawIronRivet } from './ironHud.js';
 
 export class Minimap {
   constructor() { this.visible = true; }
@@ -18,32 +19,17 @@ export class Minimap {
     if (!floor) return;
 
     const slot = MobileControls.geometry.centerRect;
-    const pad = 4;
+    const pad = 8;
     const innerX = slot.x + pad;
     const innerY = slot.y + pad;
     const innerW = slot.w - pad * 2;
     const innerH = slot.h - pad * 2;
 
-    const ctx = renderer.ctx;
-    ctx.save();
-    const panel = ctx.createLinearGradient(slot.x, slot.y, slot.x, slot.y + slot.h);
-    panel.addColorStop(0, '#201927');
-    panel.addColorStop(0.48, '#100c15');
-    panel.addColorStop(1, '#07050a');
-    ctx.fillStyle = panel;
-    ctx.fillRect(slot.x, slot.y, slot.w, slot.h);
-    ctx.restore();
-    this._drawMapTable(renderer, slot);
-    renderer.drawStrokedRect(slot.x, slot.y, slot.w, slot.h, COLOR.goldDim, 2);
-    renderer.drawStrokedRect(slot.x + 4, slot.y + 4, slot.w - 8, slot.h - 8, '#4a4258', 1);
-    renderer.drawRect(slot.x + 2, slot.y + 2, slot.w - 4, 2, COLOR.goldDim);
-    renderer.drawText('DEPTH MAP', slot.x + slot.w / 2, slot.y + uiSize(8), {
-      size: uiSize(10), bold: true, align: 'center',
-      family: FONT_DISPLAY, color: COLOR.gold
-    });
+    this._drawMapFrame(renderer, slot);
 
-    const mapTop = innerY + uiSize(17);
-    const mapH = innerH - uiSize(18);
+    const headerH = uiSize(28);
+    const mapTop = innerY + headerH + 3;
+    const mapH = innerH - headerH - uiSize(22);
     const bounds = this._exploredBounds(floor, player);
     const bw = bounds.x1 - bounds.x0 + 1;
     const bh = bounds.y1 - bounds.y0 + 1;
@@ -55,9 +41,13 @@ export class Minimap {
     const x = innerX + (innerW - w) / 2;
     const y = mapTop + (mapH - h) / 2;
 
-    renderer.drawRect(x - 4, y - 4, w + 8, h + 8, '#030206');
-    renderer.drawStrokedRect(x - 4, y - 4, w + 8, h + 8, COLOR.goldDim, 1);
-    renderer.drawStrokedRect(x - 1, y - 1, w + 2, h + 2, '#4a4258', 1);
+    const mapFrameX = innerX + 6;
+    const mapFrameY = mapTop - 3;
+    const mapFrameW = innerW - 12;
+    const mapFrameH = mapH + 6;
+    renderer.drawRect(mapFrameX, mapFrameY, mapFrameW, mapFrameH, '#030206');
+    renderer.drawStrokedRect(mapFrameX, mapFrameY, mapFrameW, mapFrameH, IRON.brassDark, 1);
+    renderer.drawStrokedRect(mapFrameX + 3, mapFrameY + 3, mapFrameW - 6, mapFrameH - 6, '#4a4258', 1);
     renderer.drawRect(x, y, w, h, '#09070d');
 
     const wallLit = floor.definition?.wallPalette?.[0] || '#5a5060';
@@ -147,38 +137,47 @@ export class Minimap {
     return x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1;
   }
 
-  _drawMapTable(r, slot) {
+  _drawMapFrame(r, slot) {
     const ctx = r.ctx;
     ctx.save();
-    const g = ctx.createLinearGradient(slot.x, slot.y, slot.x, slot.y + slot.h);
-    g.addColorStop(0, '#15101c');
-    g.addColorStop(0.48, '#0d0a12');
-    g.addColorStop(1, '#07060a');
-    ctx.fillStyle = g;
-    ctx.fillRect(slot.x, slot.y, slot.w, slot.h);
+    drawIronPlate(ctx, slot.x, slot.y, slot.w, slot.h, { rivets: false, dark: true });
 
-    ctx.globalAlpha = 0.22;
-    for (let i = 0; i < 5; i++) {
-      const y = slot.y + 34 + i * 28;
-      r.drawRect(slot.x + 10, y, slot.w - 20, 1, '#6a5430');
-    }
-    ctx.globalAlpha = 0.28;
-    r.drawRect(slot.x + 9, slot.y + 30, 1, slot.h - 42, COLOR.goldDim);
-    r.drawRect(slot.x + slot.w - 10, slot.y + 30, 1, slot.h - 42, COLOR.goldDim);
+    ctx.strokeStyle = IRON.brassDark;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(slot.x + 4.5, slot.y + 4.5, slot.w - 9, slot.h - 9);
+    ctx.strokeStyle = 'rgba(106,94,106,0.7)';
+    ctx.strokeRect(slot.x + 8.5, slot.y + 8.5, slot.w - 17, slot.h - 17);
 
-    ctx.globalAlpha = 0.32;
-    r.drawText('N', slot.x + slot.w / 2, slot.y + slot.h - 24, {
-      size: uiSize(11), bold: true, align: 'center',
+    const headerY = slot.y + 11;
+    const headerH = uiSize(22);
+    ctx.fillStyle = '#15101c';
+    ctx.fillRect(slot.x + 11, headerY, slot.w - 22, headerH);
+    ctx.strokeStyle = 'rgba(122,94,52,0.75)';
+    ctx.strokeRect(slot.x + 11.5, headerY + 0.5, slot.w - 23, headerH - 1);
+    r.drawText('DEPTH MAP', slot.x + slot.w / 2, headerY + headerH / 2 + 1, {
+      size: uiSize(10), bold: true, align: 'center', baseline: 'middle',
+      family: FONT_DISPLAY, color: COLOR.gold
+    });
+
+    const compassY = slot.y + slot.h - 21;
+    ctx.globalAlpha = 0.55;
+    r.drawText('N', slot.x + slot.w / 2, compassY, {
+      size: uiSize(11), bold: true, align: 'center', baseline: 'middle',
       family: FONT_DISPLAY, color: COLOR.goldDim
     });
     ctx.beginPath();
-    ctx.moveTo(slot.x + slot.w / 2, slot.y + slot.h - 45);
-    ctx.lineTo(slot.x + slot.w / 2 + 7, slot.y + slot.h - 31);
-    ctx.lineTo(slot.x + slot.w / 2, slot.y + slot.h - 35);
-    ctx.lineTo(slot.x + slot.w / 2 - 7, slot.y + slot.h - 31);
+    ctx.moveTo(slot.x + slot.w / 2, compassY - 18);
+    ctx.lineTo(slot.x + slot.w / 2 + 7, compassY - 5);
+    ctx.lineTo(slot.x + slot.w / 2, compassY - 9);
+    ctx.lineTo(slot.x + slot.w / 2 - 7, compassY - 5);
     ctx.closePath();
     ctx.strokeStyle = COLOR.goldDim;
     ctx.stroke();
+    ctx.globalAlpha = 1;
+    drawIronRivet(ctx, slot.x + 7, slot.y + 7, 2.4);
+    drawIronRivet(ctx, slot.x + slot.w - 7, slot.y + 7, 2.4);
+    drawIronRivet(ctx, slot.x + 7, slot.y + slot.h - 7, 2.4);
+    drawIronRivet(ctx, slot.x + slot.w - 7, slot.y + slot.h - 7, 2.4);
     ctx.restore();
   }
 }
