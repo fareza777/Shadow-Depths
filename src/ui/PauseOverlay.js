@@ -46,7 +46,7 @@ export class PauseOverlay {
       case 'tap':
       case 'pointer': {
         const idx = action.buttonIndex;
-        if (idx === 0 || idx === 1 || idx === 2) {
+        if (idx === 0 || idx === 1) {
           this.selected = idx;
           this._activate(idx);
           return true;
@@ -61,14 +61,13 @@ export class PauseOverlay {
 
   _activate(idx) {
     if (idx === 0) this.hide();
-    else if (idx === 1) { this.hide(); this.bus.emit('request:openCrafting', {}); }
     else this.bus.emit('request:quitToTitle', {});
   }
 
   _panelRect() {
     const screenH = Layout.canvasH || CANVAS_HEIGHT;
     const panelW = IS_LANDSCAPE ? 360 : 340;
-    const panelH = IS_LANDSCAPE ? 280 : 326;
+    const panelH = IS_LANDSCAPE ? 238 : 276;
     return {
       x: (CANVAS_WIDTH - panelW) / 2,
       y: (screenH - panelH) / 2,
@@ -84,8 +83,7 @@ export class PauseOverlay {
     const baseY = p.y + 110;
     return [
       { x: btnX, y: baseY, w: btnW, h: btnH },
-      { x: btnX, y: baseY + btnH + 10, w: btnW, h: btnH },
-      { x: btnX, y: baseY + (btnH + 10) * 2, w: btnW, h: btnH - 4 }
+      { x: btnX, y: baseY + btnH + 12, w: btnW, h: btnH }
     ];
   }
 
@@ -143,16 +141,9 @@ export class PauseOverlay {
         fontSize: 15
       });
     drawIronActionButton(renderer, btns[1].x, btns[1].y, btns[1].w, btns[1].h,
-      t('pause.forge'), {
-        accent: IRON_PALETTE.ember,
-        pressed: this.selected === 1,
-        glyph: '◈',
-        fontSize: 14
-      });
-    drawIronActionButton(renderer, btns[2].x, btns[2].y, btns[2].w, btns[2].h,
       t('pause.quit'), {
         accent: IRON_PALETTE.blood,
-        pressed: this.selected === 2,
+        pressed: this.selected === 1,
         glyph: '✕',
         fontSize: 13
       });

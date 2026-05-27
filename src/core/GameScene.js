@@ -315,6 +315,7 @@ export class GameScene {
         : stairs && stairs.type === 4 /* TILE.STAIRS_DOWN */);
       const itemsHere = (this.floor?.itemsAt &&
         this.floor.itemsAt(this.player.x, this.player.y)) || [];
+      const forgeHere = this._canOpenForgeHere();
       const aimTarget = MobileControls.computeAimTarget(this.player, this.floor);
       const spellState = this._spellState();
       this.controls.setContext({
@@ -322,11 +323,11 @@ export class GameScene {
         castReady: spellState.ready,
         spell: spellState,
         canDescend,
-        pickAvailable: itemsHere.length > 0
+        pickAvailable: itemsHere.length > 0 || forgeHere
       });
       if (this.quickUse) {
         this.quickUse.setContext({
-          pickAvailable: itemsHere.length > 0
+          pickAvailable: itemsHere.length > 0 || forgeHere
         });
       }
       this.controls.renderBackground(renderer);
@@ -744,6 +745,11 @@ export class GameScene {
     return this._forgeOffers[index];
   }
 
+  _canOpenForgeHere() {
+    return !!(this.floor?.definition?.type === 'forge' &&
+      !this._forgeUsed[this.dungeon?.currentIndex]);
+  }
+
   _resolveCraftTarget(target) {
     if (!target || !this.player) return null;
     if (target.kind === 'equipment' && target.slot) return this.player[target.slot] || null;
@@ -902,7 +908,10 @@ export class GameScene {
 
   _playerPickup() {
     const stack = this.floor.itemsAt(this.player.x, this.player.y);
-    if (stack.length === 0) return;
+    if (stack.length === 0) {
+      if (this._canOpenForgeHere()) this.bus.emit('request:openCrafting', {});
+      return;
+    }
     const item = stack[stack.length - 1];
     if (item.type === 'material') {
       this.player.addMaterial(item.id, item.count || 1);
