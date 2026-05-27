@@ -170,10 +170,16 @@ export class OpeningCinematic {
     const open = OpeningCinematic._smooth(progress, 0.36, 0.92);
     const slit = 8 + open * gateW * 0.56;
     const doorShift = open * gateW * 0.16;
+    const doorTop = y + gateH * 0.22;
+    const doorH = gateH * 0.76;
 
     ctx.save();
     ctx.globalAlpha = 0.95;
-    ctx.fillStyle = '#060409';
+    const archG = ctx.createLinearGradient(0, y, 0, y + gateH);
+    archG.addColorStop(0, '#3b3140');
+    archG.addColorStop(0.45, '#17111c');
+    archG.addColorStop(1, '#07050a');
+    ctx.fillStyle = archG;
     ctx.fillRect(cx - gateW / 2, y + gateH * 0.18, gateW, gateH * 0.82);
     ctx.beginPath();
     ctx.arc(cx, y + gateH * 0.2, gateW / 2, Math.PI, 0);
@@ -182,37 +188,54 @@ export class OpeningCinematic {
     ctx.closePath();
     ctx.fill();
 
+    // Premium outer gate frame: broad stone sides with restrained brass trim.
+    ctx.shadowColor = 'rgba(212,172,108,0.35)';
+    ctx.shadowBlur = 14;
     ctx.strokeStyle = IRON_PALETTE.brass;
     ctx.lineWidth = 2;
     ctx.strokeRect(cx - gateW / 2, y + gateH * 0.2, gateW, gateH * 0.8);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#0d0a10';
+    ctx.fillRect(cx - gateW / 2 - 12, doorTop - 8, 12, doorH + 16);
+    ctx.fillRect(cx + gateW / 2, doorTop - 8, 12, doorH + 16);
+    ctx.fillStyle = IRON_PALETTE.brass;
+    ctx.fillRect(cx - gateW / 2 - 8, doorTop - 2, 2, doorH + 4);
+    ctx.fillRect(cx + gateW / 2 + 6, doorTop - 2, 2, doorH + 4);
 
-    // Heavy stone-and-iron door leaves sliding apart from the center.
-    const doorTop = y + gateH * 0.22;
-    const doorH = gateH * 0.76;
+    // Heavy twin-leaf gate sliding apart from the center.
     const leftDoorX = cx - gateW / 2 - doorShift;
     const rightDoorX = cx + slit / 2;
     const leafW = gateW / 2 - slit / 2;
     const drawLeaf = (x, flip = 1) => {
       const dg = ctx.createLinearGradient(0, doorTop, 0, doorTop + doorH);
-      dg.addColorStop(0, '#2d2631');
-      dg.addColorStop(0.5, '#14101a');
-      dg.addColorStop(1, '#07050a');
+      dg.addColorStop(0, '#342b38');
+      dg.addColorStop(0.5, '#18121d');
+      dg.addColorStop(1, '#08060b');
       ctx.fillStyle = dg;
       ctx.fillRect(x, doorTop, leafW + doorShift, doorH);
-      ctx.strokeStyle = '#4e3f55';
+      ctx.strokeStyle = '#5a4a5f';
       ctx.lineWidth = 1;
       ctx.strokeRect(x + 0.5, doorTop + 0.5, leafW + doorShift - 1, doorH - 1);
-      for (let i = 0; i < 5; i++) {
-        const px = x + (i + 1) * (leafW + doorShift) / 6;
-        ctx.fillStyle = i % 2 ? '#0b0710' : '#2c2230';
-        ctx.fillRect(px, doorTop + 8, 2, doorH - 18);
-      }
+      ctx.strokeStyle = IRON_PALETTE.brass;
+      ctx.globalAlpha = 0.82;
+      ctx.strokeRect(x + 8.5, doorTop + 12.5, leafW + doorShift - 17, doorH - 25);
+      ctx.globalAlpha = 0.95;
       for (let i = 0; i < 6; i++) {
         const sy = doorTop + 18 + i * (doorH - 36) / 5;
         const sx = x + (flip > 0 ? leafW + doorShift - 14 : 12);
         ctx.fillStyle = '#d4ac6c';
         ctx.fillRect(sx, sy, 3, 3);
       }
+      const emblemX = x + (flip > 0 ? leafW + doorShift - 28 : 28);
+      const emblemY = doorTop + doorH * 0.43;
+      ctx.save();
+      ctx.translate(emblemX, emblemY);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#0a0710';
+      ctx.fillRect(-9, -9, 18, 18);
+      ctx.strokeStyle = IRON_PALETTE.brass;
+      ctx.strokeRect(-9, -9, 18, 18);
+      ctx.restore();
     };
     drawLeaf(leftDoorX, 1);
     drawLeaf(rightDoorX + doorShift, -1);
@@ -240,28 +263,11 @@ export class OpeningCinematic {
     ctx.fillStyle = light;
     ctx.fillRect(cx - slit, y + gateH * 0.22, slit * 2, gateH * 0.78);
 
-    // Broken sigil: angular cracks, not decorative spirals.
-    const crackAlpha = 0.25 + OpeningCinematic._smooth(progress, 0.18, 0.55) * 0.55;
-    ctx.globalAlpha = crackAlpha;
+    // Clean central aura as the gate opens.
+    ctx.globalAlpha = 0.22 + open * 0.34;
     ctx.strokeStyle = '#f1d49a';
-    ctx.lineWidth = 1.25;
-    const cracks = [
-      [[-0.18, 0.34], [-0.08, 0.39], [-0.15, 0.46], [-0.04, 0.53]],
-      [[0.12, 0.30], [0.04, 0.38], [0.16, 0.43], [0.08, 0.52]],
-      [[-0.04, 0.24], [0.02, 0.34], [-0.02, 0.45], [0.02, 0.60]],
-      [[-0.28, 0.62], [-0.16, 0.58], [-0.09, 0.66]],
-      [[0.28, 0.60], [0.16, 0.58], [0.10, 0.68]]
-    ];
-    for (const crack of cracks) {
-      ctx.beginPath();
-      for (let i = 0; i < crack.length; i++) {
-        const px = cx + crack[i][0] * gateW;
-        const py = y + crack[i][1] * gateH;
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
-      }
-      ctx.stroke();
-    }
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx - gateW * 0.18, doorTop + doorH * 0.26, gateW * 0.36, doorH * 0.34);
 
     // Light blades projected onto the floor.
     ctx.globalAlpha = open * 0.26;
@@ -383,7 +389,7 @@ export class OpeningCinematic {
     const ctx = r.ctx;
     ctx.save();
     ctx.globalAlpha = alpha * 0.72;
-    r.drawText('tap to skip  ·  voice prologue', w / 2, h - 28, {
+    r.drawText('tap to skip', w / 2, h - 28, {
       size: uiSize(11),
       align: 'center',
       family: FONT_MONO,
