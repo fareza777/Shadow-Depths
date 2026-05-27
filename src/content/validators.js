@@ -71,6 +71,28 @@ const SPELL_SCHEMA = {
   radius:      { type: 'number', min: 0 }
 };
 
+const ACHIEVEMENT_SCHEMA = {
+  id:          { type: 'string', required: true },
+  name:        { type: 'string', required: true },
+  description: { type: 'string' },
+  trigger:     { type: 'string', required: true },
+  threshold:   { type: 'number', required: true, min: 1 },
+  reward:      { type: 'object' }
+};
+
+const SET_SCHEMA = {
+  id:          { type: 'string', required: true },
+  name:        { type: 'string', required: true },
+  pieces:      { type: 'array',  required: true },
+  bonuses:     { type: 'array',  required: true }
+};
+
+const RECIPE_SCHEMA = {
+  id:          { type: 'string', required: true },
+  name:        { type: 'string', required: true },
+  inputs:      { type: 'array',  required: true }
+};
+
 /** Validate a single entry against a schema. Returns array of issues. */
 function validateEntry(entry, schema, entryLabel) {
   const issues = [];
@@ -168,6 +190,29 @@ export function validateContent(content) {
     counts.spells = Object.keys(content.heroSpells).length;
     issues.push(...validateDict(content.heroSpells, SPELL_SCHEMA, 'spells'));
   }
+  if (content.achievements) {
+    const arr = Array.isArray(content.achievements)
+      ? content.achievements
+      : content.achievements.achievements;
+    if (arr) {
+      counts.achievements = arr.length;
+      issues.push(...validateArray(arr, ACHIEVEMENT_SCHEMA, 'achievements'));
+    }
+  }
+  if (content.sets) {
+    const arr = Array.isArray(content.sets) ? content.sets : content.sets.sets;
+    if (arr) {
+      counts.sets = arr.length;
+      issues.push(...validateArray(arr, SET_SCHEMA, 'sets'));
+    }
+  }
+  if (content.recipes) {
+    const arr = Array.isArray(content.recipes) ? content.recipes : content.recipes.recipes;
+    if (arr) {
+      counts.recipes = arr.length;
+      issues.push(...validateArray(arr, RECIPE_SCHEMA, 'recipes'));
+    }
+  }
 
   // Cross-reference checks — referenced ids must exist.
   if (content.enemies && content.biomes) {
@@ -194,7 +239,7 @@ export function validateContent(content) {
  */
 export function logValidationReport(report) {
   const { ok, issues, counts } = report;
-  const summary = `items=${counts.items ?? 0} enemies=${counts.enemies ?? 0} skills=${counts.skills ?? 0} biomes=${counts.biomes ?? 0} spells=${counts.spells ?? 0}`;
+  const summary = `items=${counts.items ?? 0} enemies=${counts.enemies ?? 0} skills=${counts.skills ?? 0} biomes=${counts.biomes ?? 0} spells=${counts.spells ?? 0} sets=${counts.sets ?? 0} recipes=${counts.recipes ?? 0} ach=${counts.achievements ?? 0}`;
   if (ok) {
     console.log(`${LOG_TAG} content OK — ${summary}`);
     return;

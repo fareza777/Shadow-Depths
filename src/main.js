@@ -62,15 +62,18 @@ import balanceData from '../data/balance.json';
 import biomesData  from '../data/biomes.json';
 import skillsData  from '../data/skills.json';
 import shopData    from '../data/shop.json';
-import setsData      from '../data/sets.json';
-import materialsData from '../data/materials.json';
-import recipesData   from '../data/recipes.json';
+import setsData         from '../data/sets.json';
+import materialsData    from '../data/materials.json';
+import recipesData      from '../data/recipes.json';
+import achievementsData from '../data/achievements.json';
 import { HERO_SPELLS } from './config/heroSpells.js';
 import { validateContent, logValidationReport } from './content/validators.js';
 import { loadSetDefs } from './items/Sets.js';
 import { loadRecipes } from './items/Crafting.js';
 import { setLocale } from './content/i18n.js';
 import { Analytics } from './persistence/Analytics.js';
+import { AchievementEngine, loadAchievementDefs } from './persistence/Achievements.js';
+import { AchievementToast } from './ui/AchievementToast.js';
 
 async function bootstrap() {
   console.log(LOG.CORE, 'Shadow Depths v0.1.0 — bootstrap');
@@ -92,11 +95,13 @@ async function bootstrap() {
     balance: balanceData,
     biomes: biomesData,
     skills: skillsData,
-    shop: shopData
+    shop: shopData,
+    achievements: achievementsData
   };
   const balance = mergeBalance(content.balance) || DEFAULT_BALANCE;
   loadSetDefs(setsData);
   loadRecipes(recipesData);
+  loadAchievementDefs(achievementsData);
   // Merge material defs into the main item registry so they share the same
   // factory + inventory + sprite pipeline.
   Object.assign(content.items, materialsData.materials || {});
@@ -108,7 +113,10 @@ async function bootstrap() {
     enemies: content.enemies,
     skills: content.skills,
     biomes: content.biomes,
-    heroSpells: HERO_SPELLS
+    heroSpells: HERO_SPELLS,
+    achievements: achievementsData,
+    sets: setsData,
+    recipes: recipesData
   }));
 
   // --- meta progress -------------------------------------------------
@@ -126,6 +134,10 @@ async function bootstrap() {
   // Hold a reference so it isn't garbage collected.
   // eslint-disable-next-line no-unused-vars
   const analytics = new Analytics({ bus, state });
+  // eslint-disable-next-line no-unused-vars
+  const achievements = new AchievementEngine({ bus, state });
+  const achievementToast = new AchievementToast({ bus });
+  renderer.overlayRender = (r) => achievementToast.render(r);
 
   // --- rendering pipeline --------------------------------------------
   const canvas = document.getElementById('game-canvas');
@@ -137,6 +149,8 @@ async function bootstrap() {
   const renderer = new Renderer({
     canvas, sprites, cameraShake, lighting, particles, eventBus: bus
   });
+  // Top-most achievement toast overlay (defined later but assigned now
+  // via closure so we don't have to reach into the renderer twice).
 
   // --- audio ---------------------------------------------------------
   const audio = new AudioManager({ bus, metaProgress });

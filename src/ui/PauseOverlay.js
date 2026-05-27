@@ -11,6 +11,7 @@ import { Layout } from '../config/layoutMetrics.js';
 import {
   drawIronPanel, drawIronActionButton, drawSpacedText, IRON_PALETTE
 } from './ironPanel.js';
+import { t } from '../content/i18n.js';
 
 export class PauseOverlay {
   /** @param {{ bus: object }} deps */
@@ -110,11 +111,11 @@ export class PauseOverlay {
     ctx.textBaseline = 'middle';
     ctx.shadowColor = IRON_PALETTE.brass + '88';
     ctx.shadowBlur = 16;
-    drawSpacedText(ctx, 'PAUSED',
+    drawSpacedText(ctx, t('pause.title'),
       CANVAS_WIDTH / 2, p.y + 42, 8);
     ctx.restore();
 
-    renderer.drawText('the descent can wait', CANVAS_WIDTH / 2, p.y + 70, {
+    renderer.drawText(t('pause.subtitle'), CANVAS_WIDTH / 2, p.y + 70, {
       size: uiSize(11), italic: true, align: 'center', baseline: 'middle',
       family: FONT_DISPLAY, color: IRON_PALETTE.boneDim
     });
@@ -135,21 +136,21 @@ export class PauseOverlay {
     // Two stacked buttons.
     const btns = this._buttons();
     drawIronActionButton(renderer, btns[0].x, btns[0].y, btns[0].w, btns[0].h,
-      'RESUME', {
+      t('pause.resume'), {
         accent: IRON_PALETTE.brass,
         pressed: this.selected === 0,
         glyph: '▶',
         fontSize: 15
       });
     drawIronActionButton(renderer, btns[1].x, btns[1].y, btns[1].w, btns[1].h,
-      'FORGE', {
+      t('pause.forge'), {
         accent: IRON_PALETTE.ember,
         pressed: this.selected === 1,
         glyph: '◈',
         fontSize: 14
       });
     drawIronActionButton(renderer, btns[2].x, btns[2].y, btns[2].w, btns[2].h,
-      'QUIT TO MENU', {
+      t('pause.quit'), {
         accent: IRON_PALETTE.blood,
         pressed: this.selected === 2,
         glyph: '✕',

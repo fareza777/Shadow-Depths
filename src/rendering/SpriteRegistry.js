@@ -20,6 +20,7 @@ import {
   HERO_EMBLEM, HERO_EYE, HERO_HELMET, HERO_HELM_HI, HERO_PAULDRON, HERO_VISOR
 } from './playerSprites.js';
 import { buildEnemySprites } from './enemySprites.js';
+import { drawDetailedEnemySprite } from './enemySpritesDetailed.js';
 import { HERO_ORDER, drawHeroSprite, drawHeroEquipment } from './heroSprites.js';
 import { paintWeaponAffix } from './weaponComposer.js';
 
@@ -301,6 +302,12 @@ export class SpriteRegistry {
    */
   draw(key, ctx, x, y, opts = {}) {
     const size = opts.size ?? TILE_SIZE;
+
+    // Try detailed enemy sprites first (32x32 grid style)
+    if (key.startsWith('enemy_') && drawDetailedEnemySprite(ctx, x, y, size, key)) {
+      return;
+    }
+
     const fn = this._sprites[key];
     if (fn) {
       fn(ctx, x, y, size, opts);

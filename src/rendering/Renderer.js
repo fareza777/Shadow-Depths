@@ -176,6 +176,10 @@ export class Renderer {
     // UI pass — fixed screen space (HUD + D-pad never shaken or clipped).
     this.beginScreenSpace();
     sceneManager.renderUI(this);
+    // Top-most overlay (achievement toasts) — sits above every scene UI.
+    if (typeof this.overlayRender === 'function') {
+      try { this.overlayRender(this); } catch (err) { console.warn('[overlayRender]', err); }
+    }
     this.endScreenSpace();
   }
 

@@ -662,10 +662,13 @@ export class TitleScreen {
     const allE = Object.keys(this.content.enemies || {}).length;
     const seenB = (m.discoveredBiomes || []).length;
     const allB = (this.content.biomes?.biomes || []).length;
+    const unlockedAch = (m.achievementsUnlocked || []).length;
+    const allAch = (this.content.achievements?.achievements || []).length;
     return [
-      { id: 'items',   label: 'ITEMS',   count: `${seen}/${allItems}` },
-      { id: 'enemies', label: 'HORRORS', count: `${seenE}/${allE}` },
-      { id: 'biomes',  label: 'BIOMES',  count: `${seenB}/${allB}` }
+      { id: 'items',     label: 'ITEMS',   count: `${seen}/${allItems}` },
+      { id: 'enemies',   label: 'HORRORS', count: `${seenE}/${allE}` },
+      { id: 'biomes',    label: 'BIOMES',  count: `${seenB}/${allB}` },
+      { id: 'achieve',   label: 'TROPHIES',count: `${unlockedAch}/${allAch}` }
     ];
   }
 
@@ -730,6 +733,19 @@ export class TitleScreen {
         id: d.id, name: d.name, rarity: 'rare',
         lore: d.atmosphere, spriteKey: null, seen: seen.has(d.id)
       }));
+    } else if (tab === 'achieve') {
+      const defs = this.content.achievements?.achievements || [];
+      const unlocked = new Set(m.achievementsUnlocked || []);
+      const counters = m.achievementCounters || {};
+      entries = defs.map((d) => {
+        const have = counters[d.trigger] || 0;
+        const isDone = unlocked.has(d.id);
+        const progress = isDone ? '' : ` (${Math.min(have, d.threshold)}/${d.threshold})`;
+        return {
+          id: d.id, name: d.name + progress, rarity: isDone ? 'legendary' : 'common',
+          lore: d.description, spriteKey: null, seen: isDone
+        };
+      });
     }
 
     // Pagination — show up to ~10 entries (portrait) / 12 (landscape) per page.
