@@ -12,39 +12,35 @@ import { Layout } from '../config/layoutMetrics.js';
 import { HERO_DEFS } from '../rendering/heroSprites.js';
 import { drawSpacedText, IRON_PALETTE } from './ironPanel.js';
 
-const TOTAL_DURATION = 16.5;
+const TOTAL_DURATION = 28;
 
 const STORY_BEATS = [
   {
-    at: 0.6,
+    at: 1.0,
     title: 'BEFORE THE DESCENT',
     body: 'Before the first kingdom burned, the depths were already awake.'
   },
   {
-    at: 3.3,
+    at: 5.8,
     title: 'THE GATE REMEMBERS',
     body: 'Every stair was sealed once. Every seal was broken from below.'
   },
   {
-    at: 6.2,
+    at: 10.8,
     title: 'A VIGIL IS CALLED',
     body: 'One lantern crosses the threshold. The dark answers with a hundred floors.'
   },
   {
-    at: 9.2,
+    at: 15.9,
     title: 'NO SONG RETURNS',
     body: 'Names are carved into iron. Footsteps vanish under stone.'
   },
   {
-    at: 12.1,
+    at: 20.8,
     title: 'DESCEND',
     body: 'Steel, ash, and breath. There is no rescue beneath the first door.'
   }
 ];
-
-const NARRATION_TEXT = STORY_BEATS
-  .map((beat) => `${beat.title}. ${beat.body}`)
-  .join(' ');
 
 export class OpeningCinematic {
   /** @param {{ bus: object, runOptions?: object }} deps */
@@ -53,16 +49,15 @@ export class OpeningCinematic {
     this.runOptions = runOptions;
     this.t = 0;
     this.finished = false;
-    this._narrationStarted = false;
+    this._spokenBeatIndex = -1;
     this._embers = OpeningCinematic._seedEmbers();
   }
 
   enter(ctx = {}) {
     this.t = 0;
     this.finished = false;
-    this._narrationStarted = false;
+    this._spokenBeatIndex = -1;
     this.runOptions = ctx.runOptions || this.runOptions || {};
-    this._startNarration();
   }
 
   exit() {
@@ -71,6 +66,7 @@ export class OpeningCinematic {
 
   update(dt) {
     this.t += dt;
+    this._updateNarration();
     for (const ember of this._embers) {
       ember.life += dt;
       ember.y -= ember.speed * dt;
@@ -171,7 +167,7 @@ export class OpeningCinematic {
     const gateW = IS_LANDSCAPE ? 210 : 260;
     const gateH = IS_LANDSCAPE ? 150 : 300;
     const y = IS_LANDSCAPE ? h * 0.2 : h * 0.18;
-    const open = OpeningCinematic._smooth(progress, 0.34, 0.88);
+    const open = OpeningCinematic._smooth(progress, 0.32, 0.9);
     const slit = 8 + open * gateW * 0.48;
 
     ctx.save();
@@ -216,8 +212,8 @@ export class OpeningCinematic {
     const size = IS_LANDSCAPE ? 76 : 96;
     const x = w / 2 - size / 2;
     const y = IS_LANDSCAPE ? h * 0.54 : h * 0.56;
-    const a = OpeningCinematic._smooth(progress, 0.44, 0.72);
-    const bob = Math.sin(this.t * 1.9) * 3;
+    const a = OpeningCinematic._smooth(progress, 0.48, 0.78);
+    const bob = Math.sin(this.t * 1.45) * 3;
 
     ctx.save();
     ctx.globalAlpha = a;
@@ -238,8 +234,8 @@ export class OpeningCinematic {
   _drawStoryText(r, w, h) {
     const beat = [...STORY_BEATS].reverse().find((b) => this.t >= b.at) || STORY_BEATS[0];
     const next = STORY_BEATS.find((b) => b.at > beat.at) || { at: TOTAL_DURATION };
-    const localIn = OpeningCinematic._smooth(this.t, beat.at, beat.at + 0.45);
-    const localOut = 1 - OpeningCinematic._smooth(this.t, next.at - 0.35, next.at);
+    const localIn = OpeningCinematic._smooth(this.t, beat.at, beat.at + 0.85);
+    const localOut = 1 - OpeningCinematic._smooth(this.t, next.at - 0.75, next.at);
     const alpha = Math.min(localIn, localOut);
     const titleY = IS_LANDSCAPE ? h * 0.12 : h * 0.11;
     const bodyY = IS_LANDSCAPE ? h * 0.78 : h * 0.76;
@@ -259,8 +255,8 @@ export class OpeningCinematic {
       size: uiSize(IS_LANDSCAPE ? 12 : 15)
     });
 
-    if (this.t > TOTAL_DURATION - 1.8) {
-      const a = OpeningCinematic._smooth(this.t, TOTAL_DURATION - 2.8, TOTAL_DURATION - 1.1);
+    if (this.t > TOTAL_DURATION - 4.2) {
+      const a = OpeningCinematic._smooth(this.t, TOTAL_DURATION - 4.2, TOTAL_DURATION - 1.5);
       ctx.save();
       ctx.globalAlpha = a;
       ctx.font = `bold ${uiSize(IS_LANDSCAPE ? 24 : 32)}px ${FONT_DISPLAY}`;
@@ -311,7 +307,7 @@ export class OpeningCinematic {
     const ctx = r.ctx;
     ctx.save();
     ctx.globalAlpha = alpha * 0.72;
-    r.drawText('tap to skip  ·  narrated prologue', w / 2, h - 28, {
+    r.drawText('tap to skip  ·  voice prologue', w / 2, h - 28, {
       size: uiSize(11),
       align: 'center',
       family: FONT_MONO,
@@ -325,18 +321,32 @@ export class OpeningCinematic {
     return t * t * (3 - 2 * t);
   }
 
-  _startNarration() {
-    if (this._narrationStarted) return;
-    this._narrationStarted = true;
+  _updateNarration() {
+    const index = this._activeBeatIndex();
+    if (index < 0 || index === this._spokenBeatIndex) return;
+    this._spokenBeatIndex = index;
+    this._speakBeat(STORY_BEATS[index]);
+  }
+
+  _activeBeatIndex() {
+    let active = -1;
+    for (let i = 0; i < STORY_BEATS.length; i++) {
+      if (this.t >= STORY_BEATS[i].at) active = i;
+      else break;
+    }
+    return active;
+  }
+
+  _speakBeat(beat) {
     try {
       const synth = globalThis.speechSynthesis;
       const Utterance = globalThis.SpeechSynthesisUtterance;
       if (!synth || !Utterance) return;
       synth.cancel();
-      const utterance = new Utterance(NARRATION_TEXT);
+      const utterance = new Utterance(`${beat.title}. ${beat.body}`);
       utterance.lang = 'en-US';
-      utterance.rate = 0.78;
-      utterance.pitch = 0.82;
+      utterance.rate = 0.7;
+      utterance.pitch = 0.78;
       utterance.volume = 0.85;
       synth.speak(utterance);
       this._utterance = utterance;
