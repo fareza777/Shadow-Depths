@@ -239,6 +239,27 @@ async function bootstrap() {
   console.log(LOG.CORE, 'Shadow Depths bootstrap complete');
 }
 
+// Catch unhandled errors AFTER boot too — without this, a black-screen
+// freeze gives the player no signal. Renders a translucent overlay
+// instead of nuking the canvas so they can still see what was there.
+if (typeof window !== 'undefined') {
+  let _shown = false;
+  const showRuntimeError = (msg) => {
+    if (_shown) return;
+    _shown = true;
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#1a0810;color:#ffd0d0;font:11px monospace;padding:8px 10px;border:1px solid #ff6060;border-radius:6px;max-height:40vh;overflow:auto;white-space:pre-wrap;line-height:1.4';
+    div.textContent = String(msg);
+    document.body.appendChild(div);
+  };
+  window.addEventListener('error', (e) => {
+    showRuntimeError((e.error && e.error.stack) || e.message || 'unknown error');
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    showRuntimeError((e.reason && e.reason.stack) || e.reason || 'unhandled rejection');
+  });
+}
+
 bootstrap().catch((err) => {
   console.error('[Bootstrap]', err);
   const root = document.getElementById('game-root');

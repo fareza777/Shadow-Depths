@@ -302,6 +302,12 @@ export class SpriteRegistry {
    */
   draw(key, ctx, x, y, opts = {}) {
     const size = opts.size ?? TILE_SIZE;
+    if (typeof key !== 'string' || key.length === 0) {
+      // Defensive — never throw on bad sprite keys. Paint a magenta box
+      // so the asset gap is loud but the frame keeps rendering.
+      fillRect(ctx, x, y, size, size, '#ff00ff');
+      return;
+    }
 
     // Try detailed enemy sprites first (32x32 grid style)
     if (key.startsWith('enemy_') && drawDetailedEnemySprite(ctx, x, y, size, key)) {

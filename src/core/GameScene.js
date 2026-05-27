@@ -123,6 +123,16 @@ export class GameScene {
 
   // --- scene contract -------------------------------------------------
   enter(_opts) {
+    try {
+      this._enterImpl(_opts);
+    } catch (err) {
+      console.error(LOG.CORE, 'GameScene.enter threw:', err);
+      // Re-throw so the global error handler surfaces it on the page.
+      throw err;
+    }
+  }
+
+  _enterImpl(_opts) {
     this._resetBlockingUI();
     this._processingTurn = false;
     if (this.resumeSnapshot) {
@@ -1121,19 +1131,27 @@ export class GameScene {
     const depthScale = floor.definition?.depthScale || 1;
     const diff = this._currentDifficulty();
     for (const s of spawns.enemies) {
-      const def = this.content.enemies[s.defId];
-      if (!def) { console.warn(LOG.ENTITY, `no enemy def "${s.defId}"`); continue; }
-      const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
-      const behavior = new BehaviorCls(def.behaviorParams);
-      const enemy = new Enemy(def, behavior, { x: s.x, y: s.y }, depthScale, diff);
-      enemy.snapRender();
-      floor.addEntity(enemy);
+      try {
+        const def = this.content.enemies[s.defId];
+        if (!def) { console.warn(LOG.ENTITY, `no enemy def "${s.defId}"`); continue; }
+        const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
+        const behavior = new BehaviorCls(def.behaviorParams);
+        const enemy = new Enemy(def, behavior, { x: s.x, y: s.y }, depthScale, diff);
+        enemy.snapRender();
+        floor.addEntity(enemy);
+      } catch (err) {
+        console.warn(LOG.ENTITY, `spawn failed for "${s.defId}":`, err);
+      }
     }
     for (const s of spawns.items) {
-      const item = s.affixes
-        ? this.itemFactory.createWithAffix(s.defId, s.affixes, 1)
-        : this.itemFactory.create(s.defId, 1);
-      if (item) floor.addItem(s.x, s.y, item);
+      try {
+        const item = s.affixes
+          ? this.itemFactory.createWithAffix(s.defId, s.affixes, 1)
+          : this.itemFactory.create(s.defId, 1);
+        if (item) floor.addItem(s.x, s.y, item);
+      } catch (err) {
+        console.warn(LOG.ITEM, `item spawn failed for "${s.defId}":`, err);
+      }
     }
   }
 

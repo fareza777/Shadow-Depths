@@ -60,10 +60,18 @@ export class GameLoop {
     this._state.state.time += dt;
 
     // 1. Per-frame tick (tweens, particles, audio envelope).
-    this._bus.emit('tick', { dt, time: this._state.state.time });
+    try {
+      this._bus.emit('tick', { dt, time: this._state.state.time });
+    } catch (err) {
+      console.error(LOG.CORE, 'tick threw (loop kept alive):', err);
+    }
 
     // 2. Scene update (handles e.g. floor transition animation).
-    this._scenes.update(dt);
+    try {
+      this._scenes.update(dt);
+    } catch (err) {
+      console.error(LOG.CORE, 'scene update threw (loop kept alive):', err);
+    }
 
     try {
       this._renderer.render(this._scenes, this._state);
