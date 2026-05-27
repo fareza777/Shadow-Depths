@@ -9,6 +9,7 @@
  */
 import { Entity } from './Entity.js';
 import { resolvePlayerSpriteKey } from '../rendering/playerSprites.js';
+import { applySetBonuses } from '../items/Sets.js';
 
 export class Player extends Entity {
   /**
@@ -302,6 +303,8 @@ export class Player extends Entity {
       this.stats.hpMax = Math.max(1, this.stats.hpMax - prev.stats.hpMaxBonus);
       this.stats.hp = Math.min(this.stats.hp, this.stats.hpMax);
     }
+    // Recompute set bonuses after any equip change.
+    applySetBonuses(this);
     return prev;
   }
 

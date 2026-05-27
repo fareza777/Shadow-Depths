@@ -1,0 +1,51 @@
+{
+  "sets": [
+    {
+      "id": "iron_vigilant",
+      "name": "Iron Vigilant",
+      "description": "The plate that watched the gates fall.",
+      "pieces": ["iron_helm", "iron_armor", "iron_legs"],
+      "bonuses": [
+        { "count": 2, "statMods": { "def": 1 } },
+        { "count": 3, "statMods": { "def": 2, "hpMax": 6 },
+          "triggers": [{ "when": "onHpBelow", "pct": 0.4,
+            "do": { "type": "applyStatus", "status": "def_buff", "value": 2, "duration": 4 } }] }
+      ]
+    },
+    {
+      "id": "bone_reaver",
+      "name": "Bone Reaver's Pact",
+      "description": "Worn until the wearer becomes the relic.",
+      "pieces": ["bone_helm", "bone_armor", "bone_talisman"],
+      "bonuses": [
+        { "count": 2, "statMods": { "atk": 1 } },
+        { "count": 3, "statMods": { "atk": 2, "dex": 1 },
+          "triggers": [{ "when": "onKill", "chance": 0.3,
+            "do": { "type": "heal", "value": 2, "target": "self" } }] }
+      ]
+    },
+    {
+      "id": "pilgrim_path",
+      "name": "Pilgrim's Path",
+      "description": "Lantern, cloak, beads — the only company you need.",
+      "pieces": ["pilgrim_cloak", "pilgrim_hat", "pilgrim_beads"],
+      "bonuses": [
+        { "count": 2, "statMods": { "dex": 1 } },
+        { "count": 3, "statMods": { "dex": 2, "hpMax": 4 },
+          "triggers": [{ "when": "onTurnStart", "chance": 0.15,
+            "do": { "type": "heal", "value": 1, "target": "self" } }] }
+      ]
+    },
+    {
+      "id": "void_choir",
+      "name": "Voidchoir Regalia",
+      "description": "Songs older than the depths.",
+      "pieces": ["void_crown", "void_robe", "void_amulet"],
+      "bonuses": [
+        { "count": 2, "statMods": { "hpMax": 5 } },
+        { "count": 3, "statMods": { "hpMax": 8, "def": 1, "atk": 1 },
+          "triggers": [{ "when": "onCrit", "do": { "type": "damage", "value": 5 } }] }
+      ]
+    }
+  ]
+}

@@ -40,6 +40,7 @@ import { VictoryScreen } from './ui/VictoryScreen.js';
 import { MobileControls } from './ui/MobileControls.js';
 import { QuickUseBar } from './ui/QuickUseBar.js';
 import { PauseOverlay } from './ui/PauseOverlay.js';
+import { CraftingPanel } from './ui/CraftingPanel.js';
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
 
 import { InputManager } from './input/InputManager.js';
@@ -61,8 +62,13 @@ import balanceData from '../data/balance.json';
 import biomesData  from '../data/biomes.json';
 import skillsData  from '../data/skills.json';
 import shopData    from '../data/shop.json';
+import setsData      from '../data/sets.json';
+import materialsData from '../data/materials.json';
+import recipesData   from '../data/recipes.json';
 import { HERO_SPELLS } from './config/heroSpells.js';
 import { validateContent, logValidationReport } from './content/validators.js';
+import { loadSetDefs } from './items/Sets.js';
+import { loadRecipes } from './items/Crafting.js';
 
 async function bootstrap() {
   console.log(LOG.CORE, 'Shadow Depths v0.1.0 — bootstrap');
@@ -87,6 +93,11 @@ async function bootstrap() {
     shop: shopData
   };
   const balance = mergeBalance(content.balance) || DEFAULT_BALANCE;
+  loadSetDefs(setsData);
+  loadRecipes(recipesData);
+  // Merge material defs into the main item registry so they share the same
+  // factory + inventory + sprite pipeline.
+  Object.assign(content.items, materialsData.materials || {});
 
   // Content validation runs once at boot. Failures are warnings, not
   // fatal, so the game still loads even when a single entry is malformed.
@@ -139,6 +150,9 @@ async function bootstrap() {
   const mobileControls = new MobileControls({ bus });
   const quickUseBar = new QuickUseBar({ bus });
   const pauseOverlay = new PauseOverlay({ bus });
+  const craftingPanel = new CraftingPanel({
+    bus, player: null, materialDefs: materialsData.materials || {}
+  });
   const tutorial = new TutorialOverlay({ metaProgress, bus });
 
   const resetRunModals = () => {
@@ -163,7 +177,7 @@ async function bootstrap() {
     title: (deps) => new TitleScreen({ ...deps, metaProgress, characterSelect }),
     game: (deps) => new GameScene({
       ...deps, hud, minimap, inventoryUI, skillPicker, vigilScreen,
-      lighting, renderer, mobileControls, quickUseBar, pauseOverlay, tutorial
+      lighting, renderer, mobileControls, quickUseBar, pauseOverlay, craftingPanel, tutorial
     }),
     gameover: (deps) => new GameOverScreen(deps),
     victory: (deps) => new VictoryScreen(deps)

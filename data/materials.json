@@ -1,0 +1,70 @@
+{
+  "materials": {
+    "scrap_iron": {
+      "id": "scrap_iron",
+      "name": "Scrap Iron",
+      "type": "material",
+      "rarity": "common",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "Fragments of a forgotten armory.",
+      "biomes": ["forgotten_crypts", "iron_stronghold"]
+    },
+    "bone_shard": {
+      "id": "bone_shard",
+      "name": "Bone Shard",
+      "type": "material",
+      "rarity": "common",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "Brittle. Whispers when held.",
+      "biomes": ["bone_garden", "drowned_catacombs"]
+    },
+    "ember_dust": {
+      "id": "ember_dust",
+      "name": "Ember Dust",
+      "type": "material",
+      "rarity": "uncommon",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "Warm to the touch. Always.",
+      "biomes": ["magma_foundry", "sun_cursed_sands"]
+    },
+    "frost_thread": {
+      "id": "frost_thread",
+      "name": "Frost Thread",
+      "type": "material",
+      "rarity": "uncommon",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "Hair from something that should not have hair.",
+      "biomes": ["frozen_halls"]
+    },
+    "void_essence": {
+      "id": "void_essence",
+      "name": "Void Essence",
+      "type": "material",
+      "rarity": "rare",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "Looks like nothing. Weighs everything.",
+      "biomes": ["void_sanctum", "mirror_vaults"]
+    },
+    "verdant_sap": {
+      "id": "verdant_sap",
+      "name": "Verdant Sap",
+      "type": "material",
+      "rarity": "uncommon",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "Bleeds slow. Heals slower.",
+      "biomes": ["sunken_forest"]
+    }
+  }
+}

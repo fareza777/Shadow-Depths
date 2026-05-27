@@ -43,6 +43,11 @@ export function collectTriggers(actor, when) {
   }
   // Direct entity triggers — e.g. enemy proc list.
   if (Array.isArray(actor.triggers)) sources.push(actor);
+  // Set bonuses materialize as a synthetic source so the trigger pickup
+  // path is uniform with equipped pieces.
+  if (Array.isArray(actor.setTriggers) && actor.setTriggers.length > 0) {
+    sources.push({ triggers: actor.setTriggers, _kind: 'set' });
+  }
 
   for (const src of sources) {
     for (const trig of src.triggers) {

@@ -12,6 +12,7 @@
  * Items without a `slot` field cannot be equipped (no-op + warning).
  */
 import { LOG } from '../config/constants.js';
+import { applySetBonuses } from './Sets.js';
 
 export const Equipment = {
   /**
@@ -33,6 +34,7 @@ export const Equipment = {
       // Put the previously-equipped item back into the freed slot.
       inventory.putAt(slotIndex, swapped);
     }
+    if (player._bus?.emit) player._bus.emit('item:equipped', { item, by: player });
     return { ok: true, equipped: item, swapped };
   },
 
@@ -66,6 +68,7 @@ export const Equipment = {
     else if (slot === 'necklace') player.necklace = null;
     else if (slot === 'ring') player.ring = null;
     inventory.add(current);
+    applySetBonuses(player);
     return { ok: true, unequipped: current };
   }
 };

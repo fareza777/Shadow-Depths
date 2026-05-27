@@ -1,0 +1,72 @@
+{
+  "recipes": [
+    {
+      "id": "forge_sharp_blade",
+      "name": "Forge a Keen Edge",
+      "description": "Hammer Scrap Iron + Ember Dust onto a base weapon to guarantee a Sharp prefix.",
+      "inputs": [
+        { "materialId": "scrap_iron", "count": 3 },
+        { "materialId": "ember_dust", "count": 1 }
+      ],
+      "baseSlot": "weapon",
+      "guaranteedPrefix": "sharp",
+      "tierBoost": 0
+    },
+    {
+      "id": "forge_burning_blade",
+      "name": "Anoint with Ember",
+      "description": "Set a weapon alight — guaranteed Burning prefix.",
+      "inputs": [
+        { "materialId": "ember_dust", "count": 3 }
+      ],
+      "baseSlot": "weapon",
+      "guaranteedPrefix": "burning",
+      "tierBoost": 1
+    },
+    {
+      "id": "forge_warding_armor",
+      "name": "Reinforce the Plate",
+      "description": "Iron + bone reinforces any armor / helm / legs.",
+      "inputs": [
+        { "materialId": "scrap_iron", "count": 2 },
+        { "materialId": "bone_shard", "count": 2 }
+      ],
+      "baseSlot": "armor",
+      "guaranteedSuffix": "of_warding",
+      "tierBoost": 0
+    },
+    {
+      "id": "weave_thirsting_blade",
+      "name": "Weave the Thirsting Sigil",
+      "description": "Voidtouch a weapon. Of Thirst suffix guaranteed.",
+      "inputs": [
+        { "materialId": "void_essence", "count": 2 },
+        { "materialId": "bone_shard", "count": 3 }
+      ],
+      "baseSlot": "weapon",
+      "guaranteedSuffix": "of_thirst",
+      "tierBoost": 1
+    },
+    {
+      "id": "weave_vigor_ring",
+      "name": "Bind a Ring of Vigor",
+      "description": "Sap + bone — ring of Vigor guaranteed.",
+      "inputs": [
+        { "materialId": "verdant_sap", "count": 2 },
+        { "materialId": "bone_shard", "count": 2 }
+      ],
+      "baseSlot": "ring",
+      "guaranteedSuffix": "of_vigor",
+      "tierBoost": 0
+    },
+    {
+      "id": "reroll_affix",
+      "name": "Re-roll the Sigils",
+      "description": "Strip an item's affixes and re-roll them at the current depth.",
+      "inputs": [
+        { "materialId": "void_essence", "count": 3 }
+      ],
+      "operation": "reroll"
+    }
+  ]
+}

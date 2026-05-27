@@ -23,6 +23,8 @@ import { Layout } from '../config/layoutMetrics.js';
 import { Player } from '../entities/Player.js';
 import { heroDef } from '../rendering/heroSprites.js';
 import { HERO_SPELLS } from '../config/heroSpells.js';
+import { craft, getRecipe } from '../items/Crafting.js';
+import { identify, isIdentified } from '../items/Identification.js';
 
 /** Per-hero stat overrides (atk/def/dex/torchRadius) for new Player(). */
 function heroStatOverrides(kind) {
@@ -76,6 +78,7 @@ export class GameScene {
     this.controls = deps.mobileControls || new MobileControls({ bus: this.bus });
     this.quickUse = deps.quickUseBar || new QuickUseBar({ bus: this.bus });
     this.pause = deps.pauseOverlay || null;
+    this.crafting = deps.craftingPanel || null;
     this.tutorial = deps.tutorial || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
@@ -106,6 +109,8 @@ export class GameScene {
     this._wireCommands();
     this._wireDeathCleanup();
     this._wirePresentationEvents();
+    this._wireCraftingEvents();
+    this._wireIdentification();
   }
 
   exit() {
@@ -304,6 +309,7 @@ export class GameScene {
     if (this.vigil) this.vigil.render(renderer, this.player);
     if (this.skillPicker) this.skillPicker.render(renderer);
     if (this.pause) this.pause.render(renderer);
+    if (this.crafting) this.crafting.render(renderer);
     if (this.tutorial?.open) this.tutorial.render(renderer);
   }
 
@@ -500,6 +506,18 @@ export class GameScene {
       if (consumed) return;
     }
 
+    // Crafting modal blocks all input below it.
+    if (this.crafting?.open) {
+      if (action.type === 'pointer') {
+        if (this.crafting.handleTap(action.x, action.y)) return;
+        return;
+      }
+      if (action.type === 'escape' || action.type === 'menu') {
+        this.crafting.hide();
+        return;
+      }
+    }
+
     if (this.pause?.open) {
       if (action.type === 'pointer') {
         const idx = this.pause.hitTest(action.x, action.y);
@@ -619,9 +637,65 @@ export class GameScene {
     this._listen('entity:died', ({ entity }) => {
       if (!this.floor) return;
       if (entity?.kind === 'enemy') {
+        this._maybeDropMaterial(entity);
         this.floor.removeEntity(entity);
       }
     });
+  }
+
+  _wireIdentification() {
+    const meta = this.state?.state?.meta;
+    if (!meta) return;
+    // Equipping or using an item auto-identifies its base id.
+    const reveal = ({ item }) => {
+      if (!item?.id) return;
+      if (identify(item.id, meta)) {
+        this.bus.emit('item:identified', { item });
+      }
+    };
+    this._listen('item:used', reveal);
+    this._listen('item:equipped', reveal);
+  }
+
+  _wireCraftingEvents() {
+    this._listen('request:openCrafting', () => {
+      if (this.crafting && this.player) {
+        this.crafting.player = this.player;
+        this.crafting.show();
+      }
+    });
+    this._listen('craft:request', ({ recipeId }) => {
+      if (!this.crafting || !this.player) return;
+      const recipe = getRecipe(recipeId);
+      if (!recipe) return;
+      const result = craft(this.player, recipe, {
+        itemDefs: this.content.items,
+        rng: this.rng.fork('craft'),
+        floorLevel: (this.dungeon?.currentIndex ?? 0) + 1
+      });
+      if (result.ok && result.item) {
+        this.bus.emit('item:crafted', { item: result.item });
+      }
+    });
+  }
+
+  /**
+   * ~12% chance per kill to drop a crafting material matching the current
+   * biome. Materials live in the same item registry as everything else,
+   * so the existing pickup path picks them up automatically.
+   */
+  _maybeDropMaterial(enemy) {
+    if (!this.floor || !this.rng) return;
+    if (!this.rng.fork('material').chance(0.12)) return;
+    const biomeId = this.floor.definition?.biomeId;
+    if (!biomeId) return;
+    const candidates = Object.values(this.content.items).filter(
+      (d) => d.type === 'material' && Array.isArray(d.biomes) && d.biomes.includes(biomeId)
+    );
+    if (candidates.length === 0) return;
+    const matDef = this.rng.fork('material').pick(candidates);
+    const item = this.itemFactory.create(matDef.id, 1);
+    if (item) this.floor.addItem(enemy.x, enemy.y, item);
   }
 
   // --- player actions -------------------------------------------------

@@ -9,6 +9,8 @@
  *   renderX,Y    — current visual position in tiles, interpolated by the
  *                  renderer toward (x, y) over TIMING.moveTween.
  */
+import { StatusEffects as _statusEffects } from '../combat/StatusEffects.js';
+
 let _nextId = 0;
 
 export class Entity {
@@ -86,29 +88,13 @@ export class Entity {
    * from DoTs like poison) so the caller can route through the bus.
    */
   tickStatusEffects() {
-    let hpDelta = 0;
-    for (const eff of this.statusEffects) {
-      if (eff.id === 'poison') {
-        const dealt = this.takeDamage(eff.value);
-        hpDelta -= dealt;
-      }
-      // atk_buff and def_buff are queried at combat time (modifierAtk/Def).
-      eff.duration -= 1;
-    }
-    this.statusEffects = this.statusEffects.filter((e) => e.duration > 0);
-    return hpDelta;
+    return _statusEffects.tickAll(this);
   }
 
-  modifierAtk() {
-    let bonus = 0;
-    for (const e of this.statusEffects) if (e.id === 'atk_buff') bonus += e.value;
-    return bonus;
-  }
-  modifierDef() {
-    let bonus = 0;
-    for (const e of this.statusEffects) if (e.id === 'def_buff') bonus += e.value;
-    return bonus;
-  }
+  modifierAtk() { return _statusEffects.modifier(this, 'atk'); }
+  modifierDef() { return _statusEffects.modifier(this, 'def'); }
+  modifierDex() { return _statusEffects.modifier(this, 'dex'); }
+  isStunned()   { return _statusEffects.shouldSkipTurn(this); }
 
   /** Snap renderX/Y to grid (used after teleport / floor change). */
   snapRender() {
