@@ -35,6 +35,7 @@ import { SkillPickerUI } from './ui/SkillPickerUI.js';
 import { VigilScreen } from './ui/VigilScreen.js';
 import { TitleScreen } from './ui/TitleScreen.js';
 import { CharacterSelect } from './ui/CharacterSelect.js';
+import { OpeningCinematic } from './ui/OpeningCinematic.js';
 import { GameOverScreen } from './ui/GameOverScreen.js';
 import { VictoryScreen } from './ui/VictoryScreen.js';
 import { MobileControls } from './ui/MobileControls.js';
@@ -203,6 +204,7 @@ async function bootstrap() {
   // --- scene factories ----------------------------------------------
   const sceneFactories = {
     title: (deps) => new TitleScreen({ ...deps, metaProgress, characterSelect }),
+    opening: (deps) => new OpeningCinematic(deps),
     game: (deps) => new GameScene({
       ...deps, hud, minimap, inventoryUI, skillPicker, vigilScreen,
       lighting, renderer, mobileControls, quickUseBar, pauseOverlay, craftingPanel, tutorial

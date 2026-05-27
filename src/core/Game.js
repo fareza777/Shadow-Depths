@@ -27,6 +27,7 @@ export class Game {
    *   metaProgress: { load: Function, recordRun: Function },
    *   sceneFactories: {
    *     title: (deps: any) => object,
+   *     opening?: (deps: any) => object,
    *     game:  (deps: any) => object,
    *     gameover: (deps: any) => object,
    *     victory: (deps: any) => object
@@ -49,6 +50,7 @@ export class Game {
 
     // Game-level event wiring — scene transitions etc.
     this.bus.on('request:newRun', (opts) => this.newRun(opts || {}));
+    this.bus.on('request:startRunNow', (opts) => this.newRun({ ...(opts || {}), skipIntro: true }));
     this.bus.on('request:continueRun', () => this.continueRun());
     this.bus.on('request:quitToTitle', () => this.quitToTitle());
     this.bus.on('run:over', (summary) => this._onRunOver(summary));
@@ -86,6 +88,18 @@ export class Game {
   newRun(opts = {}) {
     if (!this._sceneFactories.game) {
       console.warn(LOG.CORE, 'newRun called before GameScene factory is registered');
+      return;
+    }
+    if (!opts.skipIntro && this._sceneFactories.opening) {
+      const scene = this._sceneFactories.opening({
+        bus: this.bus,
+        state: this.state,
+        content: this.content,
+        balance: this.balance,
+        runOptions: opts
+      });
+      this.state.setScene('opening');
+      this.scenes.switch('opening', scene, { runOptions: opts });
       return;
     }
     this.save.clearRun?.();
