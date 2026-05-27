@@ -160,6 +160,101 @@ export const SynthSFX = {
     osc.connect(gain).connect(master);
     osc.start(t);
     osc.stop(t + 0.21);
+  },
+
+  // --- Tier-3 additions -----------------------------------------------
+  uiTap(ctx, master) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(900, ctx.currentTime);
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+    osc.connect(gain).connect(master);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.05);
+  },
+
+  craftClank(ctx, master) {
+    // Two short metallic hits.
+    const t = ctx.currentTime;
+    for (let i = 0; i < 2; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(220 + i * 110, t + i * 0.06);
+      osc.frequency.exponentialRampToValueAtTime(110, t + i * 0.06 + 0.08);
+      gain.gain.setValueAtTime(0.18, t + i * 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.06 + 0.09);
+      osc.connect(gain).connect(master);
+      osc.start(t + i * 0.06);
+      osc.stop(t + i * 0.06 + 0.10);
+    }
+    playNoiseBurst(ctx, master, 0.06, 0.08);
+  },
+
+  victoryChord(ctx, master) {
+    const t = ctx.currentTime;
+    const freqs = [261.63, 329.63, 392.0, 523.25];   // C major chord
+    for (const f of freqs) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(f, t);
+      gain.gain.setValueAtTime(0.0, t);
+      gain.gain.linearRampToValueAtTime(0.12, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 1.6);
+      osc.connect(gain).connect(master);
+      osc.start(t);
+      osc.stop(t + 1.7);
+    }
+  },
+
+  heartbeat(ctx, master) {
+    // Two thumps, ~120 BPM cadence. Played on a loop by AudioManager when
+    // player.hp < 30%.
+    const t = ctx.currentTime;
+    for (let i = 0; i < 2; i++) {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(80, t + i * 0.18);
+      osc.frequency.exponentialRampToValueAtTime(40, t + i * 0.18 + 0.12);
+      gain.gain.setValueAtTime(0.22, t + i * 0.18);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + i * 0.18 + 0.14);
+      osc.connect(gain).connect(master);
+      osc.start(t + i * 0.18);
+      osc.stop(t + i * 0.18 + 0.16);
+    }
+  },
+
+  doorOpen(ctx, master) {
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, t);
+    osc.frequency.exponentialRampToValueAtTime(60, t + 0.4);
+    gain.gain.setValueAtTime(0.18, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.45);
+    osc.connect(gain).connect(master);
+    osc.start(t);
+    osc.stop(t + 0.5);
+    playNoiseBurst(ctx, master, 0.3, 0.06);
+  },
+
+  spellCast(ctx, master) {
+    const t = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, t);
+    osc.frequency.exponentialRampToValueAtTime(1320, t + 0.32);
+    gain.gain.setValueAtTime(0.16, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    osc.connect(gain).connect(master);
+    osc.start(t);
+    osc.stop(t + 0.4);
   }
 };
 

@@ -33,5 +33,26 @@ export const HERO_SPELLS = Object.freeze({
     radius: 3,
     color: '#d4be7a',
     description: 'Heal and reveal nearby ground.'
+  },
+  warden: {
+    name: 'Iron Stand',
+    cooldown: 8,
+    color: '#bcd6ff',
+    description: 'Apply Iron Skin and brace; nearby attackers slowed.'
+  },
+  bladedancer: {
+    name: 'Echo Strike',
+    cooldown: 5,
+    range: 2,
+    color: '#ff8844',
+    description: 'Strike the nearest enemy three times in one turn.'
+  },
+  echobinder: {
+    name: 'Sundering Chord',
+    cooldown: 9,
+    range: 7,
+    radius: 1,
+    color: '#c060ff',
+    description: 'Sonic burst — damage + freeze in a small radius.'
   }
 });

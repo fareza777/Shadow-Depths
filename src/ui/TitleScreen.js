@@ -327,6 +327,10 @@ export class TitleScreen {
           }
           return;
         }
+        if (this.modal === 'settings' && typeof idx === 'string' && idx.startsWith('diff:')) {
+          if (this.meta) this.meta.setSetting('difficulty', idx.slice(5));
+          return;
+        }
         // Codex tab change (400 + i) and pagination (410=prev, 411=next).
         if (this.modal === 'codex') {
           if (typeof idx === 'number' && idx >= 400 && idx < 410) {
@@ -494,6 +498,7 @@ export class TitleScreen {
     const settings = this.state.state.meta.settings || {};
     const vol = Math.round((settings.volume || 0) * 100);
     const orient = settings.orientation || 'portrait';
+    const difficulty = settings.difficulty || 'normal';
     const g = this._settingsGeometry();
     r.drawRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.bgPanel);
     r.drawStrokedRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.gold, 1);
@@ -501,6 +506,24 @@ export class TitleScreen {
       { size: 18, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
     r.drawText(`Volume: ${vol}%`, CANVAS_WIDTH / 2, g.modalY + 52,
       { size: 13, align: 'center', family: FONT_BODY });
+
+    // Difficulty row — 4 pills above orientation.
+    const diffRow = this._difficultyButtonRow();
+    r.drawText('Difficulty', CANVAS_WIDTH / 2, diffRow.labelY,
+      { size: 13, align: 'center', family: FONT_BODY });
+    const diffKeys = ['easy', 'normal', 'hard', 'ascend1'];
+    const diffLabels = { easy: 'EASY', normal: 'NORM', hard: 'HARD', ascend1: 'ASC1' };
+    for (let i = 0; i < diffKeys.length; i++) {
+      const key = diffKeys[i];
+      const active = difficulty === key;
+      const bx = diffRow.baseX + i * (diffRow.btnW + diffRow.gap);
+      r.drawRect(bx, diffRow.y, diffRow.btnW, diffRow.btnH, active ? COLOR.bgCardHi : COLOR.bgCard);
+      r.drawStrokedRect(bx, diffRow.y, diffRow.btnW, diffRow.btnH,
+        active ? COLOR.gold : COLOR.borderSoft, active ? 2 : 1);
+      r.drawText(diffLabels[key], bx + diffRow.btnW / 2, diffRow.y + diffRow.btnH / 2,
+        { size: 11, bold: true, align: 'center', baseline: 'middle', family: FONT_DISPLAY });
+    }
+
     r.drawText('Orientation', CANVAS_WIDTH / 2, g.btnY - 22,
       { size: 13, align: 'center', family: FONT_BODY });
     for (let i = 0; i < 2; i++) {
@@ -520,6 +543,30 @@ export class TitleScreen {
       { size: 9, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
     this._renderModalCloseButton(r, g.closeY);
   }
+  _difficultyButtonRow() {
+    const g = this._settingsGeometry();
+    const btnW = 62;
+    const btnH = 28;
+    const gap = 8;
+    const totalW = btnW * 4 + gap * 3;
+    const baseX = (CANVAS_WIDTH - totalW) / 2;
+    const labelY = g.modalY + 92;
+    const y = labelY + 12;
+    return { baseX, y, btnW, btnH, gap, labelY };
+  }
+
+  _settingsDifficultyHitTest(x, y) {
+    if (this.modal !== 'settings') return null;
+    const row = this._difficultyButtonRow();
+    if (y < row.y || y > row.y + row.btnH) return null;
+    const keys = ['easy', 'normal', 'hard', 'ascend1'];
+    for (let i = 0; i < 4; i++) {
+      const bx = row.baseX + i * (row.btnW + row.gap);
+      if (x >= bx && x <= bx + row.btnW) return keys[i];
+    }
+    return null;
+  }
+
   _settingsOrientationHitTest(x, y) {
     if (this.modal !== 'settings') return null;
     const g = this._settingsGeometry();
@@ -852,6 +899,8 @@ export class TitleScreen {
       return -1;
     }
     if (this.modal === 'settings') {
+      const diff = this._settingsDifficultyHitTest(x, y);
+      if (diff) return `diff:${diff}`;
       const orient = this._settingsOrientationHitTest(x, y);
       if (orient) return orient === 'portrait' ? 300 : 301;
       const g = this._settingsGeometry();

@@ -19,13 +19,15 @@ export class Enemy extends Entity {
    *        HP scales linearly, ATK at half rate (steeper feels unfair),
    *        XP and gold scale linearly so deep runs reward proportionally.
    */
-  constructor(def, behavior, pos, scale = 1) {
+  constructor(def, behavior, pos, scale = 1, difficulty = { hp: 1, atk: 1 }) {
     const safeScale = Math.max(0.5, scale);
     const atkFactor = 1 + (safeScale - 1) * (safeScale >= 1.5 ? 0.62 : 0.5);
+    const dHp  = Math.max(0.5, difficulty?.hp  ?? 1);
+    const dAtk = Math.max(0.5, difficulty?.atk ?? 1);
     const baseHp = def.stats.hp;
     const baseAtk = def.stats.atk;
-    const scaledHp = Math.max(1, Math.round(baseHp * safeScale));
-    const scaledAtk = Math.max(1, Math.round(baseAtk * atkFactor));
+    const scaledHp = Math.max(1, Math.round(baseHp * safeScale * dHp));
+    const scaledAtk = Math.max(1, Math.round(baseAtk * atkFactor * dAtk));
     super({
       id: `${def.id}_${pos.x}_${pos.y}_${Math.floor(Math.random() * 9999)}`,
       kind: 'enemy',

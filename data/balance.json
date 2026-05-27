@@ -47,6 +47,13 @@
     "efficiencyNumerator": 10000,
     "perfectFloorBonus": 100
   },
+  "difficulty": {
+    "easy":    { "enemyHp": 0.8,  "enemyAtk": 0.85, "lootTier": 0, "scoreMul": 0.7, "label": "Penitent" },
+    "normal":  { "enemyHp": 1.0,  "enemyAtk": 1.0,  "lootTier": 0, "scoreMul": 1.0, "label": "Vigil" },
+    "hard":    { "enemyHp": 1.25, "enemyAtk": 1.15, "lootTier": 1, "scoreMul": 1.4, "label": "Hollow" },
+    "ascend1": { "enemyHp": 1.5,  "enemyAtk": 1.3,  "lootTier": 2, "scoreMul": 1.8, "label": "Ascent I" },
+    "ascend2": { "enemyHp": 1.8,  "enemyAtk": 1.5,  "lootTier": 3, "scoreMul": 2.4, "label": "Ascent II" }
+  },
   "unlocks": [
     { "id": "worn_dagger",    "threshold": 500,  "effect": "startWeapon" },
     { "id": "veterans_vigor", "threshold": 1500, "effect": "plus10HP" },

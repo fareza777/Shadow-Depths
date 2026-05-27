@@ -17,7 +17,11 @@ const STEPS = [
   },
   {
     title: 'LOOT & DESCEND',
-    body: 'Use QUICK row: PICK, BAG, HERO. DOWN (right) uses stairs. Tap or press any direction to continue.'
+    body: 'Use the QUICK row: PICK, BAG, HERO. DOWN (right) uses stairs to the next floor.'
+  },
+  {
+    title: 'FORGE & DEPTH',
+    body: 'Pause → FORGE shapes materials into gear. Every 7th floor = REST (full heal). Every 10th = VAULT (loot).'
   }
 ];
 

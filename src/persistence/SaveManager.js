@@ -19,6 +19,31 @@ const KEY_META    = `${STORAGE_PREFIX}meta`;
 const KEY_RUN     = `${STORAGE_PREFIX}run`;
 const KEY_VERSION = `${STORAGE_PREFIX}save_version`;
 
+const SIG_FIELD = '__sig';
+const SIG_SALT  = 'shadow-depths-v1';
+
+/**
+ * FNV-1a 32-bit hash — fast, dependency-free, sufficient for tamper
+ * detection on a single device. Not cryptographic; treat the result as
+ * "integrity hint", not "anti-cheat".
+ */
+function fnv1a(str) {
+  let h = 0x811c9dc5 >>> 0;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return h.toString(16);
+}
+
+/** Compute the signature of a payload (excluding any existing __sig field). */
+function signPayload(payload) {
+  if (payload == null) return null;
+  const clean = { ...payload };
+  delete clean[SIG_FIELD];
+  return fnv1a(SIG_SALT + JSON.stringify(clean));
+}
+
 /**
  * Migration registry. Each function transforms data FROM the listed version
  * TO version+1. Add new migrations as new keys; never edit existing ones.
@@ -40,21 +65,21 @@ export class SaveManager {
 
   // --- meta -----------------------------------------------------------
   loadMeta() {
-    return this._readJson(KEY_META);
+    return this._readSigned(KEY_META);
   }
 
   saveMeta(meta) {
-    this._writeJson(KEY_META, meta);
+    this._writeSigned(KEY_META, meta);
     this._writeJson(KEY_VERSION, SAVE_SCHEMA_VERSION);
   }
 
   // --- run snapshot (resume) ------------------------------------------
   loadRun() {
-    return this._readJson(KEY_RUN);
+    return this._readSigned(KEY_RUN);
   }
 
   saveRun(snapshot) {
-    this._writeJson(KEY_RUN, snapshot);
+    this._writeSigned(KEY_RUN, snapshot);
     this._writeJson(KEY_VERSION, SAVE_SCHEMA_VERSION);
   }
 
@@ -131,5 +156,38 @@ export class SaveManager {
     } catch (err) {
       console.warn(LOG.SAVE, `write failed for "${key}":`, err);
     }
+  }
+
+  /**
+   * Write a payload with an integrity signature. The __sig field is set
+   * from the JSON of everything else; tampering with stats / coins in
+   * devtools invalidates it.
+   */
+  _writeSigned(key, value) {
+    if (!this.available || value == null) return;
+    const signed = { ...value, [SIG_FIELD]: signPayload(value) };
+    this._writeJson(key, signed);
+  }
+
+  /**
+   * Read + verify a signed payload. Returns the data even if the signature
+   * doesn't match — but marks `_tampered: true` so the caller can choose
+   * to refuse to load it. We never throw / crash on bad data: the player's
+   * progress beats strict integrity.
+   */
+  _readSigned(key) {
+    const raw = this._readJson(key);
+    if (raw == null) return null;
+    if (!(SIG_FIELD in raw)) {
+      // Legacy save written before signing existed — accept silently.
+      return raw;
+    }
+    const expected = raw[SIG_FIELD];
+    const actual = signPayload(raw);
+    if (expected !== actual) {
+      console.warn(LOG.SAVE, `tampered save detected at "${key}"`);
+      raw._tampered = true;
+    }
+    return raw;
   }
 }

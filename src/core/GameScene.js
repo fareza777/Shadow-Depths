@@ -1119,12 +1119,13 @@ export class GameScene {
     // depthScale comes from the procedurally-built floor definition;
     // makes deeper floors actually threatening (HP & damage scale).
     const depthScale = floor.definition?.depthScale || 1;
+    const diff = this._currentDifficulty();
     for (const s of spawns.enemies) {
       const def = this.content.enemies[s.defId];
       if (!def) { console.warn(LOG.ENTITY, `no enemy def "${s.defId}"`); continue; }
       const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
       const behavior = new BehaviorCls(def.behaviorParams);
-      const enemy = new Enemy(def, behavior, { x: s.x, y: s.y }, depthScale);
+      const enemy = new Enemy(def, behavior, { x: s.x, y: s.y }, depthScale, diff);
       enemy.snapRender();
       floor.addEntity(enemy);
     }
@@ -1141,9 +1142,22 @@ export class GameScene {
     if (!def) return null;
     const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
     const behavior = new BehaviorCls(def.behaviorParams);
-    const enemy = new Enemy(def, behavior, pos, floor.definition?.depthScale || 1);
+    const enemy = new Enemy(def, behavior, pos,
+      floor.definition?.depthScale || 1, this._currentDifficulty());
     enemy.snapRender();
     return enemy;
+  }
+
+  /**
+   * Resolve current difficulty multipliers from meta.settings.difficulty.
+   * Falls back to 'normal' when the setting is missing or unknown.
+   */
+  _currentDifficulty() {
+    const settings = this.state?.state?.meta?.settings || {};
+    const key = settings.difficulty || 'normal';
+    const table = this.balance?.difficulty || {};
+    const cfg = table[key] || table.normal || { enemyHp: 1, enemyAtk: 1 };
+    return { hp: cfg.enemyHp || 1, atk: cfg.enemyAtk || 1, scoreMul: cfg.scoreMul || 1 };
   }
 
   /** Every run begins with a basic dagger — no cleaver/bow unless shop unlocks. */
