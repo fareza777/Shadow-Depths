@@ -279,8 +279,10 @@ export class DungeonGenerator {
       if (!tile) continue;
       const defId = this.rng.weightedPick(weighted);
       // Roll affix at spawn time so save/load and codex stay deterministic.
+      // Vault floors get a depth nudge so they roll a tier or two higher.
       const baseDef = itemDefs[defId];
-      const affixes = baseDef ? rollItemAffixes(baseDef, floorIndex + 1, this.rng) : null;
+      const effectiveDepth = floorIndex + 1 + (floorDef.vaultDepthBoost || 0);
+      const affixes = baseDef ? rollItemAffixes(baseDef, effectiveDepth, this.rng) : null;
       const entry = { x: tile.x, y: tile.y, defId };
       if (affixes) entry.affixes = affixes;
       spawns.push(entry);

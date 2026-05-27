@@ -195,11 +195,21 @@ export class GameScene {
   _emitFloorEntered(index, floor) {
     const def = floor?.definition || {};
     this._floorBanner = this._buildFloorBanner(index, def);
+    // Rest floors fully heal the player on entry — incentive to push deeper.
+    if (def.type === 'rest' && this.player && !this.player.isDead) {
+      const before = this.player.stats.hp;
+      this.player.stats.hp = this.player.stats.hpMax;
+      const restored = this.player.stats.hp - before;
+      if (restored > 0) {
+        this.bus.emit('entity:healed', { entity: this.player, amount: restored, source: 'rest_floor' });
+      }
+    }
     this.bus.emit('floor:entered', {
       index,
       name: def.name,
       biomeId: def.biomeId || null,
       specialEnemyId: def.specialEnemyId || null,
+      type: def.type || null,
       floorNumber: index + 1
     });
   }

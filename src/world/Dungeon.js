@@ -129,6 +129,26 @@ export class Dungeon {
       const floorNumber = i + 1;
       const specialEnemyId = this._specialEnemyForFloor(floorNumber);
 
+      // Special floor types: rest (every 7th floor) + vault (every 10th).
+      // Floor 100 stays the boss arena, so we don't override the last floor.
+      let type = null;
+      let enemyCount = Math.min(14, 3 + Math.floor(i * 0.2) + (i >= 40 ? 1 : 0));
+      let itemCount  = Math.min(8,  5 + Math.floor(i * 0.04));
+      let vaultDepthBoost = 0;
+      const isLast = i === TOTAL_FLOORS - 1;
+      if (!isLast) {
+        if (floorNumber % 10 === 0) {
+          type = 'vault';
+          enemyCount = Math.max(2, enemyCount - 1);
+          itemCount += 2;
+          vaultDepthBoost = 12;  // affix tier nudge for items spawned here
+        } else if (floorNumber % 7 === 0) {
+          type = 'rest';
+          enemyCount = 0;
+          itemCount = 1;
+        }
+      }
+
       out.push({
         index: i,
         name: biome ? `${biome.name} ${roman}` : `Floor ${i + 1}`,
@@ -137,15 +157,14 @@ export class Dungeon {
         wallPalette: biome?.wallPalette || ['#3a3340', '#1a1820'],
         floorPalette: biome?.floorPalette || ['#2a2630', '#15131a'],
         enemyPool: biome?.enemyPool || ['goblin_scout'],
-        // Difficulty curves: enemies & items both scale gently with depth.
-        // Capped so floor 100 isn't a meat grinder of 30 enemies.
-        enemyCount: Math.min(14, 3 + Math.floor(i * 0.2) + (i >= 40 ? 1 : 0)),
-        itemCount:  Math.min(8,  5 + Math.floor(i * 0.04)),
+        enemyCount, itemCount,
         torchRadius: biome?.torchRadius || 5,
         // Steeper curve after floor 25 — counters longbow + revive stacking.
         depthScale: 1 + i * 0.09 + (i > 25 ? (i - 25) * 0.02 : 0),
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
+        type,
+        vaultDepthBoost,
         isFinalFloor: isFinal
       });
     }

@@ -16,6 +16,8 @@ const LOST_RELIC_DEF = Object.freeze({
   type: 'misc',
   rarity: 'common',
   spriteKey: 'item_default',
+  stackable: true,
+  maxStack: 99,
   lore: 'The depths swallowed its history.'
 });
 

@@ -87,7 +87,8 @@ export class HUD {
 
     if (floor) {
       const name = `${floor.definition.name}`;
-      this._drawFloorBanner(r, name, floorIndex, totalFloors, mode === 'daily');
+      this._drawFloorBanner(r, name, floorIndex, totalFloors,
+        mode === 'daily', floor.definition.type || null);
       this._drawFloorChip(r, floor, floorIndex);
       this._drawDepthMeter(r, floorIndex, totalFloors);
     }
@@ -164,7 +165,7 @@ export class HUD {
    * below the title with a hammered inset plate behind the name. Matches
    * the iron-portcullis vocabulary used elsewhere in the HUD.
    */
-  _drawFloorBanner(r, name, floorIndex, totalFloors, daily = false) {
+  _drawFloorBanner(r, name, floorIndex, totalFloors, daily = false, floorType = null) {
     const ctx = r.ctx;
     const x = 8;
     const y = TOP_PAD + 52;
@@ -249,11 +250,14 @@ export class HUD {
     ctx.fillStyle = tg;
     ctx.fillText(upper, cx, labelY);
 
-    // Subtitle: ── FLOOR N OF M [· DAILY] ──
+    // Subtitle: ── FLOOR N OF M [· DAILY] [· REST / VAULT] ──
     const subY = y + h - 7;
+    const tag = floorType === 'rest'  ? '  ·  ✜ REST'
+              : floorType === 'vault' ? '  ·  ◈ VAULT'
+              : '';
     const sub = daily
-      ? `FLOOR ${floorIndex + 1} OF ${totalFloors}  ·  ☼ DAILY`
-      : `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
+      ? `FLOOR ${floorIndex + 1} OF ${totalFloors}  ·  ☼ DAILY${tag}`
+      : `FLOOR ${floorIndex + 1} OF ${totalFloors}${tag}`;
     ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
     ctx.textAlign = 'center';
     ctx.fillStyle = IRON.boneDim;
