@@ -58,8 +58,10 @@ function buildLayout() {
   if (portrait) {
     actW = 110;
     actGap = 5;
-    actH = Math.floor((dpad.dpadSize - actGap * 3) / 4);
-    actStackH = actH * 4 + actGap * 3;
+    const sideH = 32;
+    const aimCastH = Math.max(38, Math.floor((dpad.dpadSize - actGap * 3 - sideH * 2) / 2));
+    actH = aimCastH;
+    actStackH = aimCastH * 2 + sideH * 2 + actGap * 3;
     actX = Layout.canvasW - actW - 10;
     actY = dpad.dpadY;
   } else {
@@ -108,15 +110,17 @@ function buildLayout() {
  * and render to share.
  */
 function actionRects(LAYOUT) {
+  const sideH = LAYOUT.portrait ? 32 : LAYOUT.actH;
+  const bigH = LAYOUT.portrait ? LAYOUT.actH : LAYOUT.actH;
   const out = [];
   let y = LAYOUT.actY;
-  out.push({ ...ACTION_LABELS[0], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
-  y += LAYOUT.actH + LAYOUT.actGap;
-  out.push({ ...ACTION_LABELS[1], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
-  y += LAYOUT.actH + LAYOUT.actGap;
-  out.push({ ...ACTION_LABELS[2], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
-  y += LAYOUT.actH + LAYOUT.actGap;
-  out.push({ ...ACTION_LABELS[3], x: LAYOUT.actX, y, w: LAYOUT.actW, h: LAYOUT.actH });
+  out.push({ ...ACTION_LABELS[0], x: LAYOUT.actX, y, w: LAYOUT.actW, h: bigH });
+  y += bigH + LAYOUT.actGap;
+  out.push({ ...ACTION_LABELS[1], x: LAYOUT.actX, y, w: LAYOUT.actW, h: bigH });
+  y += bigH + LAYOUT.actGap;
+  out.push({ ...ACTION_LABELS[2], x: LAYOUT.actX, y, w: LAYOUT.actW, h: sideH });
+  y += sideH + LAYOUT.actGap;
+  out.push({ ...ACTION_LABELS[3], x: LAYOUT.actX, y, w: LAYOUT.actW, h: sideH });
   return out;
 }
 
@@ -478,23 +482,15 @@ export class MobileControls {
     const cy = a.y + a.h / 2;
     drawReticle(ctx, a.x + 18, cy, 13, enabled);
     const labelCol = enabled ? IRON.bone : IRON.boneDim;
-    r.drawText('AIM', a.x + 38, a.y + 8, {
-      size: uiSize(11), bold: true, family: FONT_DISPLAY, color: labelCol
-    });
-    if (target) {
-      const sub = `${MobileControls._truncate(target.name, 8)} · ${target.distance}t`;
-      r.drawText(sub, a.x + 38, a.y + a.h - 10, {
-        size: uiSize(9), family: FONT_MONO, color: IRON.ember
-      });
-      if (target.dir) {
-        r.drawText(dirArrowGlyph(target.dir), a.x + a.w - 14, cy, {
-          size: uiSize(12), bold: true, align: 'center', baseline: 'middle',
-          color: IRON.brass
-        });
-      }
-    } else {
-      r.drawText(enabled ? 'aim ready' : 'no target', a.x + 38, a.y + a.h - 10, {
-        size: uiSize(9), italic: true, family: FONT_MONO, color: IRON.boneDim
+    const sub = target
+      ? `${MobileControls._truncate(target.name, 7)} ${target.distance}t`
+      : (enabled ? 'ready' : 'no target');
+    const subCol = target ? IRON.ember : IRON.boneDim;
+    MobileControls._drawActionText(r, a, 'AIM', sub, labelCol, subCol, !target);
+    if (target?.dir) {
+      r.drawText(dirArrowGlyph(target.dir), a.x + a.w - 14, cy, {
+        size: uiSize(12), bold: true, align: 'center', baseline: 'middle',
+        color: IRON.brass
       });
     }
   }
@@ -503,24 +499,20 @@ export class MobileControls {
     const ctx = r.ctx;
     const cy = a.y + a.h / 2;
     const spell = this._ctx?.spell || null;
-    // Rune medallion on left.
     drawBrassJewel(ctx, a.x + 18, cy, 13, {
       pressed,
       variant: ready ? 'rune' : 'brass',
       glyph: '✷'
     });
     const labelCol = ready ? IRON.bone : IRON.boneDim;
-    r.drawText('CAST', a.x + 38, a.y + 8, {
-      size: uiSize(11), bold: true, family: FONT_DISPLAY, color: labelCol
-    });
-    const sub = spell
-      ? (spell.cooldown > 0 ? `cooldown ${spell.cooldown}` : MobileControls._truncate(spell.name, 10))
-      : 'no spell';
-    r.drawText(ready ? MobileControls._truncate(spell?.name || 'ready', 10) : sub,
-      a.x + 38, a.y + a.h - 10, {
-      size: uiSize(9), italic: !ready, family: FONT_MONO,
-      color: ready ? IRON.rune : IRON.boneDim
-    });
+    let sub = 'no spell';
+    if (spell) {
+      sub = spell.cooldown > 0
+        ? `cd ${spell.cooldown}`
+        : MobileControls._truncate(spell.name, 9);
+    }
+    MobileControls._drawActionText(r, a, 'CAST', sub, labelCol,
+      ready ? IRON.rune : IRON.boneDim, !ready);
   }
 
   _renderSideButton(r, a, pressed, enabled) {
@@ -547,6 +539,38 @@ export class MobileControls {
   static _truncate(s, n) {
     if (!s) return '';
     return s.length > n ? s.slice(0, n - 1) + '…' : s;
+  }
+
+  /** Draw label + subline clipped inside an action plate (no overflow). */
+  static _drawActionText(r, a, title, sub, titleCol, subCol, subItalic = false) {
+    const ctx = r.ctx;
+    const textX = a.x + 36;
+    const textW = a.w - 40;
+    const titleY = a.y + 7;
+    const subY = a.y + a.h - 5;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(a.x + 1, a.y + 1, a.w - 2, a.h - 2);
+    ctx.clip();
+
+    r.drawText(title, textX, titleY, {
+      size: uiSize(11), bold: true, family: FONT_DISPLAY, color: titleCol
+    });
+
+    ctx.font = `${subItalic ? 'italic ' : ''}${uiSize(9)}px ${FONT_MONO}`;
+    let subText = sub || '';
+    while (subText.length > 1 && ctx.measureText(subText).width > textW) {
+      subText = subText.slice(0, -1);
+    }
+    if (subText.length < (sub || '').length) subText = subText.slice(0, -1) + '…';
+
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = subCol;
+    ctx.fillText(subText, textX, subY);
+
+    ctx.restore();
   }
 
   static computeAimTarget(player, floor) {

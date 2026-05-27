@@ -79,10 +79,13 @@ export class HUD {
     const def = p.totalDef();
     const crit = Math.round(p.critChance() * 100);
     const range = p.weapon?.stats?.attackRange || 1;
-    const focusChip = range > 1 ? `  FOC ${p.rangedFocus ?? 0}/${p.rangedFocusMax ?? 3}` : '';
-    const rangeChip = range > 1 ? `  RNG ${range}${focusChip}` : '';
-    r.drawText(`ATK ${atk}  DEF ${def}  CRIT ${crit}%${rangeChip}`,
-      8, TOP_PAD + 38, { size: uiSize(12), color: COLOR.textMuted, family: FONT_MONO });
+    const statParts = [`ATK ${atk}`, `DEF ${def}`, `CRIT ${crit}%`];
+    if (range > 1) {
+      statParts.push(`RNG ${range}`);
+      statParts.push(`FOC ${p.rangedFocus ?? 0}/${p.rangedFocusMax ?? 3}`);
+    }
+    r.drawText(statParts.join('  '), 8, TOP_PAD + 38,
+      { size: uiSize(11), color: COLOR.textMuted, family: FONT_MONO });
     r.drawText(`◈ ${p.gold}`, Layout.canvasW - 12, TOP_PAD + 38,
       { size: uiSize(12), color: COLOR.textXP, align: 'right', family: FONT_MONO });
 
@@ -94,47 +97,67 @@ export class HUD {
       this._drawDepthMeter(r, floorIndex, totalFloors);
     }
 
+    const chipY = TOP_PAD + 78;
+    const chipH = 15;
     let chipX = 8;
-    const chipY = TOP_PAD + 84;
-    // Reserve right-side space for the revive chip + depth meter so the
-    // status chips never collide with them.
+    if (floor && (floorIndex + 1) % 20 === 0) {
+      const bw = 58;
+      r.drawRect(8, chipY, bw, chipH, '#0a1018');
+      r.drawStrokedRect(8, chipY, bw, chipH, '#80b0e0', 1);
+      r.drawText('BIOME', 8 + bw / 2, chipY + 7, {
+        size: uiSize(9), bold: true, align: 'center', baseline: 'middle',
+        family: FONT_MONO, color: '#80b0e0'
+      });
+      chipX = 8 + bw + 6;
+    }
+
     const reviveResv = p.reviveCharges > 0 ? 88 : 0;
-    const rightLimit = Layout.canvasW - 12 - reviveResv;
+    const bossResv = floor?.definition?.specialEnemyId ? 72 : 0;
+    const rightLimit = Layout.canvasW - 14 - reviveResv - bossResv;
+
     for (const eff of p.statusEffects) {
       const label = HUD._statusLabel(eff);
-      const w = 8 + label.length * 6;
+      const w = Math.min(120, 10 + label.length * 6);
       if (chipX + w > rightLimit) break;
       const bg = eff.id === 'poison' ? '#2a4a30'
               : (eff.id === 'atk_buff' ? '#4a2a20' : '#1e3a52');
-      r.drawRect(chipX, chipY, w, 14, bg);
-      r.drawText(label, chipX + 4, chipY + 1, { size: uiSize(11) });
+      r.drawRect(chipX, chipY, w, chipH, bg);
+      r.drawStrokedRect(chipX, chipY, w, chipH, COLOR.goldDim, 1);
+      r.drawText(label, chipX + 5, chipY + 2,
+        { size: uiSize(10), bold: true, family: FONT_MONO, color: COLOR.textPrimary });
       chipX += w + 4;
     }
+
     if (p.reviveCharges > 0) {
-      // Render as a bordered chip so it doesn't collide with the depth
-      // column or the BOSS/ELITE floor chip.
-      const label = `REVIVE ${p.reviveCharges}`;
-      const rw = Math.max(76, 10 + label.length * 7);
-      const rx = Layout.canvasW - rw - 12;
-      r.drawRect(rx, chipY, rw, 14, '#1a2a1a');
-      r.drawStrokedRect(rx, chipY, rw, 14, COLOR.textHeal, 1);
-      r.drawText(label, rx + 4, chipY + 1,
-        { size: uiSize(11), bold: true, color: COLOR.textHeal, family: FONT_MONO });
+      const label = `REV ${p.reviveCharges}`;
+      const rw = Math.max(52, 10 + label.length * 6);
+      const rx = Layout.canvasW - rw - 14;
+      r.drawRect(rx, chipY, rw, chipH, '#1a2a1a');
+      r.drawStrokedRect(rx, chipY, rw, chipH, COLOR.textHeal, 1);
+      r.drawText(label, rx + 5, chipY + 2,
+        { size: uiSize(10), bold: true, color: COLOR.textHeal, family: FONT_MONO });
     }
-    // Skill chips — appear under status chips when the player has skills.
-    // Compact: 4-char abbreviation per skill so multiple fit on one row.
+
     if (p.skills && p.skills.length > 0) {
-      let sx = 8;
-      const sy = chipY + 18;
-      r.drawText('SK', sx, sy + 1, { size: uiSize(10), color: COLOR.textMuted });
-      sx += 16;
-      for (const id of p.skills) {
-        const abbr = HUD._skillAbbr(id);
-        const w = 6 + abbr.length * 6;
-        r.drawRect(sx, sy, w, 14, '#1e2a3a');
-        r.drawText(abbr, sx + 3, sy + 1, { size: uiSize(11), color: '#a0d0ff' });
-        sx += w + 3;
-        if (sx > Layout.canvasW - 8) break;
+      const sy = chipY + chipH + 4;
+      if (sy + chipH <= Layout.hud - 2) {
+        let sx = 8;
+        r.drawRect(sx, sy, 22, chipH, '#141018');
+        r.drawText('SK', sx + 11, sy + 7,
+          { size: uiSize(9), bold: true, align: 'center', baseline: 'middle',
+            family: FONT_MONO, color: COLOR.textMuted });
+        sx += 26;
+        const skillLimit = Layout.canvasW - 14 - bossResv;
+        for (const id of p.skills) {
+          const abbr = HUD._skillAbbr(id);
+          const w = 8 + abbr.length * 6;
+          if (sx + w > skillLimit) break;
+          r.drawRect(sx, sy, w, chipH, '#1e2a3a');
+          r.drawStrokedRect(sx, sy, w, chipH, '#4a6080', 1);
+          r.drawText(abbr, sx + 4, sy + 2,
+            { size: uiSize(10), bold: true, family: FONT_MONO, color: '#b8d8ff' });
+          sx += w + 3;
+        }
       }
     }
   }
@@ -169,9 +192,9 @@ export class HUD {
   _drawFloorBanner(r, name, floorIndex, totalFloors, daily = false, floorType = null) {
     const ctx = r.ctx;
     const x = 8;
-    const y = TOP_PAD + 52;
+    const y = TOP_PAD + 50;
     const w = Layout.canvasW - 32;
-    const h = 30;
+    const h = 24;
     const t = hudNow();
     const cx = Layout.canvasW / 2;
     const upper = name.toUpperCase();
@@ -235,7 +258,7 @@ export class HUD {
     ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const labelY = y + 11;
+    const labelY = y + 9;
     // Engraved back-shadow
     ctx.fillStyle = IRON.ink;
     ctx.fillText(upper, cx + 1, labelY + 1);
@@ -252,7 +275,7 @@ export class HUD {
     ctx.fillText(upper, cx, labelY);
 
     // Subtitle: ── FLOOR N OF M [· DAILY] [· REST / VAULT] ──
-    const subY = y + h - 7;
+    const subY = y + h - 5;
     const tag = floorType === 'rest'  ? '  ·  ✜ REST'
               : floorType === 'forge' ? '  ·  ⚒ FORGE'
               : floorType === 'vault' ? '  ·  ◈ VAULT'
@@ -284,23 +307,17 @@ export class HUD {
 
   _drawFloorChip(r, floor, floorIndex) {
     const special = floor?.definition?.specialEnemyId || '';
-    const y = TOP_PAD + 84;
-    if ((floorIndex + 1) % 20 === 0) {
-      r.drawRect(8, y, 62, 16, '#0a1018');
-      r.drawStrokedRect(8, y, 62, 16, '#80b0e0', 1);
-      r.drawText('BIOME', 39, y + 2, {
-        size: uiSize(9), bold: true, align: 'center', family: FONT_MONO, color: '#80b0e0'
-      });
-    }
+    const y = TOP_PAD + 78;
+    const chipH = 15;
     if (!special) return;
     const boss = special.startsWith('boss_');
     const text = boss ? 'BOSS' : 'ELITE';
     const col = boss ? COLOR.gold : '#c080ff';
     const x = boss ? Layout.canvasW - 74 : Layout.canvasW - 78;
-    r.drawRect(x, y, 66, 16, '#09060c');
-    r.drawStrokedRect(x, y, 66, 16, col, 1);
-    r.drawText(text, x + 33, y + 2, {
-      size: uiSize(9), bold: true, align: 'center',
+    r.drawRect(x, y, 66, chipH, '#09060c');
+    r.drawStrokedRect(x, y, 66, chipH, col, 1);
+    r.drawText(text, x + 33, y + 7, {
+      size: uiSize(9), bold: true, align: 'center', baseline: 'middle',
       family: FONT_MONO, color: col
     });
   }
