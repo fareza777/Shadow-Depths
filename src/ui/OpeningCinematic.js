@@ -12,25 +12,39 @@ import { Layout } from '../config/layoutMetrics.js';
 import { HERO_DEFS } from '../rendering/heroSprites.js';
 import { drawSpacedText, IRON_PALETTE } from './ironPanel.js';
 
-const TOTAL_DURATION = 8.4;
+const TOTAL_DURATION = 16.5;
 
 const STORY_BEATS = [
   {
-    at: 0.4,
+    at: 0.6,
+    title: 'BEFORE THE DESCENT',
+    body: 'Before the first kingdom burned, the depths were already awake.'
+  },
+  {
+    at: 3.3,
     title: 'THE GATE REMEMBERS',
     body: 'Every stair was sealed once. Every seal was broken from below.'
   },
   {
-    at: 2.5,
+    at: 6.2,
     title: 'A VIGIL IS CALLED',
     body: 'One lantern crosses the threshold. The dark answers with a hundred floors.'
   },
   {
-    at: 4.8,
+    at: 9.2,
+    title: 'NO SONG RETURNS',
+    body: 'Names are carved into iron. Footsteps vanish under stone.'
+  },
+  {
+    at: 12.1,
     title: 'DESCEND',
     body: 'Steel, ash, and breath. There is no rescue beneath the first door.'
   }
 ];
+
+const NARRATION_TEXT = STORY_BEATS
+  .map((beat) => `${beat.title}. ${beat.body}`)
+  .join(' ');
 
 export class OpeningCinematic {
   /** @param {{ bus: object, runOptions?: object }} deps */
@@ -39,13 +53,20 @@ export class OpeningCinematic {
     this.runOptions = runOptions;
     this.t = 0;
     this.finished = false;
+    this._narrationStarted = false;
     this._embers = OpeningCinematic._seedEmbers();
   }
 
   enter(ctx = {}) {
     this.t = 0;
     this.finished = false;
+    this._narrationStarted = false;
     this.runOptions = ctx.runOptions || this.runOptions || {};
+    this._startNarration();
+  }
+
+  exit() {
+    this._stopNarration();
   }
 
   update(dt) {
@@ -99,6 +120,7 @@ export class OpeningCinematic {
   _finish() {
     if (this.finished) return;
     this.finished = true;
+    this._stopNarration();
     this.bus.emit('request:startRunNow', {
       ...this.runOptions,
       skipIntro: true
@@ -149,7 +171,7 @@ export class OpeningCinematic {
     const gateW = IS_LANDSCAPE ? 210 : 260;
     const gateH = IS_LANDSCAPE ? 150 : 300;
     const y = IS_LANDSCAPE ? h * 0.2 : h * 0.18;
-    const open = OpeningCinematic._smooth(progress, 0.28, 0.78);
+    const open = OpeningCinematic._smooth(progress, 0.34, 0.88);
     const slit = 8 + open * gateW * 0.48;
 
     ctx.save();
@@ -174,7 +196,7 @@ export class OpeningCinematic {
     ctx.fillStyle = light;
     ctx.fillRect(cx - slit, y + gateH * 0.22, slit * 2, gateH * 0.78);
 
-    const runeAlpha = 0.25 + 0.4 * Math.sin(this.t * 2.2);
+    const runeAlpha = 0.25 + 0.4 * Math.sin(this.t * 1.35);
     ctx.globalAlpha = runeAlpha;
     ctx.strokeStyle = '#f1d49a';
     ctx.lineWidth = 1;
@@ -194,8 +216,8 @@ export class OpeningCinematic {
     const size = IS_LANDSCAPE ? 76 : 96;
     const x = w / 2 - size / 2;
     const y = IS_LANDSCAPE ? h * 0.54 : h * 0.56;
-    const a = OpeningCinematic._smooth(progress, 0.34, 0.62);
-    const bob = Math.sin(this.t * 2.8) * 3;
+    const a = OpeningCinematic._smooth(progress, 0.44, 0.72);
+    const bob = Math.sin(this.t * 1.9) * 3;
 
     ctx.save();
     ctx.globalAlpha = a;
@@ -238,7 +260,7 @@ export class OpeningCinematic {
     });
 
     if (this.t > TOTAL_DURATION - 1.8) {
-      const a = OpeningCinematic._smooth(this.t, TOTAL_DURATION - 1.8, TOTAL_DURATION - 0.9);
+      const a = OpeningCinematic._smooth(this.t, TOTAL_DURATION - 2.8, TOTAL_DURATION - 1.1);
       ctx.save();
       ctx.globalAlpha = a;
       ctx.font = `bold ${uiSize(IS_LANDSCAPE ? 24 : 32)}px ${FONT_DISPLAY}`;
@@ -289,7 +311,7 @@ export class OpeningCinematic {
     const ctx = r.ctx;
     ctx.save();
     ctx.globalAlpha = alpha * 0.72;
-    r.drawText('tap to skip', w / 2, h - 28, {
+    r.drawText('tap to skip  ·  narrated prologue', w / 2, h - 28, {
       size: uiSize(11),
       align: 'center',
       family: FONT_MONO,
@@ -301,6 +323,37 @@ export class OpeningCinematic {
   static _smooth(v, a, b) {
     const t = Math.max(0, Math.min(1, (v - a) / Math.max(0.0001, b - a)));
     return t * t * (3 - 2 * t);
+  }
+
+  _startNarration() {
+    if (this._narrationStarted) return;
+    this._narrationStarted = true;
+    try {
+      const synth = globalThis.speechSynthesis;
+      const Utterance = globalThis.SpeechSynthesisUtterance;
+      if (!synth || !Utterance) return;
+      synth.cancel();
+      const utterance = new Utterance(NARRATION_TEXT);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.78;
+      utterance.pitch = 0.82;
+      utterance.volume = 0.85;
+      synth.speak(utterance);
+      this._utterance = utterance;
+    } catch {
+      this._utterance = null;
+    }
+  }
+
+  _stopNarration() {
+    try {
+      if (this._utterance && globalThis.speechSynthesis) {
+        globalThis.speechSynthesis.cancel();
+      }
+    } catch {
+      // Voice narration is best-effort; visuals must never depend on it.
+    }
+    this._utterance = null;
   }
 
   static _seedEmbers() {
