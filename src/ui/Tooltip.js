@@ -14,7 +14,6 @@ import { IRON } from './ironHud.js';
 import { displayName } from '../items/Identification.js';
 
 const BRASS = '#d4ac6c';
-const BRASS_HI = '#f1d49a';
 
 const RARITY_COLORS = {
   common:    '#cfc2a4',
@@ -104,7 +103,7 @@ export class Tooltip {
 
     // Position above the anchor; fall back to below if not enough room.
     const a = this.anchor || { x: CANVAS_WIDTH / 2 - w / 2, y: 80, w: 0, h: 0 };
-    let x = Math.max(12, Math.min(CANVAS_WIDTH - w - 12, a.x + a.w / 2 - w / 2));
+    const x = Math.max(12, Math.min(CANVAS_WIDTH - w - 12, a.x + a.w / 2 - w / 2));
     let y = a.y - h - 6;
     if (y < 12) y = a.y + a.h + 6;
 

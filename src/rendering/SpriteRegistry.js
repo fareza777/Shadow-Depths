@@ -21,6 +21,7 @@ import {
 } from './playerSprites.js';
 import { buildEnemySprites } from './enemySprites.js';
 import { drawDetailedEnemySprite } from './enemySpritesDetailed.js';
+import { drawDetailedItemSprite } from './itemSpritesDetailed.js';
 import { HERO_ORDER, drawHeroSprite, drawHeroEquipment } from './heroSprites.js';
 import { paintWeaponAffix } from './weaponComposer.js';
 
@@ -311,6 +312,11 @@ export class SpriteRegistry {
 
     // Try detailed enemy sprites first (32x32 grid style)
     if (key.startsWith('enemy_') && drawDetailedEnemySprite(ctx, x, y, size, key)) {
+      return;
+    }
+
+    // Detailed item grids override procedural item art when defined
+    if (drawDetailedItemSprite(ctx, x, y, size, key)) {
       return;
     }
 

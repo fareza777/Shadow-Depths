@@ -8,8 +8,6 @@
  *
  * Maps screen coords → canvas coords accounting for the CSS scale factor.
  */
-import { TILE_SIZE } from '../config/constants.js';
-
 export class TouchHandler {
   /**
    * @param {{ bus:object, canvas:HTMLCanvasElement, sceneManager:object }} deps
@@ -29,7 +27,6 @@ export class TouchHandler {
   _onPointer(ev) {
     const { x, y } = this._toCanvas(ev);
     const scene = this.scenes.current;
-    const name = this.scenes.currentName;
 
     if (typeof scene?.hitTest === 'function') {
       const idx = scene.hitTest(x, y);

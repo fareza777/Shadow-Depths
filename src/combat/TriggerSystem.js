@@ -25,7 +25,7 @@
  * Optional gates on every trigger:
  *   chance: 0..1   (rng roll)
  *   tag:           (filter target by tag, e.g. 'undead')
- *   cooldown:      (turns before it can fire again)  ← future
+ *   cooldown:      (turns before it can fire again)
  */
 import { applyEffect } from './EffectRegistry.js';
 
@@ -73,6 +73,8 @@ export function fireTriggers(when, ctx) {
 
   let fired = 0;
   for (const { trig, src } of matched) {
+    const cooldownKey = triggerCooldownKey(when, trig, src);
+    if (isCoolingDown(actor, cooldownKey)) continue;
     if (!gatePasses(trig, ctx)) continue;
     if (!trig.do) continue;
     const effectCtx = {
@@ -81,9 +83,35 @@ export function fireTriggers(when, ctx) {
       sourceRef: src,
       target: trig.do?.target === 'self' ? actor : (ctx.target || actor)
     };
-    if (applyEffect(trig.do, effectCtx)) fired++;
+    if (applyEffect(trig.do, effectCtx)) {
+      if (trig.cooldown > 0) setCooldown(actor, cooldownKey, trig.cooldown);
+      fired++;
+    }
   }
   return fired;
+}
+
+export function tickTriggerCooldowns(actor) {
+  if (!actor?._triggerCooldowns) return;
+  for (const key of Object.keys(actor._triggerCooldowns)) {
+    actor._triggerCooldowns[key] -= 1;
+    if (actor._triggerCooldowns[key] <= 0) delete actor._triggerCooldowns[key];
+  }
+}
+
+function triggerCooldownKey(when, trig, src) {
+  const sourceId = src?.id || src?.defId || src?._kind || 'actor';
+  const trigId = trig.id || `${when}:${trig.do?.type || 'effect'}:${trig.do?.status || ''}:${trig.do?.value ?? ''}`;
+  return `${sourceId}:${trigId}`;
+}
+
+function isCoolingDown(actor, key) {
+  return (actor._triggerCooldowns?.[key] || 0) > 0;
+}
+
+function setCooldown(actor, key, turns) {
+  if (!actor._triggerCooldowns) actor._triggerCooldowns = {};
+  actor._triggerCooldowns[key] = Math.max(1, Math.floor(turns));
 }
 
 /** Evaluate trigger gating: chance, hp-below threshold, tag filter. */

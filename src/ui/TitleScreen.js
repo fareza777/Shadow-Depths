@@ -16,7 +16,7 @@ import {
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
-import { IRON, drawIronRivet, drawBrassRivet, drawBrassPiping } from './ironHud.js';
+import { IRON, drawBrassRivet } from './ironHud.js';
 
 const BRASS_DARK = '#7a5c2c';
 const BRASS = '#d4ac6c';

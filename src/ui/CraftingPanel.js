@@ -24,6 +24,8 @@ export class CraftingPanel {
     this.open = false;
     this._scroll = 0;
     this._rowRects = [];   // hit-test cache for CRAFT buttons
+    this._targetRects = [];
+    this._rerollTarget = 0;
   }
 
   show()  { this.open = true; this._scroll = 0; }
@@ -61,12 +63,36 @@ export class CraftingPanel {
       family: FONT_BODY, color: COLOR.textMuted
     });
 
+    const rerollTargets = eligibleRerollTargets(this.player);
+    this._targetRects = [];
+    let listY = modalY + 56;
+    if (recipes.some((r) => r.operation === 'reroll')) {
+      const target = rerollTargets[this._rerollTarget % Math.max(1, rerollTargets.length)];
+      const ty = modalY + 52;
+      r.drawRect(modalX + 8, ty, modalW - 16, 30, '#120e18');
+      r.drawStrokedRect(modalX + 8, ty, modalW - 16, 30, BRASS_DARK, 1);
+      r.drawText('REROLL TARGET', modalX + 18, ty + 9, {
+        size: uiSize(8), bold: true, family: FONT_MONO, color: BRASS
+      });
+      r.drawText(target ? target.item.name : 'no equipment in bag or worn', modalX + 18, ty + 22, {
+        size: uiSize(10), family: FONT_BODY, color: target ? COLOR.textPrimary : COLOR.textMuted
+      });
+      const bx = modalX + modalW - 88;
+      r.drawRect(bx, ty + 4, 66, 22, target ? IRON.plate2 : '#16101a');
+      r.drawStrokedRect(bx, ty + 4, 66, 22, target ? BRASS : IRON.ink, 1);
+      r.drawText('CHANGE', bx + 33, ty + 15, {
+        size: uiSize(8), bold: true, align: 'center', baseline: 'middle',
+        family: FONT_MONO, color: target ? BRASS_HI : IRON.boneDim
+      });
+      this._targetRects.push({ x: bx, y: ty + 4, w: 66, h: 22, enabled: rerollTargets.length > 1 });
+      listY = modalY + 88;
+    }
+
     // Recipe rows
     const rowH = 70;
     const listX = modalX + 8;
     const listW = modalW - 16;
-    const listY = modalY + 56;
-    const listH = modalH - 56 - 56;   // leave room for close button
+    const listH = modalY + modalH - 56 - listY;   // leave room for close button
     ctx.save();
     ctx.beginPath();
     ctx.rect(listX, listY, listW, listH);
@@ -76,13 +102,14 @@ export class CraftingPanel {
     let y = listY + 4 - this._scroll;
     for (const recipe of recipes) {
       const check = canCraft(this.player, recipe);
-      const enabled = check.ok;
+      const needsTarget = recipe.operation === 'reroll';
+      const enabled = check.ok && (!needsTarget || rerollTargets.length > 0);
       this._rowRects.push({ id: recipe.id, x: listX, y, w: listW, h: rowH, enabled });
       if (y + rowH < listY || y > listY + listH) {
         y += rowH + 4;
         continue;
       }
-      this._drawRecipeRow(r, recipe, listX, y, listW, rowH, enabled, check);
+      this._drawRecipeRow(r, recipe, listX, y, listW, rowH, enabled, check, needsTarget && rerollTargets.length === 0);
       y += rowH + 4;
     }
     ctx.restore();
@@ -99,7 +126,7 @@ export class CraftingPanel {
     this._closeRect = { x: closeX, y: closeY, w: 160, h: 36 };
   }
 
-  _drawRecipeRow(r, recipe, x, y, w, h, enabled, check) {
+  _drawRecipeRow(r, recipe, x, y, w, h, enabled, check, missingTarget = false) {
     const ctx = r.ctx;
     ctx.save();
     ctx.fillStyle = enabled ? IRON.plate2 : '#0c0a14';
@@ -126,7 +153,8 @@ export class CraftingPanel {
       const tag = miss ? ` (have ${have})` : '';
       return `${inp.count}× ${name}${tag}`;
     });
-    r.drawText(parts.join('  ·  '), x + 8, y + h - 14, {
+    const inputLine = missingTarget ? `${parts.join('  ·  ')}  ·  needs equipment target` : parts.join('  ·  ');
+    r.drawText(inputLine, x + 8, y + h - 14, {
       size: uiSize(10), family: FONT_MONO,
       color: enabled ? COLOR.textPrimary : '#7a5a44'
     });
@@ -137,7 +165,7 @@ export class CraftingPanel {
     const cy = y + (h - ch) / 2;
     r.drawRect(cx, cy, cw, ch, enabled ? '#2e3a2a' : '#241c20');
     r.drawStrokedRect(cx, cy, cw, ch, enabled ? '#80c060' : IRON.ink, enabled ? 2 : 1);
-    r.drawText(enabled ? 'CRAFT' : '—', cx + cw / 2, cy + ch / 2, {
+    r.drawText(enabled ? (recipe.operation === 'reroll' ? 'REROLL' : 'CRAFT') : '—', cx + cw / 2, cy + ch / 2, {
       size: uiSize(11), bold: true, align: 'center', baseline: 'middle',
       family: FONT_DISPLAY, color: enabled ? '#a8ff90' : IRON.boneDim
     });
@@ -150,17 +178,44 @@ export class CraftingPanel {
       this.hide();
       return true;
     }
+    const targets = eligibleRerollTargets(this.player);
+    for (const rect of this._targetRects) {
+      if (rect.enabled && _inside(x, y, rect)) {
+        this._rerollTarget = (this._rerollTarget + 1) % targets.length;
+        return true;
+      }
+    }
     const cw = 64, ch = 26;
     for (const rect of this._rowRects) {
       const bx = rect.x + rect.w - cw - 8;
       const by = rect.y + (rect.h - ch) / 2;
       if (rect.enabled && _insideAt(x, y, bx, by, cw, ch)) {
-        this.bus?.emit('craft:request', { recipeId: rect.id });
+        const recipe = listRecipes().find((r) => r.id === rect.id);
+        const target = recipe?.operation === 'reroll'
+          ? targets[this._rerollTarget % Math.max(1, targets.length)]
+          : null;
+        this.bus?.emit('craft:request', { recipeId: rect.id, target });
         return true;
       }
     }
     return false;
   }
+}
+
+function eligibleRerollTargets(player) {
+  if (!player) return [];
+  const out = [];
+  const slots = ['weapon', 'armor', 'helm', 'legs', 'necklace', 'ring'];
+  for (const slot of slots) {
+    const item = player[slot];
+    if (item?.slot) out.push({ kind: 'equipment', slot, item });
+  }
+  const inv = player.inventory?.slots || [];
+  for (let i = 0; i < inv.length; i++) {
+    const item = inv[i];
+    if (item?.slot) out.push({ kind: 'inventory', index: i, item });
+  }
+  return out;
 }
 
 function _inside(x, y, r) {

@@ -12,7 +12,7 @@
  * line — bigger, easier to read on phones.
  */
 import {
-  COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
+  CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
@@ -327,7 +327,7 @@ export class InventoryUI {
     });
   }
 
-  _renderTabs(r, player) {
+  _renderTabs(r, _player) {
     const g = this._tabsGeometry();
     const ctx = r.ctx;
     for (let i = 0; i < TABS.length; i++) {
@@ -590,14 +590,5 @@ export class InventoryUI {
     for (let i = 0; i < lines.length; i++) {
       r.drawText(lines[i], x, y + i * 16, opts);
     }
-  }
-}
-
-function rarityColor(r) {
-  switch (r) {
-    case 'uncommon': return COLOR.itemUncommon;
-    case 'rare':     return COLOR.itemRare;
-    case 'epic':     return COLOR.itemEpic;
-    default:         return COLOR.itemCommon;
   }
 }

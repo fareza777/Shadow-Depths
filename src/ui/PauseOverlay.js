@@ -5,7 +5,7 @@
  */
 import {
   CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
-  FONT_DISPLAY, FONT_BODY, uiSize
+  FONT_DISPLAY, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
 import {

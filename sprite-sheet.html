@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shadow Depths — Upgraded Sprite Sheets</title>
+  <style>
+    :root {
+      --bg: #050508;
+      --fg: #c8c8cc;
+      --surface: #121218;
+      --accent: #d02030;
+      --soul: #60f0ff;
+      --border: #2a2a32;
+    }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: 'Cinzel', serif;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { font-weight: 700; letter-spacing: 3px; color: var(--soul); margin-bottom: 8px; text-transform: uppercase; }
+    p { font-family: 'IM Fell English', serif; font-size: 1.2rem; color: #888; margin-bottom: 40px; }
+    
+    .section-title { width: 100%; max-width: 1100px; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin: 60px 0 24px; text-align: left; font-size: 1.5rem; color: var(--soul); }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 32px;
+      width: 100%;
+      max-width: 1100px;
+    }
+    
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+      position: relative;
+    }
+    .card:hover {
+      transform: translateY(-8px);
+      border-color: var(--soul);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    }
+    
+    canvas {
+      image-rendering: pixelated;
+      background: #000;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+      width: 128px;
+      height: 128px;
+    }
+    
+    .name { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .tag { font-size: 11px; background: #222; padding: 2px 8px; border-radius: 4px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .controls { margin-top: 12px; display: flex; gap: 8px; }
+    button {
+      background: #333;
+      border: 0;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button:hover { background: var(--accent); }
+    
+    .sprite-sheet-view {
+      margin-top: 40px;
+      width: 100%;
+      max-width: 1100px;
+      background: #000;
+      padding: 20px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    .sprite-sheet-canvas {
+      image-rendering: pixelated;
+      display: block;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=IM+Fell+English&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h1>Shadow Depths</h1>
+  <p>Upgraded Sprite Sheets — Dark Fantasy & Gritty Aesthetic</p>
+
+  <div class="section-title">Enemies (Animated)</div>
+  <div class="grid" id="enemy-grid"></div>
+
+  <div class="section-title">Items & Relics</div>
+  <div class="grid" id="item-grid"></div>
+
+  <div class="section-title">Sprite Sheet Export</div>
+  <div class="sprite-sheet-view">
+    <canvas id="export-canvas" class="sprite-sheet-canvas"></canvas>
+  </div>
+
+  <script type="module">
+    import { PALETTES, SPRITES } from './src/rendering/spriteSheets.js';
+
+    function drawPixel(ctx, x, y, size, color) {
+      if (color === 'transparent') return;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * size, y * size, size, size);
+    }
+
+    function renderSprite(canvas, grid, palette, scale = 4) {
+      const ctx = canvas.getContext('2d');
+      canvas.width = 32 * scale;
+      canvas.height = 32 * scale;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      grid.forEach((row, y) => {
+        [...row].forEach((char, x) => {
+          drawPixel(ctx, x, y, scale, palette[char] || 'transparent');
+        });
+      });
+    }
+
+    const enemies = [
+      { id: 'goblin', name: 'Goblin Elite', pal: PALETTES.goblin, states: ['idle', 'walk'] },
+      { id: 'skeleton', name: 'Skeleton Lord', pal: PALETTES.skeleton, states: ['idle', 'walk'] },
+      { id: 'wraith', name: 'Void Wraith', pal: PALETTES.void, states: ['idle'] }
+    ];
+
+    const items = [
+      { id: 'potion_red', name: 'Glow Potion', pal: PALETTES.items },
+      { id: 'sword_runic', name: 'Runic Blade', pal: PALETTES.items },
+      { id: 'scroll_cursed', name: 'Cursed Scroll', pal: PALETTES.items }
+    ];
+
+    const enemyGrid = document.getElementById('enemy-grid');
+    enemies.forEach(enemy => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const canvas = document.createElement('canvas');
+      card.appendChild(canvas);
+      
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = enemy.name;
+      card.appendChild(name);
+      
+      const tag = document.createElement('div');
+      tag.className = 'tag';
+      tag.textContent = 'Enemy';
+      card.appendChild(tag);
+      
+      enemyGrid.appendChild(card);
+      
+      let frame = 0;
+      let state = enemy.states[0];
+      
+      function animate() {
+        const spriteKey = `enemy_${enemy.id}_${state}`;
+        const grid = SPRITES[spriteKey] || SPRITES[`enemy_${enemy.id}_idle`];
+        renderSprite(canvas, grid, enemy.pal);
+        
+        // Simple bobbing effect for idle
+        if (state === 'idle') {
+          canvas.style.transform = `translateY(${Math.sin(Date.now() / 200) * 4}px)`;
+        } else {
+          canvas.style.transform = 'none';
+        }
+        
+        requestAnimationFrame(animate);
+      }
+      animate();
+      
+      if (enemy.states.length > 1) {
+        const controls = document.createElement('div');
+        controls.className = 'controls';
+        enemy.states.forEach(s => {
+          const btn = document.createElement('button');
+          btn.textContent = s.toUpperCase();
+          btn.onclick = () => state = s;
+          controls.appendChild(btn);
+        });
+        card.appendChild(controls);
+      }
+    });
+
+    const itemGrid = document.getElementById('item-grid');
+    items.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      const canvas = document.createElement('canvas');
+      card.appendChild(canvas);
+      
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = item.name;
+      card.appendChild(name);
+      
+      const tag = document.createElement('div');
+      tag.className = 'tag';
+      tag.textContent = 'Item';
+      card.appendChild(tag);
+      
+      itemGrid.appendChild(card);
+      renderSprite(canvas, SPRITES[`item_${item.id}`], item.pal);
+    });
+
+    // Export Sprite Sheet
+    const exportCanvas = document.getElementById('export-canvas');
+    const exCtx = exportCanvas.getContext('2d');
+    const spriteKeys = Object.keys(SPRITES);
+    exportCanvas.width = spriteKeys.length * 32;
+    exportCanvas.height = 32;
+    
+    spriteKeys.forEach((key, i) => {
+      const grid = SPRITES[key];
+      const palKey = key.split('_')[1];
+      const palette = PALETTES[palKey] || PALETTES.items;
+      
+      grid.forEach((row, y) => {
+        [...row].forEach((char, x) => {
+          const color = palette[char] || 'transparent';
+          if (color !== 'transparent') {
+            exCtx.fillStyle = color;
+            exCtx.fillRect(i * 32 + x, y, 1, 1);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

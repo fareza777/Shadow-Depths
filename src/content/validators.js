@@ -18,7 +18,14 @@
  * but `validateContent(content)` returns a report you can surface in dev.
  */
 
+import { hasEffect } from '../combat/EffectRegistry.js';
+import { listStatuses } from '../combat/StatusEffects.js';
+import { PREFIXES, SUFFIXES } from './affixes.js';
+
 const LOG_TAG = '[VALIDATE]';
+const STATUS_IDS = new Set(listStatuses());
+const PREFIX_IDS = new Set(PREFIXES.map((a) => a.id));
+const SUFFIX_IDS = new Set(SUFFIXES.map((a) => a.id));
 
 const ITEM_SCHEMA = {
   id:        { type: 'string', required: true },
@@ -155,6 +162,74 @@ function validateArray(arr, schema, arrName) {
   return issues;
 }
 
+function validateEffectSpec(eff, label) {
+  const issues = [];
+  if (!eff || typeof eff !== 'object') {
+    issues.push(`${label}: effect is not an object`);
+    return issues;
+  }
+  if (!eff.type || typeof eff.type !== 'string') {
+    issues.push(`${label}: missing effect type`);
+    return issues;
+  }
+  if (!hasEffect(eff.type)) {
+    issues.push(`${label}: unknown effect type "${eff.type}"`);
+  }
+  if (['heal', 'damage', 'maxHP', 'grantXP', 'lifesteal', 'drainXP', 'aoe_damage'].includes(eff.type)) {
+    if (typeof eff.value !== 'number') issues.push(`${label}: "${eff.type}" needs numeric value`);
+  }
+  if (eff.type === 'applyStatus') {
+    if (!STATUS_IDS.has(eff.status)) issues.push(`${label}: unknown status "${eff.status}"`);
+    if (eff.duration != null && typeof eff.duration !== 'number') issues.push(`${label}: duration must be numeric`);
+  }
+  if (eff.type === 'aoe_damage' && eff.radius != null && typeof eff.radius !== 'number') {
+    issues.push(`${label}: radius must be numeric`);
+  }
+  return issues;
+}
+
+function validateTriggers(triggers, label) {
+  const issues = [];
+  if (!Array.isArray(triggers)) return issues;
+  const validWhen = new Set(['onHit', 'onCrit', 'onKill', 'onDamaged', 'onHpBelow', 'onTurnStart', 'onMove']);
+  for (let i = 0; i < triggers.length; i++) {
+    const trig = triggers[i];
+    const tLabel = `${label}.triggers[${i}]`;
+    if (!trig || typeof trig !== 'object') {
+      issues.push(`${tLabel}: trigger is not an object`);
+      continue;
+    }
+    if (!validWhen.has(trig.when)) issues.push(`${tLabel}: unknown trigger "${trig.when}"`);
+    if (trig.chance != null && (typeof trig.chance !== 'number' || trig.chance < 0 || trig.chance > 1)) {
+      issues.push(`${tLabel}: chance must be 0..1`);
+    }
+    if (trig.cooldown != null && (typeof trig.cooldown !== 'number' || trig.cooldown < 1)) {
+      issues.push(`${tLabel}: cooldown must be >= 1`);
+    }
+    if (trig.when === 'onHpBelow' && (typeof trig.pct !== 'number' || trig.pct <= 0 || trig.pct >= 1)) {
+      issues.push(`${tLabel}: onHpBelow needs pct between 0 and 1`);
+    }
+    issues.push(...validateEffectSpec(trig.do, `${tLabel}.do`));
+  }
+  return issues;
+}
+
+function validateEffectsOnEntries(dict, dictName) {
+  const issues = [];
+  if (!dict || typeof dict !== 'object') return issues;
+  for (const [id, entry] of Object.entries(dict)) {
+    const label = `${dictName}[${id}]`;
+    for (const field of ['effects', 'onHit', 'onHitPlayer']) {
+      if (!Array.isArray(entry?.[field])) continue;
+      for (let i = 0; i < entry[field].length; i++) {
+        issues.push(...validateEffectSpec(entry[field][i], `${label}.${field}[${i}]`));
+      }
+    }
+    issues.push(...validateTriggers(entry?.triggers, label));
+  }
+  return issues;
+}
+
 /**
  * Run all validators against a loaded content bundle.
  * @param {{items, enemies, skills, biomes, heroSpells}} content
@@ -167,10 +242,12 @@ export function validateContent(content) {
   if (content.items) {
     counts.items = Object.keys(content.items).length;
     issues.push(...validateDict(content.items, ITEM_SCHEMA, 'items'));
+    issues.push(...validateEffectsOnEntries(content.items, 'items'));
   }
   if (content.enemies) {
     counts.enemies = Object.keys(content.enemies).length;
     issues.push(...validateDict(content.enemies, ENEMY_SCHEMA, 'enemies'));
+    issues.push(...validateEffectsOnEntries(content.enemies, 'enemies'));
   }
   if (content.skills) {
     const skillsArr = Array.isArray(content.skills) ? content.skills : content.skills.skills;
@@ -225,6 +302,33 @@ export function validateContent(content) {
           if (!enemyIds.has(eid)) {
             issues.push(`biomes[${b.id}].enemyPool: unknown enemy id "${eid}"`);
           }
+        }
+      }
+    }
+  }
+
+  if (content.recipes && content.items) {
+    const recipes = Array.isArray(content.recipes) ? content.recipes : content.recipes.recipes;
+    const itemIds = new Set(Object.keys(content.items));
+    if (recipes) {
+      for (const recipe of recipes) {
+        if (!recipe?.id) continue;
+        for (const input of recipe.inputs || []) {
+          if (!itemIds.has(input.materialId)) {
+            issues.push(`recipes[${recipe.id}].inputs: unknown material id "${input.materialId}"`);
+          }
+          if (typeof input.count !== 'number' || input.count < 1) {
+            issues.push(`recipes[${recipe.id}].inputs: invalid count for "${input.materialId}"`);
+          }
+        }
+        if (recipe.guaranteedPrefix && !PREFIX_IDS.has(recipe.guaranteedPrefix)) {
+          issues.push(`recipes[${recipe.id}].guaranteedPrefix: unknown affix "${recipe.guaranteedPrefix}"`);
+        }
+        if (recipe.guaranteedSuffix && !SUFFIX_IDS.has(recipe.guaranteedSuffix)) {
+          issues.push(`recipes[${recipe.id}].guaranteedSuffix: unknown affix "${recipe.guaranteedSuffix}"`);
+        }
+        if (!recipe.operation && !recipe.baseSlot) {
+          issues.push(`recipes[${recipe.id}]: needs baseSlot or operation`);
         }
       }
     }

@@ -109,13 +109,6 @@ function GRAD_V(ctx, ox, oy, size, colors) {
   ctx.fillStyle = g;
   ctx.fillRect(ox, oy, size, size);
 }
-function GRAD_D(ctx, ox, oy, size, colors) {
-  const g = ctx.createLinearGradient(ox, oy, ox + size, oy + size);
-  for (let i = 0; i < colors.length; i++) g.addColorStop(i / (colors.length - 1), colors[i]);
-  ctx.fillStyle = g;
-  ctx.fillRect(ox, oy, size, size);
-}
-
 // ═══════════════════════════════════════════════════════════════════════
 // BIOMES
 // ═══════════════════════════════════════════════════════════════════════

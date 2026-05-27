@@ -7,7 +7,7 @@
  * action buttons that share the same wrought-iron language.
  */
 import { IRON, drawIronPlate, drawIronRivet, drawBrassRivet } from './ironHud.js';
-import { FONT_DISPLAY, FONT_MONO, COLOR } from '../config/constants.js';
+import { FONT_DISPLAY, FONT_MONO } from '../config/constants.js';
 
 const ink   = IRON.ink;
 const brass = IRON.brass;

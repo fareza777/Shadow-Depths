@@ -26,6 +26,7 @@ export class Item {
     this.stats = def.stats || null;
     this.effects = def.effects || null;
     this.onHit = def.onHit || null;
+    this.triggers = def.triggers || null;
     this.target = def.target || null;
     this.range = def.range || 0;
     this.lore = def.lore || '';

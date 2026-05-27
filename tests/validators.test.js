@@ -35,6 +35,38 @@ describe('validateContent', () => {
     expect(r.issues.some((m) => m.includes('unknown enemy id "ghost"'))).toBe(true);
   });
 
+  it('flags unknown recipe materials and affixes', () => {
+    const r = validateContent({
+      items: { scrap_iron: { id: 'scrap_iron', name: 'Scrap', type: 'material' } },
+      recipes: { recipes: [{
+        id: 'bad_recipe',
+        name: 'Bad',
+        inputs: [{ materialId: 'missing_dust', count: 1 }],
+        baseSlot: 'weapon',
+        guaranteedPrefix: 'not_real'
+      }] }
+    });
+    expect(r.ok).toBe(false);
+    expect(r.issues.some((m) => m.includes('unknown material id "missing_dust"'))).toBe(true);
+    expect(r.issues.some((m) => m.includes('unknown affix "not_real"'))).toBe(true);
+  });
+
+  it('flags unknown effect and status specs', () => {
+    const r = validateContent({
+      items: {
+        charm: {
+          id: 'charm',
+          name: 'Charm',
+          effects: [{ type: 'does_not_exist', value: 1 }],
+          triggers: [{ when: 'onHit', do: { type: 'applyStatus', status: 'ghosted', duration: 1 } }]
+        }
+      }
+    });
+    expect(r.ok).toBe(false);
+    expect(r.issues.some((m) => m.includes('unknown effect type "does_not_exist"'))).toBe(true);
+    expect(r.issues.some((m) => m.includes('unknown status "ghosted"'))).toBe(true);
+  });
+
   it('returns ok for well-formed content', () => {
     const r = validateContent({
       items: { potion: { id: 'potion', name: 'Potion', rarity: 'common', type: 'consumable' } },

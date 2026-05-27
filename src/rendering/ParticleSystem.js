@@ -107,6 +107,19 @@ export class ParticleSystem {
       this._pushRune(cx, cy, color, radius, 0.72, 'sanctuary');
       this.spawnRingBurst(cx, cy, color, 0.72, 1.8 + radius * 0.35);
       this.spawnSparks(cx, cy, '#fff2c0', 20, { spread: 1.6, life: 0.75, glow: true });
+    } else if (fx.kind === 'warden') {
+      this._pushRune(cx, cy, '#bcd6ff', radius, 0.68, 'ward');
+      for (let i = 0; i < 4; i++) this.spawnRingBurst(cx, cy, i % 2 ? '#5a8ed8' : color, 0.44 + i * 0.06, 1.1 + i * 0.34);
+      this.spawnSparks(cx, cy, '#d8ecff', 18, { spread: 1.3, life: 0.72, glow: true });
+    } else if (fx.kind === 'bladedancer' && fx.target) {
+      this._pushBeam(caster.renderX, caster.renderY, fx.target.x, fx.target.y, '#ff8844', 0.22, 3);
+      this._pushBeam(caster.renderX, caster.renderY, fx.target.x, fx.target.y, '#ffe0a0', 0.18, 4);
+      this.spawnSparks(fx.target.x, fx.target.y, '#ffb060', 28, { spread: 1.15, life: 0.46, glow: true });
+    } else if (fx.kind === 'echobinder') {
+      this._pushRune(cx, cy, '#c060ff', radius, 0.64, 'storm');
+      this.spawnRingBurst(cx, cy, '#c060ff', 0.52, 1.7 + radius * 0.45);
+      this.spawnRingBurst(cx, cy, '#bcd6ff', 0.42, 1.2 + radius * 0.25);
+      this.spawnSparks(cx, cy, '#d8a0ff', 24, { spread: 1.7, life: 0.66, glow: true });
     } else {
       this._pushRune(cx, cy, color, radius, 0.58, 'ward');
       this.spawnRingBurst(cx, cy, '#80b0ff', 0.58, 1.45);

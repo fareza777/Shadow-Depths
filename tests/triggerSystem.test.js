@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { collectTriggers, fireTriggers } from '../src/combat/TriggerSystem.js';
+import { collectTriggers, fireTriggers, tickTriggerCooldowns } from '../src/combat/TriggerSystem.js';
 
 function fakeRng(seq = []) {
   let i = 0;
@@ -81,5 +81,21 @@ describe('TriggerSystem.fireTriggers gating', () => {
     const a = fireTriggers('onHit', { actor: player, target: player, rng, bus });
     const b = fireTriggers('onHit', { actor: player, target: player, rng, bus });
     expect(a + b).toBe(1);
+  });
+
+  it('respects trigger cooldowns across turns', () => {
+    const player = fakePlayer([{
+      id: 'pulse',
+      when: 'onHit',
+      cooldown: 2,
+      do: { type: 'heal', value: 1, target: 'self' }
+    }]);
+    const bus = { emit() {} };
+    expect(fireTriggers('onHit', { actor: player, target: player, bus })).toBe(1);
+    expect(fireTriggers('onHit', { actor: player, target: player, bus })).toBe(0);
+    tickTriggerCooldowns(player);
+    expect(fireTriggers('onHit', { actor: player, target: player, bus })).toBe(0);
+    tickTriggerCooldowns(player);
+    expect(fireTriggers('onHit', { actor: player, target: player, bus })).toBe(1);
   });
 });

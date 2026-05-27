@@ -46,7 +46,7 @@ export function computeSetBonuses(player) {
     if (count < 2) continue;
     // Pick the highest-threshold bonus we qualify for. Multiple-tier bonuses
     // STACK: 2-piece + 3-piece both apply when you have 3 pieces.
-    let qualified = (set.bonuses || []).filter((b) => count >= (b.count || 2));
+    const qualified = (set.bonuses || []).filter((b) => count >= (b.count || 2));
     if (qualified.length === 0) continue;
     for (const bonus of qualified) {
       if (bonus.statMods) {

@@ -22,9 +22,8 @@ import {
 import { Layout } from '../config/layoutMetrics.js';
 import { Player } from '../entities/Player.js';
 import { heroDef } from '../rendering/heroSprites.js';
-import { HERO_SPELLS } from '../config/heroSpells.js';
 import { craft, getRecipe } from '../items/Crafting.js';
-import { identify, isIdentified } from '../items/Identification.js';
+import { identify } from '../items/Identification.js';
 
 /** Per-hero stat overrides (atk/def/dex/torchRadius) for new Player(). */
 function heroStatOverrides(kind) {
@@ -39,6 +38,8 @@ import { findQuickUseSlots } from '../items/quickUse.js';
 import { Dungeon } from '../world/Dungeon.js';
 import { Pathfinding } from '../world/Pathfinding.js';
 import { CombatSystem } from '../combat/CombatSystem.js';
+import { SpellSystem } from '../combat/SpellSystem.js';
+import { tickTriggerCooldowns } from '../combat/TriggerSystem.js';
 import { RNG } from './RNG.js';
 import { MobileControls } from '../ui/MobileControls.js';
 import { QuickUseBar } from '../ui/QuickUseBar.js';
@@ -93,6 +94,13 @@ export class GameScene {
     this.combat = new CombatSystem({
       bus: this.bus, balance: this.balance,
       rng: this.rng, pathfinding: this.pathfinding
+    });
+    this.spells = new SpellSystem({
+      bus: this.bus,
+      combat: this.combat,
+      getPlayer: () => this.player,
+      getFloor: () => this.floor,
+      getFloorIndex: () => this.dungeon?.currentIndex ?? 0
     });
 
     this.itemFactory = new ItemFactory(this.content.items);
@@ -686,19 +694,36 @@ export class GameScene {
         this.crafting.show();
       }
     });
-    this._listen('craft:request', ({ recipeId }) => {
+    this._listen('craft:request', ({ recipeId, target }) => {
       if (!this.crafting || !this.player) return;
       const recipe = getRecipe(recipeId);
       if (!recipe) return;
+      const targetItem = this._resolveCraftTarget(target);
       const result = craft(this.player, recipe, {
         itemDefs: this.content.items,
         rng: this.rng.fork('craft'),
-        floorLevel: (this.dungeon?.currentIndex ?? 0) + 1
+        floorLevel: (this.dungeon?.currentIndex ?? 0) + 1,
+        targetItem
       });
       if (result.ok && result.item) {
         this.bus.emit('item:crafted', { item: result.item });
+        this._lootToast = {
+          item: result.item,
+          startedAt: performance.now(),
+          duration: 2100
+        };
+        this._saveRun();
       }
     });
+  }
+
+  _resolveCraftTarget(target) {
+    if (!target || !this.player) return null;
+    if (target.kind === 'equipment' && target.slot) return this.player[target.slot] || null;
+    if (target.kind === 'inventory' && Number.isInteger(target.index)) {
+      return this.player.inventory?.getSlot(target.index) || null;
+    }
+    return null;
   }
 
   /**
@@ -770,76 +795,11 @@ export class GameScene {
   }
 
   _spellState() {
-    const def = HERO_SPELLS[this.player?.heroKind || this.heroKind];
-    if (!def || !this.player) return { ready: false, name: '', cooldown: 0 };
-    const cooldown = Math.max(0, this.player.spellCooldown || 0);
-    const needsTarget = ['hollow', 'inquisitor', 'reaver'].includes(this.player.heroKind);
-    const target = this.player.heroKind === 'reaver'
-      ? this._nearestVisibleEnemy(def.radius || 2, false)
-      : needsTarget
-        ? this._nearestVisibleEnemy(def.range || 6, this.player.heroKind === 'hollow')
-        : null;
-    return {
-      ...def,
-      baseCooldown: def.cooldown,
-      cooldown,
-      ready: cooldown <= 0 && (!needsTarget || !!target),
-      target
-    };
+    return this.spells.getState(this.heroKind);
   }
 
   _playerCastSpell() {
-    const state = this._spellState();
-    if (!state.ready) return;
-    const kind = this.player.heroKind;
-    const power = this.player.magicPower || 0;
-    let used = false;
-    let fx = { kind, name: state.name, color: state.color };
-
-    if (kind === 'vigil') {
-      const healed = this.player.heal(4 + Math.floor(this.player.level / 4) + power);
-      if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
-      this.player.applyStatus({ id: 'def_buff', value: 2 + Math.floor(power / 4), duration: 3 });
-      fx = { ...fx, center: { x: this.player.x, y: this.player.y }, radius: 1.4 };
-      used = true;
-    } else if (kind === 'hollow') {
-      const target = state.target;
-      if (!target) return;
-      const dealt = this._dealSpellDamage(target, 5 + Math.floor(this.player.level / 3) + power, state.name);
-      const healed = this.player.heal(Math.ceil(dealt * (0.45 + (this.player.spellLifesteal || 0))));
-      if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
-      fx = { ...fx, target: { x: target.x, y: target.y } };
-      used = dealt > 0;
-    } else if (kind === 'inquisitor') {
-      const target = state.target;
-      if (!target) return;
-      used = this._damageEnemiesInRadius(
-        target.x, target.y, state.radius,
-        4 + Math.floor(this.player.level / 4) + power,
-        state.name
-      ) > 0;
-      fx = { ...fx, center: { x: target.x, y: target.y }, radius: state.radius };
-    } else if (kind === 'reaver') {
-      used = this._damageEnemiesInRadius(
-        this.player.x, this.player.y, state.radius,
-        3 + Math.floor(this.player.totalAtk() / 2) + power,
-        state.name
-      ) > 0;
-      if (used) this.player.applyStatus({ id: 'atk_buff', value: 1, duration: 2 });
-      fx = { ...fx, center: { x: this.player.x, y: this.player.y }, radius: state.radius };
-    } else if (kind === 'pilgrim') {
-      const healed = this.player.heal(5 + Math.floor(this.player.level / 5) + power);
-      if (healed > 0) this.bus.emit('entity:healed', { entity: this.player, amount: healed, source: 'spell' });
-      this._revealAround(this.player.x, this.player.y, state.radius + Math.floor(power / 3));
-      fx = { ...fx, center: { x: this.player.x, y: this.player.y }, radius: state.radius + Math.floor(power / 3) };
-      used = true;
-    }
-
-    if (!used) return;
-    const cd = Math.max(3, state.baseCooldown - (this.player.spellCooldownReduction || 0));
-    this.player.spellCooldown = cd + 1;
-    this.bus.emit('spell:cast', { entity: this.player, spell: state.name, fx });
-    this._endPlayerTurn(true);
+    if (this.spells.cast(this.heroKind)) this._endPlayerTurn(true);
   }
 
   _nearestVisibleEnemy(range, requireLineOfSight = false) {
@@ -1056,6 +1016,7 @@ export class GameScene {
 
   _resolvePlayerTurn() {
     this.player.runStats.turnsUsed += 1;
+    tickTriggerCooldowns(this.player);
     // Passive skill tick (Second Wind regen, future passives).
     if (typeof this.player.passiveTurnTick === 'function') this.player.passiveTurnTick();
     this.combat.tickEntity(this.player);
@@ -1116,6 +1077,7 @@ export class GameScene {
     for (const enemy of enemies) {
       if (enemy.isDead) continue;
       try {
+        tickTriggerCooldowns(enemy);
         const action = enemy.decide(ctx);
         this.combat.execute(action, enemy, ctx);
         this.combat.tickEntity(enemy);
@@ -1412,6 +1374,7 @@ export class GameScene {
       spellCooldownReduction: this.player.spellCooldownReduction,
       spellLifesteal: this.player.spellLifesteal,
       critSkillBonus: this.player.critSkillBonus,
+      triggerCooldowns: { ...(this.player._triggerCooldowns || {}) },
       statusEffects: this.player.statusEffects.map((e) => ({ ...e }))
     };
   }
@@ -1475,6 +1438,7 @@ export class GameScene {
     player.spellCooldownReduction = snap.spellCooldownReduction || 0;
     player.spellLifesteal = snap.spellLifesteal || 0;
     player.critSkillBonus = snap.critSkillBonus || 0;
+    player._triggerCooldowns = { ...(snap.triggerCooldowns || {}) };
     player.statusEffects = Array.isArray(snap.statusEffects) ? snap.statusEffects.map((e) => ({ ...e })) : [];
     const make = (s) => (s?.id ? this.itemFactory.fromSnapshot(s) : null);
     const eq = snap.equipment || {};
