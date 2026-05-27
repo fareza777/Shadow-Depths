@@ -21,7 +21,7 @@ const STEPS = [
   },
   {
     title: 'FORGE & DEPTH',
-    body: 'Materials go to a pouch. Open BAG → MATS to review them. On forge sanctuary floors, PICK calls the smith.'
+    body: 'Materials go to a pouch. Open BAG → POUCH to review them. On forge sanctuary floors, PICK calls the smith.'
   }
 ];
 

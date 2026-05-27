@@ -3,7 +3,7 @@
  *
  * Layout:
  *   1. Header: "SATCHEL" + count "X / Y" + coin balance
- *   2. Tab strip: ALL · ARMS · GARB · PHIAL · THROWN · CHARMS · MATS
+ *   2. Tab strip: ALL · ARMS · GARB · PHIAL · THROWN · CHARMS · POUCH
  *   3. Slot grid (filtered by active tab)
  *   4. Selected item detail card (name + rarity chip + stats + lore + action button)
  *
@@ -30,7 +30,7 @@ const TABS = [
   { id: 'phial',   label: 'PHIAL'  },
   { id: 'thrown',  label: 'THROW'  },
   { id: 'charms',  label: 'CHARM'  },
-  { id: 'mats',    label: 'MATS'   }
+  { id: 'mats',    label: 'POUCH'  }
 ];
 
 const SLOT_SIZE    = IS_LANDSCAPE ? 56 : 80;
@@ -107,8 +107,12 @@ export class InventoryUI {
 
   _materialView(player) {
     const materials = player.materials || {};
-    return Object.entries(materials)
-      .filter(([, count]) => count > 0)
+    const ids = new Set([
+      ...Object.keys(this.materialDefs),
+      ...Object.keys(materials)
+    ]);
+    return Array.from(ids)
+      .map((id) => [id, materials[id] || 0])
       .sort(([a], [b]) => this._materialName(a).localeCompare(this._materialName(b)))
       .map(([id, count], index) => ({
         item: this._materialItem(id, count),
@@ -359,8 +363,10 @@ export class InventoryUI {
     ctx.restore();
     const filled = player.inventory.slots.filter(Boolean).length;
     const matTotal = Object.values(player.materials || {}).reduce((sum, n) => sum + n, 0);
+    const matKinds = Object.keys(this.materialDefs).length;
+    const matOwned = Object.values(player.materials || {}).filter((n) => n > 0).length;
     const countText = this.activeTab === 'mats'
-      ? `${matTotal} MATERIALS IN POUCH`
+      ? `RESOURCES ${matTotal} TOTAL · ${matOwned}/${matKinds} TYPES`
       : `${filled} / ${player.inventory.size}`;
     r.drawText(countText, 60, 44, {
       size: uiSize(10), family: FONT_MONO, color: IRON_PALETTE.boneDim
@@ -393,12 +399,14 @@ export class InventoryUI {
         rivets: false
       });
       ctx.save();
-      ctx.font = `bold ${uiSize(11)}px ${FONT_DISPLAY}`;
+      const label = TABS[i].label.toUpperCase();
+      const fontSize = label.length >= 5 ? 9 : 10;
+      const spacing = label.length >= 5 ? 0.5 : 1;
+      ctx.font = `bold ${uiSize(fontSize)}px ${FONT_DISPLAY}`;
       ctx.fillStyle = active ? IRON_PALETTE.brass : IRON_PALETTE.boneDim;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      drawSpacedText(ctx, TABS[i].label.toUpperCase(),
-        x + g.tabW / 2, g.y + TAB_H / 2, 2);
+      drawSpacedText(ctx, label, x + g.tabW / 2, g.y + TAB_H / 2, spacing);
       ctx.restore();
     }
   }
@@ -435,13 +443,15 @@ export class InventoryUI {
         r.drawText(String(entry.slotIndex + 1), cx + 8, cy + 6,
           { size: uiSize(10), family: FONT_MONO, color: IRON_PALETTE.brass });
       } else if (entry?.material) {
-        r.drawText('MAT', cx + 8, cy + 6,
+        r.drawText('RES', cx + 8, cy + 6,
           { size: uiSize(9), family: FONT_MONO, color: IRON_PALETTE.brass });
       }
       if (entry?.item) {
         const pad = 14;
         const icon = SLOT_SIZE - pad * 2;
+        if (entry.material && entry.item.count <= 0) ctx.globalAlpha = 0.38;
         r.sprites.draw(entry.item.spriteKey, r.ctx, cx + pad, cy + pad, { size: icon });
+        if (entry.material && entry.item.count <= 0) ctx.globalAlpha = 1;
         // Equipped badge.
         const isEq = entry.item === player.weapon || entry.item === player.armor
                   || entry.item === player.helm   || entry.item === player.legs
@@ -455,10 +465,11 @@ export class InventoryUI {
           });
         }
         // Stack count.
-        if (entry.item.stackable && entry.item.count > 1) {
+        if (entry.item.materialPouch || (entry.item.stackable && entry.item.count > 1)) {
           r.drawText(`×${entry.item.count}`, cx + SLOT_SIZE - 8, cy + SLOT_SIZE - 8,
             { size: uiSize(11), bold: true, align: 'right', baseline: 'bottom',
-              family: FONT_MONO, color: IRON_PALETTE.bone });
+              family: FONT_MONO,
+              color: entry.item.count > 0 ? IRON_PALETTE.bone : IRON_PALETTE.boneDim });
         }
       }
     }
@@ -589,7 +600,7 @@ export class InventoryUI {
   }
 
   _statLine(item) {
-    if (item.materialPouch) return `Stored x${item.count}   Material pouch   Forge currency`;
+    if (item.materialPouch) return `Stored x${item.count}   Resource pouch   Forge currency`;
     const parts = [];
     if (item.stats?.atk)   parts.push(`+${item.stats.atk} ATK`);
     if (item.stats?.def)   parts.push(`+${item.stats.def} DEF`);
