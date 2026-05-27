@@ -49,6 +49,11 @@ export class DungeonGenerator {
     const seed = (this.rng.seed ^ ((floorIndex + 1) * 0x9E3779B1)) >>> 0;
     const floor = new Floor(floorIndex, floorDef, seed);
 
+    // Boss arena: one big centered room, no corridors, no stairs down.
+    if (floorDef.isFinalFloor === true) {
+      return this._generateBossArena(floor, floorDef, itemDefs, enemyDefs);
+    }
+
     // 1. Carve rooms via BSP.
     const root = { x: 1, y: 1, w: GRID_WIDTH - 2, h: GRID_HEIGHT - 2 };
     const leaves = [];
@@ -288,6 +293,77 @@ export class DungeonGenerator {
       spawns.push(entry);
     }
     return spawns;
+  }
+
+  /**
+   * Final floor — single large arena room with the boss centered at the
+   * far end and the player spawning at the near end. Skips BSP, stairs,
+   * and the corridor pass entirely.
+   */
+  _generateBossArena(floor, floorDef, itemDefs, enemyDefs) {
+    const ROOM_W = Math.min(28, GRID_WIDTH - 4);
+    const ROOM_H = Math.min(20, GRID_HEIGHT - 4);
+    const rx = Math.floor((GRID_WIDTH - ROOM_W) / 2);
+    const ry = Math.floor((GRID_HEIGHT - ROOM_H) / 2);
+    for (let y = ry; y < ry + ROOM_H; y++) {
+      for (let x = rx; x < rx + ROOM_W; x++) floor.setTile(x, y, TILE.FLOOR);
+    }
+    floor.rooms = [{ x: rx, y: ry, w: ROOM_W, h: ROOM_H }];
+    this._wrapWithWalls(floor);
+
+    // Player at the south middle, boss at the north middle.
+    const spawnPoint = { x: rx + Math.floor(ROOM_W / 2), y: ry + ROOM_H - 3 };
+    const bossPos    = { x: rx + Math.floor(ROOM_W / 2), y: ry + 2 };
+    floor.playerSpawn = spawnPoint;
+    floor.stairsUp = spawnPoint;
+    // No stairs down — boss must die to end the run.
+
+    const spawns = {
+      player: spawnPoint,
+      enemies: [],
+      items: []
+    };
+    // The boss itself — if the floor declares one explicitly, use it;
+    // otherwise pick the highest-tier enemy in the pool.
+    const bossId = floorDef.specialEnemyId
+      || floorDef.bossId
+      || this._pickBossId(floorDef, enemyDefs);
+    if (bossId) spawns.enemies.push({ x: bossPos.x, y: bossPos.y, defId: bossId });
+
+    // Two flanking elites at the corners of the boss row.
+    const flankPool = (floorDef.enemyPool || []).filter((id) => id !== bossId);
+    if (flankPool.length > 0) {
+      const left  = this.rng.pick(flankPool);
+      const right = this.rng.pick(flankPool);
+      spawns.enemies.push({ x: rx + 3, y: ry + 3, defId: left });
+      spawns.enemies.push({ x: rx + ROOM_W - 4, y: ry + 3, defId: right });
+    }
+
+    // A small reward pile at the player's spawn side.
+    const itemPool = Object.values(itemDefs)
+      .filter((d) => d.slot && (d.floorMin ?? 1) <= floor.index + 1);
+    for (let i = 0; i < 2 && itemPool.length > 0; i++) {
+      const baseDef = this.rng.pick(itemPool);
+      const affixes = rollItemAffixes(baseDef, floor.index + 1 + 18, this.rng);
+      const entry = {
+        x: rx + Math.floor(ROOM_W / 2) - 1 + i * 2,
+        y: ry + ROOM_H - 5,
+        defId: baseDef.id
+      };
+      if (affixes) entry.affixes = affixes;
+      spawns.items.push(entry);
+    }
+
+    return { floor, spawns };
+  }
+
+  _pickBossId(floorDef, enemyDefs) {
+    const pool = (floorDef.enemyPool || []).map((id) => enemyDefs[id]).filter(Boolean);
+    if (pool.length === 0) return null;
+    // Prefer "boss_*"-prefixed ids, else the highest-HP enemy.
+    const explicit = pool.find((d) => d.id.startsWith('boss_'));
+    if (explicit) return explicit.id;
+    return pool.slice().sort((a, b) => (b.stats?.hp || 0) - (a.stats?.hp || 0))[0].id;
   }
 
   _randomTileInRoom(floor, room, reserved = null) {

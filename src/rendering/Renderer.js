@@ -323,10 +323,101 @@ export class Renderer {
       }
     }
 
+    // Special floor centerpiece (REST campfire / VAULT chest motif).
+    this._drawSpecialFloorMotif(ctx, floor);
+
     if (player) {
       this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
     }
     ctx.restore();
+  }
+
+  /**
+   * Decorative centerpiece for special floor types. Drawn in world space
+   * (inside the camera-translated viewport). Pure cosmetics — gameplay is
+   * already differentiated by enemy/item spawn rules.
+   */
+  _drawSpecialFloorMotif(ctx, floor) {
+    const def = floor.definition || {};
+    if (def.type !== 'rest' && def.type !== 'vault') return;
+    if (!floor.stairsUp) return;
+    const t = this._timeSec || 0;
+    const cx = floor.stairsUp.x * TILE_SIZE + TILE_SIZE / 2;
+    const cy = floor.stairsUp.y * TILE_SIZE + TILE_SIZE / 2;
+
+    if (def.type === 'rest') {
+      // Campfire — flickering ember pile with rising sparks.
+      ctx.save();
+      // Glow halo
+      const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, TILE_SIZE * 1.6);
+      glow.addColorStop(0, 'rgba(255, 160, 80, 0.42)');
+      glow.addColorStop(1, 'rgba(255, 160, 80, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(cx - TILE_SIZE * 2, cy - TILE_SIZE * 2, TILE_SIZE * 4, TILE_SIZE * 4);
+      // Log stack
+      ctx.fillStyle = '#3a1f12';
+      ctx.fillRect(cx - 10, cy + 6, 20, 4);
+      ctx.fillStyle = '#5a3420';
+      ctx.fillRect(cx - 8, cy + 4, 16, 2);
+      // Flame body
+      const flicker = 0.85 + Math.sin(t * 6.7) * 0.12 + Math.sin(t * 13.1) * 0.05;
+      const fh = 14 * flicker;
+      ctx.fillStyle = '#ff7040';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - fh);
+      ctx.quadraticCurveTo(cx + 6, cy - fh * 0.3, cx + 4, cy + 2);
+      ctx.lineTo(cx - 4, cy + 2);
+      ctx.quadraticCurveTo(cx - 6, cy - fh * 0.3, cx, cy - fh);
+      ctx.fill();
+      ctx.fillStyle = '#ffd070';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - fh * 0.7);
+      ctx.quadraticCurveTo(cx + 3, cy - fh * 0.2, cx + 2, cy + 1);
+      ctx.lineTo(cx - 2, cy + 1);
+      ctx.quadraticCurveTo(cx - 3, cy - fh * 0.2, cx, cy - fh * 0.7);
+      ctx.fill();
+      // Rising sparks
+      ctx.fillStyle = '#ffe890';
+      for (let i = 0; i < 5; i++) {
+        const phase = (t * (1.4 + i * 0.3) + i * 1.1) % 2;
+        const sx = cx + Math.sin(t * 2 + i) * 6;
+        const sy = cy - 4 - phase * 18;
+        const a = Math.max(0, 1 - phase / 2);
+        ctx.globalAlpha = a * 0.8;
+        ctx.fillRect(sx, sy, 1, 1);
+      }
+      ctx.restore();
+    } else if (def.type === 'vault') {
+      // Treasure chest — brass-trimmed wooden chest with subtle glow.
+      ctx.save();
+      const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, TILE_SIZE * 1.2);
+      glow.addColorStop(0, 'rgba(212, 172, 108, 0.32)');
+      glow.addColorStop(1, 'rgba(212, 172, 108, 0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(cx - TILE_SIZE * 1.5, cy - TILE_SIZE * 1.5, TILE_SIZE * 3, TILE_SIZE * 3);
+      // Chest body
+      ctx.fillStyle = '#3a2014';
+      ctx.fillRect(cx - 14, cy - 6, 28, 14);
+      ctx.fillStyle = '#5a3420';
+      ctx.fillRect(cx - 14, cy - 10, 28, 6);
+      // Brass bands
+      ctx.fillStyle = '#d4ac6c';
+      ctx.fillRect(cx - 14, cy - 4, 28, 1);
+      ctx.fillRect(cx - 14, cy + 6, 28, 1);
+      ctx.fillRect(cx - 14, cy - 10, 1, 18);
+      ctx.fillRect(cx + 13, cy - 10, 1, 18);
+      // Lock
+      ctx.fillStyle = '#f1d49a';
+      ctx.fillRect(cx - 2, cy - 1, 4, 4);
+      ctx.fillStyle = '#2a1808';
+      ctx.fillRect(cx - 1, cy + 1, 2, 1);
+      // Soft pulse highlight
+      const pulse = 0.6 + 0.4 * Math.sin(t * 2.3);
+      ctx.globalAlpha = pulse * 0.5;
+      ctx.fillStyle = '#fff5d0';
+      ctx.fillRect(cx - 2, cy - 1, 4, 1);
+      ctx.restore();
+    }
   }
 
   _drawTorchGlow(ctx, floor, player, x0, y0, x1, y1) {

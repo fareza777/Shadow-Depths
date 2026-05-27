@@ -69,6 +69,8 @@ import { HERO_SPELLS } from './config/heroSpells.js';
 import { validateContent, logValidationReport } from './content/validators.js';
 import { loadSetDefs } from './items/Sets.js';
 import { loadRecipes } from './items/Crafting.js';
+import { setLocale } from './content/i18n.js';
+import { Analytics } from './persistence/Analytics.js';
 
 async function bootstrap() {
   console.log(LOG.CORE, 'Shadow Depths v0.1.0 — bootstrap');
@@ -113,6 +115,17 @@ async function bootstrap() {
   const metaProgress = new MetaProgress({ saveManager, balance, eventBus: bus });
   metaProgress.load();
   Object.assign(state.state.meta, metaProgress.state);
+  // Expose meta to UI modules that need read-only access without coupling
+  // (e.g. InventoryUI tooltip checking identification state).
+  globalThis.__shadowDepthsMeta = state.state.meta;
+
+  // Locale from saved meta (default 'en' if absent / unsupported).
+  setLocale(state.state.meta.settings?.locale || 'en');
+
+  // Analytics — passive event capture, persisted via saveMeta.
+  // Hold a reference so it isn't garbage collected.
+  // eslint-disable-next-line no-unused-vars
+  const analytics = new Analytics({ bus, state });
 
   // --- rendering pipeline --------------------------------------------
   const canvas = document.getElementById('game-canvas');

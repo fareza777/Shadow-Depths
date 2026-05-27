@@ -46,6 +46,66 @@
         { "count": 3, "statMods": { "hpMax": 8, "def": 1, "atk": 1 },
           "triggers": [{ "when": "onCrit", "do": { "type": "damage", "value": 5 } }] }
       ]
+    },
+    {
+      "id": "ember_forge",
+      "name": "Ember Forge Set",
+      "description": "Steel cooled in lava, by lava.",
+      "pieces": ["ember_helm", "ember_armor", "ember_blade"],
+      "bonuses": [
+        { "count": 2, "statMods": { "atk": 2 } },
+        { "count": 3, "statMods": { "atk": 3, "def": 1 },
+          "triggers": [{ "when": "onHit", "chance": 0.25,
+            "do": { "type": "applyStatus", "status": "burn", "value": 2, "duration": 3 } }] }
+      ]
+    },
+    {
+      "id": "frost_marauder",
+      "name": "Frost Marauder",
+      "description": "If she stops moving, she dies. She stops anyway.",
+      "pieces": ["frost_helm", "frost_cloak", "frost_blade"],
+      "bonuses": [
+        { "count": 2, "statMods": { "dex": 2 } },
+        { "count": 3, "statMods": { "dex": 3, "atk": 1 },
+          "triggers": [{ "when": "onHit", "chance": 0.18,
+            "do": { "type": "applyStatus", "status": "freeze", "value": 1, "duration": 1 } }] }
+      ]
+    },
+    {
+      "id": "drowned_keeper",
+      "name": "Drowned Keeper",
+      "description": "What rises from the catacombs wears its old uniform.",
+      "pieces": ["drowned_helm", "drowned_armor", "drowned_legs"],
+      "bonuses": [
+        { "count": 2, "statMods": { "hpMax": 6 } },
+        { "count": 3, "statMods": { "hpMax": 10, "def": 2 },
+          "triggers": [{ "when": "onHpBelow", "pct": 0.3,
+            "do": { "type": "applyStatus", "status": "regen", "value": 2, "duration": 5 } }] }
+      ]
+    },
+    {
+      "id": "gilded_pilgrim",
+      "name": "Gilded Pilgrim",
+      "description": "Pilgrim's wares — but the dust is gold.",
+      "pieces": ["gilded_hat", "gilded_cloak", "gilded_beads"],
+      "bonuses": [
+        { "count": 2, "statMods": { "dex": 1, "hpMax": 3 } },
+        { "count": 3, "statMods": { "dex": 2, "hpMax": 5 },
+          "triggers": [{ "when": "onKill", "chance": 0.5,
+            "do": { "type": "grantXP", "value": 3 } }] }
+      ]
+    },
+    {
+      "id": "warden_oath",
+      "name": "Warden's Oath",
+      "description": "Tower shield, tower helm, tower legs. Same maker.",
+      "pieces": ["warden_helm", "warden_armor", "warden_legs"],
+      "bonuses": [
+        { "count": 2, "statMods": { "def": 2 } },
+        { "count": 3, "statMods": { "def": 4, "hpMax": 8 },
+          "triggers": [{ "when": "onDamaged", "chance": 0.2,
+            "do": { "type": "applyStatus", "status": "def_buff", "value": 2, "duration": 3 } }] }
+      ]
     }
   ]
 }

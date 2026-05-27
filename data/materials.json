@@ -65,6 +65,50 @@
       "maxStack": 99,
       "lore": "Bleeds slow. Heals slower.",
       "biomes": ["sunken_forest"]
+    },
+    "mirror_shard": {
+      "id": "mirror_shard",
+      "name": "Mirror Shard",
+      "type": "material",
+      "rarity": "rare",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "Shows you something. Don't look back.",
+      "biomes": ["mirror_vaults"]
+    },
+    "iron_chip": {
+      "id": "iron_chip",
+      "name": "Forge Iron Chip",
+      "type": "material",
+      "rarity": "common",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "Hammer-flake from a still-warm anvil.",
+      "biomes": ["iron_stronghold"]
+    },
+    "sun_glass": {
+      "id": "sun_glass",
+      "name": "Sun Glass",
+      "type": "material",
+      "rarity": "uncommon",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "Sand that remembered being a sun.",
+      "biomes": ["sun_cursed_sands"]
+    },
+    "crypt_dust": {
+      "id": "crypt_dust",
+      "name": "Crypt Dust",
+      "type": "material",
+      "rarity": "common",
+      "spriteKey": "item_default",
+      "stackable": true,
+      "maxStack": 99,
+      "lore": "What was left when the singer left.",
+      "biomes": ["forgotten_crypts"]
     }
   }
 }

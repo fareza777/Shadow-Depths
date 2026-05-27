@@ -67,6 +67,101 @@
         { "materialId": "void_essence", "count": 3 }
       ],
       "operation": "reroll"
+    },
+    {
+      "id": "forge_keen_blade",
+      "name": "Whet the Edge",
+      "description": "Sap + iron — Keen weapon.",
+      "inputs": [
+        { "materialId": "scrap_iron", "count": 2 },
+        { "materialId": "verdant_sap", "count": 1 }
+      ],
+      "baseSlot": "weapon",
+      "guaranteedPrefix": "keen",
+      "tierBoost": 0
+    },
+    {
+      "id": "forge_executioner",
+      "name": "Forge the Headsman's Mark",
+      "description": "Void + bone — weapon of the Executioner.",
+      "inputs": [
+        { "materialId": "void_essence", "count": 2 },
+        { "materialId": "bone_shard", "count": 4 }
+      ],
+      "baseSlot": "weapon",
+      "guaranteedSuffix": "of_executioner",
+      "tierBoost": 2
+    },
+    {
+      "id": "weave_frost_armor",
+      "name": "Weave the Frost Mail",
+      "description": "Bone + frost thread — Iron Ward armor.",
+      "inputs": [
+        { "materialId": "frost_thread", "count": 3 },
+        { "materialId": "bone_shard", "count": 2 }
+      ],
+      "baseSlot": "armor",
+      "guaranteedSuffix": "of_iron_ward",
+      "tierBoost": 1
+    },
+    {
+      "id": "weave_haste_legs",
+      "name": "Stitch Swiftness",
+      "description": "Light sap + iron — legs of Haste.",
+      "inputs": [
+        { "materialId": "verdant_sap", "count": 2 },
+        { "materialId": "scrap_iron", "count": 1 }
+      ],
+      "baseSlot": "legs",
+      "guaranteedSuffix": "of_haste",
+      "tierBoost": 1
+    },
+    {
+      "id": "bind_purity_ring",
+      "name": "Bind the Pure Sigil",
+      "description": "Void + ember — ring of Purity.",
+      "inputs": [
+        { "materialId": "void_essence", "count": 1 },
+        { "materialId": "ember_dust", "count": 2 }
+      ],
+      "baseSlot": "ring",
+      "guaranteedSuffix": "of_purity",
+      "tierBoost": 0
+    },
+    {
+      "id": "weave_choir_necklace",
+      "name": "Weave the Choir Sigil",
+      "description": "Three voids and the song answers — necklace of the Choir.",
+      "inputs": [
+        { "materialId": "void_essence", "count": 3 }
+      ],
+      "baseSlot": "necklace",
+      "guaranteedSuffix": "of_the_choir",
+      "tierBoost": 2
+    },
+    {
+      "id": "forge_serpent_blade",
+      "name": "Anoint the Serpent Edge",
+      "description": "Sap + bone — weapon of Serpents (poison proc).",
+      "inputs": [
+        { "materialId": "verdant_sap", "count": 3 },
+        { "materialId": "bone_shard", "count": 2 }
+      ],
+      "baseSlot": "weapon",
+      "guaranteedSuffix": "of_serpents",
+      "tierBoost": 1
+    },
+    {
+      "id": "forge_arcane_crown",
+      "name": "Crown the Arcane Sigil",
+      "description": "Void + ember — Arcane prefix on a helm.",
+      "inputs": [
+        { "materialId": "void_essence", "count": 2 },
+        { "materialId": "ember_dust", "count": 1 }
+      ],
+      "baseSlot": "helm",
+      "guaranteedPrefix": "arcane",
+      "tierBoost": 1
     }
   ]
 }

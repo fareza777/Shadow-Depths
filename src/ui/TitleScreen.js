@@ -591,10 +591,17 @@ export class TitleScreen {
       ['Upgrades owned', Object.values(m.shopUpgrades || {}).reduce((a, b) => a + b, 0)],
       ['Unlocks',        (m.unlocks || []).length]
     ];
+    // Daily leaderboard — last 7 days of best scores.
+    const dailyEntries = Object.entries(m.dailyScores || {})
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .slice(0, 7);
+    const showLeaderboard = dailyEntries.length > 0;
+
     const lineSpacing = IS_LANDSCAPE ? 22 : 30;
+    const leaderH = showLeaderboard ? (28 + dailyEntries.length * 16) : 0;
     const closeH = IS_LANDSCAPE ? 40 : 48;
     const closeMargin = 14;
-    const contentH = lines.length * lineSpacing + 70;
+    const contentH = lines.length * lineSpacing + 70 + leaderH;
     const modalH = contentH + closeH + closeMargin * 2;
     const modalY = Math.max(12, (CANVAS_HEIGHT - modalH) / 2);
     const modalX = IS_LANDSCAPE ? 60 : 40;
@@ -612,6 +619,20 @@ export class TitleScreen {
         { size: 12, align: 'left', family: FONT_BODY, color: COLOR.textMuted });
       r.drawText(String(value), modalX + modalW - 24, ly,
         { size: 13, bold: true, align: 'right', family: FONT_MONO, color: COLOR.gold });
+    }
+    // Daily seed leaderboard rows.
+    if (showLeaderboard) {
+      const leaderY = modalY + 70 + lines.length * lineSpacing + 8;
+      r.drawText('DAILY SEED — RECENT BEST', CANVAS_WIDTH / 2, leaderY,
+        { size: 11, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
+      for (let i = 0; i < dailyEntries.length; i++) {
+        const [date, score] = dailyEntries[i];
+        const ly = leaderY + 18 + i * 16;
+        r.drawText(date, modalX + 24, ly,
+          { size: 11, align: 'left', family: FONT_MONO, color: COLOR.textMuted });
+        r.drawText(String(score), modalX + modalW - 24, ly,
+          { size: 11, align: 'right', family: FONT_MONO, color: COLOR.textXP });
+      }
     }
     const closeY = modalY + modalH - closeH - closeMargin;
     this._renderModalCloseButton(r, closeY);

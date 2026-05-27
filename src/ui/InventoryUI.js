@@ -21,6 +21,7 @@ import {
   drawIronActionButton, drawSpacedText, IRON_PALETTE,
   rarityColor as ironRarity
 } from './ironPanel.js';
+import { Tooltip } from './Tooltip.js';
 
 const TABS = [
   { id: 'all',     label: 'ALL'    },
@@ -57,6 +58,8 @@ export class InventoryUI {
     this.activeTab = 'all';
     /** Selected slot INDEX in the filtered view (not absolute inventory index). */
     this.selectedFilteredIdx = 0;
+    /** Tooltip — second tap on the same already-selected slot opens it. */
+    this.tooltip = new Tooltip();
   }
 
   toggle() {
@@ -178,11 +181,33 @@ export class InventoryUI {
       const cy = grid.startY + Math.floor(i / COLS) * (SLOT_SIZE + SLOT_PADDING);
       if (canvasX >= cx && canvasX <= cx + SLOT_SIZE &&
           canvasY >= cy && canvasY <= cy + SLOT_SIZE) {
-        this.selectedFilteredIdx = i;
+        // Second tap on the already-selected slot opens the tooltip;
+        // tapping a different slot just re-selects.
+        if (this.selectedFilteredIdx === i) {
+          const item = this._selectedItem(player);
+          if (item) {
+            const meta = this._metaRef();
+            if (this.tooltip.open && this.tooltip.item === item) this.tooltip.hide();
+            else this.tooltip.show(item,
+              { x: cx, y: cy, w: SLOT_SIZE, h: SLOT_SIZE }, meta);
+          }
+        } else {
+          this.tooltip.hide();
+          this.selectedFilteredIdx = i;
+        }
         return true;
       }
     }
+    // Tap outside grid closes the tooltip.
+    this.tooltip.hide();
     return true;
+  }
+
+  /** Best-effort meta accessor for the identification check. */
+  _metaRef() {
+    // The state store is global on the bus; let the Tooltip degrade
+    // gracefully if we can't find it.
+    try { return globalThis.__shadowDepthsMeta || null; } catch { return null; }
   }
 
   _activateSelected(player) {
@@ -261,6 +286,8 @@ export class InventoryUI {
     this._renderGrid(renderer, player);
     this._renderDetailCard(renderer, player);
     this._renderActionButtons(renderer, player);
+    // Tooltip rendered last so it sits on top of everything else.
+    if (this.tooltip) this.tooltip.render(renderer);
   }
 
   _renderHeader(r, player) {
