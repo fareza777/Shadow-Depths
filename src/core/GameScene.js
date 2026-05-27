@@ -127,8 +127,10 @@ export class GameScene {
       this._enterImpl(_opts);
     } catch (err) {
       console.error(LOG.CORE, 'GameScene.enter threw:', err);
-      // Re-throw so the global error handler surfaces it on the page.
-      throw err;
+      // SceneManager.switch wraps enter() in its own try/catch and would
+      // swallow this. Re-raise via setTimeout so it reaches window.onerror
+      // and shows up in the global runtime-error banner.
+      setTimeout(() => { throw err; }, 0);
     }
   }
 

@@ -38,7 +38,13 @@ export class SceneManager {
     this._currentName = name;
     if (typeof scene.enter === 'function') {
       try { scene.enter(enterCtx); }
-      catch (err) { console.error(LOG.CORE, 'scene.enter threw:', err); }
+      catch (err) {
+        console.error(LOG.CORE, 'scene.enter threw:', err);
+        // Escape this catch so the global window.onerror handler can show
+        // the failure visibly instead of a blank canvas with nothing in
+        // the console for mobile players who can't open devtools.
+        setTimeout(() => { throw err; }, 0);
+      }
     }
     this._bus.emit('scene:switched', { from: prev, to: name });
   }
