@@ -137,7 +137,8 @@ async function bootstrap() {
   // eslint-disable-next-line no-unused-vars
   const achievements = new AchievementEngine({ bus, state });
   const achievementToast = new AchievementToast({ bus });
-  renderer.overlayRender = (r) => achievementToast.render(r);
+  // NOTE: renderer.overlayRender is assigned AFTER renderer is constructed
+  // (further down). Touching it here triggers TDZ on `const renderer`.
 
   // --- rendering pipeline --------------------------------------------
   const canvas = document.getElementById('game-canvas');
@@ -149,8 +150,8 @@ async function bootstrap() {
   const renderer = new Renderer({
     canvas, sprites, cameraShake, lighting, particles, eventBus: bus
   });
-  // Top-most achievement toast overlay (defined later but assigned now
-  // via closure so we don't have to reach into the renderer twice).
+  // Top-most achievement toast overlay — wired now that renderer exists.
+  renderer.overlayRender = (r) => achievementToast.render(r);
 
   // --- audio ---------------------------------------------------------
   const audio = new AudioManager({ bus, metaProgress });
