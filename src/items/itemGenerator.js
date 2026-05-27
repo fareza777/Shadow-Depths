@@ -51,7 +51,9 @@ export function rollItemAffixes(baseDef, floorLevel, rng) {
   const prefixPool = eligible(PREFIXES, baseDef, tierCap);
   const suffixPool = eligible(SUFFIXES, baseDef, tierCap);
 
-  const r = rng.next();
+  // Use rng.random() — the game's RNG class exposes random()/pick()/chance().
+  // Fallback to next() for the standalone simulator's mini-RNG.
+  const r = typeof rng.random === 'function' ? rng.random() : rng.next();
   let prefix = null;
   let suffix = null;
   if (r < 0.25) {
