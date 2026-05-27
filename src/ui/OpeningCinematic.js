@@ -12,7 +12,7 @@ import { Layout } from '../config/layoutMetrics.js';
 import { HERO_DEFS } from '../rendering/heroSprites.js';
 import { drawSpacedText, IRON_PALETTE } from './ironPanel.js';
 
-const TOTAL_DURATION = 28;
+const TOTAL_DURATION = 40;
 
 const STORY_BEATS = [
   {
@@ -21,22 +21,22 @@ const STORY_BEATS = [
     body: 'Before the first kingdom burned, the depths were already awake.'
   },
   {
-    at: 5.8,
+    at: 8.8,
     title: 'THE GATE REMEMBERS',
     body: 'Every stair was sealed once. Every seal was broken from below.'
   },
   {
-    at: 10.8,
+    at: 16.8,
     title: 'A VIGIL IS CALLED',
     body: 'One lantern crosses the threshold. The dark answers with a hundred floors.'
   },
   {
-    at: 15.9,
+    at: 24.9,
     title: 'NO SONG RETURNS',
     body: 'Names are carved into iron. Footsteps vanish under stone.'
   },
   {
-    at: 20.8,
+    at: 32.8,
     title: 'DESCEND',
     body: 'Steel, ash, and breath. There is no rescue beneath the first door.'
   }
@@ -167,12 +167,13 @@ export class OpeningCinematic {
     const gateW = IS_LANDSCAPE ? 210 : 260;
     const gateH = IS_LANDSCAPE ? 150 : 300;
     const y = IS_LANDSCAPE ? h * 0.2 : h * 0.18;
-    const open = OpeningCinematic._smooth(progress, 0.32, 0.9);
-    const slit = 8 + open * gateW * 0.48;
+    const open = OpeningCinematic._smooth(progress, 0.36, 0.92);
+    const slit = 8 + open * gateW * 0.56;
+    const doorShift = open * gateW * 0.16;
 
     ctx.save();
     ctx.globalAlpha = 0.95;
-    ctx.fillStyle = '#09060c';
+    ctx.fillStyle = '#060409';
     ctx.fillRect(cx - gateW / 2, y + gateH * 0.18, gateW, gateH * 0.82);
     ctx.beginPath();
     ctx.arc(cx, y + gateH * 0.2, gateW / 2, Math.PI, 0);
@@ -185,22 +186,97 @@ export class OpeningCinematic {
     ctx.lineWidth = 2;
     ctx.strokeRect(cx - gateW / 2, y + gateH * 0.2, gateW, gateH * 0.8);
 
+    // Heavy stone-and-iron door leaves sliding apart from the center.
+    const doorTop = y + gateH * 0.22;
+    const doorH = gateH * 0.76;
+    const leftDoorX = cx - gateW / 2 - doorShift;
+    const rightDoorX = cx + slit / 2;
+    const leafW = gateW / 2 - slit / 2;
+    const drawLeaf = (x, flip = 1) => {
+      const dg = ctx.createLinearGradient(0, doorTop, 0, doorTop + doorH);
+      dg.addColorStop(0, '#2d2631');
+      dg.addColorStop(0.5, '#14101a');
+      dg.addColorStop(1, '#07050a');
+      ctx.fillStyle = dg;
+      ctx.fillRect(x, doorTop, leafW + doorShift, doorH);
+      ctx.strokeStyle = '#4e3f55';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x + 0.5, doorTop + 0.5, leafW + doorShift - 1, doorH - 1);
+      for (let i = 0; i < 5; i++) {
+        const px = x + (i + 1) * (leafW + doorShift) / 6;
+        ctx.fillStyle = i % 2 ? '#0b0710' : '#2c2230';
+        ctx.fillRect(px, doorTop + 8, 2, doorH - 18);
+      }
+      for (let i = 0; i < 6; i++) {
+        const sy = doorTop + 18 + i * (doorH - 36) / 5;
+        const sx = x + (flip > 0 ? leafW + doorShift - 14 : 12);
+        ctx.fillStyle = '#d4ac6c';
+        ctx.fillRect(sx, sy, 3, 3);
+      }
+    };
+    drawLeaf(leftDoorX, 1);
+    drawLeaf(rightDoorX + doorShift, -1);
+
+    // Portcullis rises slowly as the seal breaks.
+    const barsTop = doorTop - open * 46;
+    ctx.fillStyle = '#100b13';
+    ctx.fillRect(cx - gateW * 0.38, barsTop, gateW * 0.76, 8);
+    ctx.fillStyle = '#8a6c42';
+    for (let i = 0; i < 7; i++) {
+      const bx = cx - gateW * 0.32 + i * gateW * 0.106;
+      ctx.fillRect(bx, barsTop + 2, 4, doorH * 0.72);
+      ctx.beginPath();
+      ctx.moveTo(bx, barsTop + doorH * 0.72 + 2);
+      ctx.lineTo(bx + 4, barsTop + doorH * 0.72 + 2);
+      ctx.lineTo(bx + 2, barsTop + doorH * 0.72 + 12);
+      ctx.closePath();
+      ctx.fill();
+    }
+
     const light = ctx.createLinearGradient(cx - slit, 0, cx + slit, 0);
     light.addColorStop(0, 'rgba(212,172,108,0)');
-    light.addColorStop(0.5, 'rgba(241,212,154,0.65)');
+    light.addColorStop(0.5, 'rgba(241,212,154,0.78)');
     light.addColorStop(1, 'rgba(212,172,108,0)');
     ctx.fillStyle = light;
     ctx.fillRect(cx - slit, y + gateH * 0.22, slit * 2, gateH * 0.78);
 
-    const runeAlpha = 0.25 + 0.4 * Math.sin(this.t * 1.35);
-    ctx.globalAlpha = runeAlpha;
+    // Broken sigil: angular cracks, not decorative spirals.
+    const crackAlpha = 0.25 + OpeningCinematic._smooth(progress, 0.18, 0.55) * 0.55;
+    ctx.globalAlpha = crackAlpha;
     ctx.strokeStyle = '#f1d49a';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < 5; i++) {
-      const ry = y + gateH * 0.34 + i * gateH * 0.1;
+    ctx.lineWidth = 1.25;
+    const cracks = [
+      [[-0.18, 0.34], [-0.08, 0.39], [-0.15, 0.46], [-0.04, 0.53]],
+      [[0.12, 0.30], [0.04, 0.38], [0.16, 0.43], [0.08, 0.52]],
+      [[-0.04, 0.24], [0.02, 0.34], [-0.02, 0.45], [0.02, 0.60]],
+      [[-0.28, 0.62], [-0.16, 0.58], [-0.09, 0.66]],
+      [[0.28, 0.60], [0.16, 0.58], [0.10, 0.68]]
+    ];
+    for (const crack of cracks) {
       ctx.beginPath();
-      ctx.arc(cx, ry, 14 + i * 8, 0, Math.PI * 2);
+      for (let i = 0; i < crack.length; i++) {
+        const px = cx + crack[i][0] * gateW;
+        const py = y + crack[i][1] * gateH;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
       ctx.stroke();
+    }
+
+    // Light blades projected onto the floor.
+    ctx.globalAlpha = open * 0.26;
+    for (let i = 0; i < 4; i++) {
+      const ray = ctx.createLinearGradient(cx, doorTop, cx + (i - 1.5) * 52, doorTop + doorH);
+      ray.addColorStop(0, 'rgba(241,212,154,0.5)');
+      ray.addColorStop(1, 'rgba(241,212,154,0)');
+      ctx.fillStyle = ray;
+      ctx.beginPath();
+      ctx.moveTo(cx - slit * 0.08, doorTop + 10);
+      ctx.lineTo(cx + (i - 2) * 58, doorTop + doorH + 60);
+      ctx.lineTo(cx + (i - 1) * 58, doorTop + doorH + 60);
+      ctx.lineTo(cx + slit * 0.08, doorTop + 10);
+      ctx.closePath();
+      ctx.fill();
     }
     ctx.restore();
   }
