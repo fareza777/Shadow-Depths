@@ -118,6 +118,22 @@ export class CombatSystem {
     const target = floor.entityAt(targetPos.x, targetPos.y);
     if (!target || target.isDead) return true;
     if (!hasLineOfSight(floor, actor, target)) return true; // missed — no LOS
+    const dist = Math.abs(target.x - actor.x) + Math.abs(target.y - actor.y);
+    if (actor.kind === 'player') {
+      if (dist <= 1) {
+        this.bus.emit('entity:attacked', { attacker: actor, target, damage: 0, isCrit: false, isMiss: true, kind: 'ranged' });
+        return true;
+      }
+      if (typeof actor.spendRangedFocus === 'function' && !actor.spendRangedFocus(1)) {
+        this.bus.emit('entity:attacked', { attacker: actor, target, damage: 0, isCrit: false, isMiss: true, kind: 'ranged' });
+        return false;
+      }
+      const missChance = Math.max(0, (dist - 3) * 0.08);
+      if (missChance > 0 && this.rng.chance(missChance)) {
+        this.bus.emit('entity:attacked', { attacker: actor, target, damage: 0, isCrit: false, isMiss: true, kind: 'ranged' });
+        return true;
+      }
+    }
     this._resolveHit(actor, target, 'ranged', ctx);
     return true;
   }
@@ -144,6 +160,9 @@ export class CombatSystem {
 
     // Attacker on-hit effects via EffectRegistry (weapon onHit list + skill lifesteal).
     this._applyAttackerOnHit(attacker, target, dealt);
+    if (attacker.kind === 'player' && kind === 'melee' && dealt > 0) {
+      attacker.restoreRangedFocus?.(1);
+    }
     // Enemy-on-player legacy onHitPlayer list — apply each through the registry.
     if (attacker.kind === 'enemy' && target.kind === 'player' && attacker.onHitPlayer) {
       for (const eff of attacker.onHitPlayer) {
@@ -227,6 +246,7 @@ export class CombatSystem {
       if (levelsGained > 0) {
         this.bus.emit('entity:leveledUp', { entity: killer, levels: levelsGained });
       }
+      killer.restoreRangedFocus?.(1);
     }
     if (entity.kind === 'player') {
       entity.runStats.killedBy = killer?.name || killer?.id || 'the dark';

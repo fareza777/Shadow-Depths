@@ -22,7 +22,7 @@ import {
 import { Layout } from '../config/layoutMetrics.js';
 import { Player } from '../entities/Player.js';
 import { heroDef } from '../rendering/heroSprites.js';
-import { craft, getRecipe } from '../items/Crafting.js';
+import { chooseForgeOffers, craft, getRecipe } from '../items/Crafting.js';
 import { identify } from '../items/Identification.js';
 
 /** Per-hero stat overrides (atk/def/dex/torchRadius) for new Player(). */
@@ -112,6 +112,8 @@ export class GameScene {
     this.floor = null;
     this._floorBanner = null;
     this._lootToast = null;
+    this._forgeOffers = {};
+    this._forgeUsed = {};
     this._processingTurn = false;
     this._busHandlers = [];
     this._wireCommands();
@@ -216,7 +218,7 @@ export class GameScene {
     const def = floor?.definition || {};
     this._floorBanner = this._buildFloorBanner(index, def);
     // Rest floors fully heal the player on entry — incentive to push deeper.
-    if (def.type === 'rest' && this.player && !this.player.isDead) {
+    if ((def.type === 'rest' || def.type === 'forge') && this.player && !this.player.isDead) {
       const before = this.player.stats.hp;
       this.player.stats.hp = this.player.stats.hpMax;
       const restored = this.player.stats.hp - before;
@@ -232,6 +234,7 @@ export class GameScene {
       type: def.type || null,
       floorNumber: index + 1
     });
+    if (def.type === 'forge') this._ensureForgeOffers(index);
   }
 
   _wirePresentationEvents() {
@@ -351,11 +354,13 @@ export class GameScene {
     return {
       startedAt: performance.now(),
       duration: isBoss ? 5200 : isSubboss ? 4400 : 3600,
-      title: isBoss ? 'BOSS FLOOR'
+      title: def.type === 'forge' ? 'THE VEILED SMITH'
+        : isBoss ? 'BOSS FLOOR'
         : isSubboss ? 'SUBBOSS FLOOR'
         : `FLOOR ${index + 1}`,
       name: isBoss || isSubboss ? (special?.name || def.name) : def.name,
-      subtitle: isBoss ? 'The dungeon seals behind you. Defeat the ruler below.'
+      subtitle: def.type === 'forge' ? 'A hidden forge answers. Choose one bargain.'
+        : isBoss ? 'The dungeon seals behind you. Defeat the ruler below.'
         : isSubboss ? 'An elite guardian is awake. The path narrows.'
         : (def.atmosphere || `Depth ${index + 1} of ${this.dungeon.totalFloors}`),
       accent: isBoss ? '#d4be7a' : isSubboss ? '#c080ff' : COLOR.goldDim,
@@ -690,8 +695,17 @@ export class GameScene {
   _wireCraftingEvents() {
     this._listen('request:openCrafting', () => {
       if (this.crafting && this.player) {
+        if (this.floor?.definition?.type !== 'forge') {
+          this.bus.emit('forge:unavailable', {});
+          return;
+        }
+        if (this._forgeUsed[this.dungeon.currentIndex]) {
+          this.bus.emit('forge:spent', {});
+          return;
+        }
+        const offers = this._ensureForgeOffers(this.dungeon.currentIndex);
         this.crafting.player = this.player;
-        this.crafting.show();
+        this.crafting.show(offers);
       }
     });
     this._listen('craft:request', ({ recipeId, target }) => {
@@ -707,6 +721,8 @@ export class GameScene {
       });
       if (result.ok && result.item) {
         this.bus.emit('item:crafted', { item: result.item });
+        this._forgeUsed[this.dungeon.currentIndex] = true;
+        this.crafting.hide();
         this._lootToast = {
           item: result.item,
           startedAt: performance.now(),
@@ -715,6 +731,17 @@ export class GameScene {
         this._saveRun();
       }
     });
+  }
+
+  _ensureForgeOffers(index) {
+    if (!this._forgeOffers[index]) {
+      this._forgeOffers[index] = chooseForgeOffers(
+        this.rng.fork(`forge:${index}`),
+        index + 1,
+        3
+      );
+    }
+    return this._forgeOffers[index];
   }
 
   _resolveCraftTarget(target) {
@@ -786,6 +813,8 @@ export class GameScene {
       if (dist === 1) this._attackEnemyAt(target.x, target.y);
       return;
     }
+    const dist = Math.abs(target.x - this.player.x) + Math.abs(target.y - this.player.y);
+    if (!this._canUseRanged(dist)) return;
     this.combat.execute(
       { type: 'ranged', target: { x: target.x, y: target.y } },
       this.player,
@@ -875,6 +904,13 @@ export class GameScene {
     const stack = this.floor.itemsAt(this.player.x, this.player.y);
     if (stack.length === 0) return;
     const item = stack[stack.length - 1];
+    if (item.type === 'material') {
+      this.player.addMaterial(item.id, item.count || 1);
+      this.floor.takeItemAt(this.player.x, this.player.y);
+      this.bus.emit('item:pickedUp', { item, by: this.player, material: true });
+      this._endPlayerTurn(true);
+      return;
+    }
     const { added, overflow } = this.player.inventory.add(item);
     if (!added || overflow > 0) {
       if (!added) { this.bus.emit('inventory:full'); return; }
@@ -973,6 +1009,7 @@ export class GameScene {
       const range = this.player.effectiveRange();
       if (range > 1 && distToTarget <= range &&
           hasLineOfSight(this.floor, this.player, targetEnemy)) {
+        if (!this._canUseRanged(distToTarget)) return;
         this.combat.execute(
           { type: 'ranged', target: { x: tx, y: ty } },
           this.player,
@@ -988,6 +1025,18 @@ export class GameScene {
     if (Math.abs(dxRaw) >= Math.abs(dyRaw)) dx = Math.sign(dxRaw);
     else dy = Math.sign(dyRaw);
     this._playerMove(dx, dy);
+  }
+
+  _canUseRanged(dist) {
+    if (dist <= 1) {
+      this.bus.emit('ranged:blocked', { reason: 'too_close' });
+      return false;
+    }
+    if ((this.player.rangedFocus || 0) <= 0) {
+      this.bus.emit('ranged:blocked', { reason: 'no_focus' });
+      return false;
+    }
+    return true;
   }
 
   /** @returns {import('../entities/Enemy.js').Enemy|null} */
@@ -1375,6 +1424,9 @@ export class GameScene {
       spellLifesteal: this.player.spellLifesteal,
       critSkillBonus: this.player.critSkillBonus,
       triggerCooldowns: { ...(this.player._triggerCooldowns || {}) },
+      materials: { ...(this.player.materials || {}) },
+      rangedFocus: this.player.rangedFocus,
+      rangedFocusMax: this.player.rangedFocusMax,
       statusEffects: this.player.statusEffects.map((e) => ({ ...e }))
     };
   }
@@ -1412,7 +1464,9 @@ export class GameScene {
       clearedWithoutDamage: floor.clearedWithoutDamage,
       items,
       enemies,
-      explored
+      explored,
+      forgeOffers: this._forgeOffers[floor.index] || null,
+      forgeUsed: !!this._forgeUsed[floor.index]
     };
   }
 
@@ -1439,6 +1493,9 @@ export class GameScene {
     player.spellLifesteal = snap.spellLifesteal || 0;
     player.critSkillBonus = snap.critSkillBonus || 0;
     player._triggerCooldowns = { ...(snap.triggerCooldowns || {}) };
+    player.materials = { ...(snap.materials || {}) };
+    player.rangedFocusMax = snap.rangedFocusMax || player.rangedFocusMax || 3;
+    player.rangedFocus = snap.rangedFocus ?? player.rangedFocusMax;
     player.statusEffects = Array.isArray(snap.statusEffects) ? snap.statusEffects.map((e) => ({ ...e })) : [];
     const make = (s) => (s?.id ? this.itemFactory.fromSnapshot(s) : null);
     const eq = snap.equipment || {};
@@ -1454,6 +1511,8 @@ export class GameScene {
     floor.items = new Map();
     floor.clearedWithoutDamage = snap.clearedWithoutDamage !== false;
     floor.clearVisibility();
+    if (snap.forgeOffers) this._forgeOffers[floor.index] = snap.forgeOffers;
+    if (snap.forgeUsed) this._forgeUsed[floor.index] = true;
     for (const pair of snap.explored || []) {
       const [x, y] = pair;
       const t = floor.tileAt(x, y);

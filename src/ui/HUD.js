@@ -79,7 +79,8 @@ export class HUD {
     const def = p.totalDef();
     const crit = Math.round(p.critChance() * 100);
     const range = p.weapon?.stats?.attackRange || 1;
-    const rangeChip = range > 1 ? `  RNG ${range}` : '';
+    const focusChip = range > 1 ? `  FOC ${p.rangedFocus ?? 0}/${p.rangedFocusMax ?? 3}` : '';
+    const rangeChip = range > 1 ? `  RNG ${range}${focusChip}` : '';
     r.drawText(`ATK ${atk}  DEF ${def}  CRIT ${crit}%${rangeChip}`,
       8, TOP_PAD + 38, { size: uiSize(12), color: COLOR.textMuted, family: FONT_MONO });
     r.drawText(`◈ ${p.gold}`, Layout.canvasW - 12, TOP_PAD + 38,
@@ -253,6 +254,7 @@ export class HUD {
     // Subtitle: ── FLOOR N OF M [· DAILY] [· REST / VAULT] ──
     const subY = y + h - 7;
     const tag = floorType === 'rest'  ? '  ·  ✜ REST'
+              : floorType === 'forge' ? '  ·  ⚒ FORGE'
               : floorType === 'vault' ? '  ·  ◈ VAULT'
               : '';
     const sub = daily

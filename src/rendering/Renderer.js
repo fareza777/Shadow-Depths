@@ -343,14 +343,14 @@ export class Renderer {
    */
   _drawSpecialFloorMotif(ctx, floor) {
     const def = floor.definition || {};
-    if (def.type !== 'rest' && def.type !== 'vault') return;
+    if (def.type !== 'rest' && def.type !== 'vault' && def.type !== 'forge') return;
     if (!floor.stairsUp) return;
     const t = this._timeSec || 0;
     const cx = floor.stairsUp.x * TILE_SIZE + TILE_SIZE / 2;
     const cy = floor.stairsUp.y * TILE_SIZE + TILE_SIZE / 2;
 
-    if (def.type === 'rest') {
-      // Campfire — flickering ember pile with rising sparks.
+    if (def.type === 'rest' || def.type === 'forge') {
+      // Forge sanctuary — an anvil/ember shrine where the Veiled Smith appears.
       ctx.save();
       // Glow halo
       const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, TILE_SIZE * 1.6);
@@ -358,11 +358,18 @@ export class Renderer {
       glow.addColorStop(1, 'rgba(255, 160, 80, 0)');
       ctx.fillStyle = glow;
       ctx.fillRect(cx - TILE_SIZE * 2, cy - TILE_SIZE * 2, TILE_SIZE * 4, TILE_SIZE * 4);
-      // Log stack
-      ctx.fillStyle = '#3a1f12';
-      ctx.fillRect(cx - 10, cy + 6, 20, 4);
-      ctx.fillStyle = '#5a3420';
-      ctx.fillRect(cx - 8, cy + 4, 16, 2);
+      if (def.type === 'forge') {
+        ctx.fillStyle = '#4a4a54';
+        ctx.fillRect(cx - 13, cy + 3, 26, 5);
+        ctx.fillRect(cx - 8, cy + 8, 16, 5);
+        ctx.fillStyle = '#c0b8a0';
+        ctx.fillRect(cx - 10, cy + 2, 20, 1);
+      } else {
+        ctx.fillStyle = '#3a1f12';
+        ctx.fillRect(cx - 10, cy + 6, 20, 4);
+        ctx.fillStyle = '#5a3420';
+        ctx.fillRect(cx - 8, cy + 4, 16, 2);
+      }
       // Flame body
       const flicker = 0.85 + Math.sin(t * 6.7) * 0.12 + Math.sin(t * 13.1) * 0.05;
       const fh = 14 * flicker;

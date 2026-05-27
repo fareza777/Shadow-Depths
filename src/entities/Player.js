@@ -89,6 +89,9 @@ export class Player extends Entity {
     this.spellCooldownReduction = 0;
     this.spellLifesteal = 0;
     this.critSkillBonus = 0;
+    this.materials = {};
+    this.rangedFocusMax = 3;
+    this.rangedFocus = this.rangedFocusMax;
   }
 
   /**
@@ -222,6 +225,33 @@ export class Player extends Entity {
         this.heal(this.regenAmount);
       }
     }
+  }
+
+  addMaterial(id, count = 1) {
+    if (!id || count <= 0) return 0;
+    this.materials[id] = Math.min(999, (this.materials[id] || 0) + count);
+    return this.materials[id];
+  }
+
+  materialCount(id) {
+    return this.materials?.[id] || 0;
+  }
+
+  consumeMaterial(id, count = 1) {
+    if (this.materialCount(id) < count) return false;
+    this.materials[id] -= count;
+    if (this.materials[id] <= 0) delete this.materials[id];
+    return true;
+  }
+
+  restoreRangedFocus(amount = 1) {
+    this.rangedFocus = Math.min(this.rangedFocusMax, (this.rangedFocus || 0) + amount);
+  }
+
+  spendRangedFocus(amount = 1) {
+    if ((this.rangedFocus || 0) < amount) return false;
+    this.rangedFocus -= amount;
+    return true;
   }
 
   // --- progression ----------------------------------------------------

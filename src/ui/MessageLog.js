@@ -52,8 +52,10 @@ export class MessageLog {
       if (entity.kind === 'player') this.push(`You feel stronger. (Lv ${entity.level})`, COLOR.textXP);
     });
 
-    this.bus.on('item:pickedUp', ({ item }) => {
-      this.push(`You take the ${item.name}.`);
+    this.bus.on('item:pickedUp', ({ item, material }) => {
+      this.push(material
+        ? `${item.name} goes into the material pouch.`
+        : `You take the ${item.name}.`);
     });
 
     this.bus.on('item:used', ({ item, by }) => {
@@ -65,6 +67,13 @@ export class MessageLog {
     });
 
     this.bus.on('inventory:full', () => this.push(`Your pack is full.`, COLOR.textMuted));
+    this.bus.on('forge:unavailable', () => this.push(`No smith answers on this floor.`, COLOR.textMuted));
+    this.bus.on('forge:spent', () => this.push(`The Veiled Smith has already left.`, COLOR.textMuted));
+    this.bus.on('ranged:blocked', ({ reason }) => {
+      this.push(reason === 'too_close'
+        ? `Too close for a clean shot.`
+        : `No focus left for another shot.`, COLOR.textMuted);
+    });
 
     this.bus.on('player:revived', () => this.push(`You wake again. The charm is spent.`, COLOR.textHeal));
 

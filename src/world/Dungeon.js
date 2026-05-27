@@ -129,7 +129,7 @@ export class Dungeon {
       const floorNumber = i + 1;
       const specialEnemyId = this._specialEnemyForFloor(floorNumber);
 
-      // Special floor types: rest (every 7th floor) + vault (every 10th).
+      // Special floor types: forge sanctuary (7, 17, 27...) + vault (10s).
       // Floor 100 stays the boss arena, so we don't override the last floor.
       let type = null;
       let enemyCount = Math.min(14, 3 + Math.floor(i * 0.2) + (i >= 40 ? 1 : 0));
@@ -142,8 +142,8 @@ export class Dungeon {
           enemyCount = Math.max(2, enemyCount - 1);
           itemCount += 2;
           vaultDepthBoost = 12;  // affix tier nudge for items spawned here
-        } else if (floorNumber % 7 === 0) {
-          type = 'rest';
+        } else if (floorNumber % 10 === 7) {
+          type = 'forge';
           enemyCount = 0;
           itemCount = 1;
         }

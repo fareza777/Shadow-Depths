@@ -26,15 +26,23 @@ export class CraftingPanel {
     this._rowRects = [];   // hit-test cache for CRAFT buttons
     this._targetRects = [];
     this._rerollTarget = 0;
+    this.offerRecipeIds = null;
   }
 
-  show()  { this.open = true; this._scroll = 0; }
+  show(offerRecipeIds = null)  {
+    this.open = true;
+    this._scroll = 0;
+    this.offerRecipeIds = Array.isArray(offerRecipeIds) ? offerRecipeIds : null;
+  }
   hide()  { this.open = false; }
 
   render(r) {
     if (!this.open) return;
     const ctx = r.ctx;
-    const recipes = listRecipes();
+    const allRecipes = listRecipes();
+    const recipes = this.offerRecipeIds
+      ? this.offerRecipeIds.map((id) => allRecipes.find((r) => r.id === id)).filter(Boolean)
+      : allRecipes;
     const padX = 16;
     const modalY = 60;
     const modalH = CANVAS_HEIGHT - 120;
@@ -54,11 +62,11 @@ export class CraftingPanel {
     ctx.restore();
 
     // Header
-    r.drawText('THE FORGE', CANVAS_WIDTH / 2, modalY + 18, {
+    r.drawText('THE VEILED SMITH', CANVAS_WIDTH / 2, modalY + 18, {
       size: uiSize(18), bold: true, align: 'center',
       family: FONT_DISPLAY, color: BRASS_HI
     });
-    r.drawText('shape what the depths gave you', CANVAS_WIDTH / 2, modalY + 40, {
+    r.drawText('three offers, one visit, no second bargain', CANVAS_WIDTH / 2, modalY + 40, {
       size: uiSize(10), italic: true, align: 'center',
       family: FONT_BODY, color: COLOR.textMuted
     });
@@ -86,6 +94,12 @@ export class CraftingPanel {
       });
       this._targetRects.push({ x: bx, y: ty + 4, w: 66, h: 22, enabled: rerollTargets.length > 1 });
       listY = modalY + 88;
+    }
+    const pouchLine = this._pouchLine();
+    if (pouchLine) {
+      r.drawText(pouchLine, CANVAS_WIDTH / 2, listY - 6, {
+        size: uiSize(8), align: 'center', family: FONT_MONO, color: COLOR.textMuted
+      });
     }
 
     // Recipe rows
@@ -190,7 +204,7 @@ export class CraftingPanel {
       const bx = rect.x + rect.w - cw - 8;
       const by = rect.y + (rect.h - ch) / 2;
       if (rect.enabled && _insideAt(x, y, bx, by, cw, ch)) {
-        const recipe = listRecipes().find((r) => r.id === rect.id);
+      const recipe = listRecipes().find((r) => r.id === rect.id);
         const target = recipe?.operation === 'reroll'
           ? targets[this._rerollTarget % Math.max(1, targets.length)]
           : null;
@@ -199,6 +213,17 @@ export class CraftingPanel {
       }
     }
     return false;
+  }
+
+  _pouchLine() {
+    const mats = this.player?.materials || {};
+    const parts = Object.entries(mats)
+      .filter(([, count]) => count > 0)
+      .slice(0, 4)
+      .map(([id, count]) => `${this.materialDefs[id]?.name || id} x${count}`);
+    if (parts.length === 0) return 'Material pouch empty';
+    const more = Object.keys(mats).length > parts.length ? ' ...' : '';
+    return `Pouch: ${parts.join(' · ')}${more}`;
   }
 }
 

@@ -15,6 +15,7 @@
  * Public surface:
  *   loadRecipes(json)
  *   listRecipes()
+ *   chooseForgeOffers(rng, floorLevel, count)
  *   canCraft(player, recipe) → { ok, missing? }
  *   craft(player, recipe, ctx) → { ok, item?, reason? }
  *
@@ -35,15 +36,25 @@ export function loadRecipes(json) {
 
 export function listRecipes() { return RECIPES; }
 export function getRecipe(id) { return RECIPE_BY_ID.get(id) || null; }
+export function chooseForgeOffers(rng, floorLevel = 1, count = 3) {
+  const pool = RECIPES.filter((r) => (r.floorMin ?? 1) <= floorLevel);
+  const shuffled = rng?.shuffle ? rng.shuffle(pool) : pool.slice().sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count).map((r) => r.id);
+}
 
 /**
  * Count how many of each material the player has, indexed by id.
  * @param {object} inventory
  */
-function tallyMaterials(inventory) {
+function tallyMaterials(player) {
   const tally = new Map();
-  for (const item of inventory.slots) {
-    if (!item) continue;
+  for (const [id, count] of Object.entries(player?.materials || {})) {
+    tally.set(id, count || 0);
+  }
+  // Backwards-compatible fallback for tests / legacy saves that still hold
+  // materials in the bag.
+  for (const item of player?.inventory?.slots || []) {
+    if (!item || item.type !== 'material') continue;
     tally.set(item.id, (tally.get(item.id) || 0) + (item.count || 1));
   }
   return tally;
@@ -52,7 +63,7 @@ function tallyMaterials(inventory) {
 /** Returns { ok, missing: [{id, need, have}] }. */
 export function canCraft(player, recipe) {
   if (!recipe || !player?.inventory) return { ok: false, missing: [] };
-  const tally = tallyMaterials(player.inventory);
+  const tally = tallyMaterials(player);
   const missing = [];
   for (const input of recipe.inputs || []) {
     const have = tally.get(input.materialId) || 0;
@@ -65,19 +76,23 @@ export function canCraft(player, recipe) {
  * Consume materials from inventory according to recipe.
  * Returns true if all consumed cleanly.
  */
-function consumeInputs(inventory, recipe) {
+function consumeInputs(player, recipe) {
   for (const input of recipe.inputs || []) {
+    if (typeof player.consumeMaterial === 'function') {
+      if (!player.consumeMaterial(input.materialId, input.count)) return false;
+      continue;
+    }
     let remaining = input.count;
     while (remaining > 0) {
-      const slotIdx = inventory.slots.findIndex(
+      const slotIdx = player.inventory.slots.findIndex(
         (s) => s && s.id === input.materialId
       );
       if (slotIdx < 0) return false;
-      const item = inventory.slots[slotIdx];
+      const item = player.inventory.slots[slotIdx];
       const take = Math.min(remaining, item.count || 1);
       item.count -= take;
       remaining -= take;
-      if (item.count <= 0) inventory.slots[slotIdx] = null;
+      if (item.count <= 0) player.inventory.slots[slotIdx] = null;
     }
   }
   return true;
@@ -117,7 +132,7 @@ export function craft(player, recipe, ctx) {
     const target = ctx?.targetItem;
     if (!target) return { ok: false, reason: 'no target item' };
     if (!target.def?.slot) return { ok: false, reason: 'not equipment' };
-    if (!consumeInputs(player.inventory, recipe)) {
+    if (!consumeInputs(player, recipe)) {
       return { ok: false, reason: 'consume failed' };
     }
     // Strip + re-roll. Use base def (without affixes) as the seed.
@@ -131,7 +146,7 @@ export function craft(player, recipe, ctx) {
     return { ok: true, item: target };
   }
 
-  if (!consumeInputs(player.inventory, recipe)) {
+  if (!consumeInputs(player, recipe)) {
     return { ok: false, reason: 'consume failed' };
   }
   const baseDef = pickBase(recipe, ctx.itemDefs, ctx.rng);

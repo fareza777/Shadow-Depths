@@ -21,7 +21,7 @@ const STEPS = [
   },
   {
     title: 'FORGE & DEPTH',
-    body: 'Pause → FORGE shapes materials into gear. Every 7th floor = REST (full heal). Every 10th = VAULT (loot).'
+    body: 'Materials go to a pouch. On forge sanctuary floors, Pause → FORGE offers three rare bargains. Every 10th floor = VAULT.'
   }
 ];
 

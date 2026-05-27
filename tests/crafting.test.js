@@ -74,6 +74,25 @@ describe('canCraft', () => {
     const r = canCraft(player, getRecipe('forge_test'));
     expect(r.ok).toBe(true);
   });
+
+  it('counts materials from the material pouch without occupying bag slots', () => {
+    const player = {
+      inventory: fakeInventory(),
+      materials: { scrap_iron: 3 },
+      materialCount(id) { return this.materials[id] || 0; },
+      consumeMaterial(id, count) {
+        if ((this.materials[id] || 0) < count) return false;
+        this.materials[id] -= count;
+        return true;
+      }
+    };
+    const r = craft(player, getRecipe('forge_test'), {
+      itemDefs: ITEM_DEFS, rng: fakeRng(), floorLevel: 10
+    });
+    expect(r.ok).toBe(true);
+    expect(player.materials.scrap_iron).toBe(1);
+    expect(player.inventory.slots[0]?.id).toBe('iron_sword');
+  });
 });
 
 describe('craft', () => {
