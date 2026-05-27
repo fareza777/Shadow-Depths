@@ -3,7 +3,7 @@
  *
  * Layout:
  *   1. Header: "SATCHEL" + count "X / Y" + coin balance
- *   2. Tab strip: ALL · ARMS · GARB · PHIAL · THROWN · CHARMS
+ *   2. Tab strip: ALL · ARMS · GARB · PHIAL · THROWN · CHARMS · MATS
  *   3. Slot grid (filtered by active tab)
  *   4. Selected item detail card (name + rarity chip + stats + lore + action button)
  *
@@ -29,7 +29,8 @@ const TABS = [
   { id: 'garb',    label: 'GARB'   },
   { id: 'phial',   label: 'PHIAL'  },
   { id: 'thrown',  label: 'THROW'  },
-  { id: 'charms',  label: 'CHARM'  }
+  { id: 'charms',  label: 'CHARM'  },
+  { id: 'mats',    label: 'MATS'   }
 ];
 
 const SLOT_SIZE    = IS_LANDSCAPE ? 56 : 80;
@@ -47,9 +48,10 @@ const BTN_PAD  = 12;
 const BOTTOM_RESERVED = IS_LANDSCAPE ? 12 : 16;
 
 export class InventoryUI {
-  /** @param {{ bus: object }} deps */
-  constructor({ bus }) {
+  /** @param {{ bus: object, materialDefs?: Record<string, object> }} deps */
+  constructor({ bus, materialDefs = {} }) {
     this.bus = bus;
+    this.materialDefs = materialDefs;
     this.open = false;
     bus.on('request:newRun', () => this.hide());
     bus.on('scene:switched', ({ to }) => {
@@ -83,11 +85,14 @@ export class InventoryUI {
     if (t === 'throwable')  return 'thrown';
     if (t === 'passive')    return 'charms';
     if (t === 'consumable') return 'phial';
+    if (t === 'material')   return 'mats';
     return 'phial';
   }
 
   /** @returns {Array<{ item: object|null, slotIndex: number }>} */
   _filteredView(player) {
+    if (this.activeTab === 'mats') return this._materialView(player);
+
     const out = [];
     for (let i = 0; i < player.inventory.size; i++) {
       const item = player.inventory.getSlot(i);
@@ -98,6 +103,48 @@ export class InventoryUI {
       }
     }
     return out;
+  }
+
+  _materialView(player) {
+    const materials = player.materials || {};
+    return Object.entries(materials)
+      .filter(([, count]) => count > 0)
+      .sort(([a], [b]) => this._materialName(a).localeCompare(this._materialName(b)))
+      .map(([id, count], index) => ({
+        item: this._materialItem(id, count),
+        slotIndex: index,
+        material: true
+      }));
+  }
+
+  _materialName(id) {
+    return this.materialDefs[id]?.name || id.replace(/_/g, ' ');
+  }
+
+  _materialItem(id, count) {
+    const def = this.materialDefs[id] || {
+      id,
+      name: this._materialName(id),
+      type: 'material',
+      rarity: 'common',
+      spriteKey: 'item_default',
+      stackable: true,
+      maxStack: 999,
+      lore: 'A crafting material stored in the material pouch.'
+    };
+    return {
+      ...def,
+      id,
+      name: def.name || this._materialName(id),
+      type: 'material',
+      rarity: def.rarity || 'common',
+      spriteKey: def.spriteKey || 'item_default',
+      stackable: true,
+      maxStack: 999,
+      count,
+      lore: def.lore || 'Stored safely in the material pouch.',
+      materialPouch: true
+    };
   }
 
   _selectedItem(player) {
@@ -214,10 +261,13 @@ export class InventoryUI {
     const item = this._selectedItem(player);
     const slotIndex = this._selectedSlotIndex(player);
     if (!item || slotIndex < 0) return;
+    if (item.materialPouch) return;
     if (item.slot) this.bus.emit('command:equipSlot', { index: slotIndex });
     else this.bus.emit('command:useSlot', { index: slotIndex });
   }
   _dropSelected(player) {
+    const item = this._selectedItem(player);
+    if (item?.materialPouch) return;
     const slotIndex = this._selectedSlotIndex(player);
     if (slotIndex < 0) return;
     this.bus.emit('command:dropSlot', { index: slotIndex });
@@ -308,7 +358,11 @@ export class InventoryUI {
     drawSpacedText.call(null, ctx, 'SATCHEL', 60 + ctx.measureText('SATCHEL').width / 2, 22, 4);
     ctx.restore();
     const filled = player.inventory.slots.filter(Boolean).length;
-    r.drawText(`${filled} / ${player.inventory.size}`, 60, 44, {
+    const matTotal = Object.values(player.materials || {}).reduce((sum, n) => sum + n, 0);
+    const countText = this.activeTab === 'mats'
+      ? `${matTotal} MATERIALS IN POUCH`
+      : `${filled} / ${player.inventory.size}`;
+    r.drawText(countText, 60, 44, {
       size: uiSize(10), family: FONT_MONO, color: IRON_PALETTE.boneDim
     });
 
@@ -380,6 +434,9 @@ export class InventoryUI {
       if (entry && this.activeTab === 'all') {
         r.drawText(String(entry.slotIndex + 1), cx + 8, cy + 6,
           { size: uiSize(10), family: FONT_MONO, color: IRON_PALETTE.brass });
+      } else if (entry?.material) {
+        r.drawText('MAT', cx + 8, cy + 6,
+          { size: uiSize(9), family: FONT_MONO, color: IRON_PALETTE.brass });
       }
       if (entry?.item) {
         const pad = 14;
@@ -512,12 +569,14 @@ export class InventoryUI {
     const isEquipped = sel && (sel === player.weapon || sel === player.armor ||
                                 sel === player.helm   || sel === player.legs ||
                                 sel === player.necklace || sel === player.ring);
-    const useLabel = !sel ? 'USE'
+    const pouchItem = !!sel?.materialPouch;
+    const useLabel = pouchItem ? 'POUCH'
+      : !sel ? 'USE'
       : sel.slot ? (isEquipped ? 'UNEQUIP' : 'EQUIP')
       : 'USE';
     const items = [
-      { text: useLabel, enabled: !!sel, accent: sel ? IRON_PALETTE.ember : null },
-      { text: 'DROP',   enabled: !!sel },
+      { text: useLabel, enabled: !!sel && !pouchItem, accent: sel ? IRON_PALETTE.ember : null },
+      { text: 'DROP',   enabled: !!sel && !pouchItem },
       { text: 'CLOSE',  enabled: true,  accent: IRON_PALETTE.brass }
     ];
     for (let i = 0; i < buttons.length; i++) {
@@ -530,6 +589,7 @@ export class InventoryUI {
   }
 
   _statLine(item) {
+    if (item.materialPouch) return `Stored x${item.count}   Material pouch   Forge currency`;
     const parts = [];
     if (item.stats?.atk)   parts.push(`+${item.stats.atk} ATK`);
     if (item.stats?.def)   parts.push(`+${item.stats.def} DEF`);

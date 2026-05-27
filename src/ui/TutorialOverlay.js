@@ -2,7 +2,7 @@
  * TutorialOverlay — 3-step first-run hints (move, attack, pickup).
  * Centered modal so it never hides the control band. D-pad moves dismiss it.
  */
-import { COLOR, FONT_DISPLAY, FONT_BODY, uiSize } from '../config/constants.js';
+import { CANVAS_WIDTH, COLOR, FONT_DISPLAY, FONT_BODY, uiSize } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
 import { getViewportBottomY } from './controlBandLayout.js';
 
@@ -21,7 +21,7 @@ const STEPS = [
   },
   {
     title: 'FORGE & DEPTH',
-    body: 'Materials go to a pouch. On forge sanctuary floors, Pause → FORGE offers three rare bargains. Every 10th floor = VAULT.'
+    body: 'Materials go to a pouch. Open BAG → MATS to review them. On forge sanctuary floors, PICK calls the smith.'
   }
 ];
 

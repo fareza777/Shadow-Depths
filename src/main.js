@@ -171,7 +171,7 @@ async function bootstrap() {
   const messageLog = new MessageLog({ bus, enemyDefs: content.enemies });
   const hud = new HUD({ messageLog });
   const minimap = new Minimap();
-  const inventoryUI = new InventoryUI({ bus });
+  const inventoryUI = new InventoryUI({ bus, materialDefs: materialsData.materials || {} });
   const skillPicker = new SkillPickerUI({ bus, content });
   const vigilScreen = new VigilScreen({ bus });
   const characterSelect = new CharacterSelect({ bus, metaProgress });

@@ -98,7 +98,7 @@ export class HUD {
     const chipY = TOP_PAD + 84;
     // Reserve right-side space for the revive chip + depth meter so the
     // status chips never collide with them.
-    const reviveResv = p.reviveCharges > 0 ? 70 : 0;
+    const reviveResv = p.reviveCharges > 0 ? 88 : 0;
     const rightLimit = Layout.canvasW - 12 - reviveResv;
     for (const eff of p.statusEffects) {
       const label = HUD._statusLabel(eff);
@@ -113,8 +113,8 @@ export class HUD {
     if (p.reviveCharges > 0) {
       // Render as a bordered chip so it doesn't collide with the depth
       // column or the BOSS/ELITE floor chip.
-      const label = `✦${p.reviveCharges}`;
-      const rw = 8 + label.length * 7;
+      const label = `REVIVE ${p.reviveCharges}`;
+      const rw = Math.max(76, 10 + label.length * 7);
       const rx = Layout.canvasW - rw - 12;
       r.drawRect(rx, chipY, rw, 14, '#1a2a1a');
       r.drawStrokedRect(rx, chipY, rw, 14, COLOR.textHeal, 1);
