@@ -433,7 +433,7 @@ export class Renderer {
 
   _drawTorchGlow(ctx, floor, player, x0, y0, x1, y1) {
     const def = floor.definition || {};
-    const radius = (def.torchRadius || 5) * TILE_SIZE;
+    const radius = (player.torchRadius || def.torchRadius || 5) * TILE_SIZE;
     const px = player.renderX * TILE_SIZE + TILE_SIZE / 2;
     const py = player.renderY * TILE_SIZE + TILE_SIZE / 2;
     const left = x0 * TILE_SIZE;
@@ -447,12 +447,19 @@ export class Renderer {
     ctx.rect(left, top, w, h);
     ctx.clip();
     const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.3, px, py, radius);
-    g.addColorStop(0, `rgba(212, 190, 122, ${0.26 * flicker})`);
-    g.addColorStop(0.42, `rgba(160, 120, 70, ${0.1 * flicker})`);
-    g.addColorStop(0.82, 'rgba(48, 36, 64, 0.03)');
+    g.addColorStop(0, `rgba(245, 214, 150, ${0.28 * flicker})`);
+    g.addColorStop(0.34, `rgba(190, 136, 74, ${0.14 * flicker})`);
+    g.addColorStop(0.72, 'rgba(92, 62, 92, 0.05)');
     g.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.globalCompositeOperation = 'screen';
     ctx.fillStyle = g;
+    ctx.fillRect(left, top, w, h);
+    const halo = ctx.createRadialGradient(px, py, radius * 0.48, px, py, radius * 1.24);
+    halo.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    halo.addColorStop(0.82, 'rgba(6, 4, 12, 0.08)');
+    halo.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = halo;
     ctx.fillRect(left, top, w, h);
     ctx.globalAlpha = 0.12 * flicker;
     ctx.fillStyle = '#ffe8b0';
@@ -781,16 +788,21 @@ export class Renderer {
   /** Warm fog-of-war tint on explored-but-not-visible tiles. */
   static _applyFog(ctx, tx, ty) {
     ctx.save();
-    const g = ctx.createLinearGradient(tx, ty, tx, ty + TILE_SIZE);
-    g.addColorStop(0, 'rgba(36, 28, 52, 0.52)');
-    g.addColorStop(0.55, 'rgba(20, 16, 32, 0.58)');
-    g.addColorStop(1, 'rgba(6, 4, 12, 0.72)');
-    ctx.fillStyle = g;
+    ctx.fillStyle = 'rgba(8, 6, 14, 0.42)';
     ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
-    ctx.globalAlpha = 0.14;
-    fillRect(ctx, tx, ty, TILE_SIZE, 1, '#d4be7a28');
-    ctx.globalAlpha = 0.1;
-    fillRect(ctx, tx, ty, 1, TILE_SIZE, '#00000088');
+    ctx.globalCompositeOperation = 'screen';
+    const haze = ctx.createRadialGradient(
+      tx + TILE_SIZE * 0.5, ty + TILE_SIZE * 0.38, 1,
+      tx + TILE_SIZE * 0.5, ty + TILE_SIZE * 0.38, TILE_SIZE * 0.78
+    );
+    haze.addColorStop(0, 'rgba(120, 86, 120, 0.10)');
+    haze.addColorStop(0.7, 'rgba(80, 60, 92, 0.04)');
+    haze.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = haze;
+    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 0.16;
+    fillRect(ctx, tx + 2, ty + TILE_SIZE - 3, TILE_SIZE - 4, 1, '#000000');
     ctx.restore();
   }
 
