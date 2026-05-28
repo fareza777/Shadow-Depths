@@ -12,7 +12,7 @@
  * line — bigger, easier to read on phones.
  */
 import {
-  CANVAS_HEIGHT,
+  CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE,
   FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
@@ -30,25 +30,22 @@ const TABS = [
   { id: 'phial',   label: 'PHIAL'  },
   { id: 'thrown',  label: 'THROW'  },
   { id: 'charms',  label: 'CHARM'  },
-  { id: 'mats',    label: 'MATS'   }
+  { id: 'mats',    label: 'POUCH'  }
 ];
 
-/** Runtime canvas width — frozen CANVAS_WIDTH disagrees with Layout on phones. */
-function screenW() { return Layout.canvasW; }
-function screenH() { return Layout.canvasH || CANVAS_HEIGHT; }
-function portrait() { return Layout.portrait; }
+const SLOT_SIZE    = IS_LANDSCAPE ? 56 : 80;
+const SLOT_PADDING = IS_LANDSCAPE ? 6  : 8;
+const COLS         = IS_LANDSCAPE ? 4  : 3;
+const GRID_TOP     = IS_LANDSCAPE ? 92 : 116;
 
-function slotSize()    { return portrait() ? 80 : 56; }
-function slotPadding() { return portrait() ? 8 : 6; }
-function gridCols()    { return portrait() ? 3 : 4; }
-function gridTop()     { return portrait() ? 116 : 92; }
-function tabH()        { return portrait() ? 32 : 28; }
-function tabY()        { return portrait() ? 78 : 56; }
-function detailH()     { return portrait() ? 140 : 110; }
-function btnH()        { return portrait() ? 44 : 36; }
+const TAB_H = IS_LANDSCAPE ? 28 : 32;
+const TAB_Y = IS_LANDSCAPE ? 56 : 78;
+
+const DETAIL_H = IS_LANDSCAPE ? 110 : 140;
+const BTN_H    = IS_LANDSCAPE ? 36 : 44;
 const BTN_GAP  = 8;
 const BTN_PAD  = 12;
-function bottomReserved() { return portrait() ? 16 : 12; }
+const BOTTOM_RESERVED = IS_LANDSCAPE ? 12 : 16;
 
 export class InventoryUI {
   /** @param {{ bus: object, materialDefs?: Record<string, object> }} deps */
@@ -172,7 +169,7 @@ export class InventoryUI {
     switch (input.type) {
       case 'move': {
         const dx = input.dx || 0, dy = input.dy || 0;
-        let s = this.selectedFilteredIdx + dx + dy * gridCols();
+        let s = this.selectedFilteredIdx + dx + dy * COLS;
         s = ((s % total) + total) % total;
         this.selectedFilteredIdx = s;
         return true;
@@ -230,13 +227,11 @@ export class InventoryUI {
     // 3. Slot grid.
     const view = this._filteredView(player);
     const grid = this._gridGeometry();
-    const { cols, size, pad } = grid;
-    const step = size + pad;
     for (let i = 0; i < view.length; i++) {
-      const cx = grid.startX + (i % cols) * step;
-      const cy = grid.startY + Math.floor(i / cols) * step;
-      if (canvasX >= cx && canvasX <= cx + size &&
-          canvasY >= cy && canvasY <= cy + size) {
+      const cx = grid.startX + (i % COLS) * (SLOT_SIZE + SLOT_PADDING);
+      const cy = grid.startY + Math.floor(i / COLS) * (SLOT_SIZE + SLOT_PADDING);
+      if (canvasX >= cx && canvasX <= cx + SLOT_SIZE &&
+          canvasY >= cy && canvasY <= cy + SLOT_SIZE) {
         // Second tap on the already-selected slot opens the tooltip;
         // tapping a different slot just re-selects.
         if (this.selectedFilteredIdx === i) {
@@ -245,7 +240,7 @@ export class InventoryUI {
             const meta = this._metaRef();
             if (this.tooltip.open && this.tooltip.item === item) this.tooltip.hide();
             else this.tooltip.show(item,
-              { x: cx, y: cy, w: size, h: size }, meta);
+              { x: cx, y: cy, w: SLOT_SIZE, h: SLOT_SIZE }, meta);
           }
         } else {
           this.tooltip.hide();
@@ -284,28 +279,22 @@ export class InventoryUI {
 
   // --- geometry ------------------------------------------------------
   _gridGeometry() {
-    const cols = gridCols();
-    const size = slotSize();
-    const pad = slotPadding();
-    const totalW = cols * size + (cols - 1) * pad;
+    const totalW = COLS * SLOT_SIZE + (COLS - 1) * SLOT_PADDING;
     return {
-      startX: (screenW() - totalW) / 2,
-      startY: gridTop(),
-      totalW,
-      cols,
-      size,
-      pad
+      startX: (CANVAS_WIDTH - totalW) / 2,
+      startY: GRID_TOP,
+      totalW
     };
   }
 
   _tabsGeometry() {
-    const tabW = (screenW() - 24) / TABS.length;
-    return { tabW, baseX: 12, y: tabY() };
+    const tabW = (CANVAS_WIDTH - 24) / TABS.length;
+    return { tabW, baseX: 12, y: TAB_Y };
   }
 
   _tabHitTest(x, y) {
     const g = this._tabsGeometry();
-    if (y < g.y || y > g.y + tabH()) return -1;
+    if (y < g.y || y > g.y + TAB_H) return -1;
     const idx = Math.floor((x - g.baseX) / g.tabW);
     if (idx < 0 || idx >= TABS.length) return -1;
     return idx;
@@ -322,30 +311,29 @@ export class InventoryUI {
 
   _buttonLayout() {
     const count = 3;
-    const totalW = screenW() - BTN_PAD * 2;
+    const totalW = CANVAS_WIDTH - BTN_PAD * 2;
     const w = (totalW - BTN_GAP * (count - 1)) / count;
-    const h = btnH();
-    const y = screenH() - h - BTN_PAD - bottomReserved();
+    const screenH = Layout.canvasH || CANVAS_HEIGHT;
+    const y = screenH - BTN_H - BTN_PAD - BOTTOM_RESERVED;
     return [
-      { x: BTN_PAD,                        y, w, h, key: 'use' },
-      { x: BTN_PAD + (w + BTN_GAP),        y, w, h, key: 'drop' },
-      { x: BTN_PAD + 2 * (w + BTN_GAP),    y, w, h, key: 'close' }
+      { x: BTN_PAD,                        y, w, h: BTN_H, key: 'use' },
+      { x: BTN_PAD + (w + BTN_GAP),        y, w, h: BTN_H, key: 'drop' },
+      { x: BTN_PAD + 2 * (w + BTN_GAP),    y, w, h: BTN_H, key: 'close' }
     ];
   }
 
   _insideHeaderBack(x, y) {
-    const h = portrait() ? 38 : 30;
+    const h = IS_LANDSCAPE ? 30 : 38;
     return x >= 0 && x <= 154 && y >= 0 && y <= h;
   }
 
   // --- render --------------------------------------------------------
   render(renderer, player) {
     if (!this.open) return;
-    const w = screenW();
-    const h = screenH();
+    const screenH = Layout.canvasH || CANVAS_HEIGHT;
 
     // Full-bleed iron panel chrome covers the entire modal area.
-    drawIronPanel(renderer.ctx, 0, 0, w, h);
+    drawIronPanel(renderer.ctx, 0, 0, CANVAS_WIDTH, screenH);
 
     this._renderHeader(renderer, player);
     this._renderTabs(renderer, player);
@@ -388,7 +376,7 @@ export class InventoryUI {
     const coinText = `${player.gold}`;
     ctx.font = `bold ${uiSize(13)}px ${FONT_MONO}`;
     const coinW = Math.max(56, ctx.measureText(`◈${coinText}`).width + 22);
-    const coinX = screenW() - coinW - 12;
+    const coinX = CANVAS_WIDTH - coinW - 12;
     drawIronPlate(ctx, coinX, 22, coinW, 30, { rivets: false, glow: IRON_PALETTE.brass });
     r.drawText('◈', coinX + 10, 37, {
       size: uiSize(13), baseline: 'middle', family: FONT_DISPLAY, color: IRON_PALETTE.brass
@@ -402,44 +390,25 @@ export class InventoryUI {
   _renderTabs(r, _player) {
     const g = this._tabsGeometry();
     const ctx = r.ctx;
-    const th = tabH();
     for (let i = 0; i < TABS.length; i++) {
       const x = g.baseX + i * g.tabW;
       const active = TABS[i].id === this.activeTab;
-      drawIronPlate(ctx, x + 2, g.y, g.tabW - 4, th, {
+      drawIronPlate(ctx, x + 2, g.y, g.tabW - 4, TAB_H, {
         pressed: active,
         glow: active ? IRON_PALETTE.brass : null,
         rivets: false
       });
       ctx.save();
-      ctx.beginPath();
-      ctx.rect(x + 2, g.y, g.tabW - 4, th);
-      ctx.clip();
       const label = TABS[i].label.toUpperCase();
-      const maxW = g.tabW - 10;
-      let fontSize = label.length >= 5 ? 9 : 10;
-      let spacing = label.length >= 5 ? 0.5 : 1;
+      const fontSize = label.length >= 5 ? 9 : 10;
+      const spacing = label.length >= 5 ? 0.5 : 1;
       ctx.font = `bold ${uiSize(fontSize)}px ${FONT_DISPLAY}`;
-      while (fontSize > 7 && this._spacedTextWidth(ctx, label, spacing) > maxW) {
-        fontSize -= 1;
-        spacing = Math.max(0, spacing - 0.25);
-        ctx.font = `bold ${uiSize(fontSize)}px ${FONT_DISPLAY}`;
-      }
       ctx.fillStyle = active ? IRON_PALETTE.brass : IRON_PALETTE.boneDim;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      drawSpacedText(ctx, label, x + g.tabW / 2, g.y + th / 2, spacing);
+      drawSpacedText(ctx, label, x + g.tabW / 2, g.y + TAB_H / 2, spacing);
       ctx.restore();
     }
-  }
-
-  _spacedTextWidth(ctx, text, spacing) {
-    let total = 0;
-    for (let i = 0; i < text.length; i++) {
-      total += ctx.measureText(text[i]).width;
-      if (i < text.length - 1) total += spacing;
-    }
-    return total;
   }
 
   _countForTab(player, tabId) {
@@ -455,18 +424,16 @@ export class InventoryUI {
     const ctx = r.ctx;
     const view = this._filteredView(player);
     const grid = this._gridGeometry();
-    const { cols, size, pad } = grid;
-    const step = size + pad;
     const maxSlots = this.activeTab === 'all'
       ? player.inventory.size
-      : Math.max(view.length, cols);
+      : Math.max(view.length, COLS);
     for (let i = 0; i < Math.max(view.length, maxSlots); i++) {
-      const cx = grid.startX + (i % cols) * step;
-      const cy = grid.startY + Math.floor(i / cols) * step;
+      const cx = grid.startX + (i % COLS) * (SLOT_SIZE + SLOT_PADDING);
+      const cy = grid.startY + Math.floor(i / COLS) * (SLOT_SIZE + SLOT_PADDING);
       const entry = view[i];
       const sel = i === this.selectedFilteredIdx;
       // Iron recessed slot with rarity-coloured border (or brass when selected).
-      drawIronSlot(ctx, cx, cy, size, size, {
+      drawIronSlot(ctx, cx, cy, SLOT_SIZE, SLOT_SIZE, {
         selected: sel,
         rarity: entry?.item?.rarity,
         empty: !entry?.item
@@ -480,26 +447,26 @@ export class InventoryUI {
           { size: uiSize(9), family: FONT_MONO, color: IRON_PALETTE.brass });
       }
       if (entry?.item) {
-        const iconPad = 14;
-        const icon = size - iconPad * 2;
+        const pad = 14;
+        const icon = SLOT_SIZE - pad * 2;
         if (entry.material && entry.item.count <= 0) ctx.globalAlpha = 0.38;
-        r.sprites.draw(entry.item.spriteKey, r.ctx, cx + iconPad, cy + iconPad, { size: icon });
+        r.sprites.draw(entry.item.spriteKey, r.ctx, cx + pad, cy + pad, { size: icon });
         if (entry.material && entry.item.count <= 0) ctx.globalAlpha = 1;
         // Equipped badge.
         const isEq = entry.item === player.weapon || entry.item === player.armor
                   || entry.item === player.helm   || entry.item === player.legs
                   || entry.item === player.necklace || entry.item === player.ring;
         if (isEq) {
-          r.drawRect(cx + size - 18, cy + 6, 14, 14, IRON_PALETTE.brass);
-          r.drawStrokedRect(cx + size - 18, cy + 6, 14, 14, IRON_PALETTE.ink, 1);
-          r.drawText('E', cx + size - 11, cy + 13, {
+          r.drawRect(cx + SLOT_SIZE - 18, cy + 6, 14, 14, IRON_PALETTE.brass);
+          r.drawStrokedRect(cx + SLOT_SIZE - 18, cy + 6, 14, 14, IRON_PALETTE.ink, 1);
+          r.drawText('E', cx + SLOT_SIZE - 11, cy + 13, {
             size: uiSize(9), bold: true, align: 'center', baseline: 'middle',
             family: FONT_MONO, color: IRON_PALETTE.ink
           });
         }
         // Stack count.
         if (entry.item.materialPouch || (entry.item.stackable && entry.item.count > 1)) {
-          r.drawText(`×${entry.item.count}`, cx + size - 8, cy + size - 8,
+          r.drawText(`×${entry.item.count}`, cx + SLOT_SIZE - 8, cy + SLOT_SIZE - 8,
             { size: uiSize(11), bold: true, align: 'right', baseline: 'bottom',
               family: FONT_MONO,
               color: entry.item.count > 0 ? IRON_PALETTE.bone : IRON_PALETTE.boneDim });
@@ -512,16 +479,15 @@ export class InventoryUI {
     const ctx = r.ctx;
     const sel = this._selectedItem(player);
     const buttons = this._buttonLayout();
-    const dh = detailH();
-    const cardY = buttons[0].y - dh - 8;
+    const cardY = buttons[0].y - DETAIL_H - 8;
     const cardX = 12;
-    const cardW = screenW() - 24;
-    drawInsetCard(ctx, cardX, cardY, cardW, dh, {
+    const cardW = CANVAS_WIDTH - 24;
+    drawInsetCard(ctx, cardX, cardY, cardW, DETAIL_H, {
       borderColor: sel ? ironRarity(sel.rarity) : IRON_PALETTE.plate2
     });
 
     if (!sel) {
-      r.drawText('— no item selected —', screenW() / 2, cardY + dh / 2,
+      r.drawText('— no item selected —', CANVAS_WIDTH / 2, cardY + DETAIL_H / 2,
         { size: uiSize(13), italic: true, align: 'center', baseline: 'middle',
           family: FONT_BODY, color: IRON_PALETTE.boneDim });
       return;
@@ -529,7 +495,7 @@ export class InventoryUI {
 
     const col = ironRarity(sel.rarity);
     // Icon recess on the left (matches mock — square with rarity border + glow).
-    const iconSize = dh - 28;
+    const iconSize = DETAIL_H - 28;
     const iconX = cardX + 14;
     const iconY = cardY + 14;
     ctx.fillStyle = IRON_PALETTE.ink;
@@ -595,7 +561,7 @@ export class InventoryUI {
     // Lore quote in a brass-left-trim box (matches mock).
     if (sel.lore) {
       const loreY = cardY + 72;
-      const loreH = dh - (loreY - cardY) - 10;
+      const loreH = DETAIL_H - (loreY - cardY) - 10;
       const loreX = textX;
       const loreW = cardW - (textX - cardX) - 14;
       ctx.fillStyle = IRON_PALETTE.ink;
