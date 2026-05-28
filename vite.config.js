@@ -21,6 +21,7 @@ export default defineConfig({
     target: 'es2020',
     outDir: 'dist',
     assetsInlineLimit: 0,
-    sourcemap: true
+    // Source maps balloon deploy size (~1.7MB) and have caused Vercel deploy failures.
+    sourcemap: false
   }
 });
