@@ -42,11 +42,11 @@ export class QuickUseBar {
     const inv = player.inventory;
     const ctx = renderer.ctx;
 
-    // Subtle "QUICK" label above the slot row.
-    renderer.drawText('QUICK', LAYOUT.quickX + LAYOUT.quickRowW / 2,
-      LAYOUT.quickY - 8, {
-        size: uiSize(8), align: 'center', family: FONT_DISPLAY, color: IRON.brass
-      });
+    const quickLabelY = LAYOUT.bandTop != null ? LAYOUT.bandTop + 8 : LAYOUT.quickY - 12;
+    renderer.drawText('QUICK', LAYOUT.quickX + LAYOUT.quickRowW / 2, quickLabelY, {
+      size: uiSize(9), align: 'center', baseline: 'top',
+      family: FONT_DISPLAY, color: IRON.brass
+    });
 
     // 1) Render quick slots as iron plates.
     for (let qi = 0; qi < QUICK_SLOT_COUNT; qi++) {

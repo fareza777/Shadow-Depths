@@ -18,7 +18,7 @@ function portraitBandMetrics() {
   const bandY = getViewportBottomY();
   const quickSlot = 48;
   const quickGap = 4;
-  const quickY = bandY + 6;
+  const quickY = bandY + 18;
   const quickRowH = quickSlot + 12;
   const dpadBtn = 58;
   const dpadGap = 5;

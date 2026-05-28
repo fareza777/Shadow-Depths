@@ -210,7 +210,7 @@ export class HUD {
     const x = 8;
     const y = TOP_PAD + 56;
     const w = Layout.canvasW - 32;
-    const h = 38;
+    const h = 40;
     const t = hudNow();
     const cx = Layout.canvasW / 2;
     const upper = name.toUpperCase();
@@ -275,7 +275,7 @@ export class HUD {
     ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const labelY = y + 13;
+    const labelY = y + 11;
     // Engraved back-shadow
     ctx.fillStyle = IRON.ink;
     ctx.fillText(upper, cx + 1, labelY + 1);
@@ -296,20 +296,21 @@ export class HUD {
               : floorType === 'forge' ? '⚒ FORGE'
               : floorType === 'vault' ? '◈ VAULT'
               : '';
-    const subY = y + 27;
+    const floorSubY = y + 21;
+    const badgeSubY = y + 31;
     ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = IRON.boneDim;
     const badgeRow = daily || tag;
-    ctx.fillText(floorLine, cx, badgeRow ? subY : subY + 4);
+    ctx.fillText(floorLine, cx, badgeRow ? floorSubY : floorSubY + 3);
     if (badgeRow) {
       const badges = [];
       if (daily) badges.push('☼ DAILY');
       if (tag) badges.push(tag);
       ctx.font = `${uiSize(8)}px ${FONT_MONO}`;
       ctx.fillStyle = daily ? '#c8a86a' : IRON.boneDim;
-      ctx.fillText(badges.join('  ·  '), cx, subY + 12);
+      ctx.fillText(badges.join('  ·  '), cx, badgeSubY);
     }
 
     ctx.restore();

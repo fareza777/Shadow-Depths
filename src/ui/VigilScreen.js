@@ -19,7 +19,7 @@ import { Layout } from '../config/layoutMetrics.js';
 import {
   drawIronPanel, drawIronPlate, drawBrassRivet,
   drawInsetCard, drawProgressBar, drawIronActionButton,
-  drawEquipRow, drawSpacedText, IRON_PALETTE
+  drawEquipRow, drawSpacedText, IRON_PALETTE, rarityColor
 } from './ironPanel.js';
 
 const HERO_NAME = 'FAJAR';
@@ -30,6 +30,8 @@ export class VigilScreen {
   constructor({ bus }) {
     this.bus = bus;
     this.open = false;
+    this._pickerSlot = null;
+    this._pickerHits = [];
     bus.on('request:newRun', () => this.hide());
     bus.on('scene:switched', ({ to }) => {
       if (to !== 'game') this.hide();
@@ -37,7 +39,7 @@ export class VigilScreen {
   }
 
   show() { this.open = true; }
-  hide() { this.open = false; }
+  hide() { this.open = false; this._pickerSlot = null; this._pickerHits = []; }
   toggle() { this.open = !this.open; }
 
   handleInput(player, input) {
@@ -55,13 +57,36 @@ export class VigilScreen {
       this.hide();
       return true;
     }
+    if (this._pickerSlot) {
+      for (const hit of this._pickerHits) {
+        if (canvasX >= hit.x && canvasX <= hit.x + hit.w &&
+            canvasY >= hit.y && canvasY <= hit.y + hit.h) {
+          if (hit.kind === 'cancel') {
+            this._pickerSlot = null;
+            this._pickerHits = [];
+          } else if (hit.kind === 'equip') {
+            this.bus.emit('command:equipSlot', { index: hit.index });
+            this._pickerSlot = null;
+            this._pickerHits = [];
+          }
+          return true;
+        }
+      }
+      this._pickerSlot = null;
+      this._pickerHits = [];
+      return true;
+    }
     const cards = this._equipmentCards(player);
     for (const c of cards) {
-      if (!c.item) continue;
       const btn = c.unequipBtn;
-      if (canvasX >= btn.x && canvasX <= btn.x + btn.w &&
+      if (c.item && canvasX >= btn.x && canvasX <= btn.x + btn.w &&
           canvasY >= btn.y && canvasY <= btn.y + btn.h) {
         this.bus.emit('command:unequip', { slot: c.slot });
+        return true;
+      }
+      if (canvasX >= c.x && canvasX <= c.x + c.w &&
+          canvasY >= c.y && canvasY <= c.y + c.h) {
+        this._openEquipPicker(c.slot, player);
         return true;
       }
     }
@@ -72,6 +97,22 @@ export class VigilScreen {
       return true;
     }
     return true;
+  }
+
+  _openEquipPicker(slot, player) {
+    this._pickerSlot = slot;
+    this._pickerHits = [];
+  }
+
+  _equippableInBag(player, slot) {
+    const inv = player.inventory;
+    const out = [];
+    if (!inv?.getSlot) return out;
+    for (let i = 0; i < inv.size; i++) {
+      const item = inv.getSlot(i);
+      if (item?.slot === slot) out.push({ index: i, item });
+    }
+    return out;
   }
 
   // --- geometry -----------------------------------------------------
@@ -269,6 +310,7 @@ export class VigilScreen {
     for (const c of cards) {
       drawEquipRow(r, c.x, c.y, c.w, c.h, c.slot, c.item);
     }
+    if (this._pickerSlot) this._renderEquipPicker(r, p);
   }
 
   _renderStatTable(r, p, baseY) {
@@ -358,5 +400,91 @@ export class VigilScreen {
     // Equipment list.
     const cards = this._equipmentCards(p);
     for (const c of cards) drawEquipRow(r, c.x, c.y, c.w, c.h, c.slot, c.item);
+    if (this._pickerSlot) this._renderEquipPicker(r, p);
+  }
+
+  _renderEquipPicker(r, player) {
+    const slot = this._pickerSlot;
+    const items = this._equippableInBag(player, slot);
+    const close = this._closeRect();
+    const panelY = this._cardsBaseY() - 8;
+    const panelH = close.y - panelY - 12;
+    const panelX = 12;
+    const panelW = CANVAS_WIDTH - 24;
+    const ctx = r.ctx;
+
+    ctx.fillStyle = 'rgba(4,2,8,0.88)';
+    ctx.fillRect(0, panelY - 4, CANVAS_WIDTH, panelH + 8);
+
+    drawInsetCard(ctx, panelX, panelY, panelW, panelH, { borderColor: IRON_PALETTE.brass });
+    const title = `CHOOSE ${slot.toUpperCase()}`;
+    r.drawText(title, CANVAS_WIDTH / 2, panelY + 14, {
+      size: uiSize(12), bold: true, align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
+
+    const rowH = IS_LANDSCAPE ? 44 : 40;
+    const listY = panelY + 28;
+    const listH = panelH - 72;
+    const maxRows = Math.max(1, Math.floor(listH / rowH));
+    const slice = items.slice(0, maxRows);
+    this._pickerHits = [];
+
+    for (let i = 0; i < slice.length; i++) {
+      const { index, item } = slice[i];
+      const ry = listY + i * rowH;
+      const col = rarityColor(item.rarity);
+      r.drawRect(panelX + 10, ry, panelW - 20, rowH - 4, IRON_PALETTE.plate0);
+      r.drawStrokedRect(panelX + 10, ry, panelW - 20, rowH - 4, col, 1);
+      const icon = rowH - 14;
+      const ix = panelX + 16;
+      const iy = ry + 5;
+      r.drawRect(ix, iy, icon, icon, IRON_PALETTE.ink);
+      if (item.spriteKey && r.sprites) {
+        r.sprites.draw(item.spriteKey, ctx, ix + 2, iy + 2, { size: icon - 4 });
+      }
+      const tx = ix + icon + 10;
+      r.drawText(item.name, tx, ry + 10, {
+        size: uiSize(12), bold: true, family: FONT_DISPLAY, color: col
+      });
+      const stat = VigilScreen._itemStatLine(item);
+      if (stat) {
+        r.drawText(stat, tx, ry + 24, {
+          size: uiSize(9), family: FONT_MONO, color: IRON_PALETTE.boneDim
+        });
+      }
+      this._pickerHits.push({
+        kind: 'equip', index,
+        x: panelX + 10, y: ry, w: panelW - 20, h: rowH - 4
+      });
+    }
+
+    if (items.length === 0) {
+      r.drawText('No matching items in bag', CANVAS_WIDTH / 2, listY + 20, {
+        size: uiSize(11), align: 'center', italic: true,
+        family: FONT_BODY, color: IRON_PALETTE.boneDim
+      });
+    } else if (items.length > maxRows) {
+      r.drawText(`+${items.length - maxRows} more in bag — use BAG to swap`,
+        CANVAS_WIDTH / 2, listY + maxRows * rowH + 4, {
+          size: uiSize(8), align: 'center', family: FONT_MONO, color: IRON_PALETTE.boneDim
+        });
+    }
+
+    const cancelY = panelY + panelH - 34;
+    const cancelW = 120;
+    const cancelX = (CANVAS_WIDTH - cancelW) / 2;
+    drawIronActionButton(r, cancelX, cancelY, cancelW, 28, 'CANCEL',
+      { accent: IRON_PALETTE.boneDim, fontSize: 11 });
+    this._pickerHits.push({ kind: 'cancel', x: cancelX, y: cancelY, w: cancelW, h: 28 });
+  }
+
+  static _itemStatLine(item) {
+    if (!item.stats) return '';
+    const parts = [];
+    for (const [k, v] of Object.entries(item.stats)) {
+      if (!v) continue;
+      parts.push(`${v > 0 ? '+' : ''}${v} ${k.toUpperCase()}`);
+    }
+    return parts.slice(0, 3).join('  ');
   }
 }
