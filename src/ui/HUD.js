@@ -84,9 +84,11 @@ export class HUD {
       statParts.push(`RNG ${range}`);
       statParts.push(`FOC ${p.rangedFocus ?? 0}/${p.rangedFocusMax ?? 3}`);
     }
-    r.drawText(statParts.join('  '), 8, TOP_PAD + 38,
+    const statY = TOP_PAD + 40;
+    r.drawRect(6, statY - 2, Layout.canvasW - 12, 15, 'rgba(8,6,12,0.92)');
+    r.drawText(statParts.join('  '), 8, statY,
       { size: uiSize(11), color: COLOR.textMuted, family: FONT_MONO });
-    r.drawText(`◈ ${p.gold}`, Layout.canvasW - 12, TOP_PAD + 38,
+    r.drawText(`◈ ${p.gold}`, Layout.canvasW - 12, statY,
       { size: uiSize(12), color: COLOR.textXP, align: 'right', family: FONT_MONO });
 
     if (floor) {
@@ -97,7 +99,7 @@ export class HUD {
       this._drawDepthMeter(r, floorIndex, totalFloors);
     }
 
-    const chipY = TOP_PAD + 78;
+    const chipY = TOP_PAD + 92;
     const chipH = 15;
     let chipX = 8;
     if (floor && (floorIndex + 1) % 20 === 0) {
@@ -192,9 +194,9 @@ export class HUD {
   _drawFloorBanner(r, name, floorIndex, totalFloors, daily = false, floorType = null) {
     const ctx = r.ctx;
     const x = 8;
-    const y = TOP_PAD + 50;
+    const y = TOP_PAD + 58;
     const w = Layout.canvasW - 32;
-    const h = 24;
+    const h = 30;
     const t = hudNow();
     const cx = Layout.canvasW / 2;
     const upper = name.toUpperCase();
@@ -220,8 +222,8 @@ export class HUD {
       ctx.fillStyle = lg;
       ctx.fillRect(x, py, w, 1);
     };
-    pipeFn(y);
-    pipeFn(y + h - 1);
+    pipeFn(y + 3);
+    pipeFn(y + h - 4);
 
     // Tiny brass studs at the four corners (no boxed border).
     const studs = [
@@ -258,7 +260,7 @@ export class HUD {
     ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const labelY = y + 9;
+    const labelY = y + 12;
     // Engraved back-shadow
     ctx.fillStyle = IRON.ink;
     ctx.fillText(upper, cx + 1, labelY + 1);
@@ -274,8 +276,8 @@ export class HUD {
     ctx.fillStyle = tg;
     ctx.fillText(upper, cx, labelY);
 
-    // Subtitle: ── FLOOR N OF M [· DAILY] [· REST / VAULT] ──
-    const subY = y + h - 5;
+    // Subtitle: FLOOR N OF M [· DAILY] [· REST / VAULT]
+    const subY = y + h - 10;
     const tag = floorType === 'rest'  ? '  ·  ✜ REST'
               : floorType === 'forge' ? '  ·  ⚒ FORGE'
               : floorType === 'vault' ? '  ·  ◈ VAULT'
@@ -287,27 +289,13 @@ export class HUD {
     ctx.textAlign = 'center';
     ctx.fillStyle = IRON.boneDim;
     ctx.fillText(sub, cx, subY);
-    const subW = ctx.measureText(sub).width;
-    const lineL = cx - subW / 2 - 8;
-    const lineR = cx + subW / 2 + 8;
-    const lineLen = 50;
-    const lg1 = ctx.createLinearGradient(lineL - lineLen, 0, lineL, 0);
-    lg1.addColorStop(0, 'rgba(212,172,108,0)');
-    lg1.addColorStop(1, BRASS);
-    ctx.fillStyle = lg1;
-    ctx.fillRect(lineL - lineLen, subY, lineLen, 1);
-    const lg2 = ctx.createLinearGradient(lineR, 0, lineR + lineLen, 0);
-    lg2.addColorStop(0, BRASS);
-    lg2.addColorStop(1, 'rgba(212,172,108,0)');
-    ctx.fillStyle = lg2;
-    ctx.fillRect(lineR, subY, lineLen, 1);
 
     ctx.restore();
   }
 
   _drawFloorChip(r, floor, floorIndex) {
     const special = floor?.definition?.specialEnemyId || '';
-    const y = TOP_PAD + 78;
+    const y = TOP_PAD + 92;
     const chipH = 15;
     if (!special) return;
     const boss = special.startsWith('boss_');

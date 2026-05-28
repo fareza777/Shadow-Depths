@@ -509,27 +509,18 @@ export class InventoryUI {
     ctx.restore();
     r.sprites.draw(sel.spriteKey, r.ctx, iconX + 4, iconY + 4, { size: iconSize - 8 });
 
-    // Name (rarity-coloured, display serif).
     const textX = iconX + iconSize + 14;
-    ctx.save();
-    ctx.font = `bold ${uiSize(14)}px ${FONT_DISPLAY}`;
-    ctx.fillStyle = col;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    drawSpacedText(ctx, sel.name.toUpperCase(),
-      textX + ctx.measureText(sel.name.toUpperCase()).width / 2, cardY + 16, 1.5);
-    ctx.restore();
+    const textMaxW = cardW - (textX - cardX) - 14;
+    const nameSize = uiSize(14);
+    const nameUpper = sel.name.toUpperCase();
+    r.drawText(this._fitLine(r, nameUpper, textMaxW, nameSize),
+      textX, cardY + 14,
+      { size: nameSize, bold: true, family: FONT_DISPLAY, color: col });
 
-    // type · rarity sublabel.
     const sub = `${(sel.slot || sel.type || '').toUpperCase()} · ${sel.rarity.toUpperCase()}`;
-    ctx.save();
-    ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
-    ctx.fillStyle = IRON_PALETTE.boneDim;
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    drawSpacedText(ctx, sub,
-      textX + ctx.measureText(sub).width / 2, cardY + 36, 1.5);
-    ctx.restore();
+    r.drawText(this._fitLine(r, sub, textMaxW, uiSize(9)),
+      textX, cardY + 34,
+      { size: uiSize(9), family: FONT_MONO, color: IRON_PALETTE.boneDim });
 
     // Equipped chip (small brass tag).
     const isEq = sel === player.weapon || sel === player.armor
@@ -553,24 +544,30 @@ export class InventoryUI {
       ctx.restore();
     }
 
-    // Stat line.
-    r.drawText(this._fitLine(r, this._statLine(sel), cardW - (textX - cardX) - 14, uiSize(11)),
-      textX, cardY + 52,
+    const statY = cardY + 50;
+    r.drawText(this._fitLine(r, this._statLine(sel), textMaxW, uiSize(11)),
+      textX, statY,
       { size: uiSize(11), family: FONT_MONO, color: IRON_PALETTE.bone });
 
-    // Lore quote in a brass-left-trim box (matches mock).
     if (sel.lore) {
-      const loreY = cardY + 72;
-      const loreH = DETAIL_H - (loreY - cardY) - 10;
+      const loreY = cardY + 66;
+      const loreH = DETAIL_H - (loreY - cardY) - 8;
       const loreX = textX;
-      const loreW = cardW - (textX - cardX) - 14;
+      const loreW = textMaxW;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(loreX, loreY, loreW, loreH);
+      ctx.clip();
       ctx.fillStyle = IRON_PALETTE.ink;
       ctx.fillRect(loreX, loreY, loreW, loreH);
       ctx.fillStyle = IRON_PALETTE.brass;
       ctx.fillRect(loreX, loreY, 2, loreH);
-      this._drawWrappedText(r, `"${sel.lore}"`, loreX + 8, loreY + 6, loreW - 12, 2, {
+      const lineH = 14;
+      const maxLines = Math.max(1, Math.floor((loreH - 10) / lineH));
+      this._drawWrappedText(r, `"${sel.lore}"`, loreX + 8, loreY + 6, loreW - 12, maxLines, {
         size: uiSize(10), italic: true, family: FONT_BODY, color: IRON_PALETTE.boneDim
-      });
+      }, lineH);
+      ctx.restore();
     }
   }
 
@@ -638,7 +635,7 @@ export class InventoryUI {
     return out ? out + ellipsis : ellipsis;
   }
 
-  _drawWrappedText(r, text, x, y, maxW, maxLines, opts) {
+  _drawWrappedText(r, text, x, y, maxW, maxLines, opts, lineH = 16) {
     const words = String(text).split(/\s+/).filter(Boolean);
     const lines = [];
     let line = '';
@@ -659,7 +656,7 @@ export class InventoryUI {
       lines[maxLines - 1] = `${last}...`;
     }
     for (let i = 0; i < lines.length; i++) {
-      r.drawText(lines[i], x, y + i * 16, opts);
+      r.drawText(lines[i], x, y + i * lineH, opts);
     }
   }
 }

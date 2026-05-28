@@ -1298,7 +1298,6 @@ export class GameScene {
     });
     this._listen('command:equipSlot', ({ index }) => {
       this._playerUseSlot(index);
-      this.inventoryUI.hide();
       this._saveRun();
     });
     this._listen('command:dropSlot', ({ index }) => this._dropSlot(index));

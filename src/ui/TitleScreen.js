@@ -66,6 +66,7 @@ export class TitleScreen {
     this._t = 0;
     this._shopFeedback = '';
     this._shopFeedbackUntil = 0;
+    this._codexDetail = null;
   }
 
   enter() { this.selected = 0; this.modal = null; }
@@ -333,14 +334,36 @@ export class TitleScreen {
         }
         // Codex tab change (400 + i) and pagination (410=prev, 411=next).
         if (this.modal === 'codex') {
+          if (idx === 412) { this._codexDetail = null; return; }
+          if (typeof idx === 'number' && idx >= 420 && idx < 440) {
+            const row = idx - 420;
+            const layout = this._codexListLayout();
+            const e = layout.slice[row];
+            if (e?.seen) {
+              this._codexDetail = this._codexDetail?.id === e.id ? null : e;
+            }
+            return;
+          }
           if (typeof idx === 'number' && idx >= 400 && idx < 410) {
             const tabs = this._codexTabs();
             const t = tabs[idx - 400];
-            if (t) { this._codexTab = t.id; this._codexPage = 0; }
+            if (t) {
+              this._codexTab = t.id;
+              this._codexPage = 0;
+              this._codexDetail = null;
+            }
             return;
           }
-          if (idx === 410) { this._codexPage = Math.max(0, (this._codexPage || 0) - 1); return; }
-          if (idx === 411) { this._codexPage = (this._codexPage || 0) + 1; return; }
+          if (idx === 410) {
+            this._codexPage = Math.max(0, (this._codexPage || 0) - 1);
+            this._codexDetail = null;
+            return;
+          }
+          if (idx === 411) {
+            this._codexPage = (this._codexPage || 0) + 1;
+            this._codexDetail = null;
+            return;
+          }
         }
         if (this.modal !== 'shop' && this.modal !== 'settings' && this.modal !== 'codex' && idx === 98) {
           this.modal = null;
@@ -383,6 +406,7 @@ export class TitleScreen {
       this.modal = 'codex';
       this._codexTab = 'items';
       this._codexPage = 0;
+      this._codexDetail = null;
     }
     else if (id === 'meta') this.modal = 'meta';
     else if (id === 'controls') this.modal = 'controls';
@@ -707,7 +731,8 @@ export class TitleScreen {
     this._renderModalCloseButton(r, g.closeY);
   }
 
-  _renderCodexList(r, g) {
+  _codexListLayout(g = null) {
+    if (!g) g = this._codexGeometry();
     const tab = this._codexTab;
     const m = this.state.state.meta;
     let entries = [];
@@ -748,17 +773,28 @@ export class TitleScreen {
       });
     }
 
-    // Pagination — show up to ~10 entries (portrait) / 12 (landscape) per page.
     const rowH = IS_LANDSCAPE ? 28 : 36;
     const listX = g.modalX + 8;
     const listW = g.modalW - 16;
-    const listH = g.closeY - g.listY - 16;
+    const footReserve = 34;
+    const listH = g.closeY - g.listY - 16 - footReserve;
     const perPage = Math.max(1, Math.floor(listH / rowH));
     const totalPages = Math.max(1, Math.ceil(entries.length / perPage));
     if (!this._codexPage) this._codexPage = 0;
     if (this._codexPage >= totalPages) this._codexPage = totalPages - 1;
     const start = this._codexPage * perPage;
     const slice = entries.slice(start, start + perPage);
+    const footY = g.listY + perPage * rowH + 2;
+    return { g, rowH, listX, listW, perPage, totalPages, slice, footY };
+  }
+
+  _renderCodexList(r, g) {
+    if (this._codexDetail) {
+      this._renderCodexDetail(r, g, this._codexDetail);
+      return;
+    }
+
+    const { rowH, listX, listW, perPage, totalPages, slice, footY } = this._codexListLayout(g);
 
     for (let i = 0; i < slice.length; i++) {
       const e = slice[i];
@@ -766,7 +802,6 @@ export class TitleScreen {
       const bg = i % 2 === 0 ? COLOR.bgPanelAlt : COLOR.bg;
       r.drawRect(listX, ry, listW, rowH, bg);
 
-      // Icon.
       const iconSize = rowH - 6;
       const iconX = listX + 4;
       const iconY = ry + 3;
@@ -780,11 +815,11 @@ export class TitleScreen {
             family: FONT_DISPLAY, color: COLOR.textMuted });
       }
 
-      // Name + lore (or '???' if unseen).
       const tx = iconX + iconSize + 8;
       const name = e.seen ? e.name : '???';
       const nameColor = e.seen ? rarityColor(e.rarity) : COLOR.textMuted;
-      r.drawText(name, tx, ry + 4,
+      const nameMaxW = listW - (tx - listX) - 8;
+      r.drawText(TitleScreen._fitText(r, name, nameMaxW, 12), tx, ry + 4,
         { size: 12, bold: true, family: FONT_DISPLAY, color: nameColor });
       if (e.seen && e.lore) {
         const lore = e.lore.length > 60 ? e.lore.slice(0, 58) + '…' : e.lore;
@@ -796,13 +831,10 @@ export class TitleScreen {
       }
     }
 
-    // Pagination footer.
     if (totalPages > 1) {
-      const footY = g.listY + perPage * rowH + 2;
       r.drawText(`Page ${this._codexPage + 1} / ${totalPages}`,
         CANVAS_WIDTH / 2, footY,
         { size: 10, align: 'center', family: FONT_MONO, color: COLOR.textMuted });
-      // PREV/NEXT buttons.
       const btnW = 60, btnH = 24;
       const prevX = listX + 4, nextX = listX + listW - btnW - 4;
       r.drawRect(prevX, footY - 4, btnW, btnH, COLOR.bgCard);
@@ -813,6 +845,77 @@ export class TitleScreen {
       r.drawStrokedRect(nextX, footY - 4, btnW, btnH, COLOR.borderSoft, 1);
       r.drawText('NEXT ▶', nextX + btnW / 2, footY + btnH / 2 - 4,
         { size: 9, align: 'center', baseline: 'middle', family: FONT_DISPLAY });
+    }
+  }
+
+  _renderCodexDetail(r, g, entry) {
+    const listX = g.modalX + 8;
+    const listW = g.modalW - 16;
+    const panelY = g.listY;
+    const panelH = g.closeY - g.listY - 44;
+    r.drawRect(listX, panelY, listW, panelH, COLOR.bgCard);
+    r.drawStrokedRect(listX, panelY, listW, panelH, COLOR.gold, 2);
+
+    const iconSize = IS_LANDSCAPE ? 72 : 96;
+    const iconX = listX + 16;
+    const iconY = panelY + Math.max(12, (panelH - iconSize) / 2 - 8);
+    r.drawRect(iconX, iconY, iconSize, iconSize, COLOR.bgPanel);
+    r.drawStrokedRect(iconX, iconY, iconSize, iconSize, rarityColor(entry.rarity), 2);
+    if (entry.spriteKey && r.sprites) {
+      r.sprites.draw(entry.spriteKey, r.ctx, iconX + 6, iconY + 6, { size: iconSize - 12 });
+    }
+
+    const textX = iconX + iconSize + 16;
+    const textW = listX + listW - textX - 12;
+    const nameCol = rarityColor(entry.rarity);
+    r.drawText(TitleScreen._fitText(r, entry.name.toUpperCase(), textW, 16),
+      textX, panelY + 14,
+      { size: 16, bold: true, family: FONT_DISPLAY, color: nameCol });
+    r.drawText(entry.rarity.toUpperCase(), textX, panelY + 36,
+      { size: 10, family: FONT_MONO, color: COLOR.textMuted });
+
+    if (entry.lore) {
+      TitleScreen._drawWrapped(r, `"${entry.lore}"`, textX, panelY + 54, textW, panelH - 70, {
+        size: 12, italic: true, family: FONT_BODY, color: COLOR.textPrimary
+      });
+    }
+
+    r.drawText('tap again to return', CANVAS_WIDTH / 2, panelY + panelH - 10,
+      { size: 9, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
+  }
+
+  static _fitText(r, text, maxW, size) {
+    const opts = { size, family: FONT_DISPLAY, bold: true };
+    if (r.measureText(text, opts) <= maxW) return text;
+    let out = text;
+    while (out.length > 1 && r.measureText(`${out}…`, opts) > maxW) out = out.slice(0, -1);
+    return `${out}…`;
+  }
+
+  static _drawWrapped(r, text, x, y, maxW, maxH, opts) {
+    const words = String(text).split(/\s+/).filter(Boolean);
+    const lineH = (opts.size || 12) + 4;
+    const maxLines = Math.max(1, Math.floor(maxH / lineH));
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+      const next = line ? `${line} ${word}` : word;
+      if (r.measureText(next, opts) <= maxW) {
+        line = next;
+      } else {
+        if (line) lines.push(line);
+        line = word;
+      }
+      if (lines.length >= maxLines) break;
+    }
+    if (line && lines.length < maxLines) lines.push(line);
+    if (lines.length === maxLines && words.join(' ').length > lines.join(' ').length) {
+      let last = lines[maxLines - 1];
+      while (last.length > 0 && r.measureText(`${last}…`, opts) > maxW) last = last.slice(0, -1);
+      lines[maxLines - 1] = `${last}…`;
+    }
+    for (let i = 0; i < lines.length; i++) {
+      r.drawText(lines[i], x, y + i * lineH, opts);
     }
   }
 
@@ -953,27 +1056,36 @@ export class TitleScreen {
     }
     if (this.modal === 'codex') {
       const g = this._codexGeometry();
-      // Tabs.
       const tabs = this._codexTabs();
       const tabW = (g.modalW - 16) / tabs.length;
       if (y >= g.tabY && y <= g.tabY + g.tabH) {
         for (let i = 0; i < tabs.length; i++) {
           const tx = g.modalX + 8 + i * tabW;
-          if (x >= tx && x <= tx + tabW) return 400 + i; // 400+i = codex tab i
+          if (x >= tx && x <= tx + tabW) return 400 + i;
         }
       }
-      // Pagination buttons.
-      const listX = g.modalX + 8;
-      const listW = g.modalW - 16;
-      const rowH = IS_LANDSCAPE ? 28 : 36;
-      const listH = g.closeY - g.listY - 16;
-      const perPage = Math.floor(listH / rowH);
-      const footY = g.listY + perPage * rowH + 2;
-      const btnW = 60, btnH = 24;
-      const prevX = listX + 4, nextX = listX + listW - btnW - 4;
-      if (y >= footY - 4 && y <= footY - 4 + btnH) {
-        if (x >= prevX && x <= prevX + btnW) return 410; // codex prev
-        if (x >= nextX && x <= nextX + btnW) return 411; // codex next
+      if (this._codexDetail) {
+        const panelY = g.listY;
+        const panelH = g.closeY - g.listY - 44;
+        if (x >= g.modalX + 8 && x <= g.modalX + g.modalW - 8 &&
+            y >= panelY && y <= panelY + panelH) {
+          return 412;
+        }
+      } else {
+        const { rowH, listX, listW, perPage, totalPages, slice, footY } = this._codexListLayout(g);
+        if (y >= g.listY && y < g.listY + slice.length * rowH &&
+            x >= listX && x <= listX + listW) {
+          const row = Math.floor((y - g.listY) / rowH);
+          if (row >= 0 && row < slice.length) return 420 + row;
+        }
+        if (totalPages > 1) {
+          const btnW = 60, btnH = 24;
+          const prevX = listX + 4, nextX = listX + listW - btnW - 4;
+          if (y >= footY - 4 && y <= footY - 4 + btnH) {
+            if (x >= prevX && x <= prevX + btnW) return 410;
+            if (x >= nextX && x <= nextX + btnW) return 411;
+          }
+        }
       }
       const closeRect = this._modalCloseRect(g.closeY);
       if (TitleScreen._inside(x, y, closeRect)) return 99;
