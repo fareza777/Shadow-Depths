@@ -30,7 +30,8 @@ export class TouchHandler {
 
     if (typeof scene?.hitTest === 'function') {
       const idx = scene.hitTest(x, y);
-      if (idx >= 0) {
+      const isHit = typeof idx === 'number' ? idx >= 0 : typeof idx === 'string' && idx.length > 0;
+      if (isHit) {
         this.bus.emit('input:action', { type: 'tap', buttonIndex: idx });
         return;
       }

@@ -70,10 +70,11 @@ export class TitleScreen {
     this._t = 0;
     this._shopFeedback = '';
     this._shopFeedbackUntil = 0;
+    this._shopScroll = 0;
     this._codexDetail = null;
   }
 
-  enter() { this.selected = 0; this.modal = null; }
+  enter() { this.selected = 0; this.modal = null; this._shopScroll = 0; }
 
   update(dt) {
     this._t += dt;
@@ -324,6 +325,16 @@ export class TitleScreen {
           if (u) this._tryPurchase(u);
           return;
         }
+        if (this.modal === 'settings' && idx === 302) {
+          if (this.meta) {
+            const cur = this.meta.state.settings?.volume ?? 0.6;
+            const steps = [0, 0.25, 0.5, 0.75, 1];
+            const i = steps.findIndex((v) => Math.abs(v - cur) < 0.01);
+            const next = steps[(i + 1) % steps.length];
+            this.meta.setSetting('volume', next);
+          }
+          return;
+        }
         if (this.modal === 'settings' && (idx === 300 || idx === 301)) {
           const mode = idx === 300 ? 'portrait' : 'landscape';
           if (this.meta) {
@@ -405,7 +416,7 @@ export class TitleScreen {
       // Same picker, but the daily seed is attached when the player chooses.
       this.bus.emit('request:openCharacterSelect', { mode: 'daily', seed });
     }
-    else if (id === 'shop') this.modal = 'shop';
+    else if (id === 'shop') { this.modal = 'shop'; this._shopScroll = 0; }
     else if (id === 'codex') {
       this.modal = 'codex';
       this._codexTab = 'items';
@@ -560,94 +571,128 @@ export class TitleScreen {
   }
 
   // --- Settings modal -----------------------------------------------
-  _settingsGeometry() {
-    const modalH = IS_LANDSCAPE ? 280 : 360;
-    const modalY = Math.max(16, (CANVAS_HEIGHT - modalH) / 2 - (IS_LANDSCAPE ? 20 : 60));
+  _settingsLayout() {
     const modalX = IS_LANDSCAPE ? 60 : 40;
     const modalW = CANVAS_WIDTH - modalX * 2;
     const btnW = IS_LANDSCAPE ? 130 : 140;
-    const btnH = IS_LANDSCAPE ? 40  : 44;
+    const btnH = IS_LANDSCAPE ? 40 : 44;
     const btnGap = 14;
     const totalW = btnW * 2 + btnGap;
     const baseX = (CANVAS_WIDTH - totalW) / 2;
     const closeH = IS_LANDSCAPE ? 40 : 48;
-    const closeY = modalY + modalH - closeH - 14;
-    const btnY   = closeY - btnH - 18;
-    return { modalX, modalY, modalW, modalH, btnW, btnH, btnGap, baseX, btnY, closeY };
+    const diffBtnW = 62;
+    const diffBtnH = 28;
+    const diffGap = 8;
+    const diffTotalW = diffBtnW * 4 + diffGap * 3;
+    const diffBaseX = (CANVAS_WIDTH - diffTotalW) / 2;
+
+    const bodyTop = 58;
+    const soundLabelY = bodyTop;
+    const soundCardY = soundLabelY + 16;
+    const soundCardH = 34;
+    const diffLabelY = soundCardY + soundCardH + 14;
+    const diffBtnY = diffLabelY + 16;
+    const orientLabelY = diffBtnY + diffBtnH + 16;
+    const orientBtnY = orientLabelY + 14;
+    const hintY = orientBtnY + btnH + 10;
+    const closeY = hintY + 24;
+    const modalH = closeY + closeH + 14;
+    const modalY = Math.max(16, (CANVAS_HEIGHT - modalH) / 2 - (IS_LANDSCAPE ? 12 : 40));
+
+    const y0 = modalY;
+    return {
+      modalX, modalY, modalW, modalH,
+      btnW, btnH, btnGap, baseX, closeH, closeY,
+      soundLabelY: y0 + soundLabelY,
+      soundCardY: y0 + soundCardY,
+      soundCardH,
+      soundCardX: modalX + 20,
+      soundCardW: modalW - 40,
+      diffLabelY: y0 + diffLabelY,
+      diffBtnY: y0 + diffBtnY,
+      diffBtnW, diffBtnH, diffGap, diffBaseX,
+      orientLabelY: y0 + orientLabelY,
+      orientBtnY: y0 + orientBtnY,
+      hintY: y0 + hintY
+    };
+  }
+  _settingsGeometry() {
+    return this._settingsLayout();
   }
   _renderSettings(r) {
     const settings = this.state.state.meta.settings || {};
     const vol = Math.round((settings.volume ?? 0.6) * 100);
     const orient = settings.orientation || 'portrait';
     const difficulty = settings.difficulty || 'normal';
-    const g = this._settingsGeometry();
+    const g = this._settingsLayout();
     this._renderIronModalChrome(r, g, 'SETTINGS', 'iron-clad preferences');
 
-    const volY = g.modalY + 68;
-    drawInsetCard(r.ctx, g.modalX + 20, volY, g.modalW - 40, 32);
-    r.drawText(`VOLUME  ${vol}%`, CANVAS_WIDTH / 2, volY + 16, {
-      size: uiSize(13), bold: true, align: 'center', baseline: 'middle',
+    r.drawText('SOUND', CANVAS_WIDTH / 2, g.soundLabelY, {
+      size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
+    drawInsetCard(r.ctx, g.soundCardX, g.soundCardY, g.soundCardW, g.soundCardH);
+    r.drawText(`${vol}%  ·  music & effects`, CANVAS_WIDTH / 2, g.soundCardY + g.soundCardH / 2, {
+      size: uiSize(12), bold: true, align: 'center', baseline: 'middle',
       family: FONT_MONO, color: IRON_PALETTE.bone
     });
+    r.drawText('tap bar to change', CANVAS_WIDTH / 2, g.soundCardY + g.soundCardH + 8, {
+      size: uiSize(9), italic: true, align: 'center',
+      family: FONT_BODY, color: IRON_PALETTE.boneDim
+    });
 
-    const diffRow = this._difficultyButtonRow();
-    r.drawText('DIFFICULTY', CANVAS_WIDTH / 2, diffRow.labelY - 4, {
+    r.drawText('DIFFICULTY', CANVAS_WIDTH / 2, g.diffLabelY, {
       size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
     });
     const diffKeys = ['easy', 'normal', 'hard', 'ascend1'];
     const diffLabels = { easy: 'EASY', normal: 'NORM', hard: 'HARD', ascend1: 'ASC1' };
     for (let i = 0; i < diffKeys.length; i++) {
       const key = diffKeys[i];
-      const bx = diffRow.baseX + i * (diffRow.btnW + diffRow.gap);
-      this._renderIronPill(r, bx, diffRow.y, diffRow.btnW, diffRow.btnH,
+      const bx = g.diffBaseX + i * (g.diffBtnW + g.diffGap);
+      this._renderIronPill(r, bx, g.diffBtnY, g.diffBtnW, g.diffBtnH,
         diffLabels[key], difficulty === key);
     }
 
-    r.drawText('ORIENTATION', CANVAS_WIDTH / 2, g.btnY - 28, {
+    r.drawText('ORIENTATION', CANVAS_WIDTH / 2, g.orientLabelY, {
       size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
     });
     for (let i = 0; i < 2; i++) {
       const key = i === 0 ? 'portrait' : 'landscape';
       const label = i === 0 ? 'PORTRAIT' : 'LANDSCAPE';
       const bx = g.baseX + i * (g.btnW + g.btnGap);
-      this._renderIronPill(r, bx, g.btnY, g.btnW, g.btnH, label, orient === key);
+      this._renderIronPill(r, bx, g.orientBtnY, g.btnW, g.btnH, label, orient === key);
     }
-    r.drawText('tap to toggle  ·  reloads game',
-      CANVAS_WIDTH / 2, g.btnY + g.btnH + 10,
+    r.drawText('orientation reloads the game',
+      CANVAS_WIDTH / 2, g.hintY,
       { size: uiSize(10), italic: true, align: 'center',
         family: FONT_BODY, color: IRON_PALETTE.boneDim });
     this._renderModalCloseButton(r, g.closeY);
   }
-  _difficultyButtonRow() {
-    const g = this._settingsGeometry();
-    const btnW = 62;
-    const btnH = 28;
-    const gap = 8;
-    const totalW = btnW * 4 + gap * 3;
-    const baseX = (CANVAS_WIDTH - totalW) / 2;
-    const labelY = g.modalY + 92;
-    const y = labelY + 12;
-    return { baseX, y, btnW, btnH, gap, labelY };
-  }
 
   _settingsDifficultyHitTest(x, y) {
     if (this.modal !== 'settings') return null;
-    const row = this._difficultyButtonRow();
-    if (y < row.y || y > row.y + row.btnH) return null;
+    const g = this._settingsLayout();
+    if (y < g.diffBtnY || y > g.diffBtnY + g.diffBtnH) return null;
     const keys = ['easy', 'normal', 'hard', 'ascend1'];
     for (let i = 0; i < 4; i++) {
-      const bx = row.baseX + i * (row.btnW + row.gap);
-      if (x >= bx && x <= bx + row.btnW) return keys[i];
+      const bx = g.diffBaseX + i * (g.diffBtnW + g.diffGap);
+      if (x >= bx && x <= bx + g.diffBtnW) return `diff:${keys[i]}`;
     }
     return null;
   }
 
+  _settingsVolumeHitTest(x, y) {
+    if (this.modal !== 'settings') return false;
+    const g = this._settingsLayout();
+    return x >= g.soundCardX && x <= g.soundCardX + g.soundCardW &&
+      y >= g.soundCardY && y <= g.soundCardY + g.soundCardH;
+  }
+
   _settingsOrientationHitTest(x, y) {
     if (this.modal !== 'settings') return null;
-    const g = this._settingsGeometry();
+    const g = this._settingsLayout();
     for (let i = 0; i < 2; i++) {
       const bx = g.baseX + i * (g.btnW + g.btnGap);
-      if (x >= bx && x <= bx + g.btnW && y >= g.btnY && y <= g.btnY + g.btnH) {
+      if (x >= bx && x <= bx + g.btnW && y >= g.orientBtnY && y <= g.orientBtnY + g.btnH) {
         return i === 0 ? 'portrait' : 'landscape';
       }
     }
@@ -975,14 +1020,22 @@ export class TitleScreen {
     const upgrades = this.content.shop?.upgrades || [];
     const cols = IS_LANDSCAPE ? 2 : 1;
     const rows = Math.ceil(upgrades.length / cols);
-    const rowH = IS_LANDSCAPE ? 72 : 70;
-    const headerH = 56;
+    const rowH = IS_LANDSCAPE ? 68 : 64;
+    const headerH = 58;
     const closeH = IS_LANDSCAPE ? 40 : 48;
-    const closeMargin = 12;
-    const modalH = headerH + rows * rowH + closeH + closeMargin * 2 + 8;
-    const modalY = Math.max(8, (CANVAS_HEIGHT - modalH) / 2);
+    const closeMargin = 14;
+    const footerH = closeH + closeMargin * 2;
+    const listH = rows * rowH;
+    const idealH = headerH + listH + footerH;
+    const maxModalH = CANVAS_HEIGHT - (IS_LANDSCAPE ? 24 : 48);
+    const modalH = Math.min(idealH, maxModalH);
+    const modalY = Math.max(IS_LANDSCAPE ? 8 : 16, (CANVAS_HEIGHT - modalH) / 2);
     const modalX = 16;
     const modalW = CANVAS_WIDTH - modalX * 2;
+    const listTop = modalY + headerH;
+    const listViewH = modalH - headerH - footerH;
+    const scrollMax = Math.max(0, listH - listViewH);
+    this._shopScroll = Math.max(0, Math.min(this._shopScroll || 0, scrollMax));
     const cardPad = 8;
     const cardGap = 8;
     const cardW = (modalW - cardPad * 2 - cardGap * (cols - 1)) / cols;
@@ -992,12 +1045,12 @@ export class TitleScreen {
       const col = i % cols;
       const row = Math.floor(i / cols);
       const cx = modalX + cardPad + col * (cardW + cardGap);
-      const cy = modalY + headerH + row * rowH;
-      cards.push({ x: cx, y: cy, w: cardW, h: cardH });
+      const cy = listTop + row * rowH - this._shopScroll;
+      cards.push({ x: cx, y: cy, w: cardW, h: cardH, index: i });
     }
     return {
       modalX, modalY, modalW, modalH,
-      headerH, closeH, closeMargin,
+      headerH, closeH, closeMargin, listTop, listViewH, scrollMax,
       closeY: modalY + modalH - closeH - closeMargin,
       cards
     };
@@ -1007,6 +1060,12 @@ export class TitleScreen {
     const g = this._shopGeometry();
     const coins = this.state.state.meta.coins || 0;
     this._renderIronModalChrome(r, g, 'EMPORIUM', `◈  ${coins} coins`);
+
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(g.modalX + 4, g.listTop, g.modalW - 8, g.listViewH);
+    ctx.clip();
 
     for (let i = 0; i < upgrades.length; i++) {
       const u = upgrades[i];
@@ -1040,6 +1099,21 @@ export class TitleScreen {
         fontSize: uiSize(11)
       });
     }
+    ctx.restore();
+
+    if (g.scrollMax > 0) {
+      const trackX = g.modalX + g.modalW - 10;
+      const trackY = g.listTop + 4;
+      const trackH = g.listViewH - 8;
+      ctx.fillStyle = IRON_PALETTE.plate1;
+      ctx.fillRect(trackX, trackY, 4, trackH);
+      const thumbH = Math.max(24, trackH * (g.listViewH / (g.listViewH + g.scrollMax)));
+      const thumbY = trackY + (g.scrollMax > 0
+        ? (this._shopScroll / g.scrollMax) * (trackH - thumbH) : 0);
+      ctx.fillStyle = IRON_PALETTE.brassDark;
+      ctx.fillRect(trackX, thumbY, 4, thumbH);
+    }
+
     if (this._shopFeedback && this._t < this._shopFeedbackUntil) {
       r.drawText(this._shopFeedback, CANVAS_WIDTH / 2, g.closeY - 10,
         { size: uiSize(11), italic: true, align: 'center',
@@ -1075,13 +1149,31 @@ export class TitleScreen {
     // Modal-specific hit tests first.
     if (this.modal === 'shop') {
       const g = this._shopGeometry();
-      const btnW = 72, btnH = 30;
+      const btnW = 76, btnH = 32;
+      if (g.scrollMax > 0) {
+        const trackX = g.modalX + g.modalW - 14;
+        if (x >= trackX && x <= g.modalX + g.modalW &&
+            y >= g.listTop && y <= g.listTop + g.listViewH) {
+          const ratio = (y - g.listTop) / Math.max(1, g.listViewH);
+          this._shopScroll = Math.round(ratio * g.scrollMax);
+          return -1;
+        }
+        if (y >= g.listTop && y <= g.listTop + g.listViewH &&
+            x >= g.modalX && x <= g.modalX + g.modalW - 16) {
+          const step = 64;
+          if (y < g.listTop + 28) this._shopScroll = Math.max(0, this._shopScroll - step);
+          else if (y > g.listTop + g.listViewH - 28) {
+            this._shopScroll = Math.min(g.scrollMax, this._shopScroll + step);
+          }
+        }
+      }
       for (let i = 0; i < g.cards.length; i++) {
         const card = g.cards[i];
+        if (card.y + card.h < g.listTop || card.y > g.listTop + g.listViewH) continue;
         const btnX = card.x + card.w - btnW - 8;
-        const btnY = card.y + card.h - btnH - 6;
+        const btnY = card.y + card.h - btnH - 8;
         if (x >= btnX && x <= btnX + btnW && y >= btnY && y <= btnY + btnH) {
-          return 200 + i;
+          return 200 + card.index;
         }
       }
       const closeRect = this._modalCloseRect(g.closeY);
@@ -1089,8 +1181,9 @@ export class TitleScreen {
       return -1;
     }
     if (this.modal === 'settings') {
+      if (this._settingsVolumeHitTest(x, y)) return 302;
       const diff = this._settingsDifficultyHitTest(x, y);
-      if (diff) return `diff:${diff}`;
+      if (diff) return diff;
       const orient = this._settingsOrientationHitTest(x, y);
       if (orient) return orient === 'portrait' ? 300 : 301;
       const g = this._settingsGeometry();
