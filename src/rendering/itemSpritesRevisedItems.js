@@ -1,13 +1,4 @@
 /** Auto-generated quality item sprites — 6 icons */
-export const REVISED_ITEMS = {
-  armor_plate: { grid: ARMOR_PLATE_GRID, pal: ARMOR_PLATE_PAL },
-  potion_crimson: { grid: POTION_CRIMSON_GRID, pal: POTION_CRIMSON_PAL },
-  potion_red: { grid: POTION_RED_GRID, pal: POTION_RED_PAL },
-  scroll_red: { grid: SCROLL_RED_GRID, pal: SCROLL_RED_PAL },
-  weapon_sword_iron: { grid: WEAPON_SWORD_IRON_GRID, pal: WEAPON_SWORD_IRON_PAL },
-  weapon_sword_mythril: { grid: WEAPON_SWORD_MYTHRIL_GRID, pal: WEAPON_SWORD_MYTHRIL_PAL },
-};
-
 const ARMOR_PLATE_PAL = {
   "0": "#000000",
   "2": "#484c58",
@@ -291,4 +282,15 @@ const WEAPON_SWORD_MYTHRIL_GRID = [
   "................................",
   "................................",
 ];
+
+// Export defined AFTER all grid/palette consts so the object literal does not
+// reference them inside the temporal dead zone (TDZ) during module evaluation.
+export const REVISED_ITEMS = {
+  armor_plate: { grid: ARMOR_PLATE_GRID, pal: ARMOR_PLATE_PAL },
+  potion_crimson: { grid: POTION_CRIMSON_GRID, pal: POTION_CRIMSON_PAL },
+  potion_red: { grid: POTION_RED_GRID, pal: POTION_RED_PAL },
+  scroll_red: { grid: SCROLL_RED_GRID, pal: SCROLL_RED_PAL },
+  weapon_sword_iron: { grid: WEAPON_SWORD_IRON_GRID, pal: WEAPON_SWORD_IRON_PAL },
+  weapon_sword_mythril: { grid: WEAPON_SWORD_MYTHRIL_GRID, pal: WEAPON_SWORD_MYTHRIL_PAL },
+};
 
