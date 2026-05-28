@@ -9,6 +9,24 @@
  */
 import { LOG } from './config/constants.js';
 
+// Boot splash (defined in index.html) is shown from first paint. We keep it up
+// for at least MIN_SPLASH_MS so the reveal animation isn't cut short on fast
+// loads, then fade it out and remove the node.
+const _splashStart = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+const MIN_SPLASH_MS = 2400;
+
+function hideBootSplash({ immediate = false } = {}) {
+  const splash = typeof document !== 'undefined' && document.getElementById('boot-splash');
+  if (!splash) return;
+  const remove = () => {
+    splash.classList.add('boot-splash--hide');
+    setTimeout(() => splash.remove(), 700);
+  };
+  if (immediate) return remove();
+  const elapsed = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - _splashStart;
+  setTimeout(remove, Math.max(0, MIN_SPLASH_MS - elapsed));
+}
+
 import { EventBus } from './core/EventBus.js';
 import { StateStore } from './core/StateStore.js';
 import { SceneManager } from './core/SceneManager.js';
@@ -239,6 +257,10 @@ async function bootstrap() {
 
   await game.boot();
   console.log(LOG.CORE, 'Shadow Depths bootstrap complete');
+
+  // Title scene is live behind the splash — fade the boot splash away
+  // (kept up at least MIN_SPLASH_MS so the reveal animation finishes).
+  hideBootSplash();
 }
 
 // Catch unhandled errors AFTER boot too — without this, a black-screen
@@ -249,6 +271,7 @@ if (typeof window !== 'undefined') {
   const showRuntimeError = (msg) => {
     if (_shown) return;
     _shown = true;
+    hideBootSplash({ immediate: true });
     const div = document.createElement('div');
     div.style.cssText = 'position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#1a0810;color:#ffd0d0;font:11px monospace;padding:8px 10px;border:1px solid #ff6060;border-radius:6px;max-height:40vh;overflow:auto;white-space:pre-wrap;line-height:1.4';
     div.textContent = String(msg);
@@ -264,6 +287,8 @@ if (typeof window !== 'undefined') {
 
 bootstrap().catch((err) => {
   console.error('[Bootstrap]', err);
+  // Boot failed — drop the splash immediately so the error is visible.
+  hideBootSplash({ immediate: true });
   const root = document.getElementById('game-root');
   if (root) {
     root.innerHTML = `

@@ -78,8 +78,272 @@
         display: none !important;
       }
     </style>
+    <style>
+      /* ====================================================================
+         BOOT SPLASH — pure CSS, paints on first frame before the JS bundle
+         parses. Themed to the brass/iron dark-fantasy palette. Fades out
+         once bootstrap() completes (see main.js). Background matches the
+         native Capacitor SplashScreen (#08060c) so there is no flash.
+         ==================================================================== */
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        background:
+          radial-gradient(120% 80% at 50% 38%, #241a30 0%, #110b18 46%, #08060c 100%);
+        opacity: 1;
+        transition: opacity 620ms ease;
+      }
+      #boot-splash.boot-splash--hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      /* Soft top-down vignette + faint engraved ledger lines. */
+      #boot-splash::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent 40px,
+            rgba(212, 172, 108, 0.035) 40px,
+            rgba(212, 172, 108, 0.035) 41px
+          );
+        pointer-events: none;
+      }
+      #boot-splash::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          radial-gradient(60% 50% at 50% 40%, transparent 40%, rgba(0, 0, 0, 0.55) 100%);
+        pointer-events: none;
+      }
+
+      .boot-stage {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        z-index: 2;
+      }
+
+      /* --- Brass sigil (mirrors the favicon rhombus) ---------------------- */
+      .boot-sigil {
+        width: 132px;
+        height: 132px;
+        margin-bottom: 26px;
+        filter: drop-shadow(0 0 14px rgba(212, 172, 108, 0.45));
+        transform: scale(0.55) rotate(-24deg);
+        opacity: 0;
+        animation: bootSigilIn 1100ms cubic-bezier(0.16, 0.84, 0.3, 1) 200ms forwards;
+      }
+      .boot-sigil .sigil-outer {
+        stroke-dasharray: 168;
+        stroke-dashoffset: 168;
+        animation: bootSigilDraw 1100ms ease-out 360ms forwards;
+      }
+      .boot-sigil .sigil-inner {
+        opacity: 0;
+        animation: bootFade 700ms ease-out 1000ms forwards;
+      }
+      .boot-sigil .sigil-core {
+        transform-origin: 32px 32px;
+        opacity: 0;
+        animation: bootCorePulse 2600ms ease-in-out 1200ms infinite;
+      }
+
+      /* --- Title ---------------------------------------------------------- */
+      .boot-title {
+        font-family: 'Cinzel', serif;
+        font-weight: 700;
+        font-size: clamp(26px, 9vw, 46px);
+        letter-spacing: 0.14em;
+        line-height: 1;
+        white-space: nowrap;
+        background: linear-gradient(
+          100deg,
+          #7a5c2c 0%, #d4ac6c 34%, #fff5d0 50%, #d4ac6c 66%, #7a5c2c 100%
+        );
+        background-size: 250% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        transform: translateY(12px);
+        animation:
+          bootRiseUp 900ms ease-out 1050ms forwards,
+          bootShimmer 3200ms ease-in-out 1900ms infinite;
+      }
+
+      /* --- Ornament line under title ------------------------------------- */
+      .boot-ornament {
+        position: relative;
+        height: 14px;
+        width: 0;
+        margin-top: 14px;
+        animation: bootOrnGrow 760ms ease-out 1450ms forwards;
+      }
+      .boot-ornament .orn-line {
+        position: absolute;
+        top: 50%;
+        height: 1px;
+        width: 50%;
+        background: linear-gradient(to right, transparent, #d4ac6c);
+      }
+      .boot-ornament .orn-line.right {
+        right: 0;
+        background: linear-gradient(to left, transparent, #d4ac6c);
+      }
+      .boot-ornament .orn-line.left {
+        left: 0;
+      }
+      .boot-ornament .orn-diamond {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 6px;
+        height: 6px;
+        margin: -3px 0 0 -3px;
+        background: #d4ac6c;
+        transform: rotate(45deg);
+        box-shadow: 0 0 6px #d4ac6c;
+      }
+
+      /* --- Tagline -------------------------------------------------------- */
+      .boot-tagline {
+        font-family: 'IM Fell English', serif;
+        font-style: italic;
+        font-size: clamp(13px, 4vw, 17px);
+        letter-spacing: 0.04em;
+        color: #b8a98f;
+        margin-top: 18px;
+        opacity: 0;
+        animation: bootFade 1000ms ease-out 1700ms forwards;
+      }
+
+      /* --- Footer "loading" hint ----------------------------------------- */
+      .boot-loading {
+        position: absolute;
+        bottom: 38px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-family: 'Inconsolata', monospace;
+        font-size: 11px;
+        letter-spacing: 0.22em;
+        color: #6a5d48;
+        opacity: 0;
+        animation:
+          bootFade 800ms ease-out 1600ms forwards,
+          bootBreathe 2200ms ease-in-out 2400ms infinite;
+        z-index: 2;
+      }
+
+      /* --- Rising embers -------------------------------------------------- */
+      .boot-embers {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        z-index: 1;
+      }
+      .boot-embers .ember {
+        position: absolute;
+        bottom: -12px;
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        background: #f1d49a;
+        box-shadow: 0 0 6px 1px rgba(241, 212, 154, 0.8);
+        opacity: 0;
+        animation: bootEmber linear infinite;
+      }
+
+      @keyframes bootSigilIn {
+        to { transform: scale(1) rotate(0deg); opacity: 1; }
+      }
+      @keyframes bootSigilDraw {
+        to { stroke-dashoffset: 0; }
+      }
+      @keyframes bootCorePulse {
+        0%, 100% { opacity: 0.65; transform: scale(1); }
+        50% { opacity: 1; transform: scale(1.08); }
+      }
+      @keyframes bootRiseUp {
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes bootShimmer {
+        0% { background-position: 130% 0; }
+        100% { background-position: -130% 0; }
+      }
+      @keyframes bootOrnGrow {
+        to { width: 184px; }
+      }
+      @keyframes bootFade {
+        to { opacity: 1; }
+      }
+      @keyframes bootBreathe {
+        0%, 100% { opacity: 0.45; }
+        50% { opacity: 0.9; }
+      }
+      @keyframes bootEmber {
+        0% { transform: translateY(0) translateX(0); opacity: 0; }
+        12% { opacity: 0.9; }
+        80% { opacity: 0.7; }
+        100% { transform: translateY(-105vh) translateX(var(--drift, 14px)); opacity: 0; }
+      }
+
+      /* Honor reduced-motion: show the final composed frame, no movement. */
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash * {
+          animation-duration: 1ms !important;
+          animation-iteration-count: 1 !important;
+          animation-delay: 0ms !important;
+        }
+        .boot-ornament { width: 184px; }
+        .boot-embers { display: none; }
+      }
+    </style>
   </head>
   <body>
+    <!-- Boot splash: pure CSS reveal shown until main.js finishes booting. -->
+    <div id="boot-splash" aria-hidden="true">
+      <div class="boot-embers">
+        <span class="ember" style="left:12%; --drift:18px;  animation-duration:6.2s; animation-delay:0.2s"></span>
+        <span class="ember" style="left:24%; --drift:-14px; animation-duration:7.4s; animation-delay:1.1s"></span>
+        <span class="ember" style="left:38%; --drift:22px;  animation-duration:5.6s; animation-delay:0.6s"></span>
+        <span class="ember" style="left:50%; --drift:-10px; animation-duration:8.1s; animation-delay:1.8s"></span>
+        <span class="ember" style="left:61%; --drift:16px;  animation-duration:6.8s; animation-delay:0.9s"></span>
+        <span class="ember" style="left:73%; --drift:-20px; animation-duration:7.0s; animation-delay:2.3s"></span>
+        <span class="ember" style="left:84%; --drift:12px;  animation-duration:5.9s; animation-delay:1.4s"></span>
+        <span class="ember" style="left:92%; --drift:-16px; animation-duration:7.7s; animation-delay:0.4s"></span>
+      </div>
+      <div class="boot-stage">
+        <svg class="boot-sigil" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path class="sigil-outer" d="M32 7 53 32 32 57 11 32Z"
+                fill="none" stroke="#d4be7a" stroke-width="2.4" stroke-linejoin="round" />
+          <path class="sigil-inner" d="M32 18 43 32 32 46 21 32Z"
+                fill="#241e2a" stroke="#f0d890" stroke-width="1.6" stroke-linejoin="round" />
+          <circle class="sigil-core" cx="32" cy="32" r="3.2" fill="#f1d49a" />
+        </svg>
+        <div class="boot-title">SHADOW DEPTHS</div>
+        <div class="boot-ornament">
+          <span class="orn-line left"></span>
+          <span class="orn-diamond"></span>
+          <span class="orn-line right"></span>
+        </div>
+        <div class="boot-tagline">a melancholic descent</div>
+      </div>
+      <div class="boot-loading">ENTERING THE DEPTHS</div>
+    </div>
     <div id="game-root">
       <canvas id="game-canvas" width="480" height="1040"></canvas>
       <div id="ui-layer"></div>
