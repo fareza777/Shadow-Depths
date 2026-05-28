@@ -311,7 +311,10 @@ export class SpriteRegistry {
     }
 
     // Try detailed enemy sprites first (32x32 grid style)
-    if (key.startsWith('enemy_') && drawDetailedEnemySprite(ctx, x, y, size, key)) {
+    if (
+      (key.startsWith('enemy_') || key.startsWith('boss_') || key.startsWith('subboss_'))
+      && drawDetailedEnemySprite(ctx, x, y, size, key)
+    ) {
       return;
     }
 
