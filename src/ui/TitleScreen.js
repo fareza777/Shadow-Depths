@@ -853,34 +853,62 @@ export class TitleScreen {
     const listW = g.modalW - 16;
     const panelY = g.listY;
     const panelH = g.closeY - g.listY - 44;
-    r.drawRect(listX, panelY, listW, panelH, COLOR.bgCard);
-    r.drawStrokedRect(listX, panelY, listW, panelH, COLOR.gold, 2);
+    const cx = listX + listW / 2;
+    const col = rarityColor(entry.rarity);
+    const ctx = r.ctx;
 
-    const iconSize = IS_LANDSCAPE ? 72 : 96;
-    const iconX = listX + 16;
-    const iconY = panelY + Math.max(12, (panelH - iconSize) / 2 - 8);
+    const bgG = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
+    bgG.addColorStop(0, '#1a1424');
+    bgG.addColorStop(0.5, '#120e18');
+    bgG.addColorStop(1, '#0e0a12');
+    ctx.fillStyle = bgG;
+    ctx.fillRect(listX, panelY, listW, panelH);
+    r.drawStrokedRect(listX, panelY, listW, panelH, COLOR.gold, 2);
+    r.drawRect(listX + 6, panelY + 4, listW - 12, 1, COLOR.goldDim);
+
+    const iconSize = IS_LANDSCAPE ? 88 : 112;
+    const iconX = cx - iconSize / 2;
+    const iconY = panelY + 20;
+    ctx.save();
+    ctx.shadowColor = col;
+    ctx.shadowBlur = 18;
+    r.drawRect(iconX - 4, iconY - 4, iconSize + 8, iconSize + 8, '#08060c');
+    r.drawStrokedRect(iconX - 4, iconY - 4, iconSize + 8, iconSize + 8, col, 2);
+    ctx.restore();
     r.drawRect(iconX, iconY, iconSize, iconSize, COLOR.bgPanel);
-    r.drawStrokedRect(iconX, iconY, iconSize, iconSize, rarityColor(entry.rarity), 2);
+    r.drawStrokedRect(iconX, iconY, iconSize, iconSize, col, 1);
     if (entry.spriteKey && r.sprites) {
-      r.sprites.draw(entry.spriteKey, r.ctx, iconX + 6, iconY + 6, { size: iconSize - 12 });
+      r.sprites.draw(entry.spriteKey, r.ctx, iconX + 10, iconY + 10, { size: iconSize - 20 });
     }
 
-    const textX = iconX + iconSize + 16;
-    const textW = listX + listW - textX - 12;
-    const nameCol = rarityColor(entry.rarity);
-    r.drawText(TitleScreen._fitText(r, entry.name.toUpperCase(), textW, 16),
-      textX, panelY + 14,
-      { size: 16, bold: true, family: FONT_DISPLAY, color: nameCol });
-    r.drawText(entry.rarity.toUpperCase(), textX, panelY + 36,
-      { size: 10, family: FONT_MONO, color: COLOR.textMuted });
+    const nameY = iconY + iconSize + 18;
+    const name = entry.name.toUpperCase();
+    r.drawText(TitleScreen._fitText(r, name, listW - 32, 18),
+      cx, nameY,
+      { size: 18, bold: true, align: 'center', family: FONT_DISPLAY, color: col });
+
+    const chipW = Math.max(72, entry.rarity.length * 9 + 24);
+    const chipX = cx - chipW / 2;
+    const chipY = nameY + 16;
+    r.drawRect(chipX, chipY, chipW, 18, '#1a1218');
+    r.drawStrokedRect(chipX, chipY, chipW, 18, col, 1);
+    r.drawText(entry.rarity.toUpperCase(), cx, chipY + 9,
+      { size: 10, align: 'center', baseline: 'middle', family: FONT_MONO, color: col });
 
     if (entry.lore) {
-      TitleScreen._drawWrapped(r, `"${entry.lore}"`, textX, panelY + 54, textW, panelH - 70, {
-        size: 12, italic: true, family: FONT_BODY, color: COLOR.textPrimary
+      const loreX = listX + 16;
+      const loreY = chipY + 30;
+      const loreW = listW - 32;
+      const loreH = panelY + panelH - loreY - 28;
+      r.drawRect(loreX, loreY, loreW, loreH, '#0a0810');
+      r.drawRect(loreX, loreY, 3, loreH, col);
+      r.drawStrokedRect(loreX, loreY, loreW, loreH, COLOR.borderSoft, 1);
+      TitleScreen._drawWrapped(r, `"${entry.lore}"`, loreX + 12, loreY + 10, loreW - 20, loreH - 16, {
+        size: IS_LANDSCAPE ? 11 : 13, italic: true, family: FONT_BODY, color: COLOR.textPrimary
       });
     }
 
-    r.drawText('tap again to return', CANVAS_WIDTH / 2, panelY + panelH - 10,
+    r.drawText('— tap to return —', cx, panelY + panelH - 12,
       { size: 9, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
   }
 

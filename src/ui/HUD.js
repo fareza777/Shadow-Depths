@@ -85,11 +85,11 @@ export class HUD {
       statParts.push(`FOC ${p.rangedFocus ?? 0}/${p.rangedFocusMax ?? 3}`);
     }
     const statY = TOP_PAD + 40;
-    r.drawRect(6, statY - 2, Layout.canvasW - 12, 15, 'rgba(8,6,12,0.92)');
+    const goldReserve = 22;
+    r.drawRect(6, statY - 2, Layout.canvasW - 12 - goldReserve, 15, 'rgba(8,6,12,0.92)');
     r.drawText(statParts.join('  '), 8, statY,
       { size: uiSize(11), color: COLOR.textMuted, family: FONT_MONO });
-    r.drawText(`◈ ${p.gold}`, Layout.canvasW - 12, statY,
-      { size: uiSize(12), color: COLOR.textXP, align: 'right', family: FONT_MONO });
+    this._drawGoldBadge(r, p.gold, statY, goldReserve);
 
     if (floor) {
       const name = `${floor.definition.name}`;
@@ -99,7 +99,7 @@ export class HUD {
       this._drawDepthMeter(r, floorIndex, totalFloors);
     }
 
-    const chipY = TOP_PAD + 92;
+    const chipY = TOP_PAD + 98;
     const chipH = 15;
     let chipX = 8;
     if (floor && (floorIndex + 1) % 20 === 0) {
@@ -191,12 +191,26 @@ export class HUD {
    * below the title with a hammered inset plate behind the name. Matches
    * the iron-portcullis vocabulary used elsewhere in the HUD.
    */
+  _drawGoldBadge(r, gold, statY, rightReserve) {
+    const label = `◈ ${gold}`;
+    const opts = { size: uiSize(12), color: COLOR.textXP, family: FONT_MONO, bold: true };
+    const tw = r.measureText(label, opts);
+    const padX = 8;
+    const pillW = tw + padX * 2;
+    const pillH = 15;
+    const pillX = Layout.canvasW - rightReserve - pillW;
+    const pillY = statY - 2;
+    r.drawRect(pillX, pillY, pillW, pillH, 'rgba(12,10,18,0.95)');
+    r.drawStrokedRect(pillX, pillY, pillW, pillH, COLOR.goldDim, 1);
+    r.drawText(label, pillX + pillW - padX, statY, { ...opts, align: 'right' });
+  }
+
   _drawFloorBanner(r, name, floorIndex, totalFloors, daily = false, floorType = null) {
     const ctx = r.ctx;
     const x = 8;
-    const y = TOP_PAD + 58;
+    const y = TOP_PAD + 56;
     const w = Layout.canvasW - 32;
-    const h = 30;
+    const h = 38;
     const t = hudNow();
     const cx = Layout.canvasW / 2;
     const upper = name.toUpperCase();
@@ -222,13 +236,14 @@ export class HUD {
       ctx.fillStyle = lg;
       ctx.fillRect(x, py, w, 1);
     };
-    pipeFn(y + 3);
-    pipeFn(y + h - 4);
+    const pipeTop = y + 2;
+    const pipeBot = y + h - 3;
+    pipeFn(pipeTop);
+    pipeFn(pipeBot);
 
-    // Tiny brass studs at the four corners (no boxed border).
     const studs = [
-      [x + 6, y + 4], [x + w - 6, y + 4],
-      [x + 6, y + h - 4], [x + w - 6, y + h - 4]
+      [x + 6, pipeTop + 2], [x + w - 6, pipeTop + 2],
+      [x + 6, pipeBot - 2], [x + w - 6, pipeBot - 2]
     ];
     for (const [sx, sy] of studs) {
       const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 2);
@@ -244,7 +259,7 @@ export class HUD {
     // Gilt sweep — soft band moves across, scoped to plate by clip.
     ctx.save();
     ctx.beginPath();
-    ctx.rect(x, y + 1, w, h - 2);
+    ctx.rect(x, pipeTop + 2, w, pipeBot - pipeTop - 3);
     ctx.clip();
     const sweepPhase = ((t * 0.22) % 1);
     const sweepX = x - w * 0.4 + sweepPhase * w * 1.8;
@@ -260,7 +275,7 @@ export class HUD {
     ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const labelY = y + 12;
+    const labelY = y + 13;
     // Engraved back-shadow
     ctx.fillStyle = IRON.ink;
     ctx.fillText(upper, cx + 1, labelY + 1);
@@ -276,26 +291,33 @@ export class HUD {
     ctx.fillStyle = tg;
     ctx.fillText(upper, cx, labelY);
 
-    // Subtitle: FLOOR N OF M [· DAILY] [· REST / VAULT]
-    const subY = y + h - 10;
-    const tag = floorType === 'rest'  ? '  ·  ✜ REST'
-              : floorType === 'forge' ? '  ·  ⚒ FORGE'
-              : floorType === 'vault' ? '  ·  ◈ VAULT'
+    const floorLine = `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
+    const tag = floorType === 'rest'  ? '✜ REST'
+              : floorType === 'forge' ? '⚒ FORGE'
+              : floorType === 'vault' ? '◈ VAULT'
               : '';
-    const sub = daily
-      ? `FLOOR ${floorIndex + 1} OF ${totalFloors}  ·  ☼ DAILY${tag}`
-      : `FLOOR ${floorIndex + 1} OF ${totalFloors}${tag}`;
+    const subY = y + 27;
     ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
     ctx.fillStyle = IRON.boneDim;
-    ctx.fillText(sub, cx, subY);
+    const badgeRow = daily || tag;
+    ctx.fillText(floorLine, cx, badgeRow ? subY : subY + 4);
+    if (badgeRow) {
+      const badges = [];
+      if (daily) badges.push('☼ DAILY');
+      if (tag) badges.push(tag);
+      ctx.font = `${uiSize(8)}px ${FONT_MONO}`;
+      ctx.fillStyle = daily ? '#c8a86a' : IRON.boneDim;
+      ctx.fillText(badges.join('  ·  '), cx, subY + 12);
+    }
 
     ctx.restore();
   }
 
   _drawFloorChip(r, floor, floorIndex) {
     const special = floor?.definition?.specialEnemyId || '';
-    const y = TOP_PAD + 92;
+    const y = TOP_PAD + 98;
     const chipH = 15;
     if (!special) return;
     const boss = special.startsWith('boss_');

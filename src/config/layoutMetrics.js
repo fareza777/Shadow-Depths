@@ -9,7 +9,7 @@ export const Layout = {
   canvasW: 480,
   canvasH: 900,
   portrait: true,
-  hud: 112,
+  hud: 118,
   control: 234,
   sideW: 0
 };
@@ -22,14 +22,14 @@ export function syncLayoutFromWindow(canvas) {
   if (portrait) {
     Layout.canvasW = 480;
     Layout.canvasH = Math.max(760, Math.min(1100, Math.round(vh * (480 / vw))));
-    Layout.hud = 112;
+    Layout.hud = 118;
     Layout.control = Math.max(270, Math.round(Layout.canvasH * 0.29));
     Layout.sideW = 0;
     Layout.portrait = true;
   } else {
     Layout.canvasW = 800;
     Layout.canvasH = 480;
-    Layout.hud = 108;
+    Layout.hud = 114;
     Layout.control = 0;
     Layout.sideW = 136;
     Layout.portrait = false;
