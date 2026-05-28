@@ -13,7 +13,7 @@ import { LOG } from './config/constants.js';
 // for at least MIN_SPLASH_MS so the reveal animation isn't cut short on fast
 // loads, then fade it out and remove the node.
 const _splashStart = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-const MIN_SPLASH_MS = 2400;
+const MIN_SPLASH_MS = 5400;
 
 function hideBootSplash({ immediate = false } = {}) {
   const splash = typeof document !== 'undefined' && document.getElementById('boot-splash');
