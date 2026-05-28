@@ -1,6 +1,11 @@
 /**
  * Detailed Enemy Sprites — 32x32 grid based art matching the Hero style.
  */
+import { DETAILED_ENEMY_BATCH3 } from './enemySpritesDetailedBatch3.js';
+import { HAND_CRAFTED_EXTENDED } from './enemySpritesHandCraftedExtended.js';
+import { BOSS_SPRITE_DEFS } from './enemySpritesBoss.js';
+import { REVISED_PASS2 } from './enemySpritesRevisedPass2.js';
+import { REVISED_PASS3 } from './enemySpritesRevisedPass3.js';
 
 // ── Palettes (char → CSS color) ────────────────────────────────────────
 const PAL_GOBLIN = {
@@ -550,7 +555,7 @@ const SENTINEL = [
   "................................"
 ];
 
-export const DETAILED_ENEMY_DEFS = {
+const DETAILED_ENEMY_CORE = {
   enemy_goblin: { grid: GOBLIN, pal: PAL_GOBLIN },
   enemy_skeleton_archer: { grid: SKELETON, pal: PAL_SKELETON },
   enemy_wraith: { grid: WRAITH, pal: PAL_WRAITH },
@@ -564,6 +569,16 @@ export const DETAILED_ENEMY_DEFS = {
   enemy_thrall: { grid: THRALL, pal: PAL_THRALL },
   enemy_scribe: { grid: SCRIBE, pal: PAL_SCRIBE },
   enemy_sentinel: { grid: SENTINEL, pal: PAL_SENTINEL }
+};
+
+/** All detailed enemy sprites (core + batch 3 + hand-crafted overrides + bosses). */
+export const DETAILED_ENEMY_DEFS = {
+  ...DETAILED_ENEMY_CORE,
+  ...DETAILED_ENEMY_BATCH3,
+  ...HAND_CRAFTED_EXTENDED,
+  ...BOSS_SPRITE_DEFS,
+  ...REVISED_PASS2,
+  ...REVISED_PASS3,
 };
 
 /**

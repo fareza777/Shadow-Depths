@@ -397,7 +397,7 @@
   "subboss_cairn_knight": {
     "id": "subboss_cairn_knight",
     "name": "Cairn Knight",
-    "spriteKey": "enemy_sentinel",
+    "spriteKey": "subboss_cairn_knight",
     "stats": {
       "hp": 46,
       "atk": 8,
@@ -419,7 +419,7 @@
   "subboss_veil_stalker": {
     "id": "subboss_veil_stalker",
     "name": "Veil Stalker",
-    "spriteKey": "enemy_wraith",
+    "spriteKey": "subboss_veil_stalker",
     "stats": {
       "hp": 54,
       "atk": 10,
@@ -444,7 +444,7 @@
   "subboss_iron_prior": {
     "id": "subboss_iron_prior",
     "name": "Iron Prior",
-    "spriteKey": "enemy_marcher",
+    "spriteKey": "subboss_iron_prior",
     "stats": {
       "hp": 70,
       "atk": 13,
@@ -463,7 +463,7 @@
   "subboss_void_seraph": {
     "id": "subboss_void_seraph",
     "name": "Void Seraph",
-    "spriteKey": "enemy_called",
+    "spriteKey": "subboss_void_seraph",
     "stats": {
       "hp": 86,
       "atk": 16,
@@ -488,7 +488,7 @@
   "boss_crypt_regent": {
     "id": "boss_crypt_regent",
     "name": "Crypt Regent",
-    "spriteKey": "enemy_golem",
+    "spriteKey": "boss_crypt_regent",
     "stats": {
       "hp": 78,
       "atk": 11,
@@ -510,7 +510,7 @@
   "boss_ash_titan": {
     "id": "boss_ash_titan",
     "name": "Ash Titan",
-    "spriteKey": "enemy_warden",
+    "spriteKey": "boss_ash_titan",
     "stats": {
       "hp": 110,
       "atk": 15,
@@ -532,7 +532,7 @@
   "boss_sunless_oracle": {
     "id": "boss_sunless_oracle",
     "name": "Sunless Oracle",
-    "spriteKey": "enemy_scribe",
+    "spriteKey": "boss_sunless_oracle",
     "stats": {
       "hp": 96,
       "atk": 17,
@@ -562,7 +562,7 @@
   "boss_the_below": {
     "id": "boss_the_below",
     "name": "The Below",
-    "spriteKey": "enemy_called",
+    "spriteKey": "boss_the_below",
     "stats": {
       "hp": 150,
       "atk": 21,
