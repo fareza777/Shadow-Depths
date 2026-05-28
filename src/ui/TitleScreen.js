@@ -17,6 +17,10 @@ import {
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
 import { IRON, drawBrassRivet } from './ironHud.js';
+import {
+  drawIronPanel, drawIronPlate, drawIronActionButton,
+  drawInsetCard, IRON_PALETTE
+} from './ironPanel.js';
 
 const BRASS_DARK = '#7a5c2c';
 const BRASS = '#d4ac6c';
@@ -441,11 +445,64 @@ export class TitleScreen {
   }
   _renderModalCloseButton(r, explicitY) {
     const rect = this._modalCloseRect(explicitY);
-    r.drawRect(rect.x, rect.y, rect.w, rect.h, COLOR.bgCard);
-    r.drawStrokedRect(rect.x, rect.y, rect.w, rect.h, COLOR.gold, 2);
-    r.drawText('CLOSE', rect.x + rect.w / 2, rect.y + rect.h / 2,
-      { size: 14, bold: true, align: 'center', baseline: 'middle',
-        family: FONT_DISPLAY, color: COLOR.textPrimary });
+    drawIronActionButton(r, rect.x, rect.y, rect.w, rect.h, 'CLOSE',
+      { accent: IRON_PALETTE.brass, fontSize: uiSize(14) });
+  }
+
+  _renderIronModalChrome(r, g, title, subtitle = null) {
+    drawIronPanel(r.ctx, g.modalX, g.modalY, g.modalW, g.modalH);
+    const cx = CANVAS_WIDTH / 2;
+    const titleY = g.modalY + 22;
+    r.drawText(title, cx, titleY, {
+      size: uiSize(20), bold: true, align: 'center',
+      family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
+    let ruleY = titleY + 16;
+    if (subtitle) {
+      r.drawText(subtitle, cx, g.modalY + 42, {
+        size: uiSize(11), italic: true, align: 'center',
+        family: FONT_BODY, color: IRON_PALETTE.boneDim
+      });
+      ruleY = g.modalY + 54;
+    }
+    r.ctx.fillStyle = IRON_PALETTE.brassDark;
+    r.ctx.fillRect(g.modalX + 14, ruleY, g.modalW - 28, 1);
+    drawBrassRivet(r.ctx, g.modalX + 10, g.modalY + 10, 2.5);
+    drawBrassRivet(r.ctx, g.modalX + g.modalW - 10, g.modalY + 10, 2.5);
+  }
+
+  _renderIronPill(r, x, y, w, h, label, active) {
+    drawIronPlate(r.ctx, x, y, w, h, {
+      glow: active ? IRON_PALETTE.brass : null,
+      rivets: false,
+      pressed: false
+    });
+    if (!active) {
+      r.ctx.strokeStyle = IRON_PALETTE.plate2;
+      r.ctx.lineWidth = 1;
+      r.ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    }
+    r.drawText(label, x + w / 2, y + h / 2, {
+      size: uiSize(11), bold: true, align: 'center', baseline: 'middle',
+      family: FONT_DISPLAY,
+      color: active ? IRON_PALETTE.brass : IRON_PALETTE.boneDim
+    });
+  }
+
+  _renderIronTab(r, x, y, w, h, label, sublabel, active) {
+    drawIronPlate(r.ctx, x, y, w, h, {
+      glow: active ? IRON_PALETTE.brass : null,
+      rivets: false
+    });
+    r.drawText(label, x + w / 2, y + h / 2 - 5, {
+      size: uiSize(10), bold: true, align: 'center', baseline: 'middle',
+      family: FONT_DISPLAY,
+      color: active ? IRON_PALETTE.brass : IRON_PALETTE.boneDim
+    });
+    r.drawText(sublabel, x + w / 2, y + h - 7, {
+      size: uiSize(8), align: 'center', baseline: 'middle',
+      family: FONT_MONO, color: IRON_PALETTE.boneDark
+    });
   }
 
   // --- Controls modal -----------------------------------------------
@@ -520,51 +577,45 @@ export class TitleScreen {
   }
   _renderSettings(r) {
     const settings = this.state.state.meta.settings || {};
-    const vol = Math.round((settings.volume || 0) * 100);
+    const vol = Math.round((settings.volume ?? 0.6) * 100);
     const orient = settings.orientation || 'portrait';
     const difficulty = settings.difficulty || 'normal';
     const g = this._settingsGeometry();
-    r.drawRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.bgPanel);
-    r.drawStrokedRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.gold, 1);
-    r.drawText('SETTINGS', CANVAS_WIDTH / 2, g.modalY + 22,
-      { size: 18, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
-    r.drawText(`Volume: ${vol}%`, CANVAS_WIDTH / 2, g.modalY + 52,
-      { size: 13, align: 'center', family: FONT_BODY });
+    this._renderIronModalChrome(r, g, 'SETTINGS', 'iron-clad preferences');
 
-    // Difficulty row — 4 pills above orientation.
+    const volY = g.modalY + 68;
+    drawInsetCard(r.ctx, g.modalX + 20, volY, g.modalW - 40, 32);
+    r.drawText(`VOLUME  ${vol}%`, CANVAS_WIDTH / 2, volY + 16, {
+      size: uiSize(13), bold: true, align: 'center', baseline: 'middle',
+      family: FONT_MONO, color: IRON_PALETTE.bone
+    });
+
     const diffRow = this._difficultyButtonRow();
-    r.drawText('Difficulty', CANVAS_WIDTH / 2, diffRow.labelY,
-      { size: 13, align: 'center', family: FONT_BODY });
+    r.drawText('DIFFICULTY', CANVAS_WIDTH / 2, diffRow.labelY - 4, {
+      size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
     const diffKeys = ['easy', 'normal', 'hard', 'ascend1'];
     const diffLabels = { easy: 'EASY', normal: 'NORM', hard: 'HARD', ascend1: 'ASC1' };
     for (let i = 0; i < diffKeys.length; i++) {
       const key = diffKeys[i];
-      const active = difficulty === key;
       const bx = diffRow.baseX + i * (diffRow.btnW + diffRow.gap);
-      r.drawRect(bx, diffRow.y, diffRow.btnW, diffRow.btnH, active ? COLOR.bgCardHi : COLOR.bgCard);
-      r.drawStrokedRect(bx, diffRow.y, diffRow.btnW, diffRow.btnH,
-        active ? COLOR.gold : COLOR.borderSoft, active ? 2 : 1);
-      r.drawText(diffLabels[key], bx + diffRow.btnW / 2, diffRow.y + diffRow.btnH / 2,
-        { size: 11, bold: true, align: 'center', baseline: 'middle', family: FONT_DISPLAY });
+      this._renderIronPill(r, bx, diffRow.y, diffRow.btnW, diffRow.btnH,
+        diffLabels[key], difficulty === key);
     }
 
-    r.drawText('Orientation', CANVAS_WIDTH / 2, g.btnY - 22,
-      { size: 13, align: 'center', family: FONT_BODY });
+    r.drawText('ORIENTATION', CANVAS_WIDTH / 2, g.btnY - 28, {
+      size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
     for (let i = 0; i < 2; i++) {
       const key = i === 0 ? 'portrait' : 'landscape';
       const label = i === 0 ? 'PORTRAIT' : 'LANDSCAPE';
-      const active = orient === key;
       const bx = g.baseX + i * (g.btnW + g.btnGap);
-      r.drawRect(bx, g.btnY, g.btnW, g.btnH, active ? COLOR.bgCardHi : COLOR.bgCard);
-      r.drawStrokedRect(bx, g.btnY, g.btnW, g.btnH,
-        active ? COLOR.gold : COLOR.borderSoft, active ? 2 : 1);
-      r.drawText(label, bx + g.btnW / 2, g.btnY + g.btnH / 2,
-        { size: 12, bold: true, align: 'center', baseline: 'middle',
-          family: FONT_DISPLAY });
+      this._renderIronPill(r, bx, g.btnY, g.btnW, g.btnH, label, orient === key);
     }
     r.drawText('tap to toggle  ·  reloads game',
-      CANVAS_WIDTH / 2, g.btnY + g.btnH + 6,
-      { size: 9, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
+      CANVAS_WIDTH / 2, g.btnY + g.btnH + 10,
+      { size: uiSize(10), italic: true, align: 'center',
+        family: FONT_BODY, color: IRON_PALETTE.boneDim });
     this._renderModalCloseButton(r, g.closeY);
   }
   _difficultyButtonRow() {
@@ -699,35 +750,18 @@ export class TitleScreen {
   _renderCodex(r) {
     if (!this._codexTab) this._codexTab = 'items';
     const g = this._codexGeometry();
-    r.drawRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.bgPanel);
-    r.drawStrokedRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.gold, 2);
-    r.drawText('CODEX', CANVAS_WIDTH / 2, g.modalY + 18,
-      { size: 18, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
-    r.drawText('a chronicle of what you have seen',
-      CANVAS_WIDTH / 2, g.modalY + 38,
-      { size: 10, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textMuted });
+    this._renderIronModalChrome(r, g, 'CODEX', 'a chronicle of what you have seen');
 
-    // Tabs
     const tabs = this._codexTabs();
     const tabW = (g.modalW - 16) / tabs.length;
     for (let i = 0; i < tabs.length; i++) {
       const t = tabs[i];
       const active = t.id === this._codexTab;
       const x = g.modalX + 8 + i * tabW;
-      r.drawRect(x + 2, g.tabY, tabW - 4, g.tabH, active ? COLOR.bgCardHi : COLOR.bgCard);
-      r.drawStrokedRect(x + 2, g.tabY, tabW - 4, g.tabH,
-        active ? COLOR.gold : COLOR.borderSoft, active ? 2 : 1);
-      r.drawText(t.label, x + tabW / 2, g.tabY + g.tabH / 2 - 4,
-        { size: 11, bold: true, align: 'center', baseline: 'middle',
-          family: FONT_DISPLAY, color: active ? COLOR.gold : COLOR.textMuted });
-      r.drawText(t.count, x + tabW / 2, g.tabY + g.tabH - 8,
-        { size: 9, align: 'center', baseline: 'middle',
-          family: FONT_MONO, color: COLOR.textMuted });
+      this._renderIronTab(r, x + 2, g.tabY, tabW - 4, g.tabH, t.label, t.count, active);
     }
 
-    // List rows.
     this._renderCodexList(r, g);
-
     this._renderModalCloseButton(r, g.closeY);
   }
 
@@ -773,7 +807,7 @@ export class TitleScreen {
       });
     }
 
-    const rowH = IS_LANDSCAPE ? 28 : 36;
+    const rowH = IS_LANDSCAPE ? 32 : 46;
     const listX = g.modalX + 8;
     const listW = g.modalW - 16;
     const footReserve = 34;
@@ -796,55 +830,51 @@ export class TitleScreen {
 
     const { rowH, listX, listW, perPage, totalPages, slice, footY } = this._codexListLayout(g);
 
+    const loreSize = uiSize(12);
     for (let i = 0; i < slice.length; i++) {
       const e = slice[i];
       const ry = g.listY + i * rowH;
-      const bg = i % 2 === 0 ? COLOR.bgPanelAlt : COLOR.bg;
-      r.drawRect(listX, ry, listW, rowH, bg);
+      drawInsetCard(r.ctx, listX, ry, listW, rowH - 2, {
+        borderColor: e.seen ? rarityColor(e.rarity) : IRON_PALETTE.plate2
+      });
 
-      const iconSize = rowH - 6;
-      const iconX = listX + 4;
-      const iconY = ry + 3;
-      r.drawRect(iconX, iconY, iconSize, iconSize,
-        e.seen ? COLOR.bgPanel : '#000');
+      const iconSize = rowH - 10;
+      const iconX = listX + 6;
+      const iconY = ry + 5;
+      r.ctx.fillStyle = IRON_PALETTE.ink;
+      r.ctx.fillRect(iconX, iconY, iconSize, iconSize);
       if (e.seen && e.spriteKey && r.sprites) {
         r.sprites.draw(e.spriteKey, r.ctx, iconX, iconY, { size: iconSize });
       } else if (!e.seen) {
         r.drawText('?', iconX + iconSize / 2, iconY + iconSize / 2,
-          { size: 16, bold: true, align: 'center', baseline: 'middle',
-            family: FONT_DISPLAY, color: COLOR.textMuted });
+          { size: uiSize(16), bold: true, align: 'center', baseline: 'middle',
+            family: FONT_DISPLAY, color: IRON_PALETTE.boneDim });
       }
 
-      const tx = iconX + iconSize + 8;
+      const tx = iconX + iconSize + 10;
+      const textW = listW - (tx - listX) - 8;
       const name = e.seen ? e.name : '???';
-      const nameColor = e.seen ? rarityColor(e.rarity) : COLOR.textMuted;
-      const nameMaxW = listW - (tx - listX) - 8;
-      r.drawText(TitleScreen._fitText(r, name, nameMaxW, 12), tx, ry + 4,
-        { size: 12, bold: true, family: FONT_DISPLAY, color: nameColor });
+      const nameColor = e.seen ? rarityColor(e.rarity) : IRON_PALETTE.boneDim;
+      r.drawText(TitleScreen._fitText(r, name, textW, uiSize(13)), tx, ry + 6,
+        { size: uiSize(13), bold: true, family: FONT_DISPLAY, color: nameColor });
       if (e.seen && e.lore) {
-        const lore = e.lore.length > 60 ? e.lore.slice(0, 58) + '…' : e.lore;
-        r.drawText(`"${lore}"`, tx, ry + rowH - 12,
-          { size: 9, italic: true, family: FONT_BODY, color: COLOR.textMuted });
+        TitleScreen._drawWrapped(r, `"${e.lore}"`, tx, ry + 22, textW, rowH - 26, {
+          size: loreSize, italic: true, family: FONT_BODY, color: IRON_PALETTE.bone
+        });
       } else if (!e.seen) {
-        r.drawText('not yet seen in the depths', tx, ry + rowH - 12,
-          { size: 9, italic: true, family: FONT_BODY, color: COLOR.textMuted });
+        r.drawText('not yet seen in the depths', tx, ry + 24,
+          { size: loreSize, italic: true, family: FONT_BODY, color: IRON_PALETTE.boneDim });
       }
     }
 
     if (totalPages > 1) {
       r.drawText(`Page ${this._codexPage + 1} / ${totalPages}`,
         CANVAS_WIDTH / 2, footY,
-        { size: 10, align: 'center', family: FONT_MONO, color: COLOR.textMuted });
-      const btnW = 60, btnH = 24;
+        { size: uiSize(10), align: 'center', family: FONT_MONO, color: IRON_PALETTE.boneDim });
+      const btnW = 72, btnH = 28;
       const prevX = listX + 4, nextX = listX + listW - btnW - 4;
-      r.drawRect(prevX, footY - 4, btnW, btnH, COLOR.bgCard);
-      r.drawStrokedRect(prevX, footY - 4, btnW, btnH, COLOR.borderSoft, 1);
-      r.drawText('◀ PREV', prevX + btnW / 2, footY + btnH / 2 - 4,
-        { size: 9, align: 'center', baseline: 'middle', family: FONT_DISPLAY });
-      r.drawRect(nextX, footY - 4, btnW, btnH, COLOR.bgCard);
-      r.drawStrokedRect(nextX, footY - 4, btnW, btnH, COLOR.borderSoft, 1);
-      r.drawText('NEXT ▶', nextX + btnW / 2, footY + btnH / 2 - 4,
-        { size: 9, align: 'center', baseline: 'middle', family: FONT_DISPLAY });
+      this._renderIronPill(r, prevX, footY - 4, btnW, btnH, '◀ PREV', false);
+      this._renderIronPill(r, nextX, footY - 4, btnW, btnH, 'NEXT ▶', false);
     }
   }
 
@@ -857,14 +887,7 @@ export class TitleScreen {
     const col = rarityColor(entry.rarity);
     const ctx = r.ctx;
 
-    const bgG = ctx.createLinearGradient(0, panelY, 0, panelY + panelH);
-    bgG.addColorStop(0, '#1a1424');
-    bgG.addColorStop(0.5, '#120e18');
-    bgG.addColorStop(1, '#0e0a12');
-    ctx.fillStyle = bgG;
-    ctx.fillRect(listX, panelY, listW, panelH);
-    r.drawStrokedRect(listX, panelY, listW, panelH, COLOR.gold, 2);
-    r.drawRect(listX + 6, panelY + 4, listW - 12, 1, COLOR.goldDim);
+    drawInsetCard(ctx, listX, panelY, listW, panelH, { borderColor: col });
 
     const iconSize = IS_LANDSCAPE ? 88 : 112;
     const iconX = cx - iconSize / 2;
@@ -900,11 +923,11 @@ export class TitleScreen {
       const loreY = chipY + 30;
       const loreW = listW - 32;
       const loreH = panelY + panelH - loreY - 28;
-      r.drawRect(loreX, loreY, loreW, loreH, '#0a0810');
-      r.drawRect(loreX, loreY, 3, loreH, col);
-      r.drawStrokedRect(loreX, loreY, loreW, loreH, COLOR.borderSoft, 1);
-      TitleScreen._drawWrapped(r, `"${entry.lore}"`, loreX + 12, loreY + 10, loreW - 20, loreH - 16, {
-        size: IS_LANDSCAPE ? 11 : 13, italic: true, family: FONT_BODY, color: COLOR.textPrimary
+      drawInsetCard(ctx, loreX, loreY, loreW, loreH, { borderColor: col });
+      ctx.fillStyle = col;
+      ctx.fillRect(loreX, loreY, 3, loreH);
+      TitleScreen._drawWrapped(r, `"${entry.lore}"`, loreX + 12, loreY + 12, loreW - 20, loreH - 20, {
+        size: uiSize(IS_LANDSCAPE ? 13 : 15), italic: true, family: FONT_BODY, color: IRON_PALETTE.bone
       });
     }
 
@@ -952,7 +975,7 @@ export class TitleScreen {
     const upgrades = this.content.shop?.upgrades || [];
     const cols = IS_LANDSCAPE ? 2 : 1;
     const rows = Math.ceil(upgrades.length / cols);
-    const rowH = IS_LANDSCAPE ? 64 : 58;
+    const rowH = IS_LANDSCAPE ? 72 : 70;
     const headerH = 56;
     const closeH = IS_LANDSCAPE ? 40 : 48;
     const closeMargin = 12;
@@ -983,12 +1006,8 @@ export class TitleScreen {
     const upgrades = this.content.shop?.upgrades || [];
     const g = this._shopGeometry();
     const coins = this.state.state.meta.coins || 0;
-    r.drawRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.bgPanel);
-    r.drawStrokedRect(g.modalX, g.modalY, g.modalW, g.modalH, COLOR.gold, 2);
-    r.drawText('EMPORIUM', CANVAS_WIDTH / 2, g.modalY + 18,
-      { size: 18, bold: true, align: 'center', family: FONT_DISPLAY, color: COLOR.gold });
-    r.drawText(`◈ ${coins} coins`, CANVAS_WIDTH / 2, g.modalY + 40,
-      { size: 12, align: 'center', family: FONT_MONO, color: COLOR.textXP });
+    this._renderIronModalChrome(r, g, 'EMPORIUM', `◈  ${coins} coins`);
+
     for (let i = 0; i < upgrades.length; i++) {
       const u = upgrades[i];
       const card = g.cards[i];
@@ -996,32 +1015,35 @@ export class TitleScreen {
       const maxed = ownedLevel >= (u.maxLevel || 1);
       const cost = TitleScreen._nextCost(u, ownedLevel);
       const canAfford = coins >= cost;
-      r.drawRect(card.x, card.y, card.w, card.h, COLOR.bgCard);
-      r.drawStrokedRect(card.x, card.y, card.w, card.h, COLOR.borderSoft, 1);
+      const borderCol = maxed ? IRON_PALETTE.plate2
+        : canAfford ? '#6b9156' : '#8b4a4a';
+      drawInsetCard(r.ctx, card.x, card.y, card.w, card.h, { borderColor: borderCol });
+
       const levelTxt = u.maxLevel > 1
         ? `  ${ownedLevel}/${u.maxLevel}`
         : (ownedLevel > 0 ? '  OWNED' : '');
-      r.drawText(`${u.name}${levelTxt}`, card.x + 8, card.y + 6,
-        { size: 12, bold: true, family: FONT_DISPLAY, color: COLOR.textPrimary });
-      r.drawText(u.description, card.x + 8, card.y + 24,
-        { size: 10, family: FONT_BODY, italic: true, color: COLOR.textMuted });
-      const btnW = 72, btnH = 30;
+      r.drawText(`${u.name}${levelTxt}`, card.x + 10, card.y + 8,
+        { size: uiSize(13), bold: true, family: FONT_DISPLAY, color: IRON_PALETTE.brass });
+      const descW = card.w - 96;
+      TitleScreen._drawWrapped(r, u.description, card.x + 10, card.y + 26, descW, card.h - 34, {
+        size: uiSize(12), italic: true, family: FONT_BODY, color: IRON_PALETTE.bone
+      });
+
+      const btnW = 76, btnH = 32;
       const btnX = card.x + card.w - btnW - 8;
-      const btnY = card.y + card.h - btnH - 6;
-      const bgColor = maxed ? COLOR.bgPanelAlt
-                   : canAfford ? '#2e3a2a' : '#3a2e2a';
-      const borderColor = maxed ? COLOR.borderSoft
-                       : canAfford ? '#80c060' : '#a06060';
-      r.drawRect(btnX, btnY, btnW, btnH, bgColor);
-      r.drawStrokedRect(btnX, btnY, btnW, btnH, borderColor, 2);
+      const btnY = card.y + card.h - btnH - 8;
       const label = maxed ? 'MAX' : `${cost} ◈`;
-      r.drawText(label, btnX + btnW / 2, btnY + btnH / 2,
-        { size: 11, bold: true, align: 'center', baseline: 'middle', family: FONT_MONO,
-          color: maxed ? COLOR.textMuted : (canAfford ? '#a8ff90' : '#ff9090') });
+      drawIronActionButton(r, btnX, btnY, btnW, btnH, label, {
+        disabled: maxed,
+        accent: maxed ? IRON_PALETTE.boneDim
+          : canAfford ? '#a8ff90' : '#ff9090',
+        fontSize: uiSize(11)
+      });
     }
     if (this._shopFeedback && this._t < this._shopFeedbackUntil) {
-      r.drawText(this._shopFeedback, CANVAS_WIDTH / 2, g.closeY - 8,
-        { size: 11, italic: true, align: 'center', family: FONT_BODY, color: COLOR.textHeal });
+      r.drawText(this._shopFeedback, CANVAS_WIDTH / 2, g.closeY - 10,
+        { size: uiSize(11), italic: true, align: 'center',
+          family: FONT_BODY, color: IRON_PALETTE.ember });
     }
     this._renderModalCloseButton(r, g.closeY);
   }
@@ -1107,7 +1129,7 @@ export class TitleScreen {
           if (row >= 0 && row < slice.length) return 420 + row;
         }
         if (totalPages > 1) {
-          const btnW = 60, btnH = 24;
+          const btnW = 72, btnH = 28;
           const prevX = listX + 4, nextX = listX + listW - btnW - 4;
           if (y >= footY - 4 && y <= footY - 4 + btnH) {
             if (x >= prevX && x <= prevX + btnW) return 410;
