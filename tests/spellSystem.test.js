@@ -84,7 +84,7 @@ describe('SpellSystem', () => {
     expect(bus.emits.some((e) => e.event === 'spell:cast')).toBe(true);
   });
 
-  it('casts Bladedancer as a three-hit close spell', () => {
+  it('casts Bladedancer as a two-hit close spell', () => {
     const { enemy, spells } = makeHarness('bladedancer');
     expect(spells.getState('bladedancer').ready).toBe(true);
     expect(spells.cast('bladedancer')).toBe(true);

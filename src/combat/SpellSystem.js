@@ -1,4 +1,5 @@
 import { HERO_SPELLS } from '../config/heroSpells.js';
+import { hollowSiphonHeal, SPELL_TUNING } from '../config/spellBalance.js';
 import { hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
 import { onHeroSpellHit } from '../gameplay/heroPassives.js';
 
@@ -68,23 +69,25 @@ export class SpellSystem {
       used = true;
     } else if (kind === 'hollow') {
       const target = state.target;
-      const dealt = this._dealSpellDamage(target, 5 + Math.floor(player.level / 3) + power, state.name);
-      const healed = player.heal(Math.ceil(dealt * (0.45 + (player.spellLifesteal || 0))));
+      const tun = SPELL_TUNING.hollow;
+      const dealt = this._dealSpellDamage(
+        target, tun.damage(player.level, power), state.name
+      );
+      const healed = player.heal(hollowSiphonHeal(dealt, player, tun));
       if (healed > 0) this.bus.emit('entity:healed', { entity: player, amount: healed, source: 'spell' });
       fx = { ...fx, target: { x: target.x, y: target.y } };
       used = dealt > 0;
     } else if (kind === 'inquisitor') {
       const target = state.target;
+      const burst = SPELL_TUNING.inquisitor.burst(player.level, power);
       used = this._damageEnemiesInRadius(
-        target.x, target.y, state.radius || 1,
-        4 + Math.floor(player.level / 4) + power,
-        state.name
+        target.x, target.y, state.radius || 1, burst, state.name
       ) > 0;
       fx = { ...fx, center: { x: target.x, y: target.y }, radius: state.radius || 1 };
     } else if (kind === 'reaver') {
       used = this._damageEnemiesInRadius(
         player.x, player.y, state.radius || 2,
-        3 + Math.floor(player.totalAtk() / 2) + power,
+        SPELL_TUNING.reaver.aoe(player.totalAtk()) + Math.floor(power / 2),
         state.name
       ) > 0;
       if (used) player.applyStatus({ id: 'atk_buff', value: 1, duration: 2 });
@@ -107,12 +110,12 @@ export class SpellSystem {
       used = true;
     } else if (kind === 'bladedancer') {
       const target = state.target;
-      const strikes = 3;
+      const { strikes, hitRatio } = SPELL_TUNING.bladedancer;
       let total = 0;
       for (let i = 0; i < strikes && target && !target.isDead; i++) {
         total += this._dealSpellDamage(
           target,
-          Math.max(2, Math.ceil(player.totalAtk() * 0.55) + Math.floor(power / 2)),
+          Math.max(2, Math.ceil(player.totalAtk() * hitRatio) + Math.floor(power / 3)),
           state.name
         );
       }
@@ -124,7 +127,7 @@ export class SpellSystem {
       const radius = state.radius || 1;
       const total = this._damageEnemiesInRadius(
         target.x, target.y, radius,
-        4 + Math.floor(player.level / 5) + power,
+        SPELL_TUNING.echobinder.burst(player.level, power),
         state.name
       );
       const frozen = this._statusEnemiesInRadius(target.x, target.y, radius, {

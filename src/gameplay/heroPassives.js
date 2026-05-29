@@ -15,7 +15,7 @@ export const HERO_ROLES = {
 
 export const HERO_PASSIVE_LABELS = {
   vigil: 'Last Stand: +1 DEF below half HP',
-  hollow: 'Grave Feeding: heal 1 on melee kill',
+  hollow: 'Grave Feeding: heal 1 on kill if wounded',
   inquisitor: 'Still Flame: +1 torch if you did not move',
   reaver: 'Blood Tithe: +1 ATK next turn after a kill',
   pilgrim: 'Wayfarer: heal 2 when descending stairs',
@@ -73,7 +73,7 @@ export function passiveCritBonus(player) {
 /** Called when the player kills an enemy. */
 export function onHeroKill(player, { kind } = {}) {
   if (!player || player.kind !== 'player') return;
-  if (player.heroKind === 'hollow' && kind === 'melee') {
+  if (player.heroKind === 'hollow' && player.stats.hp < player.stats.hpMax) {
     player.heal(1);
   }
   if (player.heroKind === 'reaver') {

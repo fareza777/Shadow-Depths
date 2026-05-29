@@ -7,10 +7,10 @@ export const HERO_SPELLS = Object.freeze({
   },
   hollow: {
     name: 'Siphon',
-    cooldown: 6,
-    range: 6,
+    cooldown: 8,
+    range: 5,
     color: '#9a60ff',
-    description: 'Drain the nearest visible enemy.'
+    description: 'Drain a foe — capped heal, not a full refill.'
   },
   inquisitor: {
     name: 'Lantern',
@@ -22,10 +22,10 @@ export const HERO_SPELLS = Object.freeze({
   },
   reaver: {
     name: 'Bone Storm',
-    cooldown: 5,
+    cooldown: 6,
     radius: 2,
     color: '#e8e0d0',
-    description: 'Damage nearby enemies.'
+    description: 'AoE damage around you (needs foes in range).'
   },
   pilgrim: {
     name: 'Sanctuary',
@@ -42,10 +42,10 @@ export const HERO_SPELLS = Object.freeze({
   },
   bladedancer: {
     name: 'Echo Strike',
-    cooldown: 5,
+    cooldown: 6,
     range: 2,
     color: '#ff8844',
-    description: 'Strike the nearest enemy three times in one turn.'
+    description: 'Two quick strikes on the nearest foe.'
   },
   echobinder: {
     name: 'Sundering Chord',

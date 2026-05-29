@@ -346,7 +346,7 @@ export const HERO_DEFS = {
     subtitle: 'His name dropped off somewhere on floor IV.',
     tags: ['Broken helm', 'Tattered cloak', 'One eye'],
     role: 'Bruiser',
-    stats: { hp: 28, atk: 6, def: 3, dex: 1, torchRadius: 4 }
+    stats: { hp: 26, atk: 5, def: 3, dex: 1, torchRadius: 4 }
   },
   inquisitor: {
     kind: 'inquisitor',
@@ -364,7 +364,7 @@ export const HERO_DEFS = {
     subtitle: 'Wears what is left of better men.',
     tags: ['Skull mask', 'Bone pauldrons', 'Blood pact'],
     role: 'Bruiser',
-    stats: { hp: 30, atk: 5, def: 4, dex: 3, torchRadius: 3 }
+    stats: { hp: 30, atk: 5, def: 3, dex: 3, torchRadius: 3 }
   },
   pilgrim: {
     kind: 'pilgrim',
