@@ -400,7 +400,7 @@ export const HERO_DEFS = {
     subtitle: 'She heard the depths first. Then she answered.',
     tags: ['Voidchoir robe', 'Sonic spell', 'Glass cannon'],
     role: 'Caster',
-    stats: { hp: 24, atk: 4, def: 1, dex: 3, torchRadius: 6 }
+    stats: { hp: 30, atk: 4, def: 2, dex: 4, torchRadius: 6 }
   }
 };
 

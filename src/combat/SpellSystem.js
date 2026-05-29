@@ -124,14 +124,20 @@ export class SpellSystem {
       used = total > 0;
     } else if (kind === 'echobinder') {
       const target = state.target;
-      const radius = state.radius || 1;
+      const tun = SPELL_TUNING.echobinder;
+      const radius = state.radius || 2;
       const total = this._damageEnemiesInRadius(
         target.x, target.y, radius,
-        SPELL_TUNING.echobinder.burst(player.level, power),
+        tun.burst(player.level, power),
         state.name
       );
       const frozen = this._statusEnemiesInRadius(target.x, target.y, radius, {
-        status: 'freeze', value: 1, duration: 1
+        status: 'freeze', value: 1, duration: tun.freezeTurns || 2
+      });
+      player.applyStatus({
+        id: 'def_buff',
+        value: tun.wardDef || 2,
+        duration: tun.wardTurns || 3
       });
       fx = { ...fx, center: { x: target.x, y: target.y }, radius, frozen };
       used = total > 0 || frozen > 0;

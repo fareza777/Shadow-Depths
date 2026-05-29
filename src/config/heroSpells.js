@@ -49,10 +49,10 @@ export const HERO_SPELLS = Object.freeze({
   },
   echobinder: {
     name: 'Sundering Chord',
-    cooldown: 9,
-    range: 7,
-    radius: 1,
+    cooldown: 7,
+    range: 8,
+    radius: 2,
     color: '#c060ff',
-    description: 'Sonic burst — damage + freeze in a small radius.'
+    description: 'AoE sonic hit: damage, freeze, and a brief ward on you.'
   }
 });

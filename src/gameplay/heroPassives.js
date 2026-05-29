@@ -21,7 +21,7 @@ export const HERO_PASSIVE_LABELS = {
   pilgrim: 'Wayfarer: heal 2 when descending stairs',
   warden: 'Phalanx: −1 damage when flanked (2+ foes)',
   bladedancer: 'Red Waltz: +5% crit per DEX above 4',
-  echobinder: 'Echo Bind: spells slow 1 turn'
+  echobinder: 'Void Resonance: −2 damage when wounded; spell grants ward'
 };
 
 export function heroRole(kind) {
@@ -48,9 +48,13 @@ export function passiveBonusAtk(player) {
   return player._passiveAtkBuff || 0;
 }
 
-/** Flat damage reduction before percentage skills (Warden). */
+/** Flat damage reduction before percentage skills (Warden, Echobinder). */
 export function passiveFlatDamageReduction(player, floor, attacker) {
   if (!player || player.kind !== 'player' || attacker?.kind !== 'enemy') return 0;
+  if (player.heroKind === 'echobinder') {
+    const pct = player.stats.hp / Math.max(1, player.stats.hpMax);
+    if (pct < 0.8) return 2;
+  }
   if (player.heroKind !== 'warden' || !floor) return 0;
   let adjacent = 0;
   for (let dy = -1; dy <= 1; dy++) {
@@ -112,10 +116,10 @@ export function effectiveTorchRadius(player) {
   return r;
 }
 
-/** Echobinder: apply slow after spell damage. */
+/** Echobinder: apply slow after spell damage (freeze handled in SpellSystem). */
 export function onHeroSpellHit(player, target, bus) {
   if (!player || player.heroKind !== 'echobinder' || !target || target.isDead) return;
-  if (target.applyStatus?.({ status: 'slow', value: 1, duration: 1 })) {
+  if (target.applyStatus?.({ status: 'slow', value: 2, duration: 2 })) {
     bus?.emit('entity:status', { entity: target, status: 'slow' });
   }
 }

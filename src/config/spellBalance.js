@@ -20,7 +20,10 @@ export const SPELL_TUNING = Object.freeze({
     hitRatio: 0.48
   },
   echobinder: {
-    burst: (level, power) => 4 + Math.floor(level / 5) + power
+    burst: (level, power) => 8 + Math.floor(level / 2) + Math.floor(power * 0.75),
+    wardDef: 2,
+    wardTurns: 3,
+    freezeTurns: 2
   }
 });
 
