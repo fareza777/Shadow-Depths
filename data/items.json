@@ -15,7 +15,26 @@
     ],
     "lore": "Watered down. Better than nothing.",
     "floorMin": 1,
-    "spawnWeight": 12
+    "spawnWeight": 6
+  },
+  "sacred_tallow": {
+    "id": "sacred_tallow",
+    "name": "Sacred Tallow",
+    "type": "consumable",
+    "rarity": "uncommon",
+    "spriteKey": "potion_gold",
+    "stackable": true,
+    "maxStack": 3,
+    "effects": [
+      {
+        "type": "torchBoost",
+        "value": 2,
+        "duration": 25
+      }
+    ],
+    "lore": "Burns bright. The dark pulls back.",
+    "floorMin": 1,
+    "spawnWeight": 4
   },
   "health_potion": {
     "id": "health_potion",

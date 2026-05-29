@@ -336,7 +336,8 @@ export const HERO_DEFS = {
     name: 'The Vigil Knight',
     subtitle: 'Last of an order that no longer exists.',
     tags: ['Plate', 'Crimson cape', 'Gold visor'],
-    stats: { atk: 4, def: 5, dex: 2, torchRadius: 5 }
+    role: 'Tank',
+    stats: { hp: 34, atk: 4, def: 5, dex: 2, torchRadius: 5 }
   },
   hollow: {
     kind: 'hollow',
@@ -344,7 +345,8 @@ export const HERO_DEFS = {
     name: 'The Hollow Crusader',
     subtitle: 'His name dropped off somewhere on floor IV.',
     tags: ['Broken helm', 'Tattered cloak', 'One eye'],
-    stats: { atk: 6, def: 3, dex: 1, torchRadius: 4 }
+    role: 'Bruiser',
+    stats: { hp: 26, atk: 5, def: 3, dex: 1, torchRadius: 4 }
   },
   inquisitor: {
     kind: 'inquisitor',
@@ -352,7 +354,8 @@ export const HERO_DEFS = {
     name: 'The Wandering Inquisitor',
     subtitle: 'She brought her own light. Of course she did.',
     tags: ['Hood', 'Lantern', 'Faith-locked'],
-    stats: { atk: 3, def: 2, dex: 4, torchRadius: 7 }
+    role: 'Skirmisher',
+    stats: { hp: 26, atk: 3, def: 2, dex: 4, torchRadius: 7 }
   },
   reaver: {
     kind: 'reaver',
@@ -360,7 +363,8 @@ export const HERO_DEFS = {
     name: 'The Bone Reaver',
     subtitle: 'Wears what is left of better men.',
     tags: ['Skull mask', 'Bone pauldrons', 'Blood pact'],
-    stats: { atk: 5, def: 4, dex: 3, torchRadius: 3 }
+    role: 'Bruiser',
+    stats: { hp: 30, atk: 5, def: 3, dex: 3, torchRadius: 3 }
   },
   pilgrim: {
     kind: 'pilgrim',
@@ -368,7 +372,8 @@ export const HERO_DEFS = {
     name: 'The Ashen Pilgrim',
     subtitle: 'A long walk. The wrong shrine.',
     tags: ['Wide-brim hat', 'Travel coat', 'Lantern staff'],
-    stats: { atk: 2, def: 3, dex: 5, torchRadius: 8 }
+    role: 'Scout',
+    stats: { hp: 28, atk: 2, def: 3, dex: 5, torchRadius: 8 }
   },
   warden: {
     kind: 'warden',
@@ -376,7 +381,8 @@ export const HERO_DEFS = {
     name: 'The Tower Warden',
     subtitle: 'They built the gate. He stayed when the gate failed.',
     tags: ['Tower shield', 'Heavy plate', 'Slow but unbroken'],
-    stats: { atk: 3, def: 7, dex: 1, torchRadius: 4 }
+    role: 'Tank',
+    stats: { hp: 38, atk: 3, def: 7, dex: 1, torchRadius: 4 }
   },
   bladedancer: {
     kind: 'bladedancer',
@@ -384,7 +390,8 @@ export const HERO_DEFS = {
     name: 'The Blade Dancer',
     subtitle: 'She named both knives. She will not tell you which.',
     tags: ['Twin daggers', 'Crimson sash', 'Critical strikes'],
-    stats: { atk: 5, def: 2, dex: 6, torchRadius: 5 }
+    role: 'Skirmisher',
+    stats: { hp: 26, atk: 5, def: 2, dex: 6, torchRadius: 5 }
   },
   echobinder: {
     kind: 'echobinder',
@@ -392,7 +399,8 @@ export const HERO_DEFS = {
     name: 'The Echobinder',
     subtitle: 'She heard the depths first. Then she answered.',
     tags: ['Voidchoir robe', 'Sonic spell', 'Glass cannon'],
-    stats: { atk: 4, def: 1, dex: 3, torchRadius: 6 }
+    role: 'Caster',
+    stats: { hp: 24, atk: 4, def: 1, dex: 3, torchRadius: 6 }
   }
 };
 

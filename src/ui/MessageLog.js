@@ -62,6 +62,11 @@ export class MessageLog {
       if (by?.kind === 'player') this.push(`You use the ${item.name}.`);
     });
 
+    this.bus.on('spell:blocked', ({ reason, spell }) => {
+      if (reason === 'no_combat') {
+        this.push(`${spell || 'Spell'} needs a foe nearby.`, COLOR.textMuted);
+      }
+    });
     this.bus.on('spell:cast', ({ entity, spell }) => {
       if (entity?.kind === 'player') this.push(`You cast ${spell}.`, COLOR.textXP);
     });
@@ -69,6 +74,7 @@ export class MessageLog {
     this.bus.on('inventory:full', () => this.push(`Your pack is full.`, COLOR.textMuted));
     this.bus.on('forge:unavailable', () => this.push(`No smith answers on this floor.`, COLOR.textMuted));
     this.bus.on('forge:spent', () => this.push(`The Veiled Smith has already left.`, COLOR.textMuted));
+    this.bus.on('forge:stipend', () => this.push(`The smith leaves scrap on the anvil.`, COLOR.textMuted));
     this.bus.on('ranged:blocked', ({ reason }) => {
       this.push(reason === 'too_close'
         ? `Too close for a clean shot.`

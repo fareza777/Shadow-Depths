@@ -524,6 +524,32 @@ export function drawSpacedText(ctx, text, centerX, centerY, spacing) {
   }
 }
 
+function spacedWidth(ctx, text, spacing) {
+  let total = 0;
+  for (const ch of text) total += ctx.measureText(ch).width + spacing;
+  return Math.max(0, total - spacing);
+}
+
+/** Shrinks letter-spacing (then horizontal scale) so titles fit narrow screens. */
+export function drawFittedSpacedText(ctx, text, centerX, centerY, maxW, preferredSpacing) {
+  let spacing = preferredSpacing;
+  while (spacing > 0 && spacedWidth(ctx, text, spacing) > maxW) spacing -= 0.5;
+  const prevAlign = ctx.textAlign;
+  ctx.textAlign = 'center';
+  if (spacedWidth(ctx, text, spacing) <= maxW) {
+    drawSpacedText(ctx, text, centerX, centerY, spacing);
+    ctx.textAlign = prevAlign;
+    return;
+  }
+  const scale = Math.max(0.58, maxW / spacedWidth(ctx, text, 0));
+  ctx.save();
+  ctx.translate(centerX, centerY);
+  ctx.scale(scale, 1);
+  drawSpacedText(ctx, text, 0, 0, 0);
+  ctx.restore();
+  ctx.textAlign = prevAlign;
+}
+
 export function truncate(ctx, text, maxW) {
   if (ctx.measureText(text).width <= maxW) return text;
   let s = text;

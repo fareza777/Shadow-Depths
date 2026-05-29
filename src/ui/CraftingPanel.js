@@ -66,7 +66,7 @@ export class CraftingPanel {
       size: uiSize(18), bold: true, align: 'center',
       family: FONT_DISPLAY, color: BRASS_HI
     });
-    r.drawText('three offers, one visit, no second bargain', CANVAS_WIDTH / 2, modalY + 40, {
+    r.drawText('Choose ONE bargain — materials from the pouch', CANVAS_WIDTH / 2, modalY + 40, {
       size: uiSize(10), italic: true, align: 'center',
       family: FONT_BODY, color: COLOR.textMuted
     });

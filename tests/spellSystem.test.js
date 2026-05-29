@@ -84,7 +84,7 @@ describe('SpellSystem', () => {
     expect(bus.emits.some((e) => e.event === 'spell:cast')).toBe(true);
   });
 
-  it('casts Bladedancer as a three-hit close spell', () => {
+  it('casts Bladedancer as a two-hit close spell', () => {
     const { enemy, spells } = makeHarness('bladedancer');
     expect(spells.getState('bladedancer').ready).toBe(true);
     expect(spells.cast('bladedancer')).toBe(true);
@@ -96,6 +96,34 @@ describe('SpellSystem', () => {
     expect(spells.getState('echobinder').ready).toBe(true);
     expect(spells.cast('echobinder')).toBe(true);
     expect(enemy.statusEffects.some((s) => s.id === 'freeze')).toBe(true);
+  });
+
+  it('blocks Vigil heal when no enemies are nearby', () => {
+    const bus = fakeBus();
+    const player = {
+      kind: 'player',
+      heroKind: 'vigil',
+      x: 0, y: 0, level: 10, magicPower: 0,
+      spellCooldown: 0,
+      stats: { hp: 10, hpMax: 30, atk: 4, def: 2, dex: 2 },
+      statusEffects: [],
+      heal(n) {
+        const before = this.stats.hp;
+        this.stats.hp = Math.min(this.stats.hpMax, this.stats.hp + n);
+        return this.stats.hp - before;
+      },
+      applyStatus() { return true; }
+    };
+    const floor = { enemies: () => [], tileAt: () => ({ visible: true }) };
+    const spells = new SpellSystem({
+      bus, combat: { _handleDeath() {} },
+      getPlayer: () => player,
+      getFloor: () => floor,
+      getFloorIndex: () => 0
+    });
+    expect(spells.getState('vigil').ready).toBe(false);
+    expect(spells.cast('vigil')).toBe(false);
+    expect(bus.emits.some((e) => e.event === 'spell:blocked')).toBe(true);
   });
 }
 );

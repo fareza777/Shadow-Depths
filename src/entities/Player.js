@@ -10,6 +10,7 @@
 import { Entity } from './Entity.js';
 import { resolvePlayerSpriteKey } from '../rendering/playerSprites.js';
 import { applySetBonuses } from '../items/Sets.js';
+import { passiveBonusAtk, passiveBonusDef, passiveCritBonus } from '../gameplay/heroPassives.js';
 
 export class Player extends Entity {
   /**
@@ -92,6 +93,10 @@ export class Player extends Entity {
     this.materials = {};
     this.rangedFocusMax = 3;
     this.rangedFocus = this.rangedFocusMax;
+    this.torchBoostTurns = 0;
+    this.torchBoostAmount = 0;
+    this._inquisitorMoved = false;
+    this._passiveAtkBuff = 0;
   }
 
   /**
@@ -350,12 +355,12 @@ export class Player extends Entity {
 
   /** Calculated values used by HUD + tooltips. */
   totalAtk() {
-    let atk = this.stats.atk + this.modifierAtk();
+    let atk = this.stats.atk + this.modifierAtk() + passiveBonusAtk(this);
     for (const p of this.equippedPieces()) atk += (p.stats?.atk || 0);
     return atk;
   }
   totalDef() {
-    let def = this.stats.def + this.modifierDef();
+    let def = this.stats.def + this.modifierDef() + passiveBonusDef(this);
     for (const p of this.equippedPieces()) def += (p.stats?.def || 0);
     return def;
   }
@@ -367,7 +372,8 @@ export class Player extends Entity {
     const c = this.balance.combat;
     let bonus = 0;
     for (const p of this.equippedPieces()) bonus += (p.stats?.critBonus || 0);
-    return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + bonus + this.critSkillBonus);
+    return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + bonus
+      + this.critSkillBonus + passiveCritBonus(this));
   }
 
   /** Effective ranged attack range (weapon range + long_reach skill bonus). */
