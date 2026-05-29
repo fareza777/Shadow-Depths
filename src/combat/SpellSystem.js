@@ -1,5 +1,6 @@
 import { HERO_SPELLS } from '../config/heroSpells.js';
 import { hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
+import { onHeroSpellHit } from '../gameplay/heroPassives.js';
 
 const TARGETED_SPELLS = new Set(['hollow', 'inquisitor', 'bladedancer', 'echobinder']);
 
@@ -189,6 +190,7 @@ export class SpellSystem {
       isCrit: false, isMiss: false, kind: 'magic'
     });
     this.bus.emit('entity:damaged', { entity: target, amount: dealt, source: spellName, isCrit: false });
+    if (dealt > 0) onHeroSpellHit(player, target, this.bus);
     if (target.isDead) {
       this.combat._handleDeath(target, player, {
         floor,

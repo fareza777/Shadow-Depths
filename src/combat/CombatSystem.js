@@ -27,6 +27,7 @@ import { LOG } from '../config/constants.js';
 import { applyEffect } from './EffectRegistry.js';
 import { fireTriggers } from './TriggerSystem.js';
 import { hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
+import { onHeroKill, passiveFlatDamageReduction } from '../gameplay/heroPassives.js';
 
 export class CombatSystem {
   /**
@@ -146,10 +147,14 @@ export class CombatSystem {
       if (depth >= 30) finalDamage += 1;
       if (depth >= 60) finalDamage += 1;
     }
-    // Player passive skill: Stout reduces incoming damage.
-    if (target.kind === 'player' && target.damageReduction > 0) {
-      finalDamage = Math.max(1, Math.round(finalDamage * (1 - target.damageReduction)));
+    if (target.kind === 'player') {
+      const flat = passiveFlatDamageReduction(target, ctx.floor, attacker);
+      if (flat > 0) finalDamage = Math.max(1, finalDamage - flat);
+      if (target.damageReduction > 0) {
+        finalDamage = Math.max(1, Math.round(finalDamage * (1 - target.damageReduction)));
+      }
     }
+    if (attacker.kind === 'player') attacker._lastAttackKind = kind;
     const isCrit = raw.isCrit;
     const hpPctBefore = target.stats.hp / Math.max(1, target.stats.hpMax);
     const dealt = target.takeDamage(finalDamage);
@@ -235,6 +240,7 @@ export class CombatSystem {
     this.bus.emit('entity:died', { entity, killer });
 
     if (entity.kind === 'enemy' && killer && killer.kind === 'player') {
+      onHeroKill(killer, { kind: killer._lastAttackKind || 'melee' });
       // Pre-roll gold for deterministic credit.
       const [gMin, gMax] = entity.goldDrop || [0, 0];
       entity._rolledGold = this.rng.randInt(gMin, gMax);

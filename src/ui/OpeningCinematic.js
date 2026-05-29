@@ -107,7 +107,7 @@ export class OpeningCinematic {
 
   handleInput(action) {
     if (!action) return;
-    if (this.t < 0.25) return;
+    if (this.t < 0.05) return;
     if (['confirm', 'pickup', 'tap', 'pointer', 'escape', 'inventory', 'move'].includes(action.type)) {
       this._finish();
     }

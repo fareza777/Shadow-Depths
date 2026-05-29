@@ -1,12 +1,34 @@
 {
   "recipes": [
     {
+      "id": "forge_crypt_ward",
+      "name": "Seal with Crypt Dust",
+      "description": "Dust from the forgotten crypts — a ring of warding.",
+      "floorMin": 1,
+      "inputs": [
+        {
+          "materialId": "crypt_dust",
+          "count": 3
+        }
+      ],
+      "baseSlot": "ring",
+      "guaranteedSuffix": "of_warding",
+      "tierBoost": 0
+    },
+    {
       "id": "forge_sharp_blade",
       "name": "Forge a Keen Edge",
       "description": "Hammer Scrap Iron + Ember Dust onto a base weapon to guarantee a Sharp prefix.",
+      "floorMin": 1,
       "inputs": [
-        { "materialId": "scrap_iron", "count": 3 },
-        { "materialId": "ember_dust", "count": 1 }
+        {
+          "materialId": "scrap_iron",
+          "count": 3
+        },
+        {
+          "materialId": "ember_dust",
+          "count": 1
+        }
       ],
       "baseSlot": "weapon",
       "guaranteedPrefix": "sharp",
@@ -17,151 +39,233 @@
       "name": "Anoint with Ember",
       "description": "Set a weapon alight — guaranteed Burning prefix.",
       "inputs": [
-        { "materialId": "ember_dust", "count": 3 }
+        {
+          "materialId": "ember_dust",
+          "count": 3
+        }
       ],
       "baseSlot": "weapon",
       "guaranteedPrefix": "burning",
-      "tierBoost": 1
+      "tierBoost": 1,
+      "floorMin": 6
     },
     {
       "id": "forge_warding_armor",
       "name": "Reinforce the Plate",
       "description": "Iron + bone reinforces any armor / helm / legs.",
       "inputs": [
-        { "materialId": "scrap_iron", "count": 2 },
-        { "materialId": "bone_shard", "count": 2 }
+        {
+          "materialId": "scrap_iron",
+          "count": 2
+        },
+        {
+          "materialId": "bone_shard",
+          "count": 2
+        }
       ],
       "baseSlot": "armor",
       "guaranteedSuffix": "of_warding",
-      "tierBoost": 0
+      "tierBoost": 0,
+      "floorMin": 3
     },
     {
       "id": "weave_thirsting_blade",
       "name": "Weave the Thirsting Sigil",
       "description": "Voidtouch a weapon. Of Thirst suffix guaranteed.",
       "inputs": [
-        { "materialId": "void_essence", "count": 2 },
-        { "materialId": "bone_shard", "count": 3 }
+        {
+          "materialId": "void_essence",
+          "count": 2
+        },
+        {
+          "materialId": "bone_shard",
+          "count": 3
+        }
       ],
       "baseSlot": "weapon",
       "guaranteedSuffix": "of_thirst",
-      "tierBoost": 1
+      "tierBoost": 1,
+      "floorMin": 15
     },
     {
       "id": "weave_vigor_ring",
       "name": "Bind a Ring of Vigor",
       "description": "Sap + bone — ring of Vigor guaranteed.",
       "inputs": [
-        { "materialId": "verdant_sap", "count": 2 },
-        { "materialId": "bone_shard", "count": 2 }
+        {
+          "materialId": "verdant_sap",
+          "count": 2
+        },
+        {
+          "materialId": "bone_shard",
+          "count": 2
+        }
       ],
       "baseSlot": "ring",
       "guaranteedSuffix": "of_vigor",
-      "tierBoost": 0
+      "tierBoost": 0,
+      "floorMin": 6
     },
     {
       "id": "reroll_affix",
       "name": "Re-roll the Sigils",
       "description": "Strip an item's affixes and re-roll them at the current depth.",
       "inputs": [
-        { "materialId": "void_essence", "count": 3 }
+        {
+          "materialId": "void_essence",
+          "count": 3
+        }
       ],
-      "operation": "reroll"
+      "operation": "reroll",
+      "floorMin": 15
     },
     {
       "id": "forge_keen_blade",
       "name": "Whet the Edge",
       "description": "Sap + iron — Keen weapon.",
       "inputs": [
-        { "materialId": "scrap_iron", "count": 2 },
-        { "materialId": "verdant_sap", "count": 1 }
+        {
+          "materialId": "scrap_iron",
+          "count": 2
+        },
+        {
+          "materialId": "verdant_sap",
+          "count": 1
+        }
       ],
       "baseSlot": "weapon",
       "guaranteedPrefix": "keen",
-      "tierBoost": 0
+      "tierBoost": 0,
+      "floorMin": 4
     },
     {
       "id": "forge_executioner",
       "name": "Forge the Headsman's Mark",
       "description": "Void + bone — weapon of the Executioner.",
       "inputs": [
-        { "materialId": "void_essence", "count": 2 },
-        { "materialId": "bone_shard", "count": 4 }
+        {
+          "materialId": "void_essence",
+          "count": 2
+        },
+        {
+          "materialId": "bone_shard",
+          "count": 4
+        }
       ],
       "baseSlot": "weapon",
       "guaranteedSuffix": "of_executioner",
-      "tierBoost": 2
+      "tierBoost": 2,
+      "floorMin": 20
     },
     {
       "id": "weave_frost_armor",
       "name": "Weave the Frost Mail",
       "description": "Bone + frost thread — Iron Ward armor.",
       "inputs": [
-        { "materialId": "frost_thread", "count": 3 },
-        { "materialId": "bone_shard", "count": 2 }
+        {
+          "materialId": "frost_thread",
+          "count": 3
+        },
+        {
+          "materialId": "bone_shard",
+          "count": 2
+        }
       ],
       "baseSlot": "armor",
       "guaranteedSuffix": "of_iron_ward",
-      "tierBoost": 1
+      "tierBoost": 1,
+      "floorMin": 12
     },
     {
       "id": "weave_haste_legs",
       "name": "Stitch Swiftness",
       "description": "Light sap + iron — legs of Haste.",
       "inputs": [
-        { "materialId": "verdant_sap", "count": 2 },
-        { "materialId": "scrap_iron", "count": 1 }
+        {
+          "materialId": "verdant_sap",
+          "count": 2
+        },
+        {
+          "materialId": "scrap_iron",
+          "count": 1
+        }
       ],
       "baseSlot": "legs",
       "guaranteedSuffix": "of_haste",
-      "tierBoost": 1
+      "tierBoost": 1,
+      "floorMin": 10
     },
     {
       "id": "bind_purity_ring",
       "name": "Bind the Pure Sigil",
       "description": "Void + ember — ring of Purity.",
       "inputs": [
-        { "materialId": "void_essence", "count": 1 },
-        { "materialId": "ember_dust", "count": 2 }
+        {
+          "materialId": "void_essence",
+          "count": 1
+        },
+        {
+          "materialId": "ember_dust",
+          "count": 2
+        }
       ],
       "baseSlot": "ring",
       "guaranteedSuffix": "of_purity",
-      "tierBoost": 0
+      "tierBoost": 0,
+      "floorMin": 8
     },
     {
       "id": "weave_choir_necklace",
       "name": "Weave the Choir Sigil",
       "description": "Three voids and the song answers — necklace of the Choir.",
       "inputs": [
-        { "materialId": "void_essence", "count": 3 }
+        {
+          "materialId": "void_essence",
+          "count": 3
+        }
       ],
       "baseSlot": "necklace",
       "guaranteedSuffix": "of_the_choir",
-      "tierBoost": 2
+      "tierBoost": 2,
+      "floorMin": 30
     },
     {
       "id": "forge_serpent_blade",
       "name": "Anoint the Serpent Edge",
       "description": "Sap + bone — weapon of Serpents (poison proc).",
       "inputs": [
-        { "materialId": "verdant_sap", "count": 3 },
-        { "materialId": "bone_shard", "count": 2 }
+        {
+          "materialId": "verdant_sap",
+          "count": 3
+        },
+        {
+          "materialId": "bone_shard",
+          "count": 2
+        }
       ],
       "baseSlot": "weapon",
       "guaranteedSuffix": "of_serpents",
-      "tierBoost": 1
+      "tierBoost": 1,
+      "floorMin": 10
     },
     {
       "id": "forge_arcane_crown",
       "name": "Crown the Arcane Sigil",
       "description": "Void + ember — Arcane prefix on a helm.",
       "inputs": [
-        { "materialId": "void_essence", "count": 2 },
-        { "materialId": "ember_dust", "count": 1 }
+        {
+          "materialId": "void_essence",
+          "count": 2
+        },
+        {
+          "materialId": "ember_dust",
+          "count": 1
+        }
       ],
       "baseSlot": "helm",
       "guaranteedPrefix": "arcane",
-      "tierBoost": 1
+      "tierBoost": 1,
+      "floorMin": 18
     }
   ]
 }

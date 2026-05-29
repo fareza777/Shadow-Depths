@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { loadRecipes, getRecipe, canCraft, craft } from '../src/items/Crafting.js';
+import { loadRecipes, getRecipe, canCraft, craft, chooseForgeOffers } from '../src/items/Crafting.js';
 import { Item } from '../src/items/Item.js';
 
 loadRecipes({
@@ -92,6 +92,18 @@ describe('canCraft', () => {
     expect(r.ok).toBe(true);
     expect(player.materials.scrap_iron).toBe(1);
     expect(player.inventory.slots[0]?.id).toBe('iron_sword');
+  });
+});
+
+describe('chooseForgeOffers', () => {
+  it('prefers recipes the player can craft', () => {
+    const player = {
+      materials: { scrap_iron: 5 },
+      materialCount(id) { return this.materials[id] || 0; }
+    };
+    const offers = chooseForgeOffers(fakeRng(), 10, 3, { player, biomeId: 'forgotten_crypts' });
+    expect(offers).toContain('forge_test');
+    expect(offers.length).toBeGreaterThan(0);
   });
 });
 

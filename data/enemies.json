@@ -4,7 +4,7 @@
     "name": "Goblin Scout",
     "spriteKey": "enemy_goblin",
     "stats": {
-      "hp": 8,
+      "hp": 16,
       "atk": 3,
       "def": 0
     },
@@ -22,8 +22,8 @@
     "name": "Skeleton Archer",
     "spriteKey": "enemy_skeleton_archer",
     "stats": {
-      "hp": 6,
-      "atk": 4,
+      "hp": 13,
+      "atk": 5,
       "def": 0
     },
     "behavior": "ranged",
@@ -45,8 +45,8 @@
     "name": "Cave Bat",
     "spriteKey": "enemy_bat",
     "stats": {
-      "hp": 4,
-      "atk": 2,
+      "hp": 9,
+      "atk": 3,
       "def": 0
     },
     "behavior": "erratic",
@@ -88,7 +88,7 @@
     "name": "Shadow Wraith",
     "spriteKey": "enemy_wraith",
     "stats": {
-      "hp": 16,
+      "hp": 22,
       "atk": 5,
       "def": 1
     },
@@ -589,7 +589,7 @@
     "name": "Shroud Crawler",
     "spriteKey": "enemy_shroud_crawler",
     "stats": {
-      "hp": 12,
+      "hp": 24,
       "atk": 3,
       "def": 0
     },
@@ -607,8 +607,8 @@
     "name": "Candle Licker",
     "spriteKey": "enemy_candle_licker",
     "stats": {
-      "hp": 6,
-      "atk": 4,
+      "hp": 13,
+      "atk": 5,
       "def": 0
     },
     "behavior": "erratic",
@@ -629,7 +629,7 @@
     "name": "Grave Moss",
     "spriteKey": "enemy_grave_moss",
     "stats": {
-      "hp": 14,
+      "hp": 19,
       "atk": 3,
       "def": 1
     },
@@ -656,7 +656,7 @@
     "name": "Bell Haunt",
     "spriteKey": "enemy_bell_haunt",
     "stats": {
-      "hp": 10,
+      "hp": 20,
       "atk": 5,
       "def": 0
     },

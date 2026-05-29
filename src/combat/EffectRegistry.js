@@ -186,6 +186,18 @@ registerEffect('drainXP', {
   }
 });
 
+registerEffect('torchBoost', {
+  description: 'Extend torch radius for several turns.',
+  apply(ctx, eff) {
+    const tgt = ctx.target;
+    if (!tgt || tgt.kind !== 'player') return false;
+    tgt.torchBoostAmount = eff.value || 2;
+    tgt.torchBoostTurns = eff.duration || 20;
+    if (ctx.bus) ctx.bus.emit('player:torchBoost', { entity: tgt, amount: tgt.torchBoostAmount, turns: tgt.torchBoostTurns });
+    return true;
+  }
+});
+
 registerEffect('aoe_damage', {
   description: 'Deal damage to all entities within radius of throwTarget.',
   apply(ctx, eff) {

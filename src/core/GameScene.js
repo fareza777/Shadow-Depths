@@ -24,6 +24,10 @@ import { Player } from '../entities/Player.js';
 import { heroDef } from '../rendering/heroSprites.js';
 import { chooseForgeOffers, craft, getRecipe } from '../items/Crafting.js';
 import { identify } from '../items/Identification.js';
+import {
+  beginPlayerTurnPassives, effectiveTorchRadius, markHeroMoved, onHeroDescend,
+  tickHeroPassivesEndOfTurn
+} from '../gameplay/heroPassives.js';
 
 /** Per-hero stat overrides (atk/def/dex/torchRadius) for new Player(). */
 function heroStatOverrides(kind) {
@@ -163,7 +167,7 @@ export class GameScene {
     this._applyMetaUnlocks();
 
     this.floor = floor;
-    this.lighting.compute(this.floor, this.player, this.player.torchRadius);
+    this.lighting.compute(this.floor, this.player, effectiveTorchRadius(this.player));
     this.state.setRun({ seed: this.seed, floorIndex: 0, mode: this.mode });
     this._emitFloorEntered(0, floor);
     this._saveRun();
@@ -192,7 +196,7 @@ export class GameScene {
 
     this.floor = floor;
     this.pathfinding.invalidate();
-    this.lighting.compute(this.floor, this.player, this.player.torchRadius);
+    this.lighting.compute(this.floor, this.player, effectiveTorchRadius(this.player));
     this.state.setRun({
       seed: this.seed,
       floorIndex,
@@ -234,7 +238,26 @@ export class GameScene {
       type: def.type || null,
       floorNumber: index + 1
     });
-    if (def.type === 'forge') this._ensureForgeOffers(index);
+    if (def.type === 'forge') {
+      this._grantForgeStipend(def.biomeId);
+      this._ensureForgeOffers(index);
+    }
+  }
+
+  _grantForgeStipend(biomeId) {
+    if (!this.player) return;
+    const stipends = {
+      forgotten_crypts: [['scrap_iron', 2], ['crypt_dust', 2]],
+      iron_stronghold: [['scrap_iron', 2], ['iron_chip', 1]],
+      bone_garden: [['bone_shard', 2], ['scrap_iron', 1]],
+      magma_foundry: [['ember_dust', 2], ['scrap_iron', 1]],
+      frozen_halls: [['frost_thread', 2], ['bone_shard', 1]],
+      void_sanctum: [['void_essence', 1], ['bone_shard', 2]],
+      sunken_forest: [['verdant_sap', 2], ['bone_shard', 1]]
+    };
+    const packs = stipends[biomeId] || [['scrap_iron', 2], ['bone_shard', 1]];
+    for (const [id, n] of packs) this.player.addMaterial(id, n);
+    this.bus.emit('forge:stipend', { biomeId });
   }
 
   _wirePresentationEvents() {
@@ -739,7 +762,8 @@ export class GameScene {
       this._forgeOffers[index] = chooseForgeOffers(
         this.rng.fork(`forge:${index}`),
         index + 1,
-        3
+        3,
+        { player: this.player, biomeId: this.floor?.definition?.biomeId }
       );
     }
     return this._forgeOffers[index];
@@ -766,7 +790,7 @@ export class GameScene {
    */
   _maybeDropMaterial(enemy) {
     if (!this.floor || !this.rng) return;
-    if (!this.rng.fork('material').chance(0.12)) return;
+    if (!this.rng.fork('material').chance(0.18)) return;
     const biomeId = this.floor.definition?.biomeId;
     if (!biomeId) return;
     const candidates = Object.values(this.content.items).filter(
@@ -780,6 +804,7 @@ export class GameScene {
 
   // --- player actions -------------------------------------------------
   _playerMove(dx, dy) {
+    markHeroMoved(this.player);
     const nx = this.player.x + dx, ny = this.player.y + dy;
     const target = this.floor.entityAt(nx, ny);
     if (target && target.kind === 'enemy' && !target.isDead) {
@@ -938,6 +963,7 @@ export class GameScene {
     this.player.runStats.floorsCleared += 1;
     if (this.floor.clearedWithoutDamage) this.player.runStats.perfectFloors += 1;
 
+    onHeroDescend(this.player);
     const next = this.dungeon.descend();
     if (!next) {
       this._endRun(true);
@@ -952,7 +978,7 @@ export class GameScene {
     this._spawnFloorEntities(floor, spawns);
     this.floor = floor;
     this.pathfinding.invalidate();
-    this.lighting.compute(this.floor, this.player, this.player.torchRadius);
+    this.lighting.compute(this.floor, this.player, effectiveTorchRadius(this.player));
     this.state.patch('run.floorIndex', this.dungeon.currentIndex);
     this._emitFloorEntered(this.dungeon.currentIndex, floor);
     this._saveRun();
@@ -1074,6 +1100,7 @@ export class GameScene {
 
   _resolvePlayerTurn() {
     this.player.runStats.turnsUsed += 1;
+    tickHeroPassivesEndOfTurn(this.player);
     tickTriggerCooldowns(this.player);
     // Passive skill tick (Second Wind regen, future passives).
     if (typeof this.player.passiveTurnTick === 'function') this.player.passiveTurnTick();
@@ -1085,8 +1112,9 @@ export class GameScene {
     // body that couldn't input. Bug from v0.2.0 first playtest.
     if (this.player.isDead) { this._endRun(false); return; }
     this.pathfinding.invalidate();
-    this.lighting.compute(this.floor, this.player, this.player.torchRadius);
+    this.lighting.compute(this.floor, this.player, effectiveTorchRadius(this.player));
     this._refreshEnemyIntents();
+    beginPlayerTurnPassives(this.player);
 
     if (this.player.stats.hp < this.player.stats.hpMax) this.floor.clearedWithoutDamage = false;
     this._saveRun();
@@ -1167,9 +1195,10 @@ export class GameScene {
     }
     for (const s of spawns.items) {
       try {
+        const stack = s.count ?? 1;
         const item = s.affixes
-          ? this.itemFactory.createWithAffix(s.defId, s.affixes, 1)
-          : this.itemFactory.create(s.defId, 1);
+          ? this.itemFactory.createWithAffix(s.defId, s.affixes, stack)
+          : this.itemFactory.create(s.defId, stack);
         if (item) floor.addItem(s.x, s.y, item);
       } catch (err) {
         console.warn(LOG.ITEM, `item spawn failed for "${s.defId}":`, err);

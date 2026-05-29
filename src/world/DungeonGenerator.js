@@ -238,6 +238,7 @@ export class DungeonGenerator {
   }
 
   _spawnEnemies(floor, rooms, spawnRoom, floorDef, enemyDefs) {
+    if (floorDef.type === 'forge' || floorDef.enemyCount === 0) return [];
     const count = floorDef.enemyCount ?? this.balance.dungeon.enemySpawnsPerFloor[floorDef.index] ?? 3;
     const floorNum = (floorDef.index ?? 0) + 1;
     const pool = (floorDef.enemyPool || []).filter((id) => {
@@ -250,17 +251,33 @@ export class DungeonGenerator {
     const weighted = pool.map((id) => ({ value: id, weight: enemyDefs[id].spawnWeight || 1 }));
     const spawns = [];
     const candidates = rooms.filter((r) => r !== spawnRoom);
+    const roomList = candidates.length ? candidates : rooms.filter((r) => r !== spawnRoom);
+    const maxPerRoom = floorNum <= 3 ? 2 : floorNum <= 10 ? 3 : 4;
+    const roomCounts = new Map();
     const reserved = new Set();
+
     if (floorDef.specialEnemyId && enemyDefs[floorDef.specialEnemyId]) {
-      const bossRoom = this._farthestRoom(candidates.length ? candidates : rooms, floor.playerSpawn, 0);
+      const bossRoom = this._farthestRoom(roomList.length ? roomList : rooms, floor.playerSpawn, 0);
       const tile = this._randomTileInRoom(floor, bossRoom, reserved);
       if (tile) {
         reserved.add(`${tile.x},${tile.y}`);
         spawns.push({ x: tile.x, y: tile.y, defId: floorDef.specialEnemyId });
+        roomCounts.set(bossRoom, (roomCounts.get(bossRoom) || 0) + 1);
       }
     }
+
+    const pickRoom = () => {
+      const underCap = roomList.filter((r) => (roomCounts.get(r) || 0) < maxPerRoom);
+      const pickFrom = underCap.length ? underCap : roomList;
+      if (!pickFrom.length) return null;
+      const room = this.rng.pick(pickFrom);
+      roomCounts.set(room, (roomCounts.get(room) || 0) + 1);
+      return room;
+    };
+
     for (let i = 0; i < count; i++) {
-      const room = this.rng.pick(candidates.length ? candidates : rooms);
+      const room = pickRoom();
+      if (!room) break;
       const tile = this._randomTileInRoom(floor, room, reserved);
       if (!tile) continue;
       reserved.add(`${tile.x},${tile.y}`);
@@ -271,26 +288,79 @@ export class DungeonGenerator {
   }
 
   _spawnItems(floor, rooms, spawnRoom, floorDef, itemDefs, floorIndex) {
+    if (floorDef.type === 'forge') {
+      return this._spawnForgeMaterials(floor, rooms, spawnRoom, floorDef, itemDefs);
+    }
     const count = floorDef.itemCount ?? this.balance.dungeon.itemSpawnsPerFloor[floorIndex] ?? 5;
+    const floorNum = floorIndex + 1;
     const eligible = Object.values(itemDefs).filter(
-      (def) => (def.floorMin ?? 1) <= floorIndex + 1
+      (def) => def.type !== 'material' && (def.floorMin ?? 1) <= floorNum
     );
     if (eligible.length === 0) return [];
-    const weighted = eligible.map((d) => ({ value: d.id, weight: d.spawnWeight || 1 }));
+
+    const gearPool = eligible.filter((d) => d.slot);
+    const consumablePool = eligible.filter((d) => d.type === 'consumable');
+    const lootRooms = rooms.filter((r) => r !== spawnRoom);
+    const itemRooms = lootRooms.length ? lootRooms : rooms;
+    const reserved = new Set();
     const spawns = [];
+    let spawnedGear = false;
+    let consumableCount = 0;
+    const maxConsumables = 2;
+    const effectiveDepth = floorNum + (floorDef.vaultDepthBoost || 0);
+
+    const pickDefId = (forceGear = false) => {
+      const wantGear = forceGear || !spawnedGear
+        || (consumableCount >= maxConsumables && gearPool.length > 0);
+      if (wantGear && gearPool.length > 0) {
+        const weighted = gearPool.map((d) => ({ value: d.id, weight: d.spawnWeight || 1 }));
+        return this.rng.weightedPick(weighted);
+      }
+      if (consumablePool.length > 0 && consumableCount < maxConsumables) {
+        const weighted = consumablePool.map((d) => ({ value: d.id, weight: d.spawnWeight || 1 }));
+        return this.rng.weightedPick(weighted);
+      }
+      const weighted = eligible.map((d) => ({ value: d.id, weight: d.spawnWeight || 1 }));
+      return this.rng.weightedPick(weighted);
+    };
+
     for (let i = 0; i < count; i++) {
-      const room = this.rng.pick(rooms);
-      const tile = this._randomTileInRoom(floor, room);
+      const forceGear = !spawnedGear && (i === count - 1 || (count >= 3 && i === count - 2));
+      const room = this.rng.pick(itemRooms);
+      const tile = this._randomTileInRoom(floor, room, reserved);
       if (!tile) continue;
-      const defId = this.rng.weightedPick(weighted);
-      // Roll affix at spawn time so save/load and codex stay deterministic.
-      // Vault floors get a depth nudge so they roll a tier or two higher.
+      reserved.add(`${tile.x},${tile.y}`);
+      const defId = pickDefId(forceGear);
       const baseDef = itemDefs[defId];
-      const effectiveDepth = floorIndex + 1 + (floorDef.vaultDepthBoost || 0);
-      const affixes = baseDef ? rollItemAffixes(baseDef, effectiveDepth, this.rng) : null;
+      if (baseDef?.slot) spawnedGear = true;
+      if (baseDef?.type === 'consumable') consumableCount++;
+      const affixes = baseDef?.slot ? rollItemAffixes(baseDef, effectiveDepth, this.rng) : null;
       const entry = { x: tile.x, y: tile.y, defId };
       if (affixes) entry.affixes = affixes;
       spawns.push(entry);
+    }
+    return spawns;
+  }
+
+  /** Forge floors: material piles instead of random gear. */
+  _spawnForgeMaterials(floor, rooms, spawnRoom, floorDef, itemDefs) {
+    const biomeId = floorDef.biomeId || 'forgotten_crypts';
+    const mats = Object.values(itemDefs).filter(
+      (d) => d.type === 'material' && Array.isArray(d.biomes) && d.biomes.includes(biomeId)
+    );
+    if (mats.length === 0) return [];
+    const lootRooms = rooms.filter((r) => r !== spawnRoom);
+    const itemRooms = lootRooms.length ? lootRooms : rooms;
+    const reserved = new Set();
+    const spawns = [];
+    const pileCount = 3;
+    for (let i = 0; i < pileCount; i++) {
+      const room = this.rng.pick(itemRooms);
+      const tile = this._randomTileInRoom(floor, room, reserved);
+      if (!tile) continue;
+      reserved.add(`${tile.x},${tile.y}`);
+      const def = this.rng.pick(mats);
+      spawns.push({ x: tile.x, y: tile.y, defId: def.id, count: 1 + (i === 0 ? 1 : 0) });
     }
     return spawns;
   }

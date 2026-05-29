@@ -21,8 +21,8 @@ import {
   drawInsetCard, drawProgressBar, drawIronActionButton,
   drawEquipRow, drawSpacedText, IRON_PALETTE, rarityColor
 } from './ironPanel.js';
+import { heroDef } from '../rendering/heroSprites.js';
 
-const HERO_NAME = 'FAJAR';
 const HERO_TITLE = 'THE LAST VIGIL';
 
 export class VigilScreen {
@@ -215,7 +215,7 @@ export class VigilScreen {
     ctx.textBaseline = 'middle';
     ctx.shadowColor = IRON_PALETTE.brass + '55';
     ctx.shadowBlur = 16;
-    drawSpacedText(ctx, HERO_NAME, CANVAS_WIDTH / 2, 110, 8);
+    drawSpacedText(ctx, VigilScreen._heroDisplayName(p), CANVAS_WIDTH / 2, 110, 8);
     ctx.restore();
 
     // 3. LV chip + XP bar.
@@ -371,7 +371,7 @@ export class VigilScreen {
     ctx.textBaseline = 'middle';
     drawSpacedText(ctx, 'THE VIGIL', 92, 27, 3);
     ctx.restore();
-    r.drawText(HERO_NAME, CANVAS_WIDTH / 2, 60, {
+    r.drawText(VigilScreen._heroDisplayName(p), CANVAS_WIDTH / 2, 60, {
       size: uiSize(20), bold: true, align: 'center',
       family: FONT_DISPLAY, color: IRON_PALETTE.bone
     });
@@ -486,5 +486,11 @@ export class VigilScreen {
       parts.push(`${v > 0 ? '+' : ''}${v} ${k.toUpperCase()}`);
     }
     return parts.slice(0, 3).join('  ');
+  }
+
+  static _heroDisplayName(p) {
+    const def = heroDef(p?.heroKind || 'vigil');
+    if (!def?.name) return 'VIGIL';
+    return def.name.replace(/^The\s+/i, '').toUpperCase();
   }
 }

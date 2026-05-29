@@ -36,10 +36,79 @@ export function loadRecipes(json) {
 
 export function listRecipes() { return RECIPES; }
 export function getRecipe(id) { return RECIPE_BY_ID.get(id) || null; }
-export function chooseForgeOffers(rng, floorLevel = 1, count = 3) {
+const BIOME_MATERIALS = {
+  forgotten_crypts: ['scrap_iron', 'crypt_dust'],
+  iron_stronghold: ['scrap_iron', 'iron_chip'],
+  bone_garden: ['bone_shard', 'scrap_iron'],
+  drowned_catacombs: ['bone_shard', 'crypt_dust'],
+  magma_foundry: ['ember_dust', 'scrap_iron'],
+  sun_cursed_sands: ['ember_dust', 'sun_glass'],
+  frozen_halls: ['frost_thread', 'bone_shard'],
+  void_sanctum: ['void_essence', 'bone_shard'],
+  mirror_vaults: ['void_essence', 'mirror_shard'],
+  sunken_forest: ['verdant_sap', 'bone_shard']
+};
+
+function recipeBiomeFit(recipe, biomeId) {
+  const mats = BIOME_MATERIALS[biomeId] || [];
+  const inputs = recipe.inputs || [];
+  if (!inputs.length) return 0;
+  let fit = 0;
+  for (const inp of inputs) {
+    if (mats.includes(inp.materialId)) fit++;
+  }
+  return fit / inputs.length;
+}
+
+function missingMaterialCount(player, recipe) {
+  let missing = 0;
+  for (const inp of recipe.inputs || []) {
+    const have = player?.materialCount?.(inp.materialId) ?? 0;
+    if (have < inp.count) missing += inp.count - have;
+  }
+  return missing;
+}
+
+/**
+ * Pick forge offers biased toward recipes the player can craft (or nearly craft).
+ * @param {object} [ctx] { player, biomeId }
+ */
+export function chooseForgeOffers(rng, floorLevel = 1, count = 3, ctx = {}) {
+  const { player, biomeId } = ctx;
   const pool = RECIPES.filter((r) => (r.floorMin ?? 1) <= floorLevel);
-  const shuffled = rng?.shuffle ? rng.shuffle(pool) : pool.slice().sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count).map((r) => r.id);
+  if (pool.length <= count) return pool.map((r) => r.id);
+
+  const scored = pool.map((r) => {
+    const craftable = player ? canCraft(player, r).ok : false;
+    const missing = player ? missingMaterialCount(player, r) : 99;
+    const biome = recipeBiomeFit(r, biomeId);
+    const score = (craftable ? 1000 : 0) - missing * 5 + biome * 20;
+    return { id: r.id, score, craftable, missing };
+  });
+  scored.sort((a, b) => b.score - a.score);
+
+  const offers = [];
+  const used = new Set();
+  const craftable = scored.filter((s) => s.craftable);
+  for (const s of craftable.slice(0, Math.min(2, count))) {
+    offers.push(s.id);
+    used.add(s.id);
+  }
+  const nearly = scored.filter((s) => !used.has(s.id) && s.missing <= 3);
+  if (offers.length < count && nearly.length) {
+    const pick = nearly[0];
+    offers.push(pick.id);
+    used.add(pick.id);
+  }
+  const rest = rng?.shuffle
+    ? rng.shuffle(scored.filter((s) => !used.has(s.id)))
+    : scored.filter((s) => !used.has(s.id));
+  for (const s of rest) {
+    if (offers.length >= count) break;
+    offers.push(s.id);
+    used.add(s.id);
+  }
+  return offers.slice(0, count);
 }
 
 /**

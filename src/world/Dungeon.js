@@ -145,7 +145,7 @@ export class Dungeon {
         } else if (floorNumber % 10 === 7) {
           type = 'forge';
           enemyCount = 0;
-          itemCount = 1;
+          itemCount = 0;
         }
       }
 

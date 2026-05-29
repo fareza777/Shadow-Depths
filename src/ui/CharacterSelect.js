@@ -20,6 +20,7 @@ import {
 import { Layout } from '../config/layoutMetrics.js';
 import { HERO_SPELLS } from '../config/heroSpells.js';
 import { HERO_ORDER, HERO_DEFS } from '../rendering/heroSprites.js';
+import { heroPassiveLabel } from '../gameplay/heroPassives.js';
 import {
   drawIronPanel, drawIronPlate, drawIronActionButton,
   drawBrassRivet, drawSpacedText, IRON_PALETTE
@@ -254,8 +255,19 @@ export class CharacterSelect {
         family: FONT_BODY, color: IRON_PALETTE.boneDim
       });
 
+    const roleY = nameY + 40;
+    drawIronPlate(ctx, CANVAS_WIDTH / 2 - 42, roleY, 84, 18, { rivets: false });
+    ctx.save();
+    ctx.font = `bold ${uiSize(9)}px ${FONT_DISPLAY}`;
+    ctx.fillStyle = IRON_PALETTE.brass;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    drawSpacedText(ctx, (def.role || 'WANDERER').toUpperCase(),
+      CANVAS_WIDTH / 2, roleY + 9, 1.5);
+    ctx.restore();
+
     // 3 tag chips.
-    const tagsY = nameY + 44;
+    const tagsY = nameY + 64;
     ctx.font = `bold ${uiSize(9)}px ${FONT_DISPLAY}`;
     const chipW = [];
     let total = 0;
@@ -282,9 +294,16 @@ export class CharacterSelect {
     const spellY = tagsY + 32;
     this._renderSpellCard(r, def, spellY);
 
-    // Stat strip — ATK / DEF / DEX / TORCH.
-    const statsY = spellY + 58;
+    const passiveY = spellY + 46;
+    r.drawText(heroPassiveLabel(def.kind), CANVAS_WIDTH / 2, passiveY, {
+      size: uiSize(9), italic: true, align: 'center',
+      family: FONT_BODY, color: IRON_PALETTE.boneDim
+    });
+
+    // Stat strip — HP / ATK / DEF / DEX / TORCH.
+    const statsY = spellY + 62;
     const cells = [
+      ['HP',    def.stats.hp ?? 30],
       ['ATK',   def.stats.atk],
       ['DEF',   def.stats.def],
       ['DEX',   def.stats.dex],
