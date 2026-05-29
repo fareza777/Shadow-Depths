@@ -889,7 +889,7 @@ export class TitleScreen {
       r.ctx.fillStyle = IRON_PALETTE.ink;
       r.ctx.fillRect(iconX, iconY, iconSize, iconSize);
       if (e.seen && e.spriteKey && r.sprites) {
-        r.sprites.draw(e.spriteKey, r.ctx, iconX, iconY, { size: iconSize });
+        r.sprites.draw(e.spriteKey, r.ctx, iconX, iconY, { size: iconSize, enemyId: e.id });
       } else if (!e.seen) {
         r.drawText('?', iconX + iconSize / 2, iconY + iconSize / 2,
           { size: uiSize(16), bold: true, align: 'center', baseline: 'middle',
@@ -946,7 +946,7 @@ export class TitleScreen {
     r.drawRect(iconX, iconY, iconSize, iconSize, COLOR.bgPanel);
     r.drawStrokedRect(iconX, iconY, iconSize, iconSize, col, 1);
     if (entry.spriteKey && r.sprites) {
-      r.sprites.draw(entry.spriteKey, r.ctx, iconX + 10, iconY + 10, { size: iconSize - 20 });
+      r.sprites.draw(entry.spriteKey, r.ctx, iconX + 10, iconY + 10, { size: iconSize - 20, enemyId: entry.id });
     }
 
     const nameY = iconY + iconSize + 18;

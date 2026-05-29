@@ -23,5 +23,12 @@ export default defineConfig({
     assetsInlineLimit: 0,
     // Source maps balloon deploy size (~1.7MB) and have caused Vercel deploy failures.
     sourcemap: false
+  },
+  // Enemy sprite engine (enemySpritesVector.jsx) authors art as JSX but emits
+  // plain SVG strings via a local `h()` hyperscript — no React. Force esbuild's
+  // classic JSX transform onto our factory so the file stays verbatim-portable.
+  esbuild: {
+    jsxFactory: 'h',
+    jsxFragment: 'Fragment'
   }
 });

@@ -21,6 +21,7 @@ import {
 } from './playerSprites.js';
 import { buildEnemySprites } from './enemySprites.js';
 import { drawDetailedEnemySprite } from './enemySpritesDetailed.js';
+import { drawVectorEnemy, preloadVectorEnemies } from './enemySpritesVector.jsx';
 import { drawDetailedItemSprite } from './itemSpritesDetailed.js';
 import { HERO_ORDER, drawHeroSprite, drawHeroEquipment } from './heroSprites.js';
 import { paintWeaponAffix } from './weaponComposer.js';
@@ -292,6 +293,9 @@ export class SpriteRegistry {
       ...buildDungeonTileSprites(),
       ...HERO_SPRITES
     };
+    // Warm the per-enemy vector sprites so they're decoded before the first
+    // foe walks on-screen (falls back to legacy grids until ready).
+    preloadVectorEnemies();
   }
 
   /**
@@ -310,12 +314,17 @@ export class SpriteRegistry {
       return;
     }
 
-    // Try detailed enemy sprites first (32x32 grid style)
-    if (
-      (key.startsWith('enemy_') || key.startsWith('boss_') || key.startsWith('subboss_'))
-      && drawDetailedEnemySprite(ctx, x, y, size, key)
-    ) {
-      return;
+    // Enemy art: prefer the per-id vector sprite engine (matches the
+    // enemy-sprites design 1:1), then fall back to the legacy 32×32 grid
+    // when the vector raster isn't ready yet or no enemy id is supplied.
+    if (key.startsWith('enemy_') || key.startsWith('boss_') || key.startsWith('subboss_')) {
+      const enemyId = opts.enemyId || opts.entity?.defId;
+      if (enemyId && drawVectorEnemy(ctx, x, y, size, enemyId)) {
+        return;
+      }
+      if (drawDetailedEnemySprite(ctx, x, y, size, key)) {
+        return;
+      }
     }
 
     // Detailed item grids override procedural item art when defined
