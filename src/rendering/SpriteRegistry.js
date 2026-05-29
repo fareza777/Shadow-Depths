@@ -23,7 +23,7 @@ import { buildEnemySprites } from './enemySprites.js';
 import { drawDetailedEnemySprite } from './enemySpritesDetailed.js';
 import { drawVectorEnemy, preloadVectorEnemies } from './enemySpritesVector.jsx';
 import { drawDetailedItemSprite } from './itemSpritesDetailed.js';
-import { drawVectorItem, preloadItemArt, hasItemArt } from './itemArtVector.js';
+import { drawVectorItem, preloadItemArt, hasItemArt } from './itemArtVector.jsx';
 import { drawVectorHero, preloadHeroArt } from './heroArtVector.jsx';
 import { HERO_ORDER, drawHeroSprite, drawHeroEquipment } from './heroSprites.js';
 import { paintWeaponAffix } from './weaponComposer.js';
