@@ -132,7 +132,7 @@ export class Dungeon {
       // Special floor types: forge sanctuary (7, 17, 27...) + vault (10s).
       // Floor 100 stays the boss arena, so we don't override the last floor.
       let type = null;
-      let enemyCount = Math.min(14, 3 + Math.floor(i * 0.2) + (i >= 40 ? 1 : 0));
+      let enemyCount = Math.min(16, 4 + Math.floor(i * 0.28) + (i >= 40 ? 2 : 0));
       let itemCount  = Math.min(8,  5 + Math.floor(i * 0.04));
       let vaultDepthBoost = 0;
       const isLast = i === TOTAL_FLOORS - 1;
@@ -160,7 +160,7 @@ export class Dungeon {
         enemyCount, itemCount,
         torchRadius: biome?.torchRadius || 5,
         // Steeper curve after floor 25 — counters longbow + revive stacking.
-        depthScale: 1 + i * 0.09 + (i > 25 ? (i - 25) * 0.02 : 0),
+        depthScale: 1 + i * 0.11 + (i > 25 ? (i - 25) * 0.025 : 0),
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
         type,

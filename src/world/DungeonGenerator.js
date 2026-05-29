@@ -252,7 +252,7 @@ export class DungeonGenerator {
     const spawns = [];
     const candidates = rooms.filter((r) => r !== spawnRoom);
     const roomList = candidates.length ? candidates : rooms.filter((r) => r !== spawnRoom);
-    const maxPerRoom = floorNum <= 3 ? 2 : floorNum <= 10 ? 3 : 4;
+    const maxPerRoom = floorNum <= 2 ? 2 : floorNum <= 8 ? 3 : 4;
     const roomCounts = new Map();
     const reserved = new Set();
 

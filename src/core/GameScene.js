@@ -223,9 +223,9 @@ export class GameScene {
     this._floorBanner = this._buildFloorBanner(index, def);
     // Rest floors fully heal the player on entry — incentive to push deeper.
     if ((def.type === 'rest' || def.type === 'forge') && this.player && !this.player.isDead) {
-      const before = this.player.stats.hp;
-      this.player.stats.hp = this.player.stats.hpMax;
-      const restored = this.player.stats.hp - before;
+      const missing = this.player.stats.hpMax - this.player.stats.hp;
+      const pct = def.type === 'forge' ? 0.35 : 0.55;
+      const restored = this.player.heal(Math.ceil(missing * pct));
       if (restored > 0) {
         this.bus.emit('entity:healed', { entity: this.player, amount: restored, source: 'rest_floor' });
       }

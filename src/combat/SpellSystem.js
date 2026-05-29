@@ -3,6 +3,9 @@ import { hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
 import { onHeroSpellHit } from '../gameplay/heroPassives.js';
 
 const TARGETED_SPELLS = new Set(['hollow', 'inquisitor', 'bladedancer', 'echobinder']);
+/** Heals / self-buffs only fire when a living foe is nearby (no safe-room spam). */
+const COMBAT_ONLY_SPELLS = new Set(['vigil', 'pilgrim', 'warden']);
+const COMBAT_RANGE = 9;
 
 export class SpellSystem {
   constructor({ bus, combat, getPlayer, getFloor, getFloorIndex }) {
@@ -20,12 +23,17 @@ export class SpellSystem {
     const kind = player.heroKind || heroKind;
     const cooldown = Math.max(0, player.spellCooldown || 0);
     const needsTarget = TARGETED_SPELLS.has(kind);
+    const needsCombat = COMBAT_ONLY_SPELLS.has(kind);
     const target = needsTarget ? this._targetFor(kind, def) : null;
+    const inCombat = this._inCombat();
     return {
       ...def,
       baseCooldown: def.cooldown,
       cooldown,
-      ready: cooldown <= 0 && (!needsTarget || !!target),
+      inCombat,
+      ready: cooldown <= 0
+        && (!needsTarget || !!target)
+        && (!needsCombat || inCombat),
       target
     };
   }
@@ -34,7 +42,13 @@ export class SpellSystem {
     const player = this.getPlayer();
     if (!player) return false;
     const state = this.getState(heroKind);
-    if (!state.ready) return false;
+    if (!state.ready) {
+      const kind = player.heroKind || heroKind;
+      if (COMBAT_ONLY_SPELLS.has(kind) && !state.inCombat && (player.spellCooldown || 0) <= 0) {
+        this.bus.emit('spell:blocked', { reason: 'no_combat', spell: state.name });
+      }
+      return false;
+    }
 
     const kind = player.heroKind || heroKind;
     const power = player.magicPower || 0;
@@ -42,7 +56,12 @@ export class SpellSystem {
     let fx = { kind, name: state.name, color: state.color };
 
     if (kind === 'vigil') {
-      const healed = player.heal(4 + Math.floor(player.level / 4) + power);
+      const missing = player.stats.hpMax - player.stats.hp;
+      const healAmt = Math.min(
+        missing,
+        2 + Math.floor(player.level / 6) + Math.floor(power / 2)
+      );
+      const healed = healAmt > 0 ? player.heal(healAmt) : 0;
       if (healed > 0) this.bus.emit('entity:healed', { entity: player, amount: healed, source: 'spell' });
       player.applyStatus({ id: 'def_buff', value: 2 + Math.floor(power / 4), duration: 3 });
       fx = { ...fx, center: { x: player.x, y: player.y }, radius: 1.4 };
@@ -72,7 +91,9 @@ export class SpellSystem {
       fx = { ...fx, center: { x: player.x, y: player.y }, radius: state.radius || 2 };
     } else if (kind === 'pilgrim') {
       const radius = (state.radius || 3) + Math.floor(power / 3);
-      const healed = player.heal(5 + Math.floor(player.level / 5) + power);
+      const missing = player.stats.hpMax - player.stats.hp;
+      const healAmt = Math.min(missing, 3 + Math.floor(player.level / 6) + Math.floor(power / 2));
+      const healed = healAmt > 0 ? player.heal(healAmt) : 0;
       if (healed > 0) this.bus.emit('entity:healed', { entity: player, amount: healed, source: 'spell' });
       this._revealAround(player.x, player.y, radius);
       fx = { ...fx, center: { x: player.x, y: player.y }, radius };
@@ -125,6 +146,19 @@ export class SpellSystem {
     if (!player) return null;
     if (kind === 'reaver') return this._nearestVisibleEnemy(def.radius || 2, false);
     return this._nearestVisibleEnemy(def.range || 6, kind === 'hollow');
+  }
+
+  /** True if any living enemy is on this floor within manhattan range. */
+  _inCombat(range = COMBAT_RANGE) {
+    const floor = this.getFloor();
+    const player = this.getPlayer();
+    if (!floor || !player) return false;
+    for (const e of floor.enemies()) {
+      if (e.isDead) continue;
+      const dist = Math.abs(e.x - player.x) + Math.abs(e.y - player.y);
+      if (dist <= range) return true;
+    }
+    return false;
   }
 
   _nearestVisibleEnemy(range, requireLineOfSight = false) {

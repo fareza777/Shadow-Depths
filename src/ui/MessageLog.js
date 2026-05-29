@@ -62,6 +62,11 @@ export class MessageLog {
       if (by?.kind === 'player') this.push(`You use the ${item.name}.`);
     });
 
+    this.bus.on('spell:blocked', ({ reason, spell }) => {
+      if (reason === 'no_combat') {
+        this.push(`${spell || 'Spell'} needs a foe nearby.`, COLOR.textMuted);
+      }
+    });
     this.bus.on('spell:cast', ({ entity, spell }) => {
       if (entity?.kind === 'player') this.push(`You cast ${spell}.`, COLOR.textXP);
     });

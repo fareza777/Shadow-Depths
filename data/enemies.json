@@ -4,8 +4,8 @@
     "name": "Goblin Scout",
     "spriteKey": "enemy_goblin",
     "stats": {
-      "hp": 16,
-      "atk": 3,
+      "hp": 20,
+      "atk": 4,
       "def": 0
     },
     "behavior": "chase",
@@ -22,8 +22,8 @@
     "name": "Skeleton Archer",
     "spriteKey": "enemy_skeleton_archer",
     "stats": {
-      "hp": 13,
-      "atk": 5,
+      "hp": 17,
+      "atk": 6,
       "def": 0
     },
     "behavior": "ranged",
@@ -45,8 +45,8 @@
     "name": "Cave Bat",
     "spriteKey": "enemy_bat",
     "stats": {
-      "hp": 9,
-      "atk": 3,
+      "hp": 12,
+      "atk": 4,
       "def": 0
     },
     "behavior": "erratic",
@@ -67,8 +67,8 @@
     "name": "Stone Golem",
     "spriteKey": "enemy_golem",
     "stats": {
-      "hp": 30,
-      "atk": 7,
+      "hp": 38,
+      "atk": 8,
       "def": 4
     },
     "behavior": "heavy",
@@ -88,9 +88,9 @@
     "name": "Shadow Wraith",
     "spriteKey": "enemy_wraith",
     "stats": {
-      "hp": 22,
-      "atk": 5,
-      "def": 1
+      "hp": 28,
+      "atk": 6,
+      "def": 2
     },
     "behavior": "phase",
     "onHitPlayer": [
@@ -589,8 +589,8 @@
     "name": "Shroud Crawler",
     "spriteKey": "enemy_shroud_crawler",
     "stats": {
-      "hp": 24,
-      "atk": 3,
+      "hp": 31,
+      "atk": 4,
       "def": 0
     },
     "behavior": "chase",
@@ -607,8 +607,8 @@
     "name": "Candle Licker",
     "spriteKey": "enemy_candle_licker",
     "stats": {
-      "hp": 13,
-      "atk": 5,
+      "hp": 17,
+      "atk": 6,
       "def": 0
     },
     "behavior": "erratic",
@@ -629,9 +629,9 @@
     "name": "Grave Moss",
     "spriteKey": "enemy_grave_moss",
     "stats": {
-      "hp": 19,
-      "atk": 3,
-      "def": 1
+      "hp": 24,
+      "atk": 4,
+      "def": 2
     },
     "behavior": "chase",
     "xp": 12,
@@ -656,9 +656,9 @@
     "name": "Bell Haunt",
     "spriteKey": "enemy_bell_haunt",
     "stats": {
-      "hp": 20,
-      "atk": 5,
-      "def": 0
+      "hp": 26,
+      "atk": 6,
+      "def": 1
     },
     "behavior": "ranged",
     "xp": 14,
@@ -679,8 +679,8 @@
     "name": "Marrow Hound",
     "spriteKey": "enemy_marrow_hound",
     "stats": {
-      "hp": 16,
-      "atk": 6,
+      "hp": 18,
+      "atk": 7,
       "def": 1
     },
     "behavior": "erratic",
@@ -701,8 +701,8 @@
     "name": "Ossuary Moth",
     "spriteKey": "enemy_ossuary_moth",
     "stats": {
-      "hp": 12,
-      "atk": 5,
+      "hp": 13,
+      "atk": 6,
       "def": 0
     },
     "behavior": "erratic",

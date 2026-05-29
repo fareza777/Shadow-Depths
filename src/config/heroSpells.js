@@ -1,9 +1,9 @@
 export const HERO_SPELLS = Object.freeze({
   vigil: {
     name: 'Bulwark',
-    cooldown: 7,
+    cooldown: 9,
     color: '#80b0ff',
-    description: 'Heal and raise DEF for a few turns.'
+    description: 'In battle only: modest heal + DEF buff.'
   },
   hollow: {
     name: 'Siphon',
@@ -29,16 +29,16 @@ export const HERO_SPELLS = Object.freeze({
   },
   pilgrim: {
     name: 'Sanctuary',
-    cooldown: 8,
+    cooldown: 10,
     radius: 3,
     color: '#d4be7a',
-    description: 'Heal and reveal nearby ground.'
+    description: 'In battle only: small heal + reveal nearby tiles.'
   },
   warden: {
     name: 'Iron Stand',
-    cooldown: 8,
+    cooldown: 9,
     color: '#bcd6ff',
-    description: 'Apply Iron Skin and brace; nearby attackers slowed.'
+    description: 'In battle only: Iron Skin; slow nearby foes.'
   },
   bladedancer: {
     name: 'Echo Strike',
