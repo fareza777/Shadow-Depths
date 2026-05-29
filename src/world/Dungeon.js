@@ -160,7 +160,7 @@ export class Dungeon {
         enemyCount, itemCount,
         torchRadius: biome?.torchRadius || 5,
         // Steeper curve after floor 25 — counters longbow + revive stacking.
-        depthScale: 1 + i * 0.11 + (i > 25 ? (i - 25) * 0.025 : 0),
+        depthScale: 1.18 + i * 0.14 + (i > 25 ? (i - 25) * 0.03 : 0),
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
         type,

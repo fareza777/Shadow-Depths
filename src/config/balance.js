@@ -52,7 +52,7 @@ export const DEFAULT_BALANCE = Object.freeze({
     minRoomsPerFloor: 6,
     maxRoomsPerFloor: 10,
     minStairsDistance: 12,
-    enemySpawnsPerFloor: [4, 6, 9],
+    enemySpawnsPerFloor: [3, 5, 8],
     itemSpawnsPerFloor: [5, 5, 6]
   },
 

@@ -21,7 +21,10 @@ export class Enemy extends Entity {
    */
   constructor(def, behavior, pos, scale = 1, difficulty = { hp: 1, atk: 1 }) {
     const safeScale = Math.max(0.5, scale);
-    const atkFactor = 1 + (safeScale - 1) * (safeScale >= 1.5 ? 0.62 : 0.5);
+    // Early depths: enemy ATK scales with depth like HP so floor-1 fodder still hurt.
+    const atkFactor = safeScale <= 1.35
+      ? safeScale
+      : 1 + (safeScale - 1) * (safeScale >= 1.5 ? 0.62 : 0.5);
     const dHp  = Math.max(0.5, difficulty?.hp  ?? 1);
     const dAtk = Math.max(0.5, difficulty?.atk ?? 1);
     const baseHp = def.stats.hp;
