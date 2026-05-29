@@ -166,8 +166,105 @@ Long-term: free first, monetize later (cosmetic / DLC biome). Combat and hero fa
 
 ---
 
+## Item & loot system — audit (2026-05-28)
+
+### How it works today (`DungeonGenerator._spawnItems`)
+
+1. **Per floor:** `itemCount = min(8, 5 + floor×0.04)` → 5 items on F1–23, up to 8 on F100. Vault (+2), forge (1 only).
+2. **Placement:** random room (includes **spawn room** — unlike enemies), random passable tile, **no tile reservation** (two items can overlap).
+3. **Which item:** global `weightedPick` on all defs with `floorMin ≤ current floor`. Weight = `spawnWeight` from `items.json`.
+4. **Affixes:** rolled at spawn for slotted gear only (25% none / 30% prefix / 30% suffix / 15% both). Tier gated by depth; vault gets `+12` depth nudge.
+5. **Enemy kills:** gold only — **no item drops** from combat.
+6. **Boss arena:** 2 guaranteed items at player side.
+
+### Content numbers (`items.json`)
+
+| Metric | Value |
+|--------|-------|
+| Total defs | 167 |
+| Types | consumable 34, weapon 39, armor/helm/legs 44, ring/necklace 30, throwable 12, passive 8 |
+| Rarity | common 31, uncommon 42, rare 57, epic 37 (no legendary base defs) |
+| `spawnWeight: 0` | 1 item (`worn_dagger`, floorMin 99 — meta only) |
+
+### Floor 1 drop pool fairness (weighted)
+
+| Type | Share of rolls |
+|------|----------------|
+| Consumable | **~35%** |
+| Weapon | ~22% |
+| Armor | ~10% |
+| Throwable | ~11% |
+| Helm / ring / legs / necklace | ~3–8% each |
+
+**Issue:** Over 1 in 3 floor drops is a potion on early floors → slow build variety; bad RNG = “all heal, no upgrade.”
+
+### Stat progression (weapons)
+
+| Depth | ATK range (examples) |
+|-------|---------------------|
+| floorMin 1 | 2–4 (+ iron sword 3 weight 8) |
+| floorMin 2–3 | 4–6 |
+| floorMin 5+ | up to 6+ |
+
+Armor DEF floor 1–3: 1–5 (`plated_mail` DEF 5 can appear from floor 2).  
+Affixes add +1–3 ATK/DEF on top — vault items can spike early.
+
+Potion heals: minor 15, standard 30, greater 70 — reasonable vs ~30 HP start.
+
+### Is random-on-floor OK?
+
+**Yes for roguelike**, but **pure random scatter is not enough** and current impl has fairness gaps.
+
+| Approach | Verdict |
+|----------|---------|
+| Random items on floor (current) | Good base — exploration, replay |
+| Only random, no structure | **Weak** — RNG streaks, spawn room clutter |
+| Fixed loot tables per chest | Good supplement |
+| Enemy drop chance | Recommended add-on |
+| Shop / forge only gear | Already partial (forge floor) |
+
+### Fairness issues found
+
+1. **Spawn room can get loot** — enemies excluded, items not.
+2. **No per-floor consumable cap** — can roll 5 potions.
+3. **No guaranteed “progress” drop** — bad seed = no weapon all floor.
+4. **Low density** — 5 items / 6–10 rooms ≈ empty feel; all loot in wrong wing = feels unfair.
+5. **Affix tier on vault** with +12 depth on floor 10 can outscale combat tuning.
+6. **Enemy loot = gold only** — fighting doesn’t reward gear directly.
+
+### Recommended model (hybrid)
+
+```
+Floor loot = structured random (not pure chaos)
+```
+
+| Layer | Rule |
+|-------|------|
+| **Baseline** | 3–5 random floor drops (current), exclude spawn room + stairs tile |
+| **Pity** | At least 1 drop is weapon OR armor (not consumable/throwable) |
+| **Cap** | Max 2 consumables from floor gen per floor |
+| **Elite room** | +1 guaranteed gear drop (when elite spawn added) |
+| **Vault** | Chest cluster (2–3 items one room) + affix bias (keep) |
+| **Forge** | Craft materials / reroll, not random gear (keep sparse) |
+| **Combat** | 5–15% chance low-tier consumable OR gold+small item on kill (elite 100%) |
+
+### Spawn weight tuning (direction)
+
+- Lower `spawnWeight` on `minor_healing_draught` (12 → 6), keep `health_potion` ~8.
+- Slightly raise mid weapons on floorMin 2–3 when HTK increases.
+- Add `lootCategory` tag in JSON: `consumable | gear | throwable | material` for table rolls.
+
+### UI / feel
+
+- [ ] Show item name on ground (dim label) or ping on minimap
+- [ ] Loot toast already exists — keep for upgrades
+- [ ] Identify/rarity color on floor tiles (optional)
+
+---
+
 ## Changelog
 
 | Date | Note |
 |------|------|
+| 2026-05-28 | Item/loot audit: spawn rules, fairness, hybrid recommendations |
 | 2026-05-28 | Initial doc: combat HTK targets, hero audit, fairness recommendations |
