@@ -23,6 +23,8 @@ import { buildEnemySprites } from './enemySprites.js';
 import { drawDetailedEnemySprite } from './enemySpritesDetailed.js';
 import { drawVectorEnemy, preloadVectorEnemies } from './enemySpritesVector.jsx';
 import { drawDetailedItemSprite } from './itemSpritesDetailed.js';
+import { drawVectorItem, preloadItemArt, hasItemArt } from './itemArtVector.js';
+import { drawVectorHero, preloadHeroArt } from './heroArtVector.jsx';
 import { HERO_ORDER, drawHeroSprite, drawHeroEquipment } from './heroSprites.js';
 import { paintWeaponAffix } from './weaponComposer.js';
 
@@ -275,14 +277,19 @@ const PROCEDURAL_SPRITES = {
 // Hero sprite variants — one entry per kind. Each kind also doubles as
 // the Vigil-screen portrait (same grid, just rendered larger).
 const HERO_SPRITES = {};
+// Prefer the detailed vector hero art; fall back to the legacy 32×32 grid
+// until each raster has decoded (or in non-DOM contexts like tests).
+function drawHeroBase(ctx, x, y, s, kind) {
+  if (!drawVectorHero(ctx, x, y, s, kind)) drawHeroSprite(ctx, x, y, s, kind);
+}
 for (const kind of HERO_ORDER) {
   HERO_SPRITES[`hero_${kind}`] = (ctx, x, y, s, opts = {}) => {
-    drawHeroSprite(ctx, x, y, s, kind);
+    drawHeroBase(ctx, x, y, s, kind);
     drawHeroEquipment(ctx, x, y, s, opts.entity, opts.time);
   };
   // Portrait variant skips equipment overlay so the character-select
   // and Vigil screens still show the canonical hero silhouette.
-  HERO_SPRITES[`portrait_${kind}`] = (ctx, x, y, s) => drawHeroSprite(ctx, x, y, s, kind);
+  HERO_SPRITES[`portrait_${kind}`] = (ctx, x, y, s) => drawHeroBase(ctx, x, y, s, kind);
 }
 
 export class SpriteRegistry {
@@ -293,9 +300,11 @@ export class SpriteRegistry {
       ...buildDungeonTileSprites(),
       ...HERO_SPRITES
     };
-    // Warm the per-enemy vector sprites so they're decoded before the first
-    // foe walks on-screen (falls back to legacy grids until ready).
+    // Warm the vector sprite engines so they're decoded before they're first
+    // needed (each falls back to its legacy sprite until ready).
     preloadVectorEnemies();
+    preloadItemArt();
+    preloadHeroArt();
   }
 
   /**
@@ -325,6 +334,16 @@ export class SpriteRegistry {
       if (drawDetailedEnemySprite(ctx, x, y, size, key)) {
         return;
       }
+    }
+
+    // Item art: prefer the composable vector engine (matches the item-armory
+    // design), falling back to the detailed/procedural sprites until the
+    // raster decodes. Weapon affix overlays still apply below.
+    if (hasItemArt(key) && drawVectorItem(ctx, x, y, size, key)) {
+      if (opts.affixes && key.startsWith('weapon_')) {
+        paintWeaponAffix(ctx, x, y, size, opts.affixes);
+      }
+      return;
     }
 
     // Detailed item grids override procedural item art when defined
