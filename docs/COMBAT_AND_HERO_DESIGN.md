@@ -262,9 +262,125 @@ Floor loot = structured random (not pure chaos)
 
 ---
 
+## Forge floors — audit (2026-05-28)
+
+### When & where
+
+| Rule | Value |
+|------|--------|
+| Forge floor schedule | **Floor 7, 17, 27, 37…** (`floorNumber % 10 === 7`) |
+| Not forge | Floor 3 is a **normal** combat floor |
+| Enemies on forge | **0** (sanctuary) |
+| Floor loot | **1** random item only |
+| Entry bonus | Full heal (same as rest) |
+| Open smith | Stand on stairs tile → **PICK** (no item underfoot) |
+| Uses per visit | **1 craft only** then smith leaves (`_forgeUsed`) |
+| Offers shown | **3 random recipes** from full pool |
+
+HUD shows `⚒ FORGE`. World motif at stairs: **anvil + animated flame** (torch-like fire), orange glow.
+
+### What forge is supposed to do
+
+**Design intent:** Pause combat, reward run with **one guaranteed gear upgrade** (affixed weapon/armor/ring) using **materials** collected during the run.
+
+Flow:
+
+1. Kill enemies → **12% chance** drop **biome-tagged material** (not in bag slots — **material pouch**).
+2. Reach forge floor → PICK opens **The Veiled Smith**.
+3. Pick **one** of 3 recipes → pay materials → receive new item (or reroll affixes on existing gear).
+
+### Why it feels broken (“3 item tidak bisa di-forge semua”)
+
+This matches code — **by design you can only craft ONE**, but UI implies three shops:
+
+| Problem | Why it hurts |
+|---------|----------------|
+| **3 random offers, not 3 crafts** | Two rows greyed out forever — feels like bug |
+| **Offers ignore your pouch** | `chooseForgeOffers` shuffles all recipes with `floorMin ≤ floor`; **no `floorMin` in recipes.json** → endgame recipes can appear on floor 7 |
+| **Materials are biome-locked** | Crypt biome drops `scrap_iron` + `crypt_dust` only; **`crypt_dust` is in zero recipes** |
+| **Rare mats need other biomes** | `ember_dust`, `frost_thread`, `void_essence` drop only in later biomes |
+| **12% drop rate** | Easy to arrive at forge with 0–2 scrap, offer wants 3× void + 4× bone |
+| **No farming on forge floor** | 0 enemies → cannot grind materials on the spot |
+| **Reroll recipe** | Needs **3× void_essence** + equipment in bag — often impossible early |
+
+Example floor-7 crypt run pouch: `Scrap Iron ×2` → offers might be `Weave the Choir Sigil` (3 void), `Re-roll` (3 void), `Forge Executioner` (2 void + 4 bone) → **0/3 craftable**.
+
+### Recipe material reference (all 14 recipes)
+
+| Recipe | Materials | Notes |
+|--------|-----------|--------|
+| Forge Keen Edge | 3 scrap_iron, 1 ember_dust | Best early crypt target |
+| Reinforce Plate | 2 scrap_iron, 2 bone_shard | Needs bone biome |
+| Anoint Ember | 3 ember_dust | Magma/sands biome |
+| Re-roll Sigils | 3 void_essence | + worn equipment |
+| Weave Frost Mail | 3 frost_thread, 2 bone | Frozen halls |
+| … | void, sap, ember mixes | Mid/late |
+
+### Material ↔ biome (drops only from matching biome kills)
+
+| Material | Biomes |
+|----------|--------|
+| scrap_iron | forgotten_crypts, iron_stronghold |
+| crypt_dust | forgotten_crypts (**unused in recipes**) |
+| bone_shard | bone_garden, drowned_catacombs |
+| ember_dust | magma_foundry, sun_cursed_sands |
+| frost_thread | frozen_halls |
+| void_essence | void_sanctum, mirror_vaults |
+| verdant_sap | sunken_forest |
+
+### Torch / flame visual (forge motif)
+
+Current: shared **campfire flame** for rest + forge; forge adds small **anvil** under flame at `stairsUp`.
+
+| Floor type | Recommended visual |
+|------------|-------------------|
+| **Rest** | Campfire ring, soft glow, no anvil |
+| **Forge** | **Wall brazier / standing torch** (iron pole + bowl fire), **anvil** to the side, ember particles — reads “smithy” not “healing camp” |
+| **Vault** | Chest + coin glint (already distinct) |
+
+Avoid identical flame for rest and forge — players confuse safe heal vs craft menu.
+
+### Torch as **item** (not just hero stat)
+
+Today:
+
+- **Torch radius** = hero stat + biome default (lighting fog).
+- **Scroll of Mapping / Foresight** = `revealFloor` (whole map, not light radius).
+- **Lantern Sap** = heal 24 — **misleading name**, not light.
+- **Torchmilk** = heal 36 — lore mentions glow, **no torch effect**.
+
+No consumable temporarily raises `torchRadius`.
+
+### Recommended fixes (forge)
+
+| Priority | Change |
+|----------|--------|
+| P0 | `chooseForgeOffers`: **≥2 of 3 offers must be craftable** with current pouch OR craftable using **current biome** mats |
+| P0 | On forge enter: **grant forge stipend** — e.g. `2× scrap_iron + 1× biome material` for crypt |
+| P0 | UI: **“Choose ONE bargain”** bold; grey rows labelled **“Need: …”** not dead “CRAFT” |
+| P1 | Add `floorMin` per recipe; filter offers by depth |
+| P1 | Use **crypt_dust** in a recipe (e.g. cheap def charm) or stop dropping it |
+| P1 | Raise material drop to **18–20%** OR guaranteed 1 mat every 5 kills |
+| P2 | Optional 2nd action: **reroll only** vs **new item** (still one visit) |
+| P2 | Forge-only: spawn **material pile** (1–3) on ground instead of random gear |
+
+### Recommended torch items
+
+| Item | Effect |
+|------|--------|
+| **Torch** (consumable) | +2 torch radius for **30 turns** |
+| **Flare** (throwable) | Reveal **room** + light 5 tiles 10 turns |
+| **Lantern Oil** | Rename/heal OR split: small heal + **+1 radius 20 turns** |
+| **Brazier** (forge-only pickup) | Place on tile: permanent **+1 light** in that room (optional) |
+
+Keep **Mapping scroll** as full-floor reveal (rare). Keep hero torch stat differences (Pilgrim 8 vs Reaver 3).
+
+---
+
 ## Changelog
 
 | Date | Note |
 |------|------|
+| 2026-05-28 | Forge audit: offers vs materials, torch motif & item ideas |
 | 2026-05-28 | Item/loot audit: spawn rules, fairness, hybrid recommendations |
 | 2026-05-28 | Initial doc: combat HTK targets, hero audit, fairness recommendations |
