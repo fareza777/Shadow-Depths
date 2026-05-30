@@ -19,7 +19,7 @@ import { Layout } from '../config/layoutMetrics.js';
 import {
   drawIronPanel, drawIronPlate, drawIronSlot, drawInsetCard,
   drawIronActionButton, drawSpacedText, IRON_PALETTE,
-  rarityColor as ironRarity
+  rarityColor as ironRarity, truncate
 } from './ironPanel.js';
 import { Tooltip } from './Tooltip.js';
 
@@ -510,22 +510,29 @@ export class InventoryUI {
     r.sprites.draw(sel.spriteKey, r.ctx, iconX + 4, iconY + 4, { size: iconSize - 8 });
 
     const textX = iconX + iconSize + 14;
-    const textMaxW = cardW - (textX - cardX) - 14;
+    const isEq = sel === player.weapon || sel === player.armor
+              || sel === player.helm || sel === player.legs
+              || sel === player.necklace || sel === player.ring;
+    const chipReserve = isEq ? 72 : 0;
+    const textMaxW = cardW - (textX - cardX) - 14 - chipReserve;
     const nameSize = uiSize(14);
     const nameUpper = sel.name.toUpperCase();
-    r.drawText(this._fitLine(r, nameUpper, textMaxW, nameSize),
-      textX, cardY + 14,
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(textX, cardY + 10, textMaxW, DETAIL_H - 22);
+    ctx.clip();
+
+    const nameLine = this._fitLine(r, nameUpper, textMaxW, nameSize, FONT_DISPLAY, true);
+    r.drawText(nameLine, textX, cardY + 14,
       { size: nameSize, bold: true, family: FONT_DISPLAY, color: col });
 
     const sub = `${(sel.slot || sel.type || '').toUpperCase()} · ${sel.rarity.toUpperCase()}`;
-    r.drawText(this._fitLine(r, sub, textMaxW, uiSize(9)),
+    r.drawText(this._fitLine(r, sub, textMaxW, uiSize(9), FONT_MONO, false),
       textX, cardY + 34,
       { size: uiSize(9), family: FONT_MONO, color: IRON_PALETTE.boneDim });
 
     // Equipped chip (small brass tag).
-    const isEq = sel === player.weapon || sel === player.armor
-              || sel === player.helm || sel === player.legs
-              || sel === player.necklace || sel === player.ring;
     if (isEq) {
       const chipW = 64, chipH = 16;
       const chipX = cardX + cardW - chipW - 12;
@@ -543,6 +550,8 @@ export class InventoryUI {
       drawSpacedText(ctx, 'EQUIPPED', chipX + chipW / 2, chipY + chipH / 2, 1.5);
       ctx.restore();
     }
+
+    ctx.restore();
 
     const statY = cardY + 50;
     r.drawText(this._fitLine(r, this._statLine(sel), textMaxW, uiSize(11)),
@@ -624,15 +633,15 @@ export class InventoryUI {
     return parts.join('   ') || item.type;
   }
 
-  _fitLine(r, text, maxW, size) {
-    const opts = { size, family: FONT_MONO };
+  _fitLine(r, text, maxW, size, family = FONT_MONO, bold = false) {
+    const opts = { size, family, bold };
     if (r.measureText(text, opts) <= maxW) return text;
-    const ellipsis = '...';
-    let out = text;
-    while (out.length > 0 && r.measureText(out + ellipsis, opts) > maxW) {
-      out = out.slice(0, -1);
-    }
-    return out ? out + ellipsis : ellipsis;
+    const ctx = r.ctx;
+    ctx.save();
+    ctx.font = `${bold ? 'bold ' : ''}${size}px ${family}`;
+    const fitted = truncate(ctx, text, maxW);
+    ctx.restore();
+    return fitted;
   }
 
   _drawWrappedText(r, text, x, y, maxW, maxLines, opts, lineH = 16) {

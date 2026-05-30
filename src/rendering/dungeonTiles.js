@@ -312,52 +312,137 @@ export function drawVoidTile(ctx, x, y, s, opts = {}) {
 }
 
 export function drawStairsDownTile(ctx, x, y, s, opts = {}) {
-  if (!opts.dim) {
+  drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
+  const dim = !!opts.dim;
+  const u = s / 32;
+  const stoneHi = dim ? '#4a4554' : '#6e6678';
+  const stone = dim ? '#3a3542' : '#524c5c';
+  const stoneLo = dim ? '#2a2630' : '#3c3844';
+  const pit = dim ? '#06050a' : '#0c0a12';
+  const pitDeep = '#000000';
+  const brass = dim ? '#6a5a38' : '#d4be7a';
+
+  // Stone curbs flanking the stairwell.
+  p(ctx, x, y, s, [
+    [1, 6, 6, 24, stoneLo],
+    [25, 6, 6, 24, stoneLo],
+    [2, 7, 4, 22, stone],
+    [26, 7, 4, 22, stone]
+  ]);
+
+  // Descending treads (narrow toward the pit).
+  const treads = [
+    { y: 6, w: 22, h: 4 },
+    { y: 12, w: 18, h: 4 },
+    { y: 18, w: 14, h: 4 },
+    { y: 24, w: 11, h: 3 }
+  ];
+  for (let i = 0; i < treads.length; i++) {
+    const t = treads[i];
+    const tw = t.w * u;
+    const th = t.h * u;
+    const sx = x + (s - tw) / 2;
+    const sy = y + t.y * u;
+    fillRect(ctx, sx, sy, tw, th, i % 2 === 0 ? stoneHi : stone);
+    fillRect(ctx, sx, sy, tw, 1, '#ffffff22');
+    fillRect(ctx, sx, sy + th - 1, tw, 1, '#00000066');
+    fillRect(ctx, sx, sy + th, tw, Math.max(1, u), stoneLo);
+  }
+
+  // Pit opening.
+  const pitX = x + s * 0.26;
+  const pitY = y + s * 0.52;
+  const pitW = s * 0.48;
+  const pitH = s * 0.42;
+  fillRect(ctx, pitX, pitY, pitW, pitH, pit);
+  fillRect(ctx, pitX + 2 * u, pitY + 2 * u, pitW - 4 * u, pitH - 3 * u, pitDeep);
+  fillRect(ctx, pitX, pitY, pitW, 1, '#000000aa');
+
+  if (!dim) {
     ctx.save();
-    ctx.globalAlpha = 0.42;
-    const g = ctx.createRadialGradient(x + s / 2, y + s / 2, s * 0.08, x + s / 2, y + s / 2, s * 0.58);
-    g.addColorStop(0, '#d4be7a66');
-    g.addColorStop(0.55, '#d4be7a18');
+    ctx.globalAlpha = 0.38;
+    const g = ctx.createRadialGradient(
+      x + s / 2, y + s * 0.78, u,
+      x + s / 2, y + s * 0.78, s * 0.42
+    );
+    g.addColorStop(0, '#d4be7a55');
+    g.addColorStop(0.55, '#d4be7a14');
     g.addColorStop(1, 'transparent');
     ctx.fillStyle = g;
     ctx.fillRect(x, y, s, s);
     ctx.restore();
-  }
-  drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
-  const gold = opts.dim ? shade('#d4be7a', -40) : '#d4be7a';
-  const u = s / 32;
-  for (let i = 0; i < 5; i++) {
-    const w = (26 - i * 4) * u;
-    const sx = x + (s - w) / 2;
-    const sy = y + (6 + i * 5) * u;
-    fillRect(ctx, sx, sy, w, 3 * u, i % 2 ? shade(gold, -15) : gold);
-    fillRect(ctx, sx, sy, w, 1, '#ffffff28');
-    fillRect(ctx, sx + w * 0.42, sy + 1 * u, 2 * u, 1 * u, '#ffffff44');
-  }
-  fillRect(ctx, x + s * 0.35, y + s * 0.15, s * 0.3, s * 0.08, '#00000044');
-  if (!opts.dim) {
-    p(ctx, x, y, s, [[14, 4, 4, 3, '#d4be7a'], [15, 5, 2, 1, '#ffffff66']]);
+    // Descend hint (brass chevron).
+    p(ctx, x, y, s, [
+      [15, 4, 2, 2, brass],
+      [14, 6, 4, 1, brass],
+      [13, 8, 6, 1, shade(brass, -18)],
+      [15, 5, 2, 1, '#ffffff55']
+    ]);
   }
 }
 
 export function drawStairsUpTile(ctx, x, y, s, opts = {}) {
-  if (!opts.dim) {
+  drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
+  const dim = !!opts.dim;
+  const u = s / 32;
+  const stoneHi = dim ? '#4a4554' : '#6e6678';
+  const stone = dim ? '#3a3542' : '#524c5c';
+  const stoneLo = dim ? '#2a2630' : '#3c3844';
+  const sky = dim ? '#3a4860' : '#8ab0d8';
+  const skyHi = dim ? '#4a5870' : '#b8d4f0';
+
+  // Back wall / light from above.
+  fillRect(ctx, x + 4 * u, y + 2 * u, s - 8 * u, 7 * u, dim ? '#2a2834' : '#3a3848');
+  if (!dim) {
     ctx.save();
-    ctx.globalAlpha = 0.28;
-    const g = ctx.createRadialGradient(x + s / 2, y + s / 2, s * 0.1, x + s / 2, y + s / 2, s * 0.5);
-    g.addColorStop(0, '#80b0e066');
+    ctx.globalAlpha = 0.32;
+    const g = ctx.createLinearGradient(x, y, x, y + s * 0.35);
+    g.addColorStop(0, '#a8c8f044');
     g.addColorStop(1, 'transparent');
     ctx.fillStyle = g;
-    ctx.fillRect(x, y, s, s);
+    ctx.fillRect(x, y, s, s * 0.4);
     ctx.restore();
   }
-  drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
-  const u = s / 32;
-  const col = opts.dim ? '#6a5a40' : '#a09060';
-  for (let i = 0; i < 4; i++) {
-    const w = (10 + i * 5) * u;
-    fillRect(ctx, x + (s - w) / 2, y + (8 + i * 5) * u, w, 3 * u, col);
-    fillRect(ctx, x + (s - w) / 2, y + (8 + i * 5) * u, w, 1, '#ffffff22');
+
+  p(ctx, x, y, s, [
+    [1, 8, 5, 22, stoneLo],
+    [26, 8, 5, 22, stoneLo]
+  ]);
+
+  // Ascending treads (wider toward the top).
+  const treads = [
+    { y: 24, w: 12, h: 3 },
+    { y: 19, w: 15, h: 4 },
+    { y: 14, w: 18, h: 4 },
+    { y: 9, w: 21, h: 4 }
+  ];
+  for (let i = 0; i < treads.length; i++) {
+    const t = treads[i];
+    const tw = t.w * u;
+    const th = t.h * u;
+    const sx = x + (s - tw) / 2;
+    const sy = y + t.y * u;
+    fillRect(ctx, sx, sy, tw, th, i % 2 === 0 ? stoneHi : stone);
+    fillRect(ctx, sx, sy, tw, 1, '#ffffff24');
+    fillRect(ctx, sx, sy + th - 1, tw, 1, '#00000055');
+  }
+
+  // Ladder rails + rungs.
+  const railX1 = x + 11 * u;
+  const railX2 = x + 19 * u;
+  fillRect(ctx, railX1, y + 8 * u, 2 * u, 20 * u, dim ? '#5a5040' : '#8a7858');
+  fillRect(ctx, railX2, y + 8 * u, 2 * u, 20 * u, dim ? '#5a5040' : '#8a7858');
+  for (let r = 0; r < 4; r++) {
+    const ry = y + (10 + r * 5) * u;
+    fillRect(ctx, railX1, ry, railX2 - railX1 + 2 * u, 1.5 * u, dim ? '#6a6050' : '#c4a86a');
+    fillRect(ctx, railX1, ry, railX2 - railX1 + 2 * u, 1, '#ffffff28');
+  }
+
+  if (!dim) {
+    p(ctx, x, y, s, [
+      [14, 26, 4, 2, sky],
+      [15, 27, 2, 1, skyHi]
+    ]);
   }
 }
 

@@ -12,6 +12,7 @@ import { CANVAS_WIDTH, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize, COLOR } from 
 import { Layout } from '../config/layoutMetrics.js';
 import { IRON } from './ironHud.js';
 import { displayName } from '../items/Identification.js';
+import { truncate } from './ironPanel.js';
 
 const BRASS = '#d4ac6c';
 
@@ -89,13 +90,21 @@ export class Tooltip {
 
     const padX = 10, padY = 10, lineGap = 4;
     const widths = [];
-    ctx.save();
     for (const ln of lines) {
-      const sz = ln.kind === 'title' ? 14 : (ln.kind === 'lore' ? 11 : 12);
-      ctx.font = `${ln.kind === 'title' ? 'bold ' : ''}${sz}px ${ln.kind === 'lore' ? FONT_BODY : FONT_DISPLAY}`;
-      widths.push(ctx.measureText(ln.text).width);
+      const sz = uiSize(ln.kind === 'title' ? 14 : (ln.kind === 'lore' ? 11 : 12));
+      const family = ln.kind === 'lore' ? FONT_BODY : (ln.kind === 'stat' ? FONT_MONO : FONT_DISPLAY);
+      const bold = ln.kind === 'title';
+      const maxLine = Layout.canvasW - 48;
+      let text = ln.text;
+      if (ln.kind === 'title') {
+        ctx.save();
+        ctx.font = `${bold ? 'bold ' : ''}${sz}px ${family}`;
+        text = truncate(ctx, text, maxLine);
+        ctx.restore();
+        ln.text = text;
+      }
+      widths.push(renderer.measureText(text, { size: sz, family, bold }));
     }
-    ctx.restore();
     const w = Math.min(Layout.canvasW - 24, Math.max(160, Math.max(...widths) + padX * 2));
     const lineH = (kind) => uiSize(kind === 'title' ? 16 : (kind === 'lore' ? 13 : 14));
     let h = padY * 2;
@@ -119,11 +128,16 @@ export class Tooltip {
     ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     ctx.restore();
 
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x + 1, y + 1, w - 2, h - 2);
+    ctx.clip();
+
     let ly = y + padY;
     for (const ln of lines) {
-      const sz = ln.kind === 'title' ? 14 : (ln.kind === 'lore' ? 11 : 12);
+      const sz = uiSize(ln.kind === 'title' ? 14 : (ln.kind === 'lore' ? 11 : 12));
       renderer.drawText(ln.text, x + padX, ly, {
-        size: uiSize(sz),
+        size: sz,
         bold: ln.kind === 'title',
         italic: ln.kind === 'lore',
         align: 'left',
@@ -132,5 +146,6 @@ export class Tooltip {
       });
       ly += lineH(ln.kind) + lineGap;
     }
+    ctx.restore();
   }
 }
