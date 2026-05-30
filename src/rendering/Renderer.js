@@ -44,7 +44,10 @@ export class Renderer {
     this.canvas = canvas;
     syncLayoutFromWindow(canvas);
     this.ctx = canvas.getContext('2d', { alpha: false });
-    this.ctx.imageSmoothingEnabled = false;
+    // Smoothing ON: the entity/item/hero sprites are SVG rasters down-scaled
+    // via drawImage and need bilinear filtering to stay clean. The legacy
+    // pixel tiles are axis-aligned rects, so smoothing doesn't soften them.
+    this.ctx.imageSmoothingEnabled = true;
     this.sprites = sprites;
     this.cameraShake = cameraShake;
     this.lighting = lighting;
@@ -157,9 +160,16 @@ export class Renderer {
     this._attackFlashes = this._attackFlashes.filter((f) => now - f.startedAt < f.duration);
     const shake = this.cameraShake.offset();
 
-    // Clear.
+    // Establish the HiDPI base transform for this frame: everything below
+    // draws in logical (CSS px) coordinates and the dpr scale maps them onto
+    // the larger backing store. setTransform also flushes any leaked state.
     const ctx = this.ctx;
-    fillRect(ctx, 0, 0, this.canvas.width, this.canvas.height, COLOR.bg);
+    const dpr = Layout.dpr || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.imageSmoothingEnabled = true;
+
+    // Clear (logical dims — the dpr scale covers the full backing store).
+    fillRect(ctx, 0, 0, Layout.canvasW, Layout.canvasH, COLOR.bg);
 
     // World pass — camera shake applies only to dungeon tiles / entities.
     ctx.save();
@@ -183,10 +193,11 @@ export class Renderer {
     this.endScreenSpace();
   }
 
-  /** Reset transform for HUD / control-band draws. */
+  /** Reset transform for HUD / control-band draws (logical px, HiDPI-scaled). */
   beginScreenSpace() {
     this.ctx.save();
-    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    const dpr = Layout.dpr || 1;
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   endScreenSpace() {
@@ -788,21 +799,28 @@ export class Renderer {
   /** Warm fog-of-war tint on explored-but-not-visible tiles. */
   static _applyFog(ctx, tx, ty) {
     ctx.save();
+    // Tile-local origin so the haze gradient can be built once and reused
+    // for every dim tile (it was previously rebuilt per tile per frame —
+    // 100+ gradient allocations a frame).
+    ctx.translate(tx, ty);
     ctx.fillStyle = 'rgba(8, 6, 14, 0.42)';
-    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
     ctx.globalCompositeOperation = 'screen';
-    const haze = ctx.createRadialGradient(
-      tx + TILE_SIZE * 0.5, ty + TILE_SIZE * 0.38, 1,
-      tx + TILE_SIZE * 0.5, ty + TILE_SIZE * 0.38, TILE_SIZE * 0.78
-    );
-    haze.addColorStop(0, 'rgba(120, 86, 120, 0.10)');
-    haze.addColorStop(0.7, 'rgba(80, 60, 92, 0.04)');
-    haze.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = haze;
-    ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+    if (!Renderer._fogHaze) {
+      const haze = ctx.createRadialGradient(
+        TILE_SIZE * 0.5, TILE_SIZE * 0.38, 1,
+        TILE_SIZE * 0.5, TILE_SIZE * 0.38, TILE_SIZE * 0.78
+      );
+      haze.addColorStop(0, 'rgba(120, 86, 120, 0.10)');
+      haze.addColorStop(0.7, 'rgba(80, 60, 92, 0.04)');
+      haze.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      Renderer._fogHaze = haze;
+    }
+    ctx.fillStyle = Renderer._fogHaze;
+    ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
     ctx.globalCompositeOperation = 'source-over';
     ctx.globalAlpha = 0.16;
-    fillRect(ctx, tx + 2, ty + TILE_SIZE - 3, TILE_SIZE - 4, 1, '#000000');
+    fillRect(ctx, 2, TILE_SIZE - 3, TILE_SIZE - 4, 1, '#000000');
     ctx.restore();
   }
 

@@ -560,6 +560,10 @@ const ENEMY_META = {
 // SVG STRING BUILDER — identical markup to the React <EnemySprite/>, minus
 // the React runtime. Used both standalone and by the canvas rasteriser.
 // ═══════════════════════════════════════════════════════════════════════
+const ENEMY_MARGIN = 4;
+const ENEMY_VB = 32 + ENEMY_MARGIN * 2; // 40
+const ENEMY_OVERSCAN = ENEMY_MARGIN / 32; // 0.125
+
 export function enemySpriteSVG(id, px = 256) {
   const spec = ENEMY_SPECS[id];
   if (!spec) return '';
@@ -571,7 +575,11 @@ export function enemySpriteSVG(id, px = 256) {
   const inner = sc !== 1
     ? `<g transform="translate(16 16) scale(${sc}) translate(-16 -16)">${body}</g>`
     : body;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" `
+  // Margin around the 32-grid so wings/weapons/reach/glow filters that extend
+  // past the body aren't clipped by the fixed raster box. drawVectorEnemy
+  // overscans by the matching fraction so the body keeps its on-tile size.
+  return `<svg xmlns="http://www.w3.org/2000/svg" `
+    + `viewBox="${-ENEMY_MARGIN} ${-ENEMY_MARGIN} ${ENEMY_VB} ${ENEMY_VB}" `
     + `width="${px}" height="${px}" style="overflow:visible">${inner}</svg>`;
 }
 
@@ -617,6 +625,7 @@ export function drawVectorEnemy(ctx, x, y, size, id) {
   if (!ENEMY_SPECS[id]) return false;
   const rec = _getEnemyImage(id);
   if (!rec.ready || !rec.img) return false;
-  ctx.drawImage(rec.img, x, y, size, size);
+  const o = size * ENEMY_OVERSCAN;
+  ctx.drawImage(rec.img, x - o, y - o, size + 2 * o, size + 2 * o);
   return true;
 }

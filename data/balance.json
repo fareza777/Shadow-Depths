@@ -22,9 +22,12 @@
     "minDamage": 1,
     "varianceMin": -1,
     "varianceMax": 1,
+    "variancePct": 0.12,
     "baseCritChance": 0.05,
     "critPerDex": 0.01,
-    "critMultiplier": 2
+    "critMultiplier": 2,
+    "dodgePerDex": 0.008,
+    "dodgeCap": 0.12
   },
   "vision": {
     "torchRadius": 5,

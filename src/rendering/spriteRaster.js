@@ -36,10 +36,20 @@ export function rasterPreload(cacheKey, buildSVG) {
 /**
  * Draw the cached raster into (x,y) at size×size. Returns true if drawn, or
  * false if the image isn't decoded yet (or failed) — caller should fall back.
+ *
+ * `overscan` (fraction of size) lets sprites whose SVG viewBox carries a
+ * margin draw slightly larger and offset, so the on-tile core keeps its size
+ * while capes / weapons / glows that live in the margin overhang the tile
+ * instead of being clipped.
  */
-export function rasterDraw(ctx, x, y, size, cacheKey, buildSVG) {
+export function rasterDraw(ctx, x, y, size, cacheKey, buildSVG, overscan = 0) {
   const rec = _record(cacheKey, buildSVG);
   if (!rec.ready || !rec.img) return false;
-  ctx.drawImage(rec.img, x, y, size, size);
+  if (overscan) {
+    const o = size * overscan;
+    ctx.drawImage(rec.img, x - o, y - o, size + 2 * o, size + 2 * o);
+  } else {
+    ctx.drawImage(rec.img, x, y, size, size);
+  }
   return true;
 }

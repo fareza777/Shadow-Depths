@@ -35,9 +35,17 @@ export const DEFAULT_BALANCE = Object.freeze({
     minDamage: 1,
     varianceMin: -1,
     varianceMax: 1,
+    // Damage variance scales with the attacker's ATK (±variancePct), so big
+    // hits swing more than chip damage. Falls back to varianceMin/Max as the
+    // floor for low-ATK actors. Average damage is unchanged (symmetric roll).
+    variancePct: 0.12,
     baseCritChance: 0.05,
     critPerDex: 0.01,
-    critMultiplier: 2
+    critMultiplier: 2,
+    // Player-only evasion: each DEX point grants a small dodge, capped low so
+    // combat stays mostly deterministic. Counters "enemies never miss".
+    dodgePerDex: 0.008,
+    dodgeCap: 0.12
   },
 
   vision: {

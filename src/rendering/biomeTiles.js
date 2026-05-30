@@ -103,11 +103,24 @@ function POLY_STROKE(ctx, ox, oy, s, color, w, alpha, pts) {
   ctx.stroke();
   ctx.restore();
 }
+// Vertical gradients depend only on (size, colors) — the same handful of
+// values for every tile of a biome. Build each once at a tile-local origin
+// and reuse via a translate, instead of allocating a fresh CanvasGradient
+// per tile per frame (was thousands/sec → GC churn).
+const _gradVCache = new Map();
 function GRAD_V(ctx, ox, oy, size, colors) {
-  const g = ctx.createLinearGradient(ox, oy, ox, oy + size);
-  for (let i = 0; i < colors.length; i++) g.addColorStop(i / (colors.length - 1), colors[i]);
+  const key = size + '|' + colors.join(',');
+  let g = _gradVCache.get(key);
+  if (!g) {
+    g = ctx.createLinearGradient(0, 0, 0, size);
+    for (let i = 0; i < colors.length; i++) g.addColorStop(i / (colors.length - 1), colors[i]);
+    _gradVCache.set(key, g);
+  }
+  ctx.save();
+  ctx.translate(ox, oy);
   ctx.fillStyle = g;
-  ctx.fillRect(ox, oy, size, size);
+  ctx.fillRect(0, 0, size, size);
+  ctx.restore();
 }
 // ═══════════════════════════════════════════════════════════════════════
 // BIOMES

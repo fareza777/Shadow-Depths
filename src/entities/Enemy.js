@@ -31,12 +31,17 @@ export class Enemy extends Entity {
     const baseAtk = def.stats.atk;
     const scaledHp = Math.max(1, Math.round(baseHp * safeScale * dHp));
     const scaledAtk = Math.max(1, Math.round(baseAtk * atkFactor * dAtk));
+    // DEF scales gently with depth (capped) so deep enemies aren't pure HP
+    // sponges with zero defensive threat — they start resisting chip damage
+    // instead of only soaking it. Kept mild so low-ATK players still progress.
+    const defFactor = Math.min(3.5, 1 + (safeScale - 1) * 0.3);
+    const scaledDef = Math.max(0, Math.round((def.stats.def || 0) * defFactor));
     super({
       id: `${def.id}_${pos.x}_${pos.y}_${Math.floor(Math.random() * 9999)}`,
       kind: 'enemy',
       x: pos.x,
       y: pos.y,
-      stats: { ...def.stats, hp: scaledHp, hpMax: scaledHp, atk: scaledAtk }
+      stats: { ...def.stats, hp: scaledHp, hpMax: scaledHp, atk: scaledAtk, def: scaledDef }
     });
     this.defId = def.id;
     this.name = def.name;

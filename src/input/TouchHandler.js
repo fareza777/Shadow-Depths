@@ -8,6 +8,8 @@
  *
  * Maps screen coords → canvas coords accounting for the CSS scale factor.
  */
+import { Layout } from '../config/layoutMetrics.js';
+
 export class TouchHandler {
   /**
    * @param {{ bus:object, canvas:HTMLCanvasElement, sceneManager:object }} deps
@@ -46,8 +48,11 @@ export class TouchHandler {
 
   _toCanvas(ev) {
     const rect = this.canvas.getBoundingClientRect();
-    const sx = this.canvas.width / rect.width;
-    const sy = this.canvas.height / rect.height;
+    // Map to LOGICAL canvas coords (CSS px), not the HiDPI backing store —
+    // all scene hit-testing works in logical space. Using canvas.width here
+    // would scale taps by the device pixel ratio and misplace them.
+    const sx = Layout.canvasW / rect.width;
+    const sy = Layout.canvasH / rect.height;
     return {
       x: (ev.clientX - rect.left) * sx,
       y: (ev.clientY - rect.top)  * sy

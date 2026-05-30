@@ -11,8 +11,18 @@ export const Layout = {
   portrait: true,
   hud: 118,
   control: 234,
-  sideW: 0
+  sideW: 0,
+  // Backing-store scale factor (HiDPI). Logical geometry above stays in CSS
+  // px; the canvas bitmap is `logical * dpr` so text/sprites/tiles render
+  // crisp on retina/phone panels. Capped at 2 to bound fill-rate.
+  dpr: 1
 };
+
+/** Device pixel ratio for the backing store, clamped to [1, 2]. */
+export function currentDpr() {
+  const raw = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+  return Math.max(1, Math.min(2, raw));
+}
 
 export function syncLayoutFromWindow(canvas) {
   const vw = window.visualViewport?.width || window.innerWidth || 480;
@@ -36,8 +46,12 @@ export function syncLayoutFromWindow(canvas) {
   }
 
   if (canvas) {
-    canvas.width = Layout.canvasW;
-    canvas.height = Layout.canvasH;
+    const dpr = currentDpr();
+    Layout.dpr = dpr;
+    // Backing store in device px; the Renderer pre-scales the context by dpr
+    // so all draws keep using logical (CSS px) coordinates unchanged.
+    canvas.width = Math.round(Layout.canvasW * dpr);
+    canvas.height = Math.round(Layout.canvasH * dpr);
   }
   return Layout;
 }

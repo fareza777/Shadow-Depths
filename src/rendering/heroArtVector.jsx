@@ -267,10 +267,18 @@ const HERO_ART_ORDER = ['vigil','hollow','inquisitor','reaver','pilgrim','warden
 // ═══════════════════════════════════════════════════════════════════════
 // SVG builder + canvas rasteriser
 // ═══════════════════════════════════════════════════════════════════════
+// 4-unit margin around the 32-grid so capes, raised weapons, sonic rings and
+// glow filters that reach past the body aren't clipped by the raster box. The
+// canvas draw uses a matching overscan so the body keeps its on-tile size.
+const HERO_MARGIN = 4;
+const HERO_VB = 32 + HERO_MARGIN * 2; // 40
+export const HERO_OVERSCAN = HERO_MARGIN / 32; // 0.125
+
 export function heroArtSVG(kind, px = 256) {
   const render = HERO_ART[kind] || HERO_ART.vigil;
   const p = HPAL[kind] || HPAL.vigil;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" `
+  return `<svg xmlns="http://www.w3.org/2000/svg" `
+    + `viewBox="${-HERO_MARGIN} ${-HERO_MARGIN} ${HERO_VB} ${HERO_VB}" `
     + `width="${px}" height="${px}" style="overflow:visible">${render(p)}</svg>`;
 }
 
@@ -283,7 +291,7 @@ export function preloadHeroArt() {
 /** Draw hero `kind` into (x,y) at size×size. Returns false until decoded. */
 export function drawVectorHero(ctx, x, y, size, kind) {
   if (!HERO_ART[kind]) return false;
-  return rasterDraw(ctx, x, y, size, 'hero:' + kind, () => heroArtSVG(kind, 256));
+  return rasterDraw(ctx, x, y, size, 'hero:' + kind, () => heroArtSVG(kind, 256), HERO_OVERSCAN);
 }
 
 export { HPAL, HERO_ART, HERO_INFO, HERO_ART_ORDER };

@@ -49,7 +49,12 @@ export class CombatSystem {
     const c = this.balance.combat;
     const baseATK = this._attackStat(attacker);
     const baseDEF = this._defenseStat(defender);
-    const variance = this.rng.randInt(c.varianceMin, c.varianceMax);
+    // Variance scales with ATK so big hits swing more than chip damage; the
+    // flat varianceMin/Max is the floor for low-ATK actors. Symmetric → the
+    // average is unchanged, it just adds texture to an otherwise deterministic
+    // (atk - def) exchange.
+    const span = Math.max(c.varianceMax, Math.round(baseATK * (c.variancePct || 0)));
+    const variance = this.rng.randInt(-span, span);
     let damage = Math.max(c.minDamage, baseATK - baseDEF + variance);
     const critChance = this._critChance(attacker);
     const isCrit = this.rng.chance(critChance);
@@ -140,6 +145,17 @@ export class CombatSystem {
   }
 
   _resolveHit(attacker, target, kind, ctx = {}) {
+    const c = this.balance.combat;
+    // Player evasion (DEX). Small and capped so combat stays mostly
+    // deterministic, but DEX now mitigates the fact that enemies never miss.
+    if (target.kind === 'player') {
+      const dex = (typeof target.totalDex === 'function' ? target.totalDex() : target.stats.dex) || 0;
+      const dodge = Math.min(c.dodgeCap || 0, dex * (c.dodgePerDex || 0));
+      if (dodge > 0 && this.rng.chance(dodge)) {
+        this.bus.emit('entity:attacked', { attacker, target, damage: 0, isCrit: false, isMiss: true, kind });
+        return;
+      }
+    }
     const raw = this.calculateDamage(attacker, target);
     let finalDamage = raw.damage;
     if (attacker.kind === 'enemy' && kind === 'ranged') {
