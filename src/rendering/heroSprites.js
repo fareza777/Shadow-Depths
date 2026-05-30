@@ -382,7 +382,7 @@ export const HERO_DEFS = {
     subtitle: 'They built the gate. He stayed when the gate failed.',
     tags: ['Tower shield', 'Heavy plate', 'Slow but unbroken'],
     role: 'Tank',
-    stats: { hp: 38, atk: 3, def: 7, dex: 1, torchRadius: 4 }
+    stats: { hp: 40, atk: 3, def: 7, dex: 1, torchRadius: 4 }
   },
   bladedancer: {
     kind: 'bladedancer',

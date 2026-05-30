@@ -5,7 +5,7 @@
     "spriteKey": "enemy_goblin",
     "stats": {
       "hp": 40,
-      "atk": 6,
+      "atk": 5,
       "def": 2
     },
     "behavior": "chase",

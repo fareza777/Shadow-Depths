@@ -19,7 +19,7 @@ export const HERO_PASSIVE_LABELS = {
   inquisitor: 'Still Flame: +1 torch if you did not move',
   reaver: 'Blood Tithe: +1 ATK next turn after a kill',
   pilgrim: 'Wayfarer: heal 4 on descend; −1 damage below half HP',
-  warden: 'Phalanx: −1 damage when flanked (2+ foes)',
+  warden: 'Phalanx: −1 damage per adjacent foe; −1 poison tick',
   bladedancer: 'Red Waltz: +5% crit per DEX above 4',
   echobinder: 'Void Resonance: −2 damage when wounded; spell grants ward'
 };
@@ -69,7 +69,14 @@ export function passiveFlatDamageReduction(player, floor, attacker) {
       if (ent?.kind === 'enemy' && !ent.isDead) adjacent++;
     }
   }
-  return adjacent >= 2 ? 1 : 0;
+  // −1 per adjacent foe (duel still protected); cap 2 so packs don't become invincible.
+  return Math.min(2, adjacent);
+}
+
+/** Warden takes softer poison ticks (stacks still matter, but less spike). */
+export function passivePoisonTickDamage(player, rawValue) {
+  if (!player || player.kind !== 'player' || player.heroKind !== 'warden') return rawValue;
+  return Math.max(1, (rawValue || 1) - 1);
 }
 
 /** Extra crit chance from Bladedancer passive. */

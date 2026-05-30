@@ -38,7 +38,7 @@ export const HERO_SPELLS = Object.freeze({
     name: 'Iron Stand',
     cooldown: 9,
     color: '#bcd6ff',
-    description: 'In battle only: Iron Skin; slow nearby foes.'
+    description: 'In battle only: Iron Skin, cleanse poison, slow nearby foes.'
   },
   bladedancer: {
     name: 'Echo Strike',

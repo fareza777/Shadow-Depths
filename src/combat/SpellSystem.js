@@ -102,6 +102,7 @@ export class SpellSystem {
       fx = { ...fx, center: { x: player.x, y: player.y }, radius };
       used = true;
     } else if (kind === 'warden') {
+      player.statusEffects = player.statusEffects.filter((e) => e.id !== 'poison');
       player.applyStatus({ id: 'def_buff', value: 4 + Math.floor(power / 3), duration: 3 });
       const slowed = this._statusEnemiesInRadius(player.x, player.y, 2, {
         status: 'slow', value: 2, duration: 2

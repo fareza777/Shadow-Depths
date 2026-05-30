@@ -18,15 +18,16 @@ export class Enemy extends Entity {
    * @param {number} [scale] depth-based stat multiplier (floor depthScale).
    *        HP scales linearly, ATK at half rate (steeper feels unfair),
    *        XP and gold scale linearly so deep runs reward proportionally.
+   * @param {{ hp?:number, atk?:number }} [combatScale] global balance multipliers.
    */
-  constructor(def, behavior, pos, scale = 1, difficulty = { hp: 1, atk: 1 }) {
+  constructor(def, behavior, pos, scale = 1, combatScale = { hp: 1, atk: 1 }) {
     const safeScale = Math.max(0.5, scale);
     // Early depths: enemy ATK scales with depth like HP so floor-1 fodder still hurt.
     const atkFactor = safeScale <= 1.35
       ? safeScale
       : 1 + (safeScale - 1) * (safeScale >= 1.5 ? 0.62 : 0.5);
-    const dHp  = Math.max(0.5, difficulty?.hp  ?? 1);
-    const dAtk = Math.max(0.5, difficulty?.atk ?? 1);
+    const dHp  = Math.max(0.5, combatScale?.hp  ?? 1);
+    const dAtk = Math.max(0.5, combatScale?.atk ?? 1);
     const baseHp = def.stats.hp;
     const baseAtk = def.stats.atk;
     const scaledHp = Math.max(1, Math.round(baseHp * safeScale * dHp));

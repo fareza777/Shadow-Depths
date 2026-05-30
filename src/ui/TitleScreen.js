@@ -343,10 +343,6 @@ export class TitleScreen {
           }
           return;
         }
-        if (this.modal === 'settings' && typeof idx === 'string' && idx.startsWith('diff:')) {
-          if (this.meta) this.meta.setSetting('difficulty', idx.slice(5));
-          return;
-        }
         // Codex tab change (400 + i) and pagination (410=prev, 411=next).
         if (this.modal === 'codex') {
           if (idx === 412) { this._codexDetail = null; return; }
@@ -580,19 +576,11 @@ export class TitleScreen {
     const totalW = btnW * 2 + btnGap;
     const baseX = (CANVAS_WIDTH - totalW) / 2;
     const closeH = IS_LANDSCAPE ? 40 : 48;
-    const diffBtnW = 62;
-    const diffBtnH = 28;
-    const diffGap = 8;
-    const diffTotalW = diffBtnW * 4 + diffGap * 3;
-    const diffBaseX = (CANVAS_WIDTH - diffTotalW) / 2;
-
     const bodyTop = 58;
     const soundLabelY = bodyTop;
     const soundCardY = soundLabelY + 16;
     const soundCardH = 34;
-    const diffLabelY = soundCardY + soundCardH + 14;
-    const diffBtnY = diffLabelY + 16;
-    const orientLabelY = diffBtnY + diffBtnH + 16;
+    const orientLabelY = soundCardY + soundCardH + 18;
     const orientBtnY = orientLabelY + 14;
     const hintY = orientBtnY + btnH + 10;
     const closeY = hintY + 24;
@@ -608,9 +596,6 @@ export class TitleScreen {
       soundCardH,
       soundCardX: modalX + 20,
       soundCardW: modalW - 40,
-      diffLabelY: y0 + diffLabelY,
-      diffBtnY: y0 + diffBtnY,
-      diffBtnW, diffBtnH, diffGap, diffBaseX,
       orientLabelY: y0 + orientLabelY,
       orientBtnY: y0 + orientBtnY,
       hintY: y0 + hintY
@@ -623,7 +608,6 @@ export class TitleScreen {
     const settings = this.state.state.meta.settings || {};
     const vol = Math.round((settings.volume ?? 0.6) * 100);
     const orient = settings.orientation || 'portrait';
-    const difficulty = settings.difficulty || 'normal';
     const g = this._settingsLayout();
     this._renderIronModalChrome(r, g, 'SETTINGS', 'iron-clad preferences');
 
@@ -640,18 +624,6 @@ export class TitleScreen {
       family: FONT_BODY, color: IRON_PALETTE.boneDim
     });
 
-    r.drawText('DIFFICULTY', CANVAS_WIDTH / 2, g.diffLabelY, {
-      size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
-    });
-    const diffKeys = ['easy', 'normal', 'hard', 'ascend1'];
-    const diffLabels = { easy: 'EASY', normal: 'NORM', hard: 'HARD', ascend1: 'ASC1' };
-    for (let i = 0; i < diffKeys.length; i++) {
-      const key = diffKeys[i];
-      const bx = g.diffBaseX + i * (g.diffBtnW + g.diffGap);
-      this._renderIronPill(r, bx, g.diffBtnY, g.diffBtnW, g.diffBtnH,
-        diffLabels[key], difficulty === key);
-    }
-
     r.drawText('ORIENTATION', CANVAS_WIDTH / 2, g.orientLabelY, {
       size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
     });
@@ -666,18 +638,6 @@ export class TitleScreen {
       { size: uiSize(10), italic: true, align: 'center',
         family: FONT_BODY, color: IRON_PALETTE.boneDim });
     this._renderModalCloseButton(r, g.closeY);
-  }
-
-  _settingsDifficultyHitTest(x, y) {
-    if (this.modal !== 'settings') return null;
-    const g = this._settingsLayout();
-    if (y < g.diffBtnY || y > g.diffBtnY + g.diffBtnH) return null;
-    const keys = ['easy', 'normal', 'hard', 'ascend1'];
-    for (let i = 0; i < 4; i++) {
-      const bx = g.diffBaseX + i * (g.diffBtnW + g.diffGap);
-      if (x >= bx && x <= bx + g.diffBtnW) return `diff:${keys[i]}`;
-    }
-    return null;
   }
 
   _settingsVolumeHitTest(x, y) {
@@ -1182,8 +1142,6 @@ export class TitleScreen {
     }
     if (this.modal === 'settings') {
       if (this._settingsVolumeHitTest(x, y)) return 302;
-      const diff = this._settingsDifficultyHitTest(x, y);
-      if (diff) return diff;
       const orient = this._settingsOrientationHitTest(x, y);
       if (orient) return orient === 'portrait' ? 300 : 301;
       const g = this._settingsGeometry();

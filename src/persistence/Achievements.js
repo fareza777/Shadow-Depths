@@ -69,9 +69,7 @@ export class AchievementEngine {
         meta._vaultsThisRun = (meta._vaultsThisRun || 0) + 1;
         this.setMax(meta, 'vaults_run', meta._vaultsThisRun);
       }
-      // Hard-difficulty floor 30 flag
-      const diff = meta.settings?.difficulty;
-      if (floorNumber >= 30 && (diff === 'hard' || diff === 'ascend1' || diff === 'ascend2')) {
+      if (floorNumber >= 30) {
         this.bump(meta, 'hard_floor_30', 1);
       }
     });

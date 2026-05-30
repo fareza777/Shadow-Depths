@@ -22,7 +22,7 @@
       "trigger": "bosses_slain", "threshold": 1, "reward": { "coins": 40 } },
     { "id": "victor",        "name": "Vigil Holds",          "description": "Complete a full descent (clear floor 100).",
       "trigger": "victories", "threshold": 1, "reward": { "coins": 250 } },
-    { "id": "hard_descent",  "name": "Hollow's Walk",        "description": "Reach floor 30 on Hollow difficulty.",
+    { "id": "hard_descent",  "name": "Deep Descent",         "description": "Reach floor 30 in a single run.",
       "trigger": "hard_floor_30", "threshold": 1, "reward": { "coins": 60 } },
     { "id": "level_15",      "name": "Adept",                "description": "Reach hero level 15 in a single run.",
       "trigger": "level_reached", "threshold": 15, "reward": { "coins": 20 } },

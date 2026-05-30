@@ -17,6 +17,8 @@
  * CombatSystem required.
  */
 
+import { passivePoisonTickDamage } from '../gameplay/heroPassives.js';
+
 const REGISTRY = new Map();
 
 /**
@@ -69,7 +71,9 @@ registerStatus({
   description: 'Loses N HP at the start of each turn.',
   color: '#5ac06a', iconKey: 'fx_poison', stackPolicy: 'stack',
   tick(entity, eff) {
-    const dealt = entity.takeDamage(eff.value || 1);
+    let dmg = eff.value || 1;
+    if (entity.kind === 'player') dmg = passivePoisonTickDamage(entity, dmg);
+    const dealt = entity.takeDamage(dmg);
     return -dealt;
   }
 });

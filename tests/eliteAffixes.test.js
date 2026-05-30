@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  eliteChanceForDepth, rollEliteAffixes, forcedEliteAffixes, makeElite, ELITE_AFFIXES
+  eliteChanceForDepth, affixPoolForDepth, rollEliteAffixes, forcedEliteAffixes,
+  makeElite, ELITE_AFFIXES
 } from '../src/gameplay/eliteAffixes.js';
 
 // Minimal controllable rng: fixed chance() result + scripted randInt().
@@ -23,10 +24,18 @@ function fodder() {
 }
 
 describe('eliteChanceForDepth', () => {
-  it('ramps with depth and caps at 0.22', () => {
-    expect(eliteChanceForDepth(0)).toBeCloseTo(0.04, 5);
-    expect(eliteChanceForDepth(10)).toBeGreaterThan(eliteChanceForDepth(0));
+  it('is softer on early floors and caps at 0.22 deep', () => {
+    expect(eliteChanceForDepth(0)).toBeCloseTo(0.025, 5);
+    expect(eliteChanceForDepth(2)).toBeLessThan(eliteChanceForDepth(10));
     expect(eliteChanceForDepth(10000)).toBe(0.22);
+  });
+});
+
+describe('affixPoolForDepth', () => {
+  it('excludes venomous on floors 1–3 (depth 0–2)', () => {
+    expect(affixPoolForDepth(0)).not.toContain('venomous');
+    expect(affixPoolForDepth(2)).not.toContain('venomous');
+    expect(affixPoolForDepth(3)).toContain('venomous');
   });
 });
 
@@ -59,6 +68,12 @@ describe('makeElite', () => {
     makeElite(e, []);
     expect(e.elite).toBeUndefined();
     expect(e.stats.atk).toBe(4);
+  });
+
+  it('uses a lighter HP bump on shallow floors', () => {
+    const e = fodder();
+    makeElite(e, ['brutal'], 0);
+    expect(e.stats.hpMax).toBe(Math.round(10 * 1.55));
   });
 
   it('boosts stats, tags, renames, and enriches rewards', () => {

@@ -20,7 +20,7 @@ import {
   TILE, TILE_SIZE, LOG, COLOR, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
-import { resolveDifficulty } from '../config/balance.js';
+import { enemyCombatScale } from '../config/balance.js';
 import { Player } from '../entities/Player.js';
 import { heroDef } from '../rendering/heroSprites.js';
 import { chooseForgeOffers, craft, getRecipe } from '../items/Crafting.js';
@@ -1370,7 +1370,7 @@ export class GameScene {
     // depthScale comes from the procedurally-built floor definition;
     // makes deeper floors actually threatening (HP & damage scale).
     const depthScale = floor.definition?.depthScale || 1;
-    const diff = this._currentDifficulty();
+    const diff = this._enemyScale();
     const depthIdx = floor.definition?.index ?? 0;
     // Champion/elite roll — deterministic per floor, never on (sub)bosses.
     const eliteRng = this.rng.fork(`elite:${depthIdx}`);
@@ -1384,7 +1384,7 @@ export class GameScene {
         if (!s.defId.startsWith('boss_') && !s.defId.startsWith('subboss_')) {
           let affixes = rollEliteAffixes(eliteRng, depthIdx);
           if (!affixes.length && s.forceElite) affixes = forcedEliteAffixes(eliteRng, depthIdx);
-          if (affixes.length) makeElite(enemy, affixes);
+          if (affixes.length) makeElite(enemy, affixes, depthIdx);
         }
         enemy.snapRender();
         floor.addEntity(enemy);
@@ -1411,20 +1411,14 @@ export class GameScene {
     const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
     const behavior = new BehaviorCls(def.behaviorParams);
     const enemy = new Enemy(def, behavior, pos,
-      floor.definition?.depthScale || 1, this._currentDifficulty());
+      floor.definition?.depthScale || 1, this._enemyScale());
     enemy.snapRender();
     return enemy;
   }
 
-  /**
-   * Resolve current difficulty multipliers from meta.settings.difficulty.
-   * Falls back to 'normal' when the setting is missing or unknown.
-   */
-  _currentDifficulty() {
-    const settings = this.state?.state?.meta?.settings || {};
-    const key = settings.difficulty || 'normal';
-    const { hp, atk, scoreMul } = resolveDifficulty(this.balance, key);
-    return { hp, atk, scoreMul };
+  /** Global enemy HP/ATK scale from balance (no player-selectable difficulty). */
+  _enemyScale() {
+    return enemyCombatScale(this.balance);
   }
 
   /** Every run begins with a basic dagger — no cleaver/bow unless shop unlocks. */
