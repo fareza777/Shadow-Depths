@@ -37,6 +37,8 @@ function heroStatOverrides(kind) {
 }
 import { Enemy } from '../entities/Enemy.js';
 import { rollEliteAffixes, makeElite } from '../gameplay/eliteAffixes.js';
+import { HAZARDS, hazardDamage } from '../gameplay/hazards.js';
+import { StatusEffects } from '../combat/StatusEffects.js';
 import { Inventory } from '../items/Inventory.js';
 import { ItemFactory } from '../items/ItemFactory.js';
 import { Equipment } from '../items/Equipment.js';
@@ -127,6 +129,7 @@ export class GameScene {
     this._wirePresentationEvents();
     this._wireCraftingEvents();
     this._wireIdentification();
+    this._wireHazards();
   }
 
   exit() {
@@ -705,6 +708,47 @@ export class GameScene {
     });
   }
 
+  /** Traps: any entity stepping onto an armed hazard springs it. */
+  _wireHazards() {
+    this._listen('entity:moved', ({ entity, to }) => {
+      if (!entity || !to) return;
+      this._springHazard(entity, to.x, to.y);
+    });
+  }
+
+  _springHazard(entity, x, y) {
+    const t = this.floor?.tileAt(x, y);
+    const hz = t?.hazard;
+    if (!hz || !hz.armed || entity.isDead) return;
+    hz.armed = false;
+    hz.revealed = true;
+    const meta = HAZARDS[hz.type] || HAZARDS.spike;
+    const depth = this.floor.definition?.index ?? 0;
+    const base = this.balance.dungeon?.hazardBaseDamage ?? 4;
+    const dealt = entity.takeDamage(hazardDamage(hz.type, depth, base));
+    this.bus.emit('entity:damaged', {
+      entity, amount: dealt, source: { name: meta.label, kind: 'hazard' }, isCrit: false
+    });
+    this.bus.emit('floor:hazardSprung', { entity, hazard: hz, x, y, label: meta.label });
+    if (meta.status && !entity.isDead) StatusEffects.apply(entity, meta.status, this.bus);
+    if (entity.isDead) {
+      if (entity.kind === 'player') entity.runStats.killedBy = meta.label;
+      this.bus.emit('entity:died', { entity, killer: { name: meta.label } });
+    }
+  }
+
+  /** Reveal armed traps adjacent to the player so they become a choice. */
+  _revealNearbyHazards() {
+    if (!this.floor || !this.player) return;
+    const { x, y } = this.player;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const t = this.floor.tileAt(x + dx, y + dy);
+        if (t?.hazard?.armed && t.visible) t.hazard.revealed = true;
+      }
+    }
+  }
+
   _wireIdentification() {
     const meta = this.state?.state?.meta;
     if (!meta) return;
@@ -1116,6 +1160,7 @@ export class GameScene {
     if (this.player.isDead) { this._endRun(false); return; }
     this.pathfinding.invalidate();
     this.lighting.compute(this.floor, this.player, effectiveTorchRadius(this.player));
+    this._revealNearbyHazards();
     this._refreshEnemyIntents();
     beginPlayerTurnPassives(this.player);
 

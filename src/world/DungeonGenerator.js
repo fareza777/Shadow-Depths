@@ -18,6 +18,7 @@ import {
 } from '../config/constants.js';
 import { Floor } from './Floor.js';
 import { rollItemAffixes } from '../items/itemGenerator.js';
+import { trapCountForDepth, pickHazardType } from '../gameplay/hazards.js';
 
 const MAX_DEPTH = 4; // 2^4 = up to 16 leaf rooms
 const MIN_LEAF_SIZE = 7; // must fit roomMin (4) + 1 padding on each side
@@ -105,6 +106,9 @@ export class DungeonGenerator {
       items: this._spawnItems(floor, rooms, spawnRoom, floorDef, itemDefs, floorIndex)
     };
 
+    // 6. Scatter hidden traps (avoid spawn room, stairs, doors, occupied tiles).
+    this._placeHazards(floor, rooms, spawnRoom, floorIndex, spawns);
+
     return { floor, spawns };
   }
 
@@ -142,11 +146,17 @@ export class DungeonGenerator {
   _carveRoom(floor, leaf) {
     const minSize = this.balance.dungeon.roomMinSize;
     const maxSize = this.balance.dungeon.roomMaxSize;
-    const maxW = Math.min(maxSize, leaf.w - 2);
-    const maxH = Math.min(maxSize, leaf.h - 2);
-    if (maxW < minSize || maxH < minSize) return null;
-    const w = this.rng.randInt(minSize, maxW);
-    const h = this.rng.randInt(minSize, maxH);
+    // A fraction of rooms become a large hall / cavern — they expand toward
+    // the whole leaf (past the normal max) so the floor isn't all same-size
+    // boxes. Marked `large` so spawners can treat them as set-pieces.
+    const large = this.rng.chance(this.balance.dungeon.largeRoomChance ?? 0.2);
+    const capW = Math.min(large ? leaf.w - 2 : maxSize, leaf.w - 2);
+    const capH = Math.min(large ? leaf.h - 2 : maxSize, leaf.h - 2);
+    if (capW < minSize || capH < minSize) return null;
+    const minW = large ? Math.max(minSize, Math.floor(capW * 0.7)) : minSize;
+    const minH = large ? Math.max(minSize, Math.floor(capH * 0.7)) : minSize;
+    const w = this.rng.randInt(Math.min(minW, capW), capW);
+    const h = this.rng.randInt(Math.min(minH, capH), capH);
     const x = leaf.x + this.rng.randInt(1, leaf.w - w - 1);
     const y = leaf.y + this.rng.randInt(1, leaf.h - h - 1);
     for (let ry = y; ry < y + h; ry++) {
@@ -154,7 +164,41 @@ export class DungeonGenerator {
         floor.setTile(rx, ry, TILE.FLOOR);
       }
     }
-    return { x, y, w, h };
+    return { x, y, w, h, large };
+  }
+
+  /**
+   * Scatter hidden one-shot traps on plain floor tiles. Skips the spawn room,
+   * stairs, doors, the player-spawn tile, and tiles already holding a spawned
+   * enemy or item so the player never opens on (or is forced onto) a trap.
+   */
+  _placeHazards(floor, rooms, spawnRoom, floorIndex, spawns) {
+    const cfg = this.balance.dungeon.trapsPerFloor || { min: 1, max: 4 };
+    const count = trapCountForDepth(floorIndex, this.rng, cfg);
+    if (count <= 0) return;
+
+    const occupied = new Set();
+    for (const e of spawns.enemies || []) occupied.add(`${e.x},${e.y}`);
+    for (const it of spawns.items || []) occupied.add(`${it.x},${it.y}`);
+    const inSpawnRoom = (x, y) => spawnRoom
+      && x >= spawnRoom.x - 1 && x < spawnRoom.x + spawnRoom.w + 1
+      && y >= spawnRoom.y - 1 && y < spawnRoom.y + spawnRoom.h + 1;
+
+    // Candidate pool: plain floor tiles outside the spawn room.
+    const candidates = [];
+    for (let y = 0; y < floor.height; y++) {
+      for (let x = 0; x < floor.width; x++) {
+        const t = floor.tiles[y][x];
+        if (t.type !== TILE.FLOOR || t.hazard) continue;
+        if (inSpawnRoom(x, y)) continue;
+        if (occupied.has(`${x},${y}`)) continue;
+        candidates.push(t);
+      }
+    }
+    const picks = this.rng.shuffle(candidates).slice(0, count);
+    for (const t of picks) {
+      t.hazard = { type: pickHazardType(this.rng, floorIndex), armed: true, revealed: false };
+    }
   }
 
   _connectRooms(floor, rooms) {

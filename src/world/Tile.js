@@ -21,6 +21,8 @@ export class Tile {
     this.type = type;
     this.explored = false;
     this.visible = false;
+    /** Optional trap: { type, armed, revealed } — see gameplay/hazards.js. */
+    this.hazard = null;
   }
 
   /** Does this tile block movement? Includes walls, voids, closed doors. */

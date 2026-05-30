@@ -67,7 +67,12 @@ export const DEFAULT_BALANCE = Object.freeze({
     maxRoomsPerFloor: 10,
     minStairsDistance: 12,
     enemySpawnsPerFloor: [3, 5, 8],
-    itemSpawnsPerFloor: [5, 5, 6]
+    itemSpawnsPerFloor: [5, 5, 6],
+    // Fraction of rooms carved as a large hall/cavern (spatial variety).
+    largeRoomChance: 0.2,
+    // Hidden traps scattered per floor (see gameplay/hazards.js).
+    trapsPerFloor: { min: 1, max: 4 },
+    hazardBaseDamage: 4
   },
 
   scoring: {

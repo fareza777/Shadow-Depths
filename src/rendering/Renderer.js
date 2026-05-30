@@ -28,6 +28,7 @@ import {
 import { fillRect, strokeRect } from './SpriteRegistry.js';
 import { drawBiomeWall, drawBiomeFloor, hasBiome } from './biomeTiles.js';
 import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
+import { HAZARDS } from '../gameplay/hazards.js';
 
 export class Renderer {
   /**
@@ -337,6 +338,9 @@ export class Renderer {
         if (dim) Renderer._applyFog(ctx, tx, ty);
       }
     }
+
+    // Revealed traps (drawn over floor, under entities/motif).
+    this._drawHazards(ctx, floor, x0, y0, x1, y1);
 
     // Special floor centerpiece (REST campfire / VAULT chest motif).
     this._drawSpecialFloorMotif(ctx, floor);
@@ -796,6 +800,38 @@ export class Renderer {
 
   drawRect(x, y, w, h, color) {
     fillRect(this.ctx, x, y, w, h, color);
+  }
+
+  /** Draw revealed traps: armed = bright glyph, spent = faint scorch. */
+  _drawHazards(ctx, floor, x0, y0, x1, y1) {
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const t = floor.tiles[y][x];
+        const hz = t.hazard;
+        if (!hz || !hz.revealed || !t.explored) continue;
+        const col = (HAZARDS[hz.type]?.color || '#cdd5dd');
+        const cx = x * TILE_SIZE + TILE_SIZE / 2;
+        const cy = y * TILE_SIZE + TILE_SIZE / 2;
+        const r = TILE_SIZE * 0.26;
+        ctx.save();
+        ctx.globalAlpha = hz.armed ? (t.visible ? 0.9 : 0.4) : 0.3;
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5;
+        // diamond warning frame
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy);
+        ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
+        ctx.closePath();
+        ctx.stroke();
+        // inner X (spike/cross)
+        const i = r * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - i, cy - i); ctx.lineTo(cx + i, cy + i);
+        ctx.moveTo(cx + i, cy - i); ctx.lineTo(cx - i, cy + i);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
   }
 
   /** Champion/elite marker — a pulsing coloured ring under the sprite. */
