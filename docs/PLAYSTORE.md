@@ -17,7 +17,7 @@ keytool -genkey -v -keystore android\release.keystore -alias shadow-depths -keya
 
 # 3. Build upload artifact
 .\scripts\build-release-aab.ps1
-# Output: android\app\build\outputs\bundle\release\app-release.aab
+# Output: release\app-release.aab  (copy of signed bundle)
 ```
 
 Debug APK for device testing:

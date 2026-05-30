@@ -20,6 +20,7 @@ import {
   TILE, TILE_SIZE, LOG, COLOR, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
+import { resolveDifficulty } from '../config/balance.js';
 import { Player } from '../entities/Player.js';
 import { heroDef } from '../rendering/heroSprites.js';
 import { chooseForgeOffers, craft, getRecipe } from '../items/Crafting.js';
@@ -178,6 +179,7 @@ export class GameScene {
   }
 
   _enterFromSnapshot(snapshot) {
+    this.heroKind = snapshot.heroKind || this.heroKind || 'vigil';
     const floorIndex = Math.max(0, Math.min(this.dungeon.totalFloors - 1, snapshot.floorIndex || 0));
     for (let i = 0; i <= floorIndex; i++) this.dungeon.getOrGenerate(i);
     this.dungeon.currentIndex = floorIndex;
@@ -1232,9 +1234,8 @@ export class GameScene {
   _currentDifficulty() {
     const settings = this.state?.state?.meta?.settings || {};
     const key = settings.difficulty || 'normal';
-    const table = this.balance?.difficulty || {};
-    const cfg = table[key] || table.normal || { enemyHp: 1, enemyAtk: 1 };
-    return { hp: cfg.enemyHp || 1, atk: cfg.enemyAtk || 1, scoreMul: cfg.scoreMul || 1 };
+    const { hp, atk, scoreMul } = resolveDifficulty(this.balance, key);
+    return { hp, atk, scoreMul };
   }
 
   /** Every run begins with a basic dagger — no cleaver/bow unless shop unlocks. */
@@ -1414,6 +1415,7 @@ export class GameScene {
       savedAt: Date.now(),
       seed: this.seed,
       mode: this.mode,
+      heroKind: this.heroKind,
       floorIndex: this.dungeon.currentIndex,
       player: this._playerSnapshot(),
       floor: this._floorSnapshot(this.floor)

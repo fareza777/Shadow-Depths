@@ -1,0 +1,73 @@
+name: Build Android AAB
+
+on:
+  workflow_dispatch:
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync android
+
+      - name: Create release keystore
+        env:
+          KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_PASS" ]; then
+            KEYSTORE_PASS="$(openssl rand -base64 18 | tr -d '/+=')"
+            echo "Generated new keystore password (save from SIGNING-README artifact): $KEYSTORE_PASS"
+          fi
+          printf '%s' "$KEYSTORE_PASS" > signing-pass.txt
+          keytool -genkeypair -v \
+            -keystore android/release.keystore \
+            -alias shadow-depths \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "$KEYSTORE_PASS" -keypass "$KEYSTORE_PASS" \
+            -dname "CN=Shadow Depths, OU=Mobile, O=Shadow Depths, L=Jakarta, C=ID"
+          cat > android/keystore.properties <<EOF
+storeFile=release.keystore
+storePassword=$KEYSTORE_PASS
+keyAlias=shadow-depths
+keyPassword=$KEYSTORE_PASS
+EOF
+
+      - name: Bundle release AAB
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      - name: Write signing notes
+        run: |
+          PASS=$(cat signing-pass.txt)
+          cat > SIGNING-README.txt <<EOF
+BACKUP android/release.keystore — required for all future Play Store updates.
+Store password: $PASS
+Key alias: shadow-depths
+Key password: $PASS
+EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shadow-depths-play-store
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/release.keystore
+            android/keystore.properties
+            SIGNING-README.txt
+          retention-days: 90

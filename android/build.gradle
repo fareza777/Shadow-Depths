@@ -24,6 +24,15 @@ allprojects {
     }
 }
 
+subprojects { sub ->
+    sub.plugins.withId('com.android.application') {
+        sub.android { buildToolsVersion '35.0.1' }
+    }
+    sub.plugins.withId('com.android.library') {
+        sub.android { buildToolsVersion '35.0.1' }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
