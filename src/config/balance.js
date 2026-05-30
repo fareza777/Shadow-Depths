@@ -73,6 +73,8 @@ export const DEFAULT_BALANCE = Object.freeze({
     itemSpawnsPerFloor: [5, 5, 6],
     // Fraction of rooms carved as a large hall/cavern (spatial variety).
     largeRoomChance: 0.2,
+    // Chance a floor designates an arena set-piece (guards + reward).
+    arenaChance: 0.35,
     // Hidden traps scattered per floor (see gameplay/hazards.js).
     trapsPerFloor: { min: 1, max: 4 },
     hazardBaseDamage: 4

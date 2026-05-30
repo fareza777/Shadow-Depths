@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  eliteChanceForDepth, rollEliteAffixes, makeElite, ELITE_AFFIXES
+  eliteChanceForDepth, rollEliteAffixes, forcedEliteAffixes, makeElite, ELITE_AFFIXES
 } from '../src/gameplay/eliteAffixes.js';
 
 // Minimal controllable rng: fixed chance() result + scripted randInt().
@@ -44,6 +44,12 @@ describe('rollEliteAffixes', () => {
   it('never picks duplicate affixes', () => {
     const ids = rollEliteAffixes(fakeRng(true, [0, 0]), 40); // deep → up to 2
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('forcedEliteAffixes ignores the spawn gate (always returns ≥1)', () => {
+    const ids = forcedEliteAffixes(fakeRng(false, [0]), 5); // chance=false would skip a normal roll
+    expect(ids.length).toBeGreaterThanOrEqual(1);
+    expect(ELITE_AFFIXES[ids[0]]).toBeTruthy();
   });
 });
 

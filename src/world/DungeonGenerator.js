@@ -106,7 +106,10 @@ export class DungeonGenerator {
       items: this._spawnItems(floor, rooms, spawnRoom, floorDef, itemDefs, floorIndex)
     };
 
-    // 6. Scatter hidden traps (avoid spawn room, stairs, doors, occupied tiles).
+    // 6. Maybe turn one room into an arena set-piece (guards + reward).
+    this._augmentArena(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs);
+
+    // 7. Scatter hidden traps (avoid spawn room, stairs, doors, occupied tiles).
     this._placeHazards(floor, rooms, spawnRoom, floorIndex, spawns);
 
     return { floor, spawns };
@@ -198,6 +201,65 @@ export class DungeonGenerator {
     const picks = this.rng.shuffle(candidates).slice(0, count);
     for (const t of picks) {
       t.hazard = { type: pickHazardType(this.rng, floorIndex), armed: true, revealed: false };
+    }
+  }
+
+  /**
+   * Arena set-piece (#6): pick a non-spawn room (preferring a large hall),
+   * add a couple of extra guards — one a guaranteed elite — and a guaranteed
+   * gear reward. Gives the floor a "clear this and get paid" beat instead of
+   * uniform fodder. Skipped on forge/boss floors and very small layouts.
+   */
+  _augmentArena(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs) {
+    if (floorDef.type === 'forge' || floorDef.isFinalFloor || rooms.length < 3) return;
+    if (!this.rng.chance(this.balance.dungeon.arenaChance ?? 0.35)) return;
+
+    const candidates = rooms.filter((r) => r !== spawnRoom);
+    if (!candidates.length) return;
+    const larges = candidates.filter((r) => r.large);
+    const pool = larges.length ? larges : candidates;
+    const arena = this._farthestRoom(pool, floor.playerSpawn, 0);
+    if (!arena) return;
+    arena.arena = true;
+    floor.arenaRoom = arena;
+
+    const reserved = new Set();
+    for (const e of spawns.enemies) reserved.add(`${e.x},${e.y}`);
+    for (const it of spawns.items) reserved.add(`${it.x},${it.y}`);
+
+    // Guards — drawn from this floor's enemy pool (fodder only).
+    const floorNum = floorIndex + 1;
+    const enemyPool = (floorDef.enemyPool || []).filter((id) => {
+      const def = enemyDefs[id];
+      return def && def.spawnWeight !== 0 && (def.floorMin ?? 1) <= floorNum;
+    });
+    if (enemyPool.length) {
+      const weighted = enemyPool.map((id) => ({ value: id, weight: enemyDefs[id].spawnWeight || 1 }));
+      for (let i = 0; i < 2; i++) {
+        const tile = this._randomTileInRoom(floor, arena, reserved);
+        if (!tile) break;
+        reserved.add(`${tile.x},${tile.y}`);
+        const entry = { x: tile.x, y: tile.y, defId: this.rng.weightedPick(weighted) };
+        if (i === 0) entry.forceElite = true; // the arena boss
+        spawns.enemies.push(entry);
+      }
+    }
+
+    // Reward — a guaranteed piece of gear, affixed at a small depth premium.
+    const gearPool = Object.values(itemDefs).filter(
+      (d) => d.slot && (d.floorMin ?? 1) <= floorNum
+    );
+    if (gearPool.length) {
+      const tile = this._randomTileInRoom(floor, arena, reserved);
+      if (tile) {
+        const weighted = gearPool.map((d) => ({ value: d.id, weight: d.spawnWeight || 1 }));
+        const defId = this.rng.weightedPick(weighted);
+        const baseDef = itemDefs[defId];
+        const entry = { x: tile.x, y: tile.y, defId };
+        const affixes = baseDef ? rollItemAffixes(baseDef, floorNum + 6, this.rng) : null;
+        if (affixes) entry.affixes = affixes;
+        spawns.items.push(entry);
+      }
     }
   }
 

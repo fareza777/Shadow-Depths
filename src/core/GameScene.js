@@ -36,7 +36,7 @@ function heroStatOverrides(kind) {
   return def ? { ...def.stats } : null;
 }
 import { Enemy } from '../entities/Enemy.js';
-import { rollEliteAffixes, makeElite } from '../gameplay/eliteAffixes.js';
+import { rollEliteAffixes, forcedEliteAffixes, makeElite } from '../gameplay/eliteAffixes.js';
 import { HAZARDS, hazardDamage } from '../gameplay/hazards.js';
 import { StatusEffects } from '../combat/StatusEffects.js';
 import { Inventory } from '../items/Inventory.js';
@@ -1239,7 +1239,8 @@ export class GameScene {
         const behavior = new BehaviorCls(def.behaviorParams);
         const enemy = new Enemy(def, behavior, { x: s.x, y: s.y }, depthScale, diff);
         if (!s.defId.startsWith('boss_') && !s.defId.startsWith('subboss_')) {
-          const affixes = rollEliteAffixes(eliteRng, depthIdx);
+          let affixes = rollEliteAffixes(eliteRng, depthIdx);
+          if (!affixes.length && s.forceElite) affixes = forcedEliteAffixes(eliteRng, depthIdx);
           if (affixes.length) makeElite(enemy, affixes);
         }
         enemy.snapRender();

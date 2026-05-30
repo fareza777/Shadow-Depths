@@ -36,6 +36,11 @@ export function eliteChanceForDepth(depth) {
  */
 export function rollEliteAffixes(rng, depth) {
   if (!rng.chance(eliteChanceForDepth(depth))) return [];
+  return forcedEliteAffixes(rng, depth);
+}
+
+/** Pick affixes WITHOUT the spawn gate — for guaranteed elites (arena guards). */
+export function forcedEliteAffixes(rng, depth) {
   const count = depth >= 30 && rng.chance(0.35) ? 2 : 1;
   const pool = AFFIX_IDS.slice();
   const picked = [];
