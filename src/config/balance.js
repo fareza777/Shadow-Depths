@@ -80,8 +80,33 @@ export const DEFAULT_BALANCE = Object.freeze({
     { id: 'map_sense',     threshold: 5000, effect: 'revealFloor1' },
     { id: 'crimson_cloak', threshold: 0,    effect: 'cosmetic',
       requireFloorCleared: 3 }
-  ]
+  ],
+
+  // Title-screen difficulty tiers (merged from data/balance.json overrides).
+  difficulty: {
+    easy:    { enemyHp: 0.8,  enemyAtk: 0.85, lootTier: 0, scoreMul: 0.7, label: 'Penitent' },
+    normal:  { enemyHp: 1,    enemyAtk: 1,    lootTier: 0, scoreMul: 1.0, label: 'Vigil' },
+    hard:    { enemyHp: 1.52, enemyAtk: 1.38, lootTier: 1, scoreMul: 1.4, label: 'Hollow' },
+    ascend1: { enemyHp: 1.5,  enemyAtk: 1.3,  lootTier: 2, scoreMul: 1.8, label: 'Ascent I' },
+    ascend2: { enemyHp: 1.8,  enemyAtk: 1.5,  lootTier: 3, scoreMul: 2.4, label: 'Ascent II' }
+  }
 });
+
+/**
+ * Combat/score multipliers for a difficulty key from merged balance.
+ * @param {object} balance merged balance (mergeBalance output)
+ * @param {string} [key] meta.settings.difficulty
+ */
+export function resolveDifficulty(balance, key = 'normal') {
+  const table = balance?.difficulty || {};
+  const cfg = table[key] || table.normal || { enemyHp: 1, enemyAtk: 1 };
+  return {
+    hp: cfg.enemyHp ?? 1,
+    atk: cfg.enemyAtk ?? 1,
+    scoreMul: cfg.scoreMul ?? 1,
+    lootTier: cfg.lootTier ?? 0
+  };
+}
 
 /**
  * Merge a partial JSON override on top of the defaults. Shallow-merge per
