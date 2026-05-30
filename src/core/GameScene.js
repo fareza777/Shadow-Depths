@@ -34,7 +34,8 @@ import {
   syncFloorMicroEventLegacy
 } from '../gameplay/floorEvents.js';
 import {
-  findInteractTarget, buildEventPanelConfig, applyRestAlcove, applyMysteryChest,
+  findInteractTarget, findInteractAt, findAdjacentInteract,
+  buildEventPanelConfig, applyRestAlcove, applyMysteryChest,
   tryTriggerAmbush, tickAmbientHazard, revealRandomRoom, markInteractUsed,
   serializeEventTiles, restoreEventTiles
 } from '../gameplay/floorEventRuntime.js';
@@ -1073,13 +1074,14 @@ export class GameScene {
   }
 
   _playerPickup() {
-    const interact = findInteractTarget(this.floor, this.player.x, this.player.y);
-    if (interact) {
-      this._useFloorInteract(interact.x, interact.y, interact.tile);
-      return;
-    }
     const stack = this.floor.itemsAt(this.player.x, this.player.y);
     if (stack.length === 0) {
+      const interact = findInteractAt(this.floor, this.player.x, this.player.y)
+        || findAdjacentInteract(this.floor, this.player.x, this.player.y);
+      if (interact) {
+        this._useFloorInteract(interact.x, interact.y, interact.tile);
+        return;
+      }
       if (this._canOpenForgeHere()) this.bus.emit('request:openCrafting', {});
       return;
     }
@@ -1174,12 +1176,6 @@ export class GameScene {
       return;
     }
 
-    const tapTile = this.floor.tileAt(tx, ty);
-    if (tapTile?.interact && !tapTile.interact.used && distToTarget <= 1) {
-      this._useFloorInteract(tx, ty, tapTile);
-      return;
-    }
-
     if (dxRaw === 0 && dyRaw === 0) {
       const adj = this._adjacentEnemy();
       if (adj) {
@@ -1187,8 +1183,27 @@ export class GameScene {
         return;
       }
       const stack = this.floor.itemsAt(tx, ty);
-      if (stack.length > 0) this._playerPickup();
-      else this._endPlayerTurn(true);
+      if (stack.length > 0) {
+        this._playerPickup();
+        return;
+      }
+      const tapTile = this.floor.tileAt(tx, ty);
+      if (tapTile?.interact && !tapTile.interact.used) {
+        this._useFloorInteract(tx, ty, tapTile);
+        return;
+      }
+      this._endPlayerTurn(true);
+      return;
+    }
+
+    const tapTile = this.floor.tileAt(tx, ty);
+    const itemsOnTap = this.floor.itemsAt(tx, ty);
+    if (itemsOnTap.length > 0 && distToTarget === 1) {
+      this._playerMove(Math.sign(dxRaw), Math.sign(dyRaw));
+      return;
+    }
+    if (tapTile?.interact && !tapTile.interact.used && distToTarget <= 1) {
+      this._useFloorInteract(tx, ty, tapTile);
       return;
     }
 

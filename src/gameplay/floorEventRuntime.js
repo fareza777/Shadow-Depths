@@ -11,18 +11,29 @@ import { eventPanelTitle } from '../ui/FloorEventPanel.js';
 import { identify } from '../items/Identification.js';
 import { rollItemAffixes } from '../items/itemGenerator.js';
 
-export function findInteractTarget(floor, px, py) {
+export function findInteractAt(floor, x, y) {
+  const t = floor?.tileAt(x, y);
+  if (t?.interact && !t.interact.used) return { tile: t, x, y };
+  return null;
+}
+
+/** Shrine / merchant on tiles next to the player (not underfoot). */
+export function findAdjacentInteract(floor, px, py) {
   if (!floor) return null;
   const candidates = [
-    { x: px, y: py },
     { x: px + 1, y: py }, { x: px - 1, y: py },
     { x: px, y: py + 1 }, { x: px, y: py - 1 }
   ];
   for (const c of candidates) {
-    const t = floor.tileAt(c.x, c.y);
-    if (t?.interact && !t.interact.used) return { tile: t, x: c.x, y: c.y };
+    const hit = findInteractAt(floor, c.x, c.y);
+    if (hit) return hit;
   }
   return null;
+}
+
+/** Nearest interact for UI hints — feet first, then adjacent. */
+export function findInteractTarget(floor, px, py) {
+  return findInteractAt(floor, px, py) || findAdjacentInteract(floor, px, py);
 }
 
 export function buildEventPanelConfig(kind, interact, ctx) {
