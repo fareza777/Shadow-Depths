@@ -19,6 +19,7 @@
     "android:open": "cap open android",
     "android:assets": "node scripts/generate-android-assets.mjs",
     "android:bundle": "powershell -ExecutionPolicy Bypass -File scripts/build-release-aab.ps1",
+    "android:bundle:full": "powershell -ExecutionPolicy Bypass -File scripts/setup-and-build-aab.ps1",
     "playstore:prep": "npm run build && cap sync android"
   },
   "dependencies": {
