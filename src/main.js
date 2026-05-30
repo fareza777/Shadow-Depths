@@ -27,6 +27,7 @@ function hideBootSplash({ immediate = false } = {}) {
   setTimeout(remove, Math.max(0, MIN_SPLASH_MS - elapsed));
 }
 
+import { Capacitor } from '@capacitor/core';
 import { EventBus } from './core/EventBus.js';
 import { StateStore } from './core/StateStore.js';
 import { SceneManager } from './core/SceneManager.js';
@@ -254,6 +255,10 @@ async function bootstrap() {
 
   // Mark unused locals as intentionally retained (suppress lint noise).
   void _input; void mobileControls; void particles; void cameraShake;
+
+  if (Capacitor.isNativePlatform()) {
+    document.documentElement.classList.add('capacitor-native');
+  }
 
   await game.boot();
   console.log(LOG.CORE, 'Shadow Depths bootstrap complete');

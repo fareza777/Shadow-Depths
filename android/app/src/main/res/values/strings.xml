@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Shadow Depths</string>
+    <string name="title_activity_main">Shadow Depths</string>
+    <string name="package_name">com.shadowdepths.game</string>
+    <string name="custom_url_scheme">com.shadowdepths.game</string>
+</resources>
