@@ -22,8 +22,8 @@ export class Item {
     this.stackable = !!def.stackable;
     this.maxStack = def.maxStack || (this.stackable ? 9 : 1);
     this.count = Math.min(count, this.maxStack);
-    // Pass-through references so consumers don't need to reach into `.def`.
-    this.stats = def.stats || null;
+    // Clone stat bag so meta unlocks / equip never mutate shared JSON defs.
+    this.stats = def.stats ? { ...def.stats } : null;
     this.effects = def.effects || null;
     this.onHit = def.onHit || null;
     this.proc = def.proc || null;

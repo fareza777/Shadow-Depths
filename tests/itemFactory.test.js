@@ -48,6 +48,22 @@ describe('ItemFactory', () => {
     expect(item.name).toContain('Thirst');
   });
 
+  it('create does not mutate shared item def stats (worn_dagger meta unlock)', () => {
+    const defs = {
+      worn_dagger: {
+        id: 'worn_dagger', name: 'Worn Dagger', slot: 'weapon', type: 'weapon',
+        rarity: 'common', stats: { atk: 1 }
+      }
+    };
+    const f = new ItemFactory(defs);
+    const a = f.create('worn_dagger', 1);
+    a.stats.atk += 1;
+    const b = f.create('worn_dagger', 1);
+    expect(defs.worn_dagger.stats.atk).toBe(1);
+    expect(b.stats.atk).toBe(1);
+    expect(a.stats.atk).toBe(2);
+  });
+
   it('fromSnapshot returns Lost Relic placeholder for missing ids', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const f = new ItemFactory(DEFS);

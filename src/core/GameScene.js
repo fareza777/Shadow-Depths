@@ -1404,7 +1404,8 @@ export class GameScene {
     for (const id of meta.unlocks || []) {
       if (id === 'worn_dagger') {
         if (this.player.weapon?.id === 'worn_dagger' && this.player.weapon.stats) {
-          this.player.weapon.stats.atk = (this.player.weapon.stats.atk || 1) + 1;
+          const base = this.content.items?.worn_dagger?.stats?.atk ?? 1;
+          this.player.weapon.stats.atk = base + 1;
         }
       } else if (id === 'veterans_vigor') {
         this.player.stats.hpMax += 10;
