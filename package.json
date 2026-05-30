@@ -16,12 +16,17 @@
     "test:watch": "vitest",
     "android:init": "cap add android",
     "android:sync": "npm run build && cap sync android",
-    "android:open": "cap open android"
+    "android:open": "cap open android",
+    "android:assets": "node scripts/generate-android-assets.mjs",
+    "android:bundle": "powershell -ExecutionPolicy Bypass -File scripts/build-release-aab.ps1",
+    "playstore:prep": "npm run build && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.3.4"
   },
   "devDependencies": {
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^8.3.4",
-    "@capacitor/core": "^8.3.4",
     "eslint": "^9.0.0",
     "source-map": "^0.7.6",
     "vite": "^5.4.0",

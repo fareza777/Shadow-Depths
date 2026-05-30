@@ -1,5 +1,7 @@
 # Android / Play Store packaging
 
+> **Play Console checklist:** see [PLAYSTORE.md](./PLAYSTORE.md) for store listing, privacy URL, and upload steps.
+
 Shadow Depths ships as a Capacitor-wrapped WebView APK. The web build
 (`dist/`) is the source of truth; Capacitor just bundles it into a
 native Android shell with the right manifest + launcher icon.
