@@ -8,6 +8,7 @@
 import { LOG } from '../config/constants.js';
 import { Item } from './Item.js';
 import { synthesizeDef } from './itemGenerator.js';
+import { applyCanonicalItemStats } from './canonicalStats.js';
 
 /** Used when a save references an item id no longer present in items.json. */
 const LOST_RELIC_DEF = Object.freeze({
@@ -44,7 +45,9 @@ export class ItemFactory {
       console.warn(LOG.ITEM, `unknown item id "${id}"`);
       return null;
     }
-    return new Item(def, count);
+    const item = new Item(def, count);
+    applyCanonicalItemStats(item);
+    return item;
   }
 
   /**
@@ -60,7 +63,9 @@ export class ItemFactory {
       return null;
     }
     if (!affixes || (!affixes.prefix && !affixes.suffix)) {
-      return new Item(base, count);
+      const item = new Item(base, count);
+      applyCanonicalItemStats(item);
+      return item;
     }
     return new Item(synthesizeDef(base, affixes), count);
   }
