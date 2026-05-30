@@ -77,6 +77,8 @@ export const DEFAULT_BALANCE = Object.freeze({
     largeRoomChance: 0.2,
     // Chance a floor designates an arena set-piece (guards + reward).
     arenaChance: 0.35,
+    // Chance a floor hides a secret loot cache behind a breakable wall.
+    secretCacheChance: 0.4,
     // One micro-event per normal floor (shrine, trap room, merchant, …).
     floorEventChance: 0.92,
     vaultEventChance: 0.5,

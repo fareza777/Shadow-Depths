@@ -27,6 +27,8 @@ export class Tile {
     this.interact = null;
     /** Persistent zone hazard (frost/venom cloud) while standing on tile. */
     this.ambient = null;
+    /** Secret door: a WALL that opens to a hidden cache when found. */
+    this.secret = null;
   }
 
   /** Does this tile block movement? Includes walls, voids, closed doors. */

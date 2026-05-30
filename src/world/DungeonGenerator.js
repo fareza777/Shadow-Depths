@@ -107,6 +107,9 @@ export class DungeonGenerator {
       items: this._spawnItems(floor, rooms, spawnRoom, floorDef, itemDefs, floorIndex)
     };
 
+    // 5b. Maybe hide a secret cache behind a breakable wall (optional loot).
+    this._placeSecretCache(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, itemDefs);
+
     // 6. Maybe turn one room into an arena set-piece (guards + reward).
     this._augmentArena(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs);
 
@@ -224,6 +227,66 @@ export class DungeonGenerator {
    * gear reward. Gives the floor a "clear this and get paid" beat instead of
    * uniform fodder. Skipped on forge/boss floors and very small layouts.
    */
+
+  /**
+   * Hide a one-tile loot pocket behind a breakable "secret" wall adjacent to a
+   * room. The pocket is carved out of VOID and sealed, so it never touches the
+   * main path (no soft-lock risk); the secret wall stays solid until the player
+   * stands beside it and notices it (GameScene reveals on adjacency).
+   */
+  _placeSecretCache(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, itemDefs) {
+    if (floorDef.type === 'forge') return;
+    if (!this.rng.chance(this.balance.dungeon.secretCacheChance ?? 0.4)) return;
+
+    const DIRS = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    const inB = (x, y) => x >= 1 && y >= 1 && x < floor.width - 1 && y < floor.height - 1;
+    const isType = (x, y, t) => floor.inBounds(x, y) && floor.tiles[y][x].type === t;
+
+    for (const room of this.rng.shuffle(rooms.slice())) {
+      const fx = room.x + this.rng.randInt(0, room.w - 1);
+      const fy = room.y + this.rng.randInt(0, room.h - 1);
+      for (const [dx, dy] of this.rng.shuffle(DIRS.slice())) {
+        const wx = fx + dx, wy = fy + dy;          // the secret wall
+        const px = fx + 2 * dx, py = fy + 2 * dy;  // the pocket
+        if (!inB(px, py)) continue;
+        // Need: room floor → WALL → VOID pocket, with VOID breathing room beyond.
+        if (!isType(fx, fy, TILE.FLOOR)) continue;
+        if (!isType(wx, wy, TILE.WALL)) continue;
+        if (!isType(px, py, TILE.VOID)) continue;
+        if (!isType(px + dx, py + dy, TILE.VOID)) continue;
+
+        // Carve the pocket and seal its VOID neighbours (never overwrite real
+        // floor/corridor) so it stays isolated behind the secret wall.
+        floor.setTile(px, py, TILE.FLOOR);
+        for (let ny = py - 1; ny <= py + 1; ny++) {
+          for (let nx = px - 1; nx <= px + 1; nx++) {
+            if (nx === wx && ny === wy) continue;       // keep the secret wall
+            if (nx === px && ny === py) continue;
+            if (isType(nx, ny, TILE.VOID)) floor.setTile(nx, ny, TILE.WALL);
+          }
+        }
+        floor.tiles[wy][wx].secret = { revealed: false };
+
+        // Reward: a piece of gear, affixed at a small depth premium.
+        const floorNum = floorIndex + 1;
+        const gearPool = Object.values(itemDefs).filter(
+          (d) => d.slot && (d.floorMin ?? 1) <= floorNum
+        );
+        if (gearPool.length) {
+          const weighted = gearPool.map((d) => ({ value: d.id, weight: d.spawnWeight || 1 }));
+          const defId = this.rng.weightedPick(weighted);
+          const baseDef = itemDefs[defId];
+          const entry = { x: px, y: py, defId };
+          const affixes = baseDef ? rollItemAffixes(baseDef, floorNum + 4, this.rng) : null;
+          if (affixes) entry.affixes = affixes;
+          spawns.items.push(entry);
+        }
+        floor.secretCache = { x: px, y: py, wall: { x: wx, y: wy } };
+        return; // one cache per floor
+      }
+    }
+  }
+
   _augmentArena(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs) {
     if (floorDef.type === 'forge' || floorDef.isFinalFloor || rooms.length < 3) return;
     if (!this.rng.chance(this.balance.dungeon.arenaChance ?? 0.35)) return;

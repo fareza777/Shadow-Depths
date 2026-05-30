@@ -783,14 +783,23 @@ export class GameScene {
     }
   }
 
-  /** Reveal armed traps adjacent to the player so they become a choice. */
+  /** Reveal adjacent traps + secret walls so they become a choice. */
   _revealNearbyHazards() {
     if (!this.floor || !this.player) return;
     const { x, y } = this.player;
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         const t = this.floor.tileAt(x + dx, y + dy);
-        if (t?.hazard?.armed && t.visible) t.hazard.revealed = true;
+        if (!t) continue;
+        if (t.hazard?.armed && t.visible) t.hazard.revealed = true;
+        // Found a secret wall — it opens into a hidden cache.
+        if (t.secret && !t.secret.revealed) {
+          t.secret.revealed = true;
+          t.type = TILE.DOOR;
+          t.explored = true;
+          this.pathfinding?.invalidate?.();
+          this.bus.emit('floor:secretFound', { x: x + dx, y: y + dy });
+        }
       }
     }
   }
