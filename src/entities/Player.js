@@ -85,7 +85,7 @@ export class Player extends Entity {
     this.skillLifesteal   = 0;   // +fraction healed on every hit
     this.damageReduction  = 0;   // 0..1 fractional reduction on incoming damage
     this.skillRangeBonus  = 0;   // +tiles to ranged weapon range
-    this.regenEveryNTurns = 0;   // 5 means heal 3 every 5 turns; 0 disables
+    this.regenEveryNTurns = 0;   // interval in turns; 0 disables passive regen
     this.regenAmount      = 0;
     this._turnsSinceRegen = 0;
     this.magicPower = 0;
@@ -144,8 +144,8 @@ export class Player extends Entity {
         this.skillRangeBonus += 1;
         return true;
       case 'second_wind':
-        this.regenEveryNTurns = 5;
-        this.regenAmount = 3;
+        this.regenEveryNTurns = 8;
+        this.regenAmount = 2;
         return true;
       case 'iron_vitality':
         this.stats.hpMax += 10;
@@ -179,10 +179,13 @@ export class Player extends Entity {
         this.critSkillBonus += 0.05;
         return true;
       case 'field_mender':
-        this.regenEveryNTurns = this.regenEveryNTurns > 0
-          ? Math.min(this.regenEveryNTurns, 4)
-          : 4;
-        this.regenAmount += 1;
+        if (this.regenEveryNTurns > 0) {
+          this.regenAmount = Math.min(this.regenAmount + 1, 3);
+          this.regenEveryNTurns = Math.max(this.regenEveryNTurns, 7);
+        } else {
+          this.regenEveryNTurns = 9;
+          this.regenAmount = 1;
+        }
         return true;
       case 'satchel_master':
         if (this.inventory) {
@@ -210,10 +213,7 @@ export class Player extends Entity {
         return true;
       case 'pilgrim_ember':
         this.torchRadius += 1;
-        this.regenEveryNTurns = this.regenEveryNTurns > 0
-          ? Math.min(this.regenEveryNTurns, 5)
-          : 5;
-        this.regenAmount += 1;
+        if (this.regenEveryNTurns > 0) this.regenAmount = Math.min(this.regenAmount + 1, 3);
         return true;
       default:
         return false;

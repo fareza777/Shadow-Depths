@@ -155,16 +155,40 @@ export function isGuaranteedMerchantFloor(floorNumber, cfg = {}) {
   return floorNumber > 0 && (floorNumber % step) === offset;
 }
 
+export function eventCountForFloor(floorDef, cfg = {}) {
+  if (floorDef.type === 'forge' || floorDef.isFinalFloor) return 0;
+  if (floorDef.enemyCount === 0 && floorDef.type !== 'vault') return 0;
+  const floorNumber = (floorDef.index ?? 0) + 1;
+  if (floorDef.type === 'vault') return cfg.eventsPerFloorVault ?? 2;
+  if (floorNumber >= (cfg.eventsPerFloorDeepFrom ?? 15)) {
+    return cfg.eventsPerFloorDeep ?? 3;
+  }
+  return cfg.eventsPerFloor ?? 2;
+}
+
+/** @deprecated use pickMicroEventKindExcluding */
 export function pickMicroEventKind(rng, floorDef, cfg = {}) {
+  return pickMicroEventKindExcluding(rng, floorDef, cfg, new Set());
+}
+
+/** Pick one event kind not already on this floor. */
+export function pickMicroEventKindExcluding(rng, floorDef, cfg = {}, usedKinds = new Set(), opts = {}) {
   if (floorDef.type === 'forge' || floorDef.isFinalFloor) return null;
   if (floorDef.enemyCount === 0 && floorDef.type !== 'vault') return null;
-  const floorNumber = (floorDef.index ?? 0) + 1;
-  if (isGuaranteedMerchantFloor(floorNumber, cfg)) return 'merchant';
-  const chance = floorDef.type === 'vault'
-    ? (cfg.vaultEventChance ?? 0.35)
-    : (cfg.floorEventChance ?? 0.88);
-  if (!rng.chance(chance)) return null;
-  return rng.weightedPick(EVENT_WEIGHTS);
+  const pool = EVENT_WEIGHTS.filter((w) => !usedKinds.has(w.value));
+  if (!pool.length) return null;
+  if (!opts.force) {
+    const chance = floorDef.type === 'vault'
+      ? (cfg.vaultEventChance ?? 0.5)
+      : (cfg.floorEventChance ?? 0.92);
+    if (!rng.chance(chance)) return null;
+  }
+  return rng.weightedPick(pool);
+}
+
+export function syncFloorMicroEventLegacy(floor) {
+  const list = floor.microEvents || [];
+  floor.microEvent = list.find((e) => e.interactPos) || list[0] || null;
 }
 
 export function resetFloorModifiers(player) {

@@ -113,11 +113,17 @@ export class DungeonGenerator {
     // 7. Scatter hidden traps (avoid spawn room, stairs, doors, occupied tiles).
     this._placeHazards(floor, rooms, spawnRoom, floorIndex, spawns);
 
-    // 8. One micro-event per eligible floor (shrine, trap room, merchant, …).
+    // 8. Micro-events per floor (2–3 on normal floors).
     if (!floorDef.isFinalFloor) {
       const placer = new FloorEventPlacer(this.rng.fork(`event:${floorIndex}`), this.balance);
-      const kind = placer.place(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs);
-      if (kind) floor.definition = { ...floorDef, microEventKind: kind };
+      const kinds = placer.placeAll(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs);
+      if (kinds.length) {
+        floor.definition = {
+          ...floorDef,
+          microEventKinds: kinds,
+          microEventKind: kinds[0]
+        };
+      }
     }
 
     return { floor, spawns };

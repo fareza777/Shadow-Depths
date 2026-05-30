@@ -30,7 +30,8 @@ import {
   tickHeroPassivesEndOfTurn
 } from '../gameplay/heroPassives.js';
 import {
-  resetFloorModifiers, EVENT_LABELS, INTERACT_EVENT_KINDS, isGuaranteedMerchantFloor
+  resetFloorModifiers, EVENT_LABELS, INTERACT_EVENT_KINDS, isGuaranteedMerchantFloor,
+  syncFloorMicroEventLegacy
 } from '../gameplay/floorEvents.js';
 import {
   findInteractTarget, buildEventPanelConfig, applyRestAlcove, applyMysteryChest,
@@ -238,21 +239,23 @@ export class GameScene {
     const def = floor?.definition || {};
     resetFloorModifiers(this.player);
     this._floorBanner = this._buildFloorBanner(index, def);
-    if (def.microEventKind && floor.microEvent) {
-      const label = EVENT_LABELS[def.microEventKind] || 'Strange place';
-      const pos = floor.microEvent.interactPos;
-      if (def.microEventKind === 'merchant') {
+    const kinds = def.microEventKinds || (def.microEventKind ? [def.microEventKind] : []);
+    if (kinds.length && (floor.microEvents?.length || floor.microEvent)) {
+      const labels = kinds.map((k) => EVENT_LABELS[k] || k).join(', ');
+      const hasMerchant = kinds.includes('merchant');
+      const interactCount = (floor.microEvents || []).filter((e) => INTERACT_EVENT_KINDS.has(e.kind)).length;
+      if (hasMerchant) {
         this.bus.emit('floor:event', {
           message: isGuaranteedMerchantFloor(index + 1, this.balance.dungeon)
-            ? 'A wandering merchant is here — gold dot on the minimap.'
-            : 'A wandering merchant is on this floor — gold dot on the minimap.'
+            ? `Merchant + ${kinds.length - 1} more event(s): ${labels}. Gold dots on map.`
+            : `Events this floor (${kinds.length}): ${labels}. Gold dots on map.`
         });
-      } else if (INTERACT_EVENT_KINDS.has(def.microEventKind) && pos) {
+      } else if (interactCount > 0) {
         this.bus.emit('floor:event', {
-          message: `${label} nearby — look for the glowing ring (gold on map).`
+          message: `Events this floor (${kinds.length}): ${labels}. Glowing rings on map.`
         });
       } else {
-        this.bus.emit('floor:event', { message: `A ${label.toLowerCase()} lies somewhere on this floor.` });
+        this.bus.emit('floor:event', { message: `Events this floor (${kinds.length}): ${labels}.` });
       }
     }
     // Rest floors fully heal the player on entry — incentive to push deeper.
@@ -1666,6 +1669,7 @@ export class GameScene {
       forgeOffers: this._forgeOffers[floor.index] || null,
       forgeUsed: !!this._forgeUsed[floor.index],
       microEvent: floor.microEvent ? { ...floor.microEvent } : null,
+      microEvents: (floor.microEvents || []).map((e) => ({ ...e })),
       eventTiles: serializeEventTiles(floor)
     };
   }
@@ -1716,7 +1720,12 @@ export class GameScene {
     floor.clearVisibility();
     if (snap.forgeOffers) this._forgeOffers[floor.index] = snap.forgeOffers;
     if (snap.forgeUsed) this._forgeUsed[floor.index] = true;
-    if (snap.microEvent) floor.microEvent = { ...snap.microEvent };
+    if (snap.microEvents?.length) {
+      floor.microEvents = snap.microEvents.map((e) => ({ ...e }));
+    } else if (snap.microEvent) {
+      floor.microEvents = [{ ...snap.microEvent }];
+    }
+    syncFloorMicroEventLegacy(floor);
     restoreEventTiles(floor, snap.eventTiles || []);
     for (const pair of snap.explored || []) {
       const [x, y] = pair;

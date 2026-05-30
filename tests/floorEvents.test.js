@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  pickMicroEventKind, applyFloorModifiersToAtk, EVENT_KINDS, isGuaranteedMerchantFloor
+  pickMicroEventKind, applyFloorModifiersToAtk, EVENT_KINDS, isGuaranteedMerchantFloor,
+  eventCountForFloor
 } from '../src/gameplay/floorEvents.js';
 import { FloorEventPlacer } from '../src/world/FloorEventPlacer.js';
 import { DEFAULT_BALANCE } from '../src/config/balance.js';
@@ -35,10 +36,14 @@ describe('floorEvents', () => {
   });
 
   it('guarantees merchant on floor 4', () => {
-    const rng = { chance: () => false, weightedPick: () => 'shrine', fork: () => rng };
-    expect(pickMicroEventKind(rng, { index: 3, enemyCount: 5 })).toBe('merchant');
     expect(isGuaranteedMerchantFloor(4)).toBe(true);
     expect(isGuaranteedMerchantFloor(7)).toBe(false);
+  });
+
+  it('requests 2–3 events on normal floors', () => {
+    expect(eventCountForFloor({ index: 0, enemyCount: 5 }, DEFAULT_BALANCE.dungeon)).toBe(2);
+    expect(eventCountForFloor({ index: 14, enemyCount: 5 }, DEFAULT_BALANCE.dungeon)).toBe(3);
+    expect(eventCountForFloor({ type: 'forge' }, DEFAULT_BALANCE.dungeon)).toBe(0);
   });
 
   it('applies atk floor modifier', () => {

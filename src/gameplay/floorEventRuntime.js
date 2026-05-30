@@ -166,8 +166,9 @@ export function applyMysteryChest(ctx) {
 
 export function tryTriggerAmbush(scene) {
   const floor = scene.floor;
-  const me = floor?.microEvent;
-  if (!me?.ambushRoomKey || me.used?.ambush) return;
+  const events = floor?.microEvents?.length ? floor.microEvents : (floor?.microEvent ? [floor.microEvent] : []);
+  const me = events.find((e) => e.ambushRoomKey && !e.used?.ambush);
+  if (!me) return;
   const room = floor.rooms.find((r) => roomKey(r) === me.ambushRoomKey);
   if (!room || !tileInRoom(scene.player.x, scene.player.y, room)) return;
   me.used.ambush = true;
@@ -242,11 +243,12 @@ export function revealRandomRoom(floor) {
 
 export function markInteractUsed(floor, x, y) {
   const t = floor.tileAt(x, y);
-  if (t?.interact) {
-    t.interact.used = true;
-    const key = interactKey(x, y);
-    if (floor.microEvent?.used) floor.microEvent.used[key] = true;
-  }
+  if (!t?.interact) return;
+  t.interact.used = true;
+  const key = interactKey(x, y);
+  const list = floor.microEvents?.length ? floor.microEvents : (floor.microEvent ? [floor.microEvent] : []);
+  const evt = list.find((e) => e.interactPos?.x === x && e.interactPos?.y === y) || list[0];
+  if (evt?.used) evt.used[key] = true;
 }
 
 export function serializeEventTiles(floor) {

@@ -66,7 +66,7 @@
     {
       "id": "second_wind",
       "name": "Second Wind",
-      "description": "Heal 3 HP every 5 turns.",
+      "description": "Heal 2 HP every 8 turns.",
       "rarity": "rare",
       "spriteKey": "skill_wind"
     },
@@ -136,7 +136,7 @@
     {
       "id": "field_mender",
       "name": "Field Mender",
-      "description": "Improve passive regeneration.",
+      "description": "+1 heal per tick, or 1 HP / 9 turns if none.",
       "rarity": "uncommon",
       "spriteKey": "skill_wind"
     },

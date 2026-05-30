@@ -1,8 +1,14 @@
 /**
- * Places one micro-event per eligible floor during dungeon generation.
+ * Places micro-events per floor during dungeon generation.
  */
 import { TILE } from '../config/constants.js';
-import { pickMicroEventKind, roomKey, tileInRoom } from '../gameplay/floorEvents.js';
+import {
+  pickMicroEventKindExcluding,
+  eventCountForFloor,
+  isGuaranteedMerchantFloor,
+  syncFloorMicroEventLegacy,
+  roomKey
+} from '../gameplay/floorEvents.js';
 import { pickHazardType } from '../gameplay/hazards.js';
 import { rollItemAffixes } from '../items/itemGenerator.js';
 
@@ -10,39 +16,75 @@ export class FloorEventPlacer {
   constructor(rng, balance) {
     this.rng = rng;
     this.balance = balance;
+    this._usedRooms = new Set();
   }
 
   /**
-   * @returns {string|null} event kind placed, or null
+   * Place multiple events per floor. @returns {string[]} kinds placed
    */
-  place(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs) {
+  placeAll(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs) {
     const cfg = this.balance.dungeon || {};
-    const kind = pickMicroEventKind(this.rng, floorDef, cfg);
-    if (!kind) return null;
+    const target = eventCountForFloor(floorDef, cfg);
+    if (target <= 0) return [];
 
     const candidates = rooms.filter((r) => r !== spawnRoom && !r.arena);
-    if (candidates.length < 1 && kind !== 'lore_omen') return null;
+    if (!candidates.length) return [];
 
-    const placer = this;
-    floor.microEvent = { kind, used: {} };
-    const fn = PLACERS[kind];
-    if (!fn) return null;
-    const ok = fn(placer, floor, candidates, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs);
-    if (!ok) {
-      floor.microEvent = null;
-      return null;
+    floor.microEvents = [];
+    const usedKinds = new Set();
+    const floorNumber = floorIndex + 1;
+
+    if (isGuaranteedMerchantFloor(floorNumber, cfg)) {
+      this._placeOne('merchant', floor, candidates, spawnRoom, floorDef, floorIndex,
+        spawns, enemyDefs, itemDefs, usedKinds);
     }
-    return kind;
+
+    let attempts = 0;
+    while (floor.microEvents.length < target && attempts < target * 8) {
+      attempts++;
+      const kind = pickMicroEventKindExcluding(this.rng, floorDef, cfg, usedKinds,
+        { force: floor.microEvents.length < target - 1 });
+      if (!kind) break;
+      this._placeOne(kind, floor, candidates, spawnRoom, floorDef, floorIndex,
+        spawns, enemyDefs, itemDefs, usedKinds);
+    }
+
+    syncFloorMicroEventLegacy(floor);
+    return floor.microEvents.map((e) => e.kind);
+  }
+
+  /** @returns {string|null} single event (legacy) */
+  place(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs) {
+    const kinds = this.placeAll(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs);
+    return kinds[0] || null;
+  }
+
+  _placeOne(kind, floor, candidates, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs, usedKinds) {
+    const evt = { kind, used: {} };
+    floor.microEvent = evt;
+    this._usedRooms = new Set();
+    const fn = PLACERS[kind];
+    const ok = fn && fn(this, floor, candidates, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs);
+    floor.microEvent = null;
+    if (ok) {
+      floor.microEvents.push(evt);
+      usedKinds.add(kind);
+    }
+    return ok;
   }
 
   _pickRoom(candidates, spawnRoom, preferLarge = false) {
-    const pool = candidates.filter((r) => r !== spawnRoom);
+    const pool = candidates.filter((r) => r !== spawnRoom && !this._usedRooms.has(roomKey(r)));
     if (!pool.length) return null;
     if (preferLarge) {
       const larges = pool.filter((r) => r.large);
       if (larges.length) return this.rng.pick(larges);
     }
     return this.rng.pick(pool);
+  }
+
+  _reserveRoom(room) {
+    if (room) this._usedRooms.add(roomKey(room));
   }
 
   _randomTileInRoom(floor, room, reserved) {
@@ -68,18 +110,20 @@ export class FloorEventPlacer {
 }
 
 const PLACERS = {
-  shrine(placer, floor, candidates, spawnRoom, floorDef, floorIndex, spawns) {
+  shrine(placer, floor, candidates, spawnRoom, _fd, _fi, spawns) {
     const room = placer._pickRoom(candidates, spawnRoom);
     if (!room) return false;
+    placer._reserveRoom(room);
     const reserved = occupiedSet(spawns);
     const spot = placer._randomTileInRoom(floor, room, reserved);
     if (!spot) return false;
     return placer._setInteract(floor, spot.x, spot.y, { kind: 'shrine' });
   },
 
-  trap_room(placer, floor, candidates, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs) {
+  trap_room(placer, floor, candidates, spawnRoom, _fd, floorIndex, spawns, _ed, itemDefs) {
     const room = placer._pickRoom(candidates, spawnRoom, true);
     if (!room || room.w < 5 || room.h < 5) return false;
+    placer._reserveRoom(room);
     room.trapRoom = true;
     floor.microEvent.trapRoomKey = roomKey(room);
     const reserved = occupiedSet(spawns);
@@ -113,30 +157,32 @@ const PLACERS = {
       const affixes = baseDef ? rollItemAffixes(baseDef, floorNum + 4, placer.rng) : null;
       if (affixes) entry.affixes = affixes;
       spawns.items.push(entry);
-      reserved.add(`${center.x},${center.y}`);
     }
     return true;
   },
 
-  merchant(placer, floor, candidates, spawnRoom) {
+  merchant(placer, floor, candidates, spawnRoom, _fd, _fi, spawns) {
     const room = placer._pickRoom(candidates, spawnRoom);
     if (!room) return false;
-    const spot = placer._randomTileInRoom(floor, room, occupiedSet());
+    placer._reserveRoom(room);
+    const spot = placer._randomTileInRoom(floor, room, occupiedSet(spawns));
     if (!spot) return false;
     return placer._setInteract(floor, spot.x, spot.y, { kind: 'merchant' });
   },
 
-  rest_alcove(placer, floor, candidates, spawnRoom) {
+  rest_alcove(placer, floor, candidates, spawnRoom, _fd, _fi, spawns) {
     const room = placer._pickRoom(candidates, spawnRoom);
     if (!room) return false;
-    const spot = placer._randomTileInRoom(floor, room, occupiedSet());
+    placer._reserveRoom(room);
+    const spot = placer._randomTileInRoom(floor, room, occupiedSet(spawns));
     if (!spot) return false;
     return placer._setInteract(floor, spot.x, spot.y, { kind: 'rest_alcove' });
   },
 
-  ambush_gate(placer, floor, candidates, spawnRoom, floorDef, floorIndex, spawns, enemyDefs) {
+  ambush_gate(placer, floor, candidates, spawnRoom, floorDef, floorIndex, _spawns, enemyDefs) {
     const room = placer._pickRoom(candidates, spawnRoom, true);
     if (!room) return false;
+    placer._reserveRoom(room);
     room.ambushGate = true;
     floor.microEvent.ambushRoomKey = roomKey(room);
     const floorNum = floorIndex + 1;
@@ -156,6 +202,7 @@ const PLACERS = {
   elite_patrol(placer, floor, candidates, spawnRoom, floorDef, floorIndex, spawns, enemyDefs) {
     const room = placer._pickRoom(candidates, spawnRoom);
     if (!room) return false;
+    placer._reserveRoom(room);
     const reserved = occupiedSet(spawns);
     const spot = placer._randomTileInRoom(floor, room, reserved);
     if (!spot) return false;
@@ -167,20 +214,18 @@ const PLACERS = {
     if (!pool.length) return false;
     const defId = placer.rng.pick(pool);
     spawns.enemies.push({ x: spot.x, y: spot.y, defId, forceElite: true });
-    reserved.add(`${spot.x},${spot.y}`);
+    floor.microEvent.elitePatrol = true;
     if (placer.rng.chance(0.6)) {
       const loot = placer._randomTileInRoom(floor, room, reserved);
-      if (loot) {
-        spawns.items.push({ x: loot.x, y: loot.y, defId: 'health_potion' });
-      }
+      if (loot) spawns.items.push({ x: loot.x, y: loot.y, defId: 'health_potion' });
     }
-    floor.microEvent.elitePatrol = true;
     return true;
   },
 
-  hazard_zone(placer, floor, candidates, spawnRoom, floorDef, floorIndex) {
+  hazard_zone(placer, floor, candidates, spawnRoom, _fd, floorIndex) {
     const room = placer._pickRoom(candidates, spawnRoom, true);
     if (!room || room.w < 4) return false;
+    placer._reserveRoom(room);
     const types = floorIndex >= 6 ? ['frost', 'venom', 'flame'] : ['frost', 'spike'];
     const ambient = placer.rng.pick(types);
     room.hazardZone = ambient;
@@ -188,43 +233,35 @@ const PLACERS = {
     for (let y = room.y + 1; y < room.y + room.h - 1; y++) {
       for (let x = room.x + 1; x < room.x + room.w - 1; x++) {
         const t = floor.tileAt(x, y);
-        if (t?.type === TILE.FLOOR) {
-          t.ambient = { type: ambient };
-        }
+        if (t?.type === TILE.FLOOR) t.ambient = { type: ambient };
       }
-    }
-    const spot = placer._randomTileInRoom(floor, room, occupiedSet());
-    if (spot) {
-      placer._setInteract(floor, spot.x, spot.y, {
-        kind: 'lore_omen',
-        omenId: 'hazard_warning',
-        label: 'The air here bites.'
-      });
     }
     return true;
   },
 
-  mystery_chest(placer, floor, candidates, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs) {
+  mystery_chest(placer, floor, candidates, spawnRoom, _fd, _fi, spawns) {
     const room = placer._pickRoom(candidates, spawnRoom);
     if (!room) return false;
-    const reserved = occupiedSet(spawns);
-    const spot = placer._randomTileInRoom(floor, room, reserved);
+    placer._reserveRoom(room);
+    const spot = placer._randomTileInRoom(floor, room, occupiedSet(spawns));
     if (!spot) return false;
     return placer._setInteract(floor, spot.x, spot.y, { kind: 'mystery_chest' });
   },
 
-  altar_sacrifice(placer, floor, candidates, spawnRoom) {
+  altar_sacrifice(placer, floor, candidates, spawnRoom, _fd, _fi, spawns) {
     const room = placer._pickRoom(candidates, spawnRoom);
     if (!room) return false;
-    const spot = placer._randomTileInRoom(floor, room, occupiedSet());
+    placer._reserveRoom(room);
+    const spot = placer._randomTileInRoom(floor, room, occupiedSet(spawns));
     if (!spot) return false;
     return placer._setInteract(floor, spot.x, spot.y, { kind: 'altar_sacrifice' });
   },
 
-  lore_omen(placer, floor, candidates, spawnRoom) {
+  lore_omen(placer, floor, candidates, spawnRoom, _fd, _fi, spawns) {
     const room = placer._pickRoom(candidates, spawnRoom);
     if (!room) return false;
-    const spot = placer._randomTileInRoom(floor, room, occupiedSet());
+    placer._reserveRoom(room);
+    const spot = placer._randomTileInRoom(floor, room, occupiedSet(spawns));
     if (!spot) return false;
     const omenId = placer.rng.pick(['whisper_north', 'ember_blessing', 'warning']);
     return placer._setInteract(floor, spot.x, spot.y, { kind: 'lore_omen', omenId });
