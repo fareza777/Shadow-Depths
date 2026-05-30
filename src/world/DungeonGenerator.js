@@ -129,7 +129,44 @@ export class DungeonGenerator {
       }
     }
 
+    // 9. Forge floors: a solid anvil-shrine in a room centre (used from beside).
+    if (floorDef.type === 'forge') {
+      this._placeForgeAnvil(floor, rooms, spawnPoint, spawns);
+    }
+
     return { floor, spawns };
+  }
+
+  /**
+   * Place the Veiled Smith's anvil as a solid interactable at a room centre
+   * (never the spawn/stairs tile, never a doorway). The player crafts from an
+   * adjacent tile. Runs last so no later spawn can land on it.
+   */
+  _placeForgeAnvil(floor, rooms, spawnPoint, spawns) {
+    const reserved = new Set([`${spawnPoint.x},${spawnPoint.y}`]);
+    if (floor.stairsDown) reserved.add(`${floor.stairsDown.x},${floor.stairsDown.y}`);
+    for (const it of spawns.items) reserved.add(`${it.x},${it.y}`);
+    for (const en of spawns.enemies) reserved.add(`${en.x},${en.y}`);
+
+    const ordered = rooms.slice().sort((a, b) => (b.w * b.h) - (a.w * a.h));
+    for (const room of ordered) {
+      const cx = Math.floor(room.x + room.w / 2);
+      const cy = Math.floor(room.y + room.h / 2);
+      const tries = [[cx, cy], [cx - 1, cy], [cx + 1, cy], [cx, cy - 1], [cx, cy + 1]];
+      for (const [x, y] of tries) {
+        // Stay strictly interior so the anvil can never seal a doorway.
+        if (x <= room.x || x >= room.x + room.w - 1) continue;
+        if (y <= room.y || y >= room.y + room.h - 1) continue;
+        const t = floor.tileAt(x, y);
+        if (!t || t.type !== TILE.FLOOR || t.hazard || t.interact) continue;
+        if (reserved.has(`${x},${y}`)) continue;
+        if (floor.itemsAt(x, y).length || floor.entityAt(x, y)) continue;
+        t.interact = { kind: 'forge', solid: true, used: false };
+        floor.forgeAnvil = { x, y };
+        return true;
+      }
+    }
+    return false;
   }
 
   // --- BSP partitioning ----------------------------------------------

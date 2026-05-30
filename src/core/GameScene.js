@@ -872,8 +872,13 @@ export class GameScene {
   }
 
   _canOpenForgeHere() {
-    return !!(this.floor?.definition?.type === 'forge' &&
-      !this._forgeUsed[this.dungeon?.currentIndex]);
+    if (this.floor?.definition?.type !== 'forge') return false;
+    if (this._forgeUsed[this.dungeon?.currentIndex]) return false;
+    // Must stand beside the anvil structure. If for some reason no anvil was
+    // placed, fall back to the old floor-wide behaviour so forge never breaks.
+    const a = this.floor.forgeAnvil;
+    if (!a || !this.player) return true;
+    return Math.abs(a.x - this.player.x) + Math.abs(a.y - this.player.y) === 1;
   }
 
   _eventCtx() {
@@ -894,6 +899,11 @@ export class GameScene {
     const interact = tile?.interact;
     if (!interact || interact.used) return;
     const kind = interact.kind;
+    if (kind === 'forge') {
+      // The anvil is a permanent structure — open the smith, never mark used.
+      this.bus.emit('request:openCrafting', {});
+      return;
+    }
     if (kind === 'rest_alcove') {
       applyRestAlcove(this.player, this.bus);
       markInteractUsed(this.floor, x, y);

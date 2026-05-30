@@ -361,10 +361,18 @@ export class Renderer {
   _drawSpecialFloorMotif(ctx, floor) {
     const def = floor.definition || {};
     if (def.type !== 'rest' && def.type !== 'vault' && def.type !== 'forge') return;
-    if (!floor.stairsUp) return;
     const t = this._timeSec || 0;
-    const cx = floor.stairsUp.x * TILE_SIZE + TILE_SIZE / 2;
-    const cy = floor.stairsUp.y * TILE_SIZE + TILE_SIZE / 2;
+    // Forge centerpiece sits on its solid anvil tile (revealed once explored);
+    // rest/vault motifs stay on the entry tile.
+    let anchor = floor.stairsUp;
+    if (def.type === 'forge' && floor.forgeAnvil) {
+      const at = floor.tileAt?.(floor.forgeAnvil.x, floor.forgeAnvil.y);
+      if (!at || !at.explored) return;
+      anchor = floor.forgeAnvil;
+    }
+    if (!anchor) return;
+    const cx = anchor.x * TILE_SIZE + TILE_SIZE / 2;
+    const cy = anchor.y * TILE_SIZE + TILE_SIZE / 2;
 
     if (def.type === 'rest' || def.type === 'forge') {
       // Forge sanctuary — an anvil/ember shrine where the Veiled Smith appears.
@@ -816,6 +824,8 @@ export class Renderer {
         const tile = floor.tiles[y][x];
         const ix = tile?.interact;
         if (!ix || ix.used || !tile.explored) continue;
+        // Forge anvil is drawn by the special-floor motif (flame + glow).
+        if (ix.kind === 'forge') continue;
         const cx = x * TILE_SIZE + TILE_SIZE / 2;
         const cy = y * TILE_SIZE + TILE_SIZE / 2;
         const s = TILE_SIZE;
