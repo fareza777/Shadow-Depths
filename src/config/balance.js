@@ -74,9 +74,9 @@ export const DEFAULT_BALANCE = Object.freeze({
     enemySpawnsPerFloor: [3, 5, 8],
     itemSpawnsPerFloor: [5, 5, 6],
     // Fraction of rooms carved as a large hall/cavern (spatial variety).
-    largeRoomChance: 0.2,
+    largeRoomChance: 0.45,
     // Chance a floor designates an arena set-piece (guards + reward).
-    arenaChance: 0.35,
+    arenaChance: 0.6,
     // Chance a floor hides a secret loot cache behind a breakable wall.
     secretCacheChance: 0.4,
     // One micro-event per normal floor (shrine, trap room, merchant, …).

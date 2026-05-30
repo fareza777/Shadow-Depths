@@ -117,7 +117,7 @@ const PLACERS = {
     const reserved = occupiedSet(spawns);
     const spot = placer._randomTileInRoom(floor, room, reserved);
     if (!spot) return false;
-    return placer._setInteract(floor, spot.x, spot.y, { kind: 'shrine' });
+    return placer._setInteract(floor, spot.x, spot.y, { kind: 'shrine', solid: true });
   },
 
   trap_room(placer, floor, candidates, spawnRoom, _fd, floorIndex, spawns, _ed, itemDefs) {
@@ -167,7 +167,7 @@ const PLACERS = {
     placer._reserveRoom(room);
     const spot = placer._randomTileInRoom(floor, room, occupiedSet(spawns));
     if (!spot) return false;
-    return placer._setInteract(floor, spot.x, spot.y, { kind: 'merchant' });
+    return placer._setInteract(floor, spot.x, spot.y, { kind: 'merchant', solid: true });
   },
 
   rest_alcove(placer, floor, candidates, spawnRoom, _fd, _fi, spawns) {
@@ -254,7 +254,7 @@ const PLACERS = {
     placer._reserveRoom(room);
     const spot = placer._randomTileInRoom(floor, room, occupiedSet(spawns));
     if (!spot) return false;
-    return placer._setInteract(floor, spot.x, spot.y, { kind: 'altar_sacrifice' });
+    return placer._setInteract(floor, spot.x, spot.y, { kind: 'altar_sacrifice', solid: true });
   },
 
   lore_omen(placer, floor, candidates, spawnRoom, _fd, _fi, spawns) {

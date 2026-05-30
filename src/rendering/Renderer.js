@@ -804,45 +804,180 @@ export class Renderer {
     fillRect(this.ctx, x, y, w, h, color);
   }
 
-  /** Glowing marker for shrine / merchant / chest interact tiles. */
+  /** Hand-drawn structures for shrine / merchant / altar / chest interactables. */
   _drawFloorInteracts(ctx, floor, x0, y0, x1, y1) {
-    const colors = {
-      shrine: '#c8a0ff',
-      merchant: '#d4ac6c',
-      rest_alcove: '#80c0ff',
-      mystery_chest: '#ffcc66',
-      altar_sacrifice: '#ff8866',
-      lore_omen: '#a0b8c8'
+    const glowCol = {
+      shrine: '#c8a0ff', merchant: '#ffd98a', rest_alcove: '#80c0ff',
+      mystery_chest: '#ffcc66', altar_sacrifice: '#ff6655', lore_omen: '#a0d0e0'
     };
+    const t = this._timeSec || 0;
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
-        const t = floor.tiles[y][x];
-        const ix = t?.interact;
-        if (!ix || ix.used || !t.explored) continue;
-        const col = colors[ix.kind] || '#d4ac6c';
+        const tile = floor.tiles[y][x];
+        const ix = tile?.interact;
+        if (!ix || ix.used || !tile.explored) continue;
         const cx = x * TILE_SIZE + TILE_SIZE / 2;
         const cy = y * TILE_SIZE + TILE_SIZE / 2;
-        const r = TILE_SIZE * 0.32;
+        const s = TILE_SIZE;
         ctx.save();
-        ctx.globalAlpha = t.visible ? 0.95 : 0.45;
-        ctx.strokeStyle = col;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = col;
-        ctx.globalAlpha = t.visible ? 0.35 : 0.15;
-        ctx.fill();
-        if (ix.kind === 'merchant' && t.visible) {
-          ctx.fillStyle = '#ffe08a';
-          ctx.font = `bold ${Math.max(9, Math.floor(TILE_SIZE * 0.42))}px serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('$', cx, cy);
+        ctx.globalAlpha = tile.visible ? 1 : 0.5;
+
+        // Soft floor glow marks every interactable as usable.
+        const col = glowCol[ix.kind] || '#d4ac6c';
+        const pulse = 0.5 + Math.sin(t * 2.6 + x * 0.7) * 0.16;
+        const g = ctx.createRadialGradient(cx, cy + s * 0.28, 1, cx, cy + s * 0.28, s * 0.7);
+        g.addColorStop(0, this._hexA(col, 0.34 * pulse + 0.12));
+        g.addColorStop(1, this._hexA(col, 0));
+        ctx.fillStyle = g;
+        ctx.fillRect(cx - s * 0.75, cy - s * 0.5, s * 1.5, s);
+
+        switch (ix.kind) {
+          case 'merchant':       this._drawMerchantSprite(ctx, cx, cy, s, t); break;
+          case 'shrine':         this._drawShrineSprite(ctx, cx, cy, s, t); break;
+          case 'altar_sacrifice':this._drawAltarSprite(ctx, cx, cy, s, t); break;
+          case 'mystery_chest':  this._drawChestSprite(ctx, cx, cy, s); break;
+          case 'rest_alcove':    this._drawRestSprite(ctx, cx, cy, s, t); break;
+          default:               this._drawLoreSprite(ctx, cx, cy, s, t); break;
         }
         ctx.restore();
       }
     }
+  }
+
+  /** "#rrggbb" + alpha → rgba() string. */
+  _hexA(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${Math.max(0, Math.min(1, a)).toFixed(3)})`;
+  }
+
+  /** Hooded wandering merchant: robe, hood, face, coin-pouch, gold glint. */
+  _drawMerchantSprite(ctx, cx, cy, s, t) {
+    const u = s / 32; // unit scale relative to a 32px tile
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
+    // ground shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + 12 * u, 9 * u, 3 * u, 0, 0, Math.PI * 2); ctx.fill();
+    // robe (trapezoid)
+    ctx.fillStyle = '#5a3d24';
+    ctx.beginPath();
+    ctx.moveTo(cx - 4 * u, cy - 4 * u); ctx.lineTo(cx + 4 * u, cy - 4 * u);
+    ctx.lineTo(cx + 8 * u, cy + 12 * u); ctx.lineTo(cx - 8 * u, cy + 12 * u);
+    ctx.closePath(); ctx.fill();
+    px(-7, 4, 2, 8, '#4a3019'); // robe shadow seam (left)
+    px(5, 4, 2, 8, '#4a3019');
+    // gold-trim hem
+    px(-8, 11, 16, 1.5, '#d4ac6c');
+    // satchel of coins
+    px(-9, 2, 4, 5, '#3a2614'); px(-9, 2, 4, 1.5, '#d4ac6c');
+    // hood + shoulders
+    ctx.fillStyle = '#3c2817';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 14 * u);
+    ctx.quadraticCurveTo(cx + 7 * u, cy - 10 * u, cx + 5 * u, cy - 2 * u);
+    ctx.lineTo(cx - 5 * u, cy - 2 * u);
+    ctx.quadraticCurveTo(cx - 7 * u, cy - 10 * u, cx, cy - 14 * u);
+    ctx.fill();
+    // shadowed face
+    px(-2.5, -9, 5, 4, '#1a120b');
+    px(-1.5, -8, 1.2, 1.2, '#ffd070'); // glowing eyes
+    px(0.5, -8, 1.2, 1.2, '#ffd070');
+    // floating coin glint
+    const bob = Math.sin(t * 3) * 1.5;
+    ctx.fillStyle = '#ffe08a';
+    ctx.beginPath(); ctx.arc(cx + 9 * u, cy - 9 * u + bob * u, 2.2 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#a8791f';
+    ctx.font = `bold ${Math.max(6, Math.floor(s * 0.2))}px serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('$', cx + 9 * u, cy - 9 * u + bob * u + 0.5);
+  }
+
+  /** Stone shrine idol on a pedestal with a pulsing arcane gem. */
+  _drawShrineSprite(ctx, cx, cy, s, t) {
+    const u = s / 32;
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + 12 * u, 9 * u, 3 * u, 0, 0, Math.PI * 2); ctx.fill();
+    // tiered pedestal
+    px(-9, 9, 18, 4, '#4a4658'); px(-7, 6, 14, 3, '#565268'); px(-5, -3, 10, 9, '#605c74');
+    // edge highlights
+    px(-9, 9, 18, 1, '#6a6680'); px(-5, -3, 10, 1, '#7a7690');
+    // obelisk top
+    ctx.fillStyle = '#605c74';
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - 14 * u); ctx.lineTo(cx + 5 * u, cy - 3 * u);
+    ctx.lineTo(cx - 5 * u, cy - 3 * u); ctx.closePath(); ctx.fill();
+    // glowing gem + halo
+    const pulse = 0.6 + Math.sin(t * 3.2) * 0.4;
+    const halo = ctx.createRadialGradient(cx, cy - 4 * u, 1, cx, cy - 4 * u, 9 * u);
+    halo.addColorStop(0, `rgba(200,160,255,${0.55 * pulse})`);
+    halo.addColorStop(1, 'rgba(200,160,255,0)');
+    ctx.fillStyle = halo; ctx.fillRect(cx - 10 * u, cy - 14 * u, 20 * u, 20 * u);
+    ctx.fillStyle = '#e0c4ff';
+    ctx.beginPath(); ctx.arc(cx, cy - 4 * u, 2.4 * u, 0, Math.PI * 2); ctx.fill();
+    // carved rune lines
+    px(-3, 2, 6, 1, '#8a86a0'); px(-2, 4, 4, 1, '#8a86a0');
+  }
+
+  /** Blood altar: stone block, offering bowl, ember-red glow. */
+  _drawAltarSprite(ctx, cx, cy, s, t) {
+    const u = s / 32;
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + 12 * u, 10 * u, 3 * u, 0, 0, Math.PI * 2); ctx.fill();
+    // altar block
+    px(-9, 0, 18, 12, '#3a3038'); px(-9, 0, 18, 2, '#4c424c'); px(-9, 10, 18, 2, '#241e24');
+    // dark stains
+    px(-6, 4, 3, 5, '#2a0e12'); px(2, 5, 3, 4, '#2a0e12');
+    // bowl + ember
+    px(-5, -3, 10, 3, '#2a2228'); px(-4, -4, 8, 1.5, '#4c424c');
+    const pulse = 0.6 + Math.sin(t * 4) * 0.4;
+    const glow = ctx.createRadialGradient(cx, cy - 4 * u, 1, cx, cy - 4 * u, 8 * u);
+    glow.addColorStop(0, `rgba(255,70,50,${0.6 * pulse})`);
+    glow.addColorStop(1, 'rgba(255,70,50,0)');
+    ctx.fillStyle = glow; ctx.fillRect(cx - 9 * u, cy - 12 * u, 18 * u, 14 * u);
+    px(-2.5, -5, 5, 1.5, '#ff5a3a');
+  }
+
+  /** Treasure chest (brass-banded). */
+  _drawChestSprite(ctx, cx, cy, s) {
+    const u = s / 32;
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + 10 * u, 9 * u, 3 * u, 0, 0, Math.PI * 2); ctx.fill();
+    px(-9, -2, 18, 11, '#5a3420'); px(-9, -8, 18, 7, '#6e4228'); // body + lid
+    px(-9, -2, 18, 1.5, '#d4ac6c'); px(-9, 6, 18, 1.5, '#b8965a'); // bands
+    px(-1.5, -1, 3, 4, '#d4ac6c'); px(-0.6, 0, 1.2, 2, '#3a2614'); // lock
+  }
+
+  /** Rest alcove: bedroll + small campfire. */
+  _drawRestSprite(ctx, cx, cy, s, t) {
+    const u = s / 32;
+    ctx.fillStyle = '#3a2418'; ctx.fillRect(cx - 9 * u, cy + 4 * u, 9 * u, 5 * u); // bedroll
+    ctx.fillStyle = '#6a4a30'; ctx.fillRect(cx - 9 * u, cy + 4 * u, 9 * u, 1.5 * u);
+    // logs
+    ctx.fillStyle = '#3a2414'; ctx.fillRect(cx + 1 * u, cy + 7 * u, 8 * u, 2 * u);
+    // flame
+    const fl = 0.85 + Math.sin(t * 7) * 0.15;
+    ctx.fillStyle = '#ff7a40';
+    ctx.beginPath();
+    ctx.moveTo(cx + 5 * u, cy + 7 * u - 7 * u * fl);
+    ctx.quadraticCurveTo(cx + 8 * u, cy + 4 * u, cx + 7 * u, cy + 7 * u);
+    ctx.lineTo(cx + 3 * u, cy + 7 * u);
+    ctx.quadraticCurveTo(cx + 2 * u, cy + 4 * u, cx + 5 * u, cy + 7 * u - 7 * u * fl);
+    ctx.fill();
+    ctx.fillStyle = '#ffd070';
+    ctx.fillRect(cx + 4 * u, cy + 4 * u, 2 * u, 3 * u);
+  }
+
+  /** Lore omen: glowing rune tablet. */
+  _drawLoreSprite(ctx, cx, cy, s, t) {
+    const u = s / 32;
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
+    px(-6, -8, 12, 16, '#4a5560'); px(-6, -8, 12, 1.5, '#6a7580'); px(-5, 6, 10, 1.5, '#323a42');
+    const pulse = 0.5 + Math.sin(t * 3) * 0.4;
+    ctx.fillStyle = `rgba(150,210,235,${pulse})`;
+    px(-3, -5, 6, 1, ctx.fillStyle); px(-3, -2, 5, 1, ctx.fillStyle);
+    px(-3, 1, 6, 1, ctx.fillStyle); px(-3, 4, 4, 1, ctx.fillStyle);
   }
 
   /** Tint tiles in hazard-zone rooms. */
