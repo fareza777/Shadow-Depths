@@ -52,6 +52,7 @@ import { computeSynergyMods, skillsById } from '../gameplay/skillSynergy.js';
 import { StatusEffects } from '../combat/StatusEffects.js';
 import { Inventory } from '../items/Inventory.js';
 import { ItemFactory } from '../items/ItemFactory.js';
+import { applyCanonicalItemStats } from '../items/canonicalStats.js';
 import { Equipment } from '../items/Equipment.js';
 import { findQuickUseSlots } from '../items/quickUse.js';
 import { Dungeon } from '../world/Dungeon.js';
@@ -209,6 +210,7 @@ export class GameScene {
       heroOverrides: heroStatOverrides(this.heroKind)
     });
     this._restorePlayerSnapshot(this.player, snapshot.player || {});
+    this._fixWornDaggerStats();
     this.player.snapRender();
     floor.addEntity(this.player);
 
@@ -1429,6 +1431,16 @@ export class GameScene {
   _applyStarterLoadout() {
     const dagger = this.itemFactory.create('worn_dagger', 1);
     if (dagger) this.player.equip(dagger);
+    this._fixWornDaggerStats();
+  }
+
+  /** Clamp worn dagger ATK on weapon + inventory (old saves / polluted defs). */
+  _fixWornDaggerStats() {
+    const meta = this.state?.state?.meta;
+    const fix = (item) => applyCanonicalItemStats(item, meta);
+    fix(this.player?.weapon);
+    const slots = this.player?.inventory?.slots || [];
+    for (const item of slots) fix(item);
   }
 
   _applyMetaUnlocks() {
@@ -1438,10 +1450,7 @@ export class GameScene {
     // Score-threshold unlocks (legacy v0.1 system).
     for (const id of meta.unlocks || []) {
       if (id === 'worn_dagger') {
-        if (this.player.weapon?.id === 'worn_dagger' && this.player.weapon.stats) {
-          const base = this.content.items?.worn_dagger?.stats?.atk ?? 1;
-          this.player.weapon.stats.atk = base + 1;
-        }
+        this._fixWornDaggerStats();
       } else if (id === 'veterans_vigor') {
         this.player.stats.hpMax += 10;
         this.player.stats.hp += 10;

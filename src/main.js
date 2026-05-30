@@ -95,6 +95,7 @@ import { setLocale } from './content/i18n.js';
 import { Analytics } from './persistence/Analytics.js';
 import { AchievementEngine, loadAchievementDefs } from './persistence/Achievements.js';
 import { AchievementToast } from './ui/AchievementToast.js';
+import { repairItemDefStats } from './items/canonicalStats.js';
 
 async function bootstrap() {
   console.log(LOG.CORE, 'Shadow Depths v0.1.0 — bootstrap');
@@ -126,6 +127,7 @@ async function bootstrap() {
   // Merge material defs into the main item registry so they share the same
   // factory + inventory + sprite pipeline.
   Object.assign(content.items, materialsData.materials || {});
+  repairItemDefStats(content.items);
 
   // Content validation runs once at boot. Failures are warnings, not
   // fatal, so the game still loads even when a single entry is malformed.
