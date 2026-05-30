@@ -51,7 +51,10 @@ export const DEFAULT_BALANCE = Object.freeze({
     dodgePerDex: 0.008,
     dodgeCap: 0.12,
     grazeChance: 0.5,
-    grazeDamage: 0.5
+    grazeDamage: 0.5,
+    // Positional melee bonuses (#4): striking a foe in the back / side.
+    backstabMult: 1.5,
+    flankMult: 1.15
   },
 
   vision: {

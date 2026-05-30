@@ -28,6 +28,7 @@ import { applyEffect } from './EffectRegistry.js';
 import { fireTriggers } from './TriggerSystem.js';
 import { hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
 import { onHeroKill, passiveFlatDamageReduction } from '../gameplay/heroPassives.js';
+import { dirTo, flankMultiplier } from '../gameplay/flanking.js';
 
 export class CombatSystem {
   /**
@@ -121,6 +122,8 @@ export class CombatSystem {
     const { floor } = ctx;
     if (!floor.isPassable(to.x, to.y)) return false;
     const from = { x: actor.x, y: actor.y };
+    // Remember heading for flanking/backstab math.
+    if (to.x !== from.x || to.y !== from.y) actor.facing = dirTo(from, to);
     floor.moveEntity(actor, to.x, to.y);
     this.bus.emit('entity:moved', { entity: actor, from, to });
     return true;
@@ -194,13 +197,24 @@ export class CombatSystem {
     }
     // A graze lands for reduced damage (never a crit).
     if (graze) finalDamage = Math.max(1, Math.round(finalDamage * (c.grazeDamage ?? 0.5)));
+    // Positional bonus (melee only): hitting a foe in the flank/back hurts more.
+    let isBackstab = false;
+    if (kind === 'melee') {
+      const fm = flankMultiplier(attacker, target, c);
+      if (fm > 1) {
+        finalDamage = Math.max(1, Math.round(finalDamage * fm));
+        isBackstab = fm >= (c.backstabMult ?? 1.5);
+      }
+    }
+    // The attacker turns to face whoever it just struck.
+    attacker.facing = dirTo(attacker, target);
     if (attacker.kind === 'player') attacker._lastAttackKind = kind;
     const isCrit = !graze && raw.isCrit;
     const hpPctBefore = target.stats.hp / Math.max(1, target.stats.hpMax);
     const dealt = target.takeDamage(finalDamage);
     const hpPctAfter = target.stats.hp / Math.max(1, target.stats.hpMax);
 
-    this.bus.emit('entity:attacked', { attacker, target, damage: dealt, isCrit, isMiss: false, isGraze: graze, kind });
+    this.bus.emit('entity:attacked', { attacker, target, damage: dealt, isCrit, isMiss: false, isGraze: graze, isBackstab, kind });
     this.bus.emit('entity:damaged', { entity: target, amount: dealt, source: attacker, isCrit });
 
     // Attacker on-hit effects via EffectRegistry (weapon onHit list + skill lifesteal).
@@ -252,6 +266,15 @@ export class CombatSystem {
           bus: this.bus, damageDealt: dealt
         });
       }
+    }
+    // Weapon archetype proc (#17): a chance-gated rider, e.g. a mace's stun.
+    const proc = attacker.kind === 'player' ? attacker.weapon?.proc : null;
+    if (proc?.effect && this.rng.chance(proc.chance || 0)) {
+      applyEffect(proc.effect, {
+        source: 'weapon', sourceRef: attacker.weapon,
+        actor: attacker, target,
+        bus: this.bus, damageDealt: dealt
+      });
     }
     // Bloodthirst skill — flat lifesteal on every hit. Routed through the
     // same registry so the heal event has consistent shape.

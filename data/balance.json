@@ -31,7 +31,9 @@
     "dodgePerDex": 0.008,
     "dodgeCap": 0.12,
     "grazeChance": 0.5,
-    "grazeDamage": 0.5
+    "grazeDamage": 0.5,
+    "backstabMult": 1.5,
+    "flankMult": 1.15
   },
   "vision": {
     "torchRadius": 5,
