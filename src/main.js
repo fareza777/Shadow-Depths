@@ -61,6 +61,7 @@ import { MobileControls } from './ui/MobileControls.js';
 import { QuickUseBar } from './ui/QuickUseBar.js';
 import { PauseOverlay } from './ui/PauseOverlay.js';
 import { CraftingPanel } from './ui/CraftingPanel.js';
+import { FloorEventPanel } from './ui/FloorEventPanel.js';
 import { TutorialOverlay } from './ui/TutorialOverlay.js';
 
 import { InputManager } from './input/InputManager.js';
@@ -201,6 +202,7 @@ async function bootstrap() {
   const craftingPanel = new CraftingPanel({
     bus, player: null, materialDefs: materialsData.materials || {}
   });
+  const floorEventPanel = new FloorEventPanel({ bus });
   const tutorial = new TutorialOverlay({ metaProgress, bus });
 
   const resetRunModals = () => {
@@ -208,6 +210,7 @@ async function bootstrap() {
     pauseOverlay.hide();
     inventoryUI.hide();
     vigilScreen.hide();
+    floorEventPanel.hide();
   };
   bus.on('request:newRun', resetRunModals);
   bus.on('scene:switched', ({ to }) => {
@@ -226,7 +229,8 @@ async function bootstrap() {
     opening: (deps) => new OpeningCinematic(deps),
     game: (deps) => new GameScene({
       ...deps, hud, minimap, inventoryUI, skillPicker, vigilScreen,
-      lighting, renderer, mobileControls, quickUseBar, pauseOverlay, craftingPanel, tutorial
+      lighting, renderer, mobileControls, quickUseBar, pauseOverlay,
+      craftingPanel, floorEventPanel, tutorial
     }),
     gameover: (deps) => new GameOverScreen(deps),
     victory: (deps) => new VictoryScreen(deps)

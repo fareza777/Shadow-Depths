@@ -23,6 +23,10 @@ export class Tile {
     this.visible = false;
     /** Optional trap: { type, armed, revealed } — see gameplay/hazards.js. */
     this.hazard = null;
+    /** Floor micro-event interactable: { kind, used, ... }. */
+    this.interact = null;
+    /** Persistent zone hazard (frost/venom cloud) while standing on tile. */
+    this.ambient = null;
   }
 
   /** Does this tile block movement? Includes walls, voids, closed doors. */

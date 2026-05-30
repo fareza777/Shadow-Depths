@@ -11,6 +11,9 @@ import { Entity } from './Entity.js';
 import { resolvePlayerSpriteKey } from '../rendering/playerSprites.js';
 import { applySetBonuses } from '../items/Sets.js';
 import { passiveBonusAtk, passiveBonusDef, passiveCritBonus } from '../gameplay/heroPassives.js';
+import {
+  applyFloorModifiersToAtk, applyFloorModifiersToDef, floorCritBonus
+} from '../gameplay/floorEvents.js';
 
 export class Player extends Entity {
   /**
@@ -357,12 +360,12 @@ export class Player extends Entity {
   totalAtk() {
     let atk = this.stats.atk + this.modifierAtk() + passiveBonusAtk(this);
     for (const p of this.equippedPieces()) atk += (p.stats?.atk || 0);
-    return atk;
+    return applyFloorModifiersToAtk(atk, this);
   }
   totalDef() {
     let def = this.stats.def + this.modifierDef() + passiveBonusDef(this);
     for (const p of this.equippedPieces()) def += (p.stats?.def || 0);
-    return def;
+    return applyFloorModifiersToDef(def, this);
   }
   totalDex() {
     // dex bonus already folded into this.stats.dex at equip() time.
@@ -373,7 +376,7 @@ export class Player extends Entity {
     let bonus = 0;
     for (const p of this.equippedPieces()) bonus += (p.stats?.critBonus || 0);
     return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + bonus
-      + this.critSkillBonus + passiveCritBonus(this));
+      + this.critSkillBonus + passiveCritBonus(this) + floorCritBonus(this));
   }
 
   /** Effective ranged attack range (weapon range + long_reach skill bonus). */

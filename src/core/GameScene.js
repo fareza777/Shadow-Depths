@@ -29,6 +29,12 @@ import {
   beginPlayerTurnPassives, effectiveTorchRadius, markHeroMoved, onHeroDescend,
   tickHeroPassivesEndOfTurn
 } from '../gameplay/heroPassives.js';
+import { resetFloorModifiers, EVENT_LABELS } from '../gameplay/floorEvents.js';
+import {
+  findInteractTarget, buildEventPanelConfig, applyRestAlcove, applyMysteryChest,
+  tryTriggerAmbush, tickAmbientHazard, revealRandomRoom, markInteractUsed,
+  serializeEventTiles, restoreEventTiles
+} from '../gameplay/floorEventRuntime.js';
 
 /** Per-hero stat overrides (atk/def/dex/torchRadius) for new Player(). */
 function heroStatOverrides(kind) {
@@ -88,6 +94,7 @@ export class GameScene {
     this.quickUse = deps.quickUseBar || new QuickUseBar({ bus: this.bus });
     this.pause = deps.pauseOverlay || null;
     this.crafting = deps.craftingPanel || null;
+    this.floorEvents = deps.floorEventPanel || null;
     this.tutorial = deps.tutorial || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
@@ -222,11 +229,17 @@ export class GameScene {
     this.pause?.hide();
     this.inventoryUI?.hide();
     this.vigil?.hide();
+    this.floorEvents?.hide();
   }
 
   _emitFloorEntered(index, floor) {
     const def = floor?.definition || {};
+    resetFloorModifiers(this.player);
     this._floorBanner = this._buildFloorBanner(index, def);
+    if (def.microEventKind && floor.microEvent) {
+      const label = EVENT_LABELS[def.microEventKind] || 'Strange place';
+      this.bus.emit('floor:event', { message: `A ${label.toLowerCase()} lies somewhere on this floor.` });
+    }
     // Rest floors fully heal the player on entry — incentive to push deeper.
     if ((def.type === 'rest' || def.type === 'forge') && this.player && !this.player.isDead) {
       const missing = this.player.stats.hpMax - this.player.stats.hp;
@@ -333,7 +346,7 @@ export class GameScene {
       console.error(LOG.CORE, 'HUD render failed:', err);
     }
 
-    if (this.controls && !this.crafting?.open) {
+    if (this.controls && !this.crafting?.open && !this.floorEvents?.open) {
       // Tell the iron HUD what's actionable this frame so AIM / DOWN /
       // PICK render in their "ready" state (ember glow) vs disabled.
       const stairs = this.floor && this.player &&
@@ -345,6 +358,7 @@ export class GameScene {
       const itemsHere = (this.floor?.itemsAt &&
         this.floor.itemsAt(this.player.x, this.player.y)) || [];
       const forgeHere = this._canOpenForgeHere();
+      const interactHere = !!findInteractTarget(this.floor, this.player.x, this.player.y);
       const aimTarget = MobileControls.computeAimTarget(this.player, this.floor);
       const spellState = this._spellState();
       this.controls.setContext({
@@ -352,11 +366,11 @@ export class GameScene {
         castReady: spellState.ready,
         spell: spellState,
         canDescend,
-        pickAvailable: itemsHere.length > 0 || forgeHere
+        pickAvailable: itemsHere.length > 0 || forgeHere || interactHere
       });
       if (this.quickUse) {
         this.quickUse.setContext({
-          pickAvailable: itemsHere.length > 0 || forgeHere
+          pickAvailable: itemsHere.length > 0 || forgeHere || interactHere
         });
       }
       this.controls.renderBackground(renderer);
@@ -373,6 +387,7 @@ export class GameScene {
     if (this.skillPicker) this.skillPicker.render(renderer);
     if (this.pause) this.pause.render(renderer);
     if (this.crafting) this.crafting.render(renderer);
+    if (this.floorEvents) this.floorEvents.render(renderer);
     if (this.tutorial?.open) this.tutorial.render(renderer);
   }
 
@@ -569,6 +584,17 @@ export class GameScene {
     if (this.tutorial?.open) {
       const consumed = this.tutorial.handleInput(action);
       if (consumed) return;
+    }
+
+    if (this.floorEvents?.open) {
+      if (action.type === 'pointer') {
+        if (this.floorEvents.handleTap(action.x, action.y)) return;
+        return;
+      }
+      if (action.type === 'escape' || action.type === 'menu') {
+        this.floorEvents.hide();
+        return;
+      }
     }
 
     // Crafting modal blocks all input below it.
@@ -821,6 +847,55 @@ export class GameScene {
       !this._forgeUsed[this.dungeon?.currentIndex]);
   }
 
+  _eventCtx() {
+    return {
+      player: this.player,
+      floor: this.floor,
+      bus: this.bus,
+      rng: this.rng.fork('floor-event'),
+      itemFactory: this.itemFactory,
+      itemDefs: this.content.items,
+      materialDefs: this.content.materials?.materials || {},
+      meta: this.state?.state?.meta,
+      revealRandomRoom: () => revealRandomRoom(this.floor)
+    };
+  }
+
+  _useFloorInteract(x, y, tile) {
+    const interact = tile?.interact;
+    if (!interact || interact.used) return;
+    const kind = interact.kind;
+    if (kind === 'rest_alcove') {
+      applyRestAlcove(this.player, this.bus);
+      markInteractUsed(this.floor, x, y);
+      this._endPlayerTurn(true);
+      return;
+    }
+    if (kind === 'mystery_chest') {
+      applyMysteryChest(this._eventCtx());
+      markInteractUsed(this.floor, x, y);
+      this._endPlayerTurn(true);
+      return;
+    }
+    if (kind === 'lore_omen' && interact.omenId === 'hazard_warning') {
+      markInteractUsed(this.floor, x, y);
+      this.bus.emit('floor:event', { message: interact.label || 'You tread carefully.' });
+      this._endPlayerTurn(true);
+      return;
+    }
+    const cfg = buildEventPanelConfig(kind, interact, this._eventCtx());
+    if (!cfg || !this.floorEvents) return;
+    this.floorEvents.show({
+      ...cfg,
+      onPick: (id) => {
+        cfg.onPick?.(id);
+        markInteractUsed(this.floor, x, y);
+        this._saveRun();
+        this._endPlayerTurn(true);
+      }
+    });
+  }
+
   _resolveCraftTarget(target) {
     if (!target || !this.player) return null;
     if (target.kind === 'equipment' && target.slot) return this.player[target.slot] || null;
@@ -861,6 +936,7 @@ export class GameScene {
     if (this.floor.isPassable(nx, ny)) {
       this.combat.execute({ type: 'move', to: { x: nx, y: ny } },
         this.player, { floor: this.floor, player: this.player });
+      tryTriggerAmbush(this);
       this._endPlayerTurn(true);
     }
   }
@@ -979,6 +1055,11 @@ export class GameScene {
   }
 
   _playerPickup() {
+    const interact = findInteractTarget(this.floor, this.player.x, this.player.y);
+    if (interact) {
+      this._useFloorInteract(interact.x, interact.y, interact.tile);
+      return;
+    }
     const stack = this.floor.itemsAt(this.player.x, this.player.y);
     if (stack.length === 0) {
       if (this._canOpenForgeHere()) this.bus.emit('request:openCrafting', {});
@@ -1075,6 +1156,12 @@ export class GameScene {
       return;
     }
 
+    const tapTile = this.floor.tileAt(tx, ty);
+    if (tapTile?.interact && !tapTile.interact.used && distToTarget <= 1) {
+      this._useFloorInteract(tx, ty, tapTile);
+      return;
+    }
+
     if (dxRaw === 0 && dyRaw === 0) {
       const adj = this._adjacentEnemy();
       if (adj) {
@@ -1161,6 +1248,7 @@ export class GameScene {
     this.pathfinding.invalidate();
     this.lighting.compute(this.floor, this.player, effectiveTorchRadius(this.player));
     this._revealNearbyHazards();
+    tickAmbientHazard(this);
     this._refreshEnemyIntents();
     beginPlayerTurnPassives(this.player);
 
@@ -1520,6 +1608,8 @@ export class GameScene {
       materials: { ...(this.player.materials || {}) },
       rangedFocus: this.player.rangedFocus,
       rangedFocusMax: this.player.rangedFocusMax,
+      floorModifiers: this.player.floorModifiers
+        ? { ...this.player.floorModifiers } : null,
       statusEffects: this.player.statusEffects.map((e) => ({ ...e }))
     };
   }
@@ -1559,7 +1649,9 @@ export class GameScene {
       enemies,
       explored,
       forgeOffers: this._forgeOffers[floor.index] || null,
-      forgeUsed: !!this._forgeUsed[floor.index]
+      forgeUsed: !!this._forgeUsed[floor.index],
+      microEvent: floor.microEvent ? { ...floor.microEvent } : null,
+      eventTiles: serializeEventTiles(floor)
     };
   }
 
@@ -1589,6 +1681,9 @@ export class GameScene {
     player.materials = { ...(snap.materials || {}) };
     player.rangedFocusMax = snap.rangedFocusMax || player.rangedFocusMax || 3;
     player.rangedFocus = snap.rangedFocus ?? player.rangedFocusMax;
+    player.floorModifiers = snap.floorModifiers
+      ? { ...snap.floorModifiers }
+      : { atkPct: 0, defPenalty: 0, torchBonus: 0, critBonus: 0 };
     player.statusEffects = Array.isArray(snap.statusEffects) ? snap.statusEffects.map((e) => ({ ...e })) : [];
     const make = (s) => (s?.id ? this.itemFactory.fromSnapshot(s) : null);
     const eq = snap.equipment || {};
@@ -1606,6 +1701,8 @@ export class GameScene {
     floor.clearVisibility();
     if (snap.forgeOffers) this._forgeOffers[floor.index] = snap.forgeOffers;
     if (snap.forgeUsed) this._forgeUsed[floor.index] = true;
+    if (snap.microEvent) floor.microEvent = { ...snap.microEvent };
+    restoreEventTiles(floor, snap.eventTiles || []);
     for (const pair of snap.explored || []) {
       const [x, y] = pair;
       const t = floor.tileAt(x, y);

@@ -19,6 +19,7 @@ import {
 import { Floor } from './Floor.js';
 import { rollItemAffixes } from '../items/itemGenerator.js';
 import { trapCountForDepth, pickHazardType } from '../gameplay/hazards.js';
+import { FloorEventPlacer } from './FloorEventPlacer.js';
 
 const MAX_DEPTH = 4; // 2^4 = up to 16 leaf rooms
 const MIN_LEAF_SIZE = 7; // must fit roomMin (4) + 1 padding on each side
@@ -111,6 +112,13 @@ export class DungeonGenerator {
 
     // 7. Scatter hidden traps (avoid spawn room, stairs, doors, occupied tiles).
     this._placeHazards(floor, rooms, spawnRoom, floorIndex, spawns);
+
+    // 8. One micro-event per eligible floor (shrine, trap room, merchant, …).
+    if (!floorDef.isFinalFloor) {
+      const placer = new FloorEventPlacer(this.rng.fork(`event:${floorIndex}`), this.balance);
+      const kind = placer.place(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs);
+      if (kind) floor.definition = { ...floorDef, microEventKind: kind };
+    }
 
     return { floor, spawns };
   }

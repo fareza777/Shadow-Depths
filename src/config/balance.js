@@ -77,6 +77,9 @@ export const DEFAULT_BALANCE = Object.freeze({
     largeRoomChance: 0.2,
     // Chance a floor designates an arena set-piece (guards + reward).
     arenaChance: 0.35,
+    // One micro-event per normal floor (shrine, trap room, merchant, …).
+    floorEventChance: 0.82,
+    vaultEventChance: 0.35,
     // Hidden traps scattered per floor (see gameplay/hazards.js).
     trapsPerFloor: { min: 1, max: 4 },
     hazardBaseDamage: 4

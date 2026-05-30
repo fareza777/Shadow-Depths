@@ -113,6 +113,7 @@ export function effectiveTorchRadius(player) {
   let r = player.torchRadius ?? 5;
   if (player.heroKind === 'inquisitor' && !player._inquisitorMoved) r += 1;
   if (player.torchBoostTurns > 0) r += player.torchBoostAmount || 0;
+  r += player.floorModifiers?.torchBonus || 0;
   return r;
 }
 

@@ -82,6 +82,10 @@ export class MessageLog {
         : `No focus left for another shot.`, COLOR.textMuted);
     });
 
+    this.bus.on('floor:event', ({ message }) => {
+      if (message) this.push(message, COLOR.textMuted);
+    });
+
     this.bus.on('player:revived', () => this.push(`You wake again. The charm is spent.`, COLOR.textHeal));
 
     this.bus.on('floor:entered', ({ index, name, specialEnemyId, floorNumber }) => {

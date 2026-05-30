@@ -341,6 +341,8 @@ export class Renderer {
 
     // Revealed traps (drawn over floor, under entities/motif).
     this._drawHazards(ctx, floor, x0, y0, x1, y1);
+    this._drawFloorInteracts(ctx, floor, x0, y0, x1, y1);
+    this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
 
     // Special floor centerpiece (REST campfire / VAULT chest motif).
     this._drawSpecialFloorMotif(ctx, floor);
@@ -800,6 +802,63 @@ export class Renderer {
 
   drawRect(x, y, w, h, color) {
     fillRect(this.ctx, x, y, w, h, color);
+  }
+
+  /** Glowing marker for shrine / merchant / chest interact tiles. */
+  _drawFloorInteracts(ctx, floor, x0, y0, x1, y1) {
+    const colors = {
+      shrine: '#c8a0ff',
+      merchant: '#d4ac6c',
+      rest_alcove: '#80c0ff',
+      mystery_chest: '#ffcc66',
+      altar_sacrifice: '#ff8866',
+      lore_omen: '#a0b8c8'
+    };
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const t = floor.tiles[y][x];
+        const ix = t?.interact;
+        if (!ix || ix.used || !t.explored) continue;
+        const col = colors[ix.kind] || '#d4ac6c';
+        const cx = x * TILE_SIZE + TILE_SIZE / 2;
+        const cy = y * TILE_SIZE + TILE_SIZE / 2;
+        const r = TILE_SIZE * 0.32;
+        ctx.save();
+        ctx.globalAlpha = t.visible ? 0.95 : 0.45;
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = col;
+        ctx.globalAlpha = t.visible ? 0.35 : 0.15;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+  }
+
+  /** Tint tiles in hazard-zone rooms. */
+  _drawAmbientZones(ctx, floor, x0, y0, x1, y1) {
+    const tints = {
+      frost: 'rgba(140,200,255,0.12)',
+      venom: 'rgba(80,200,100,0.10)',
+      flame: 'rgba(255,120,60,0.12)',
+      spike: 'rgba(200,200,220,0.08)'
+    };
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const t = floor.tiles[y][x];
+        if (!t?.ambient || !t.explored) continue;
+        const fill = tints[t.ambient.type];
+        if (!fill) continue;
+        ctx.save();
+        ctx.globalAlpha = t.visible ? 1 : 0.35;
+        ctx.fillStyle = fill;
+        ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        ctx.restore();
+      }
+    }
   }
 
   /** Draw revealed traps: armed = bright glyph, spent = faint scorch. */
