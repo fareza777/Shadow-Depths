@@ -32,6 +32,15 @@ export class GameLoop {
     this._lastTs = 0;
     this._accumDt = 0;
     this._maxDt = 1 / 15; // clamp to avoid huge jumps after tab-switch
+
+    // Adaptive frame pacing. Budget phones (e.g. Snapdragon 680 / Adreno 610)
+    // can't hold 60fps redrawing the whole world; an inconsistent 40-55fps
+    // reads as "stutter". We measure an EMA of per-frame work and, when it
+    // runs hot, cap the loop to a *steady* 30fps (smoother than a ragged 60),
+    // lifting back to 60 when the device proves it can keep up.
+    this._lastWorkTs = 0;
+    this._frameEma = 16;          // ms, exponential moving average of work
+    this._targetMs = 1000 / 60;   // current min interval between rendered frames
     this._loop = this._loop.bind(this);
   }
 
@@ -39,6 +48,7 @@ export class GameLoop {
     if (this._running) return;
     this._running = true;
     this._lastTs = performance.now();
+    this._lastWorkTs = 0;
     this._rafId = requestAnimationFrame(this._loop);
     console.log(LOG.CORE, 'GameLoop started');
   }
@@ -52,12 +62,22 @@ export class GameLoop {
 
   _loop(ts) {
     if (!this._running) return;
-    const rawDt = (ts - this._lastTs) / 1000;
+
+    // Frame pacing: skip this rAF if we're ahead of the current target
+    // interval. (~1.5ms slack so we don't constantly miss the vsync edge.)
+    const since = this._lastWorkTs ? ts - this._lastWorkTs : this._targetMs;
+    if (since < this._targetMs - 1.5) {
+      this._rafId = requestAnimationFrame(this._loop);
+      return;
+    }
+    this._lastWorkTs = ts;
     this._lastTs = ts;
-    const dt = Math.min(rawDt, this._maxDt);
+    const dt = Math.min(since / 1000, this._maxDt);
     this._accumDt += dt;
 
     this._state.state.time += dt;
+
+    const workStart = performance.now();
 
     // 1. Per-frame tick (tweens, particles, audio envelope).
     try {
@@ -78,6 +98,13 @@ export class GameLoop {
     } catch (err) {
       console.error(LOG.CORE, 'render threw (loop kept alive):', err);
     }
+
+    // Adapt the target frame rate from measured work (with hysteresis so it
+    // doesn't flap around the threshold).
+    const work = performance.now() - workStart;
+    this._frameEma += (work - this._frameEma) * 0.1;
+    if (this._frameEma > 20) this._targetMs = 1000 / 30;
+    else if (this._frameEma < 12) this._targetMs = 1000 / 60;
 
     this._rafId = requestAnimationFrame(this._loop);
   }

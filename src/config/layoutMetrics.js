@@ -18,10 +18,20 @@ export const Layout = {
   dpr: 1
 };
 
-/** Device pixel ratio for the backing store, clamped to [1, 2]. */
+/**
+ * Device pixel ratio for the backing store. Capped at 1.5 (sharp enough on
+ * phone panels while keeping fill-rate sane), and tightened to 1.25 on
+ * memory-constrained devices — budget GPUs (e.g. Adreno 610) are fill-rate
+ * bound, so a full 2x backing store quadruples per-frame pixels and stutters.
+ */
 export function currentDpr() {
-  const raw = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-  return Math.max(1, Math.min(2, raw));
+  if (typeof window === 'undefined') return 1;
+  const raw = window.devicePixelRatio || 1;
+  const mem = navigator.deviceMemory || 0;          // GB, coarse (0 if unknown)
+  const cores = navigator.hardwareConcurrency || 0;
+  const lowEnd = (mem && mem <= 4) || (cores && cores <= 4);
+  const cap = lowEnd ? 1.25 : 1.5;
+  return Math.max(1, Math.min(cap, raw));
 }
 
 export function syncLayoutFromWindow(canvas) {
