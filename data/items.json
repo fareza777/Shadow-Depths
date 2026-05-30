@@ -239,6 +239,14 @@
       "atk": 5,
       "critBonus": 0.05
     },
+    "onHit": [
+      {
+        "type": "applyStatus",
+        "status": "burn",
+        "value": 3,
+        "duration": 3
+      }
+    ],
     "lore": "Still warm. Even when set down.",
     "floorMin": 3,
     "spawnWeight": 2
@@ -258,6 +266,12 @@
       {
         "type": "lifesteal",
         "value": 0.1
+      },
+      {
+        "type": "applyStatus",
+        "status": "slow",
+        "value": 1,
+        "duration": 2
       }
     ],
     "lore": "Pulled from a glacier that no one mapped.",

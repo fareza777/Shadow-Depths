@@ -598,6 +598,7 @@ export class Renderer {
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
       this._drawEntityGrounding(ctx, e, px, py);
       this._drawThreatAura(ctx, e, px, py);
+      if (e.elite) this._drawEliteMarker(ctx, e, px, py);
       this.sprites.draw(key, ctx, px, py, { entity: e, time: this._timeSec || 0 });
       this._drawEntityHitFlash(ctx, e, px, py);
 
@@ -607,7 +608,8 @@ export class Renderer {
         const barH = e.defId?.startsWith('boss_') ? 5 : 4;
         const barY = py - (barH + 2);
         const barColor = e.defId?.startsWith('boss_') ? '#d4be7a'
-          : e.defId?.startsWith('subboss_') ? '#c080ff' : COLOR.hpBar;
+          : e.defId?.startsWith('subboss_') ? '#c080ff'
+          : e.elite ? (e.elite.color || '#ffaa44') : COLOR.hpBar;
         fillRect(ctx, px + 3, barY, w, barH, COLOR.hpBarBg);
         fillRect(ctx, px + 3, barY, w * pct, barH, barColor);
         if (e.defId?.startsWith('boss_')) {
@@ -794,6 +796,27 @@ export class Renderer {
 
   drawRect(x, y, w, h, color) {
     fillRect(this.ctx, x, y, w, h, color);
+  }
+
+  /** Champion/elite marker — a pulsing coloured ring under the sprite. */
+  _drawEliteMarker(ctx, e, px, py) {
+    const col = e.elite?.color || '#ffaa44';
+    const cx = px + TILE_SIZE / 2;
+    const cy = py + TILE_SIZE * 0.82;
+    const t = this._timeSec || 0;
+    const pulse = 0.55 + Math.sin(t * 3.4) * 0.18;
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, TILE_SIZE * 0.42, TILE_SIZE * 0.18, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = pulse * 0.4;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, TILE_SIZE * 0.30, TILE_SIZE * 0.12, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   /** Warm fog-of-war tint on explored-but-not-visible tiles. */

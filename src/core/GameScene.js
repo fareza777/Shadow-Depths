@@ -35,6 +35,7 @@ function heroStatOverrides(kind) {
   return def ? { ...def.stats } : null;
 }
 import { Enemy } from '../entities/Enemy.js';
+import { rollEliteAffixes, makeElite } from '../gameplay/eliteAffixes.js';
 import { Inventory } from '../items/Inventory.js';
 import { ItemFactory } from '../items/ItemFactory.js';
 import { Equipment } from '../items/Equipment.js';
@@ -1180,6 +1181,9 @@ export class GameScene {
     // makes deeper floors actually threatening (HP & damage scale).
     const depthScale = floor.definition?.depthScale || 1;
     const diff = this._currentDifficulty();
+    const depthIdx = floor.definition?.index ?? 0;
+    // Champion/elite roll — deterministic per floor, never on (sub)bosses.
+    const eliteRng = this.rng.fork(`elite:${depthIdx}`);
     for (const s of spawns.enemies) {
       try {
         const def = this.content.enemies[s.defId];
@@ -1187,6 +1191,10 @@ export class GameScene {
         const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
         const behavior = new BehaviorCls(def.behaviorParams);
         const enemy = new Enemy(def, behavior, { x: s.x, y: s.y }, depthScale, diff);
+        if (!s.defId.startsWith('boss_') && !s.defId.startsWith('subboss_')) {
+          const affixes = rollEliteAffixes(eliteRng, depthIdx);
+          if (affixes.length) makeElite(enemy, affixes);
+        }
         enemy.snapRender();
         floor.addEntity(enemy);
       } catch (err) {

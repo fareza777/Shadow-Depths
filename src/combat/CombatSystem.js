@@ -76,6 +76,27 @@ export class CombatSystem {
     return Math.min(0.95, c.baseCritChance + e.stats.dex * c.critPerDex);
   }
 
+  /**
+   * Chance for `attacker` to land a clean hit on `defender`.
+   * baseHit ± accuracy(attacker) − evasion(defender), clamped. Player evasion
+   * comes from DEX (capped); elites carry acc/eva bonuses. Misses below this
+   * may still "graze" (see _resolveHit) so DEX feels good without making
+   * combat a coin-flip.
+   */
+  _hitChance(attacker, defender) {
+    const c = this.balance.combat;
+    let acc = (c.baseHit ?? 0.95) + (attacker.accBonus || 0);
+    if (attacker.kind === 'player' && typeof attacker.totalDex === 'function') {
+      acc += attacker.totalDex() * (c.accPerDex || 0);
+    }
+    let eva = defender.evaBonus || 0;
+    if (defender.kind === 'player') {
+      const dex = (typeof defender.totalDex === 'function' ? defender.totalDex() : defender.stats.dex) || 0;
+      eva += Math.min(c.dodgeCap || 0, dex * (c.dodgePerDex || 0));
+    }
+    return Math.max(0.4, Math.min(0.99, acc - eva));
+  }
+
   // --- action dispatch -----------------------------------------------
   /**
    * @param {object} action  { type, ... }
@@ -146,12 +167,13 @@ export class CombatSystem {
 
   _resolveHit(attacker, target, kind, ctx = {}) {
     const c = this.balance.combat;
-    // Player evasion (DEX). Small and capped so combat stays mostly
-    // deterministic, but DEX now mitigates the fact that enemies never miss.
-    if (target.kind === 'player') {
-      const dex = (typeof target.totalDex === 'function' ? target.totalDex() : target.stats.dex) || 0;
-      const dodge = Math.min(c.dodgeCap || 0, dex * (c.dodgePerDex || 0));
-      if (dodge > 0 && this.rng.chance(dodge)) {
+    // Accuracy / evasion gate. A clean miss ends the swing; a near-miss may
+    // "graze" for reduced damage so high-evasion fights still chip.
+    let graze = false;
+    if (!this.rng.chance(this._hitChance(attacker, target))) {
+      if (this.rng.chance(c.grazeChance ?? 0)) {
+        graze = true;
+      } else {
         this.bus.emit('entity:attacked', { attacker, target, damage: 0, isCrit: false, isMiss: true, kind });
         return;
       }
@@ -170,13 +192,15 @@ export class CombatSystem {
         finalDamage = Math.max(1, Math.round(finalDamage * (1 - target.damageReduction)));
       }
     }
+    // A graze lands for reduced damage (never a crit).
+    if (graze) finalDamage = Math.max(1, Math.round(finalDamage * (c.grazeDamage ?? 0.5)));
     if (attacker.kind === 'player') attacker._lastAttackKind = kind;
-    const isCrit = raw.isCrit;
+    const isCrit = !graze && raw.isCrit;
     const hpPctBefore = target.stats.hp / Math.max(1, target.stats.hpMax);
     const dealt = target.takeDamage(finalDamage);
     const hpPctAfter = target.stats.hp / Math.max(1, target.stats.hpMax);
 
-    this.bus.emit('entity:attacked', { attacker, target, damage: dealt, isCrit, isMiss: false, kind });
+    this.bus.emit('entity:attacked', { attacker, target, damage: dealt, isCrit, isMiss: false, isGraze: graze, kind });
     this.bus.emit('entity:damaged', { entity: target, amount: dealt, source: attacker, isCrit });
 
     // Attacker on-hit effects via EffectRegistry (weapon onHit list + skill lifesteal).

@@ -42,10 +42,16 @@ export const DEFAULT_BALANCE = Object.freeze({
     baseCritChance: 0.05,
     critPerDex: 0.01,
     critMultiplier: 2,
-    // Player-only evasion: each DEX point grants a small dodge, capped low so
-    // combat stays mostly deterministic. Counters "enemies never miss".
+    // Accuracy / evasion. hitChance = baseHit + acc(attacker) − eva(defender).
+    // Player evasion is DEX-driven (capped). A missed swing may still "graze"
+    // (grazeChance) for grazeDamage of normal, so DEX matters without making
+    // combat a coin-flip.
+    baseHit: 0.95,
+    accPerDex: 0.004,
     dodgePerDex: 0.008,
-    dodgeCap: 0.12
+    dodgeCap: 0.12,
+    grazeChance: 0.5,
+    grazeDamage: 0.5
   },
 
   vision: {
