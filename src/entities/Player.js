@@ -80,6 +80,8 @@ export class Player extends Entity {
 
     /** Skills acquired this run (id strings). Order = acquisition order. */
     this.skills = [];
+    /** Emergent skill-tag synergy bonuses (see gameplay/skillSynergy.js). */
+    this.synergyMods = { atk: 0, def: 0, dex: 0, critBonus: 0 };
     /** Combat / progression multipliers set by skills. */
     this.xpMultiplier     = 1;
     this.skillLifesteal   = 0;   // +fraction healed on every hit
@@ -356,27 +358,36 @@ export class Player extends Entity {
     return resolvePlayerSpriteKey(this.weapon);
   }
 
+  /** Replace the cached skill-tag synergy bonuses (recomputed when skills change). */
+  setSynergyMods(mods) {
+    this.synergyMods = {
+      atk: mods?.atk || 0, def: mods?.def || 0,
+      dex: mods?.dex || 0, critBonus: mods?.critBonus || 0
+    };
+  }
+
   /** Calculated values used by HUD + tooltips. */
   totalAtk() {
-    let atk = this.stats.atk + this.modifierAtk() + passiveBonusAtk(this);
+    let atk = this.stats.atk + this.modifierAtk() + passiveBonusAtk(this) + (this.synergyMods.atk || 0);
     for (const p of this.equippedPieces()) atk += (p.stats?.atk || 0);
     return applyFloorModifiersToAtk(atk, this);
   }
   totalDef() {
-    let def = this.stats.def + this.modifierDef() + passiveBonusDef(this);
+    let def = this.stats.def + this.modifierDef() + passiveBonusDef(this) + (this.synergyMods.def || 0);
     for (const p of this.equippedPieces()) def += (p.stats?.def || 0);
     return applyFloorModifiersToDef(def, this);
   }
   totalDex() {
     // dex bonus already folded into this.stats.dex at equip() time.
-    return this.stats.dex;
+    return this.stats.dex + (this.synergyMods.dex || 0);
   }
   critChance() {
     const c = this.balance.combat;
     let bonus = 0;
     for (const p of this.equippedPieces()) bonus += (p.stats?.critBonus || 0);
     return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + bonus
-      + this.critSkillBonus + passiveCritBonus(this) + floorCritBonus(this));
+      + this.critSkillBonus + passiveCritBonus(this) + floorCritBonus(this)
+      + (this.synergyMods.critBonus || 0));
   }
 
   /** Effective ranged attack range (weapon range + long_reach skill bonus). */

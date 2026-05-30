@@ -48,6 +48,7 @@ function heroStatOverrides(kind) {
 import { Enemy } from '../entities/Enemy.js';
 import { rollEliteAffixes, forcedEliteAffixes, makeElite } from '../gameplay/eliteAffixes.js';
 import { HAZARDS, hazardDamage } from '../gameplay/hazards.js';
+import { computeSynergyMods, skillsById } from '../gameplay/skillSynergy.js';
 import { StatusEffects } from '../combat/StatusEffects.js';
 import { Inventory } from '../items/Inventory.js';
 import { ItemFactory } from '../items/ItemFactory.js';
@@ -1700,6 +1701,11 @@ export class GameScene {
     player.runStats = { ...player.runStats, ...(snap.runStats || {}) };
     player.reviveCharges = snap.reviveCharges || 0;
     player.skills = Array.isArray(snap.skills) ? [...snap.skills] : [];
+    // Rebuild emergent skill-tag synergies from the restored skill set.
+    if (typeof player.setSynergyMods === 'function') {
+      const pool = (this.content?.skills?.skills) || [];
+      player.setSynergyMods(computeSynergyMods(player.skills, skillsById(pool)).mods);
+    }
     player.xpMultiplier = snap.xpMultiplier ?? 1;
     player.skillLifesteal = snap.skillLifesteal || 0;
     player.damageReduction = snap.damageReduction || 0;

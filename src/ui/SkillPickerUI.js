@@ -8,6 +8,7 @@
  */
 import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants.js';
 import { RNG } from '../core/RNG.js';
+import { computeSynergyMods, skillsById } from '../gameplay/skillSynergy.js';
 
 const CARD_W = 360;
 const CARD_H = 76;
@@ -130,6 +131,11 @@ export class SkillPickerUI {
   _pick(skill) {
     if (!skill || !this.player) return;
     this.player.applySkill(skill.id);
+    // Recompute emergent tag synergies from the full owned set.
+    const pool = (this.content.skills && this.content.skills.skills) || [];
+    this.player.setSynergyMods(
+      computeSynergyMods(this.player.skills, skillsById(pool)).mods
+    );
     this.bus.emit('skill:chosen', { skill });
     this.pending -= 1;
     if (this.pending > 0) {

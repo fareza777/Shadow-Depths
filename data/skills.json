@@ -5,28 +5,40 @@
       "name": "Hardened",
       "description": "+5 max HP. Heals 5 immediately.",
       "rarity": "common",
-      "spriteKey": "skill_shield"
+      "spriteKey": "skill_shield",
+      "tags": [
+        "ward"
+      ]
     },
     {
       "id": "sharpened",
       "name": "Sharpened",
       "description": "+1 permanent ATK.",
       "rarity": "common",
-      "spriteKey": "skill_sword"
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ]
     },
     {
       "id": "tempered",
       "name": "Tempered",
       "description": "+1 permanent DEF.",
       "rarity": "common",
-      "spriteKey": "skill_armor"
+      "spriteKey": "skill_armor",
+      "tags": [
+        "ward"
+      ]
     },
     {
       "id": "quickened",
       "name": "Quickened",
       "description": "+2 DEX (+2% crit chance).",
       "rarity": "common",
-      "spriteKey": "skill_speed"
+      "spriteKey": "skill_speed",
+      "tags": [
+        "hunt"
+      ]
     },
     {
       "id": "eager",
@@ -40,28 +52,40 @@
       "name": "Studious",
       "description": "+25% XP from all sources.",
       "rarity": "uncommon",
-      "spriteKey": "skill_book"
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ]
     },
     {
       "id": "bloodthirst",
       "name": "Bloodthirst",
       "description": "+10% lifesteal on every hit.",
       "rarity": "rare",
-      "spriteKey": "skill_blood"
+      "spriteKey": "skill_blood",
+      "tags": [
+        "fury"
+      ]
     },
     {
       "id": "stout",
       "name": "Stout",
       "description": "-10% damage taken from all sources.",
       "rarity": "rare",
-      "spriteKey": "skill_stout"
+      "spriteKey": "skill_stout",
+      "tags": [
+        "ward"
+      ]
     },
     {
       "id": "long_reach",
       "name": "Long Reach",
       "description": "Ranged weapons gain +1 attack range.",
       "rarity": "uncommon",
-      "spriteKey": "skill_reach"
+      "spriteKey": "skill_reach",
+      "tags": [
+        "hunt"
+      ]
     },
     {
       "id": "second_wind",
@@ -75,21 +99,31 @@
       "name": "Iron Vitality",
       "description": "+10 max HP. Heals 10 immediately.",
       "rarity": "uncommon",
-      "spriteKey": "skill_shield"
+      "spriteKey": "skill_shield",
+      "tags": [
+        "ward"
+      ]
     },
     {
       "id": "brutal_training",
       "name": "Brutal Training",
       "description": "+2 ATK, -1 DEF.",
       "rarity": "uncommon",
-      "spriteKey": "skill_sword"
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ]
     },
     {
       "id": "guarded_footwork",
       "name": "Guarded Footwork",
       "description": "+1 DEF and +1 DEX.",
       "rarity": "uncommon",
-      "spriteKey": "skill_speed"
+      "spriteKey": "skill_speed",
+      "tags": [
+        "ward",
+        "hunt"
+      ]
     },
     {
       "id": "torchbearer",
@@ -103,35 +137,50 @@
       "name": "Keen Eye",
       "description": "+1 DEX and +1 ranged weapon range.",
       "rarity": "rare",
-      "spriteKey": "skill_reach"
+      "spriteKey": "skill_reach",
+      "tags": [
+        "hunt"
+      ]
     },
     {
       "id": "arcane_focus",
       "name": "Arcane Focus",
       "description": "+2 magic power for hero spells.",
       "rarity": "uncommon",
-      "spriteKey": "skill_book"
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ]
     },
     {
       "id": "runic_haste",
       "name": "Runic Haste",
       "description": "Hero spell cooldowns are 1 turn shorter.",
       "rarity": "rare",
-      "spriteKey": "skill_wind"
+      "spriteKey": "skill_wind",
+      "tags": [
+        "arcane"
+      ]
     },
     {
       "id": "soul_channel",
       "name": "Soul Channel",
       "description": "Hero spell damage heals you for 20%.",
       "rarity": "rare",
-      "spriteKey": "skill_blood"
+      "spriteKey": "skill_blood",
+      "tags": [
+        "arcane"
+      ]
     },
     {
       "id": "deadly_precision",
       "name": "Deadly Precision",
       "description": "+5% crit chance.",
       "rarity": "rare",
-      "spriteKey": "skill_sword"
+      "spriteKey": "skill_sword",
+      "tags": [
+        "arcane"
+      ]
     },
     {
       "id": "field_mender",
@@ -153,7 +202,10 @@
       "description": "Knight only: +6 max HP, +1 DEF, heal 6.",
       "rarity": "epic",
       "spriteKey": "skill_shield",
-      "hero": "vigil"
+      "hero": "vigil",
+      "tags": [
+        "ward"
+      ]
     },
     {
       "id": "hollow_hunger",
@@ -161,7 +213,10 @@
       "description": "Crusader only: stronger spell drain.",
       "rarity": "epic",
       "spriteKey": "skill_blood",
-      "hero": "hollow"
+      "hero": "hollow",
+      "tags": [
+        "fury"
+      ]
     },
     {
       "id": "inquisitor_flame",
@@ -169,7 +224,10 @@
       "description": "Inquisitor only: +3 magic power.",
       "rarity": "epic",
       "spriteKey": "skill_book",
-      "hero": "inquisitor"
+      "hero": "inquisitor",
+      "tags": [
+        "arcane"
+      ]
     },
     {
       "id": "reaver_bone_rite",
@@ -177,7 +235,10 @@
       "description": "Reaver only: +1 ATK and +1 magic power.",
       "rarity": "epic",
       "spriteKey": "skill_sword",
-      "hero": "reaver"
+      "hero": "reaver",
+      "tags": [
+        "fury"
+      ]
     },
     {
       "id": "pilgrim_ember",
@@ -185,7 +246,10 @@
       "description": "Pilgrim only: +1 torch and better regen.",
       "rarity": "epic",
       "spriteKey": "skill_wind",
-      "hero": "pilgrim"
+      "hero": "pilgrim",
+      "tags": [
+        "arcane"
+      ]
     }
   ]
 }
