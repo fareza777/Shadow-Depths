@@ -26,12 +26,13 @@ export class MessageLog {
   _wire() {
     this.bus.on('tick', ({ time }) => { this._t = time; });
 
-    this.bus.on('entity:attacked', ({ attacker, target, damage, isCrit, isMiss }) => {
+    this.bus.on('entity:attacked', ({ attacker, target, damage, isCrit, isMiss, isRangedWeaponMelee }) => {
       if (isMiss) {
         this.push(`${nameOf(attacker)} missed ${nameOf(target)}.`, COLOR.textMuted);
         return;
       }
-      const verb = isCrit ? 'CRIT!' : 'hits';
+      const verb = isRangedWeaponMelee ? 'bash'
+        : isCrit ? 'CRIT!' : 'hits';
       this.push(`${nameOf(attacker)} ${verb} ${nameOf(target)} for ${damage}.`,
         isCrit ? COLOR.textCrit : COLOR.textPrimary);
     });

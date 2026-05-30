@@ -52,6 +52,8 @@ export const DEFAULT_BALANCE = Object.freeze({
     dodgeCap: 0.12,
     grazeChance: 0.5,
     grazeDamage: 0.5,
+    // Adjacent tap with a bow/crossbow uses melee at this fraction of rolled damage.
+    rangedWeaponMeleeMult: 0.55,
     // Positional melee bonuses (#4): striking a foe in the back / side.
     backstabMult: 1.5,
     flankMult: 1.15

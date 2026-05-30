@@ -183,6 +183,15 @@ export class CombatSystem {
     }
     const raw = this.calculateDamage(attacker, target);
     let finalDamage = raw.damage;
+    let isRangedWeaponMelee = false;
+    if (kind === 'melee' && attacker.kind === 'player'
+      && typeof attacker.effectiveRange === 'function' && attacker.effectiveRange() > 1) {
+      if (raw.isCrit) {
+        finalDamage = Math.round(finalDamage / (c.critMultiplier || 2));
+      }
+      finalDamage = Math.max(c.minDamage, Math.round(finalDamage * (c.rangedWeaponMeleeMult ?? 0.55)));
+      isRangedWeaponMelee = true;
+    }
     if (attacker.kind === 'enemy' && kind === 'ranged') {
       const depth = ctx.floor?.definition?.index ?? 0;
       if (depth >= 30) finalDamage += 1;
@@ -209,17 +218,21 @@ export class CombatSystem {
     // The attacker turns to face whoever it just struck.
     attacker.facing = dirTo(attacker, target);
     if (attacker.kind === 'player') attacker._lastAttackKind = kind;
-    const isCrit = !graze && raw.isCrit;
+    const isCrit = !graze && raw.isCrit && !isRangedWeaponMelee;
     const hpPctBefore = target.stats.hp / Math.max(1, target.stats.hpMax);
     const dealt = target.takeDamage(finalDamage);
     const hpPctAfter = target.stats.hp / Math.max(1, target.stats.hpMax);
 
-    this.bus.emit('entity:attacked', { attacker, target, damage: dealt, isCrit, isMiss: false, isGraze: graze, isBackstab, kind });
+    this.bus.emit('entity:attacked', {
+      attacker, target, damage: dealt, isCrit, isMiss: false,
+      isGraze: graze, isBackstab, isRangedWeaponMelee, kind
+    });
     this.bus.emit('entity:damaged', { entity: target, amount: dealt, source: attacker, isCrit });
 
     // Attacker on-hit effects via EffectRegistry (weapon onHit list + skill lifesteal).
     this._applyAttackerOnHit(attacker, target, dealt);
-    if (attacker.kind === 'player' && kind === 'melee' && dealt > 0) {
+    if (attacker.kind === 'player' && kind === 'melee' && dealt > 0
+      && typeof attacker.effectiveRange === 'function' && attacker.effectiveRange() <= 1) {
       attacker.restoreRangedFocus?.(1);
     }
     // Enemy-on-player legacy onHitPlayer list — apply each through the registry.

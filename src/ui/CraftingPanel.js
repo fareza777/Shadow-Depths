@@ -8,7 +8,8 @@
  * Open / close handled by the parent (PauseOverlay or a future Workshop
  * scene). Tap a CRAFT row → emits 'craft:request' with the recipe id.
  */
-import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize } from '../config/constants.js';
+import { COLOR, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize } from '../config/constants.js';
+import { Layout } from '../config/layoutMetrics.js';
 import { listRecipes, canCraft } from '../items/Crafting.js';
 import { IRON } from './ironHud.js';
 
@@ -44,10 +45,13 @@ export class CraftingPanel {
       ? this.offerRecipeIds.map((id) => allRecipes.find((r) => r.id === id)).filter(Boolean)
       : allRecipes;
     const padX = 16;
-    const modalY = 60;
-    const modalH = CANVAS_HEIGHT - 120;
+    const padBottom = 12;
+    const chromeH = 52;
+    const modalY = Layout.hud + 6;
     const modalX = padX;
-    const modalW = CANVAS_WIDTH - padX * 2;
+    const modalW = Layout.canvasW - padX * 2;
+    const bottomReserve = Layout.control + chromeH + padBottom;
+    const modalH = Math.max(220, Layout.canvasH - modalY - bottomReserve);
 
     // Background plate
     ctx.save();
@@ -61,12 +65,22 @@ export class CraftingPanel {
     ctx.strokeRect(modalX + 0.5, modalY + 0.5, modalW - 1, modalH - 1);
     ctx.restore();
 
-    // Header
-    r.drawText('THE VEILED SMITH', CANVAS_WIDTH / 2, modalY + 18, {
+    // Header + back (above control band — CLOSE sits in chromeH strip)
+    const backX = modalX + modalW - 44;
+    const backY = modalY + 8;
+    r.drawRect(backX, backY, 36, 32, IRON.plate0);
+    r.drawStrokedRect(backX, backY, 36, 32, BRASS, 2);
+    r.drawText('✕', backX + 18, backY + 16, {
+      size: uiSize(16), bold: true, align: 'center', baseline: 'middle',
+      family: FONT_DISPLAY, color: BRASS_HI
+    });
+    this._backRect = { x: backX, y: backY, w: 36, h: 32 };
+
+    r.drawText('THE VEILED SMITH', Layout.canvasW / 2, modalY + 18, {
       size: uiSize(18), bold: true, align: 'center',
       family: FONT_DISPLAY, color: BRASS_HI
     });
-    r.drawText('Choose ONE bargain — materials from the pouch', CANVAS_WIDTH / 2, modalY + 40, {
+    r.drawText('Choose ONE bargain — materials from the pouch', Layout.canvasW / 2, modalY + 40, {
       size: uiSize(10), italic: true, align: 'center',
       family: FONT_BODY, color: COLOR.textMuted
     });
@@ -97,7 +111,7 @@ export class CraftingPanel {
     }
     const pouchLine = this._pouchLine();
     if (pouchLine) {
-      r.drawText(pouchLine, CANVAS_WIDTH / 2, listY - 6, {
+      r.drawText(pouchLine, Layout.canvasW / 2, listY - 6, {
         size: uiSize(8), align: 'center', family: FONT_MONO, color: COLOR.textMuted
       });
     }
@@ -106,7 +120,8 @@ export class CraftingPanel {
     const rowH = 70;
     const listX = modalX + 8;
     const listW = modalW - 16;
-    const listH = modalY + modalH - 56 - listY;   // leave room for close button
+    const closeY = modalY + modalH - chromeH + 4;
+    const listH = closeY - listY - 8;
     ctx.save();
     ctx.beginPath();
     ctx.rect(listX, listY, listW, listH);
@@ -128,12 +143,10 @@ export class CraftingPanel {
     }
     ctx.restore();
 
-    // Close button
-    const closeY = modalY + modalH - 48;
-    const closeX = CANVAS_WIDTH / 2 - 80;
+    const closeX = Layout.canvasW / 2 - 80;
     r.drawRect(closeX, closeY, 160, 36, IRON.plate0);
     r.drawStrokedRect(closeX, closeY, 160, 36, BRASS, 2);
-    r.drawText('CLOSE', CANVAS_WIDTH / 2, closeY + 18, {
+    r.drawText('CLOSE', Layout.canvasW / 2, closeY + 18, {
       size: uiSize(13), bold: true, align: 'center', baseline: 'middle',
       family: FONT_DISPLAY, color: BRASS_HI
     });
@@ -188,7 +201,8 @@ export class CraftingPanel {
   /** Handle a tap. Returns true if the panel consumed the input. */
   handleTap(x, y) {
     if (!this.open) return false;
-    if (this._closeRect && _inside(x, y, this._closeRect)) {
+    if ((this._closeRect && _inside(x, y, this._closeRect))
+      || (this._backRect && _inside(x, y, this._backRect))) {
       this.hide();
       return true;
     }

@@ -333,7 +333,7 @@ export class GameScene {
       console.error(LOG.CORE, 'HUD render failed:', err);
     }
 
-    if (this.controls) {
+    if (this.controls && !this.crafting?.open) {
       // Tell the iron HUD what's actionable this frame so AIM / DOWN /
       // PICK render in their "ready" state (ember glow) vs disabled.
       const stairs = this.floor && this.player &&
