@@ -62,6 +62,7 @@ export class FloorEventPlacer {
     const t = floor.tileAt(x, y);
     if (!t || !t.isWalkable()) return false;
     t.interact = { ...payload, used: false };
+    if (floor.microEvent) floor.microEvent.interactPos = { x, y };
     return true;
   }
 }

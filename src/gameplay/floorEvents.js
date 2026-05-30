@@ -15,6 +15,25 @@ export const EVENT_KINDS = [
   'lore_omen'
 ];
 
+/** Weighted table — merchant/shrine/rest lebih sering daripada ambush/elite. */
+export const EVENT_WEIGHTS = [
+  { value: 'merchant', weight: 6 },
+  { value: 'shrine', weight: 4 },
+  { value: 'rest_alcove', weight: 4 },
+  { value: 'mystery_chest', weight: 3 },
+  { value: 'altar_sacrifice', weight: 3 },
+  { value: 'trap_room', weight: 2 },
+  { value: 'lore_omen', weight: 2 },
+  { value: 'ambush_gate', weight: 1 },
+  { value: 'elite_patrol', weight: 1 },
+  { value: 'hazard_zone', weight: 1 }
+];
+
+/** Interact tiles (golden ring) — shown on minimap. */
+export const INTERACT_EVENT_KINDS = new Set([
+  'shrine', 'merchant', 'rest_alcove', 'mystery_chest', 'altar_sacrifice', 'lore_omen'
+]);
+
 export const EVENT_LABELS = {
   shrine: 'Shrine',
   trap_room: 'Trap Vault',
@@ -66,9 +85,10 @@ export const SHRINE_OPTIONS = [
 ];
 
 export const MERCHANT_WARES = [
-  { id: 'health_potion', cost: 18, label: 'Health Potion' },
-  { id: 'antidote', cost: 14, label: 'Antidote' },
-  { id: 'scroll_of_identify', cost: 22, label: 'Scroll of Identify' }
+  { id: 'minor_healing_draught', cost: 12, label: 'Minor Healing Draught' },
+  { id: 'health_potion', cost: 22, label: 'Health Potion' },
+  { id: 'sacred_tallow', cost: 28, label: 'Sacred Tallow' },
+  { id: 'greater_health_potion', cost: 38, label: 'Greater Health Potion', floorMin: 2 }
 ];
 
 export const ALTAR_OPTIONS = [
@@ -128,14 +148,23 @@ export const LORE_OMENS = [
   }
 ];
 
+/** Floors 4, 14, 24… always spawn a merchant (not on forge 7, 17…). */
+export function isGuaranteedMerchantFloor(floorNumber, cfg = {}) {
+  const step = cfg.merchantGuaranteeEvery ?? 10;
+  const offset = cfg.merchantGuaranteeOffset ?? 4;
+  return floorNumber > 0 && (floorNumber % step) === offset;
+}
+
 export function pickMicroEventKind(rng, floorDef, cfg = {}) {
   if (floorDef.type === 'forge' || floorDef.isFinalFloor) return null;
   if (floorDef.enemyCount === 0 && floorDef.type !== 'vault') return null;
+  const floorNumber = (floorDef.index ?? 0) + 1;
+  if (isGuaranteedMerchantFloor(floorNumber, cfg)) return 'merchant';
   const chance = floorDef.type === 'vault'
     ? (cfg.vaultEventChance ?? 0.35)
-    : (cfg.floorEventChance ?? 0.82);
+    : (cfg.floorEventChance ?? 0.88);
   if (!rng.chance(chance)) return null;
-  return rng.pick(EVENT_KINDS);
+  return rng.weightedPick(EVENT_WEIGHTS);
 }
 
 export function resetFloorModifiers(player) {

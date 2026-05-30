@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { pickMicroEventKind, applyFloorModifiersToAtk, EVENT_KINDS } from '../src/gameplay/floorEvents.js';
+import {
+  pickMicroEventKind, applyFloorModifiersToAtk, EVENT_KINDS, isGuaranteedMerchantFloor
+} from '../src/gameplay/floorEvents.js';
 import { FloorEventPlacer } from '../src/world/FloorEventPlacer.js';
 import { DEFAULT_BALANCE } from '../src/config/balance.js';
 import { Floor } from '../src/world/Floor.js';
@@ -23,9 +25,20 @@ describe('floorEvents', () => {
   });
 
   it('can pick an event kind on normal floors', () => {
-    const rng = { chance: () => true, pick: (a) => a[0], fork: () => rng };
-    const kind = pickMicroEventKind(rng, { enemyCount: 5 });
+    const rng = {
+      chance: () => true,
+      weightedPick: (w) => w[0].value,
+      fork: () => rng
+    };
+    const kind = pickMicroEventKind(rng, { enemyCount: 5, index: 0 });
     expect(EVENT_KINDS).toContain(kind);
+  });
+
+  it('guarantees merchant on floor 4', () => {
+    const rng = { chance: () => false, weightedPick: () => 'shrine', fork: () => rng };
+    expect(pickMicroEventKind(rng, { index: 3, enemyCount: 5 })).toBe('merchant');
+    expect(isGuaranteedMerchantFloor(4)).toBe(true);
+    expect(isGuaranteedMerchantFloor(7)).toBe(false);
   });
 
   it('applies atk floor modifier', () => {

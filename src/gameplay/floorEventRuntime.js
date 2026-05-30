@@ -37,18 +37,24 @@ export function buildEventPanelConfig(kind, interact, ctx) {
         })),
         onPick: (id) => applyShrine(id, ctx)
       };
-    case 'merchant':
+    case 'merchant': {
+      const floorNum = (ctx.floor?.definition?.index ?? 0) + 1;
       return {
         title: 'Wandering Merchant',
         subtitle: `Gold: ${ctx.player.gold}`,
-        options: MERCHANT_WARES.map((w) => ({
-          id: w.id,
-          label: `${w.label} — ${w.cost}g`,
-          detail: ctx.player.gold >= w.cost ? 'Purchase' : 'Not enough gold',
-          enabled: ctx.player.gold >= w.cost
-        })),
+        options: MERCHANT_WARES.map((w) => {
+          const locked = (w.floorMin ?? 1) > floorNum || !ctx.itemDefs?.[w.id];
+          const afford = ctx.player.gold >= w.cost;
+          return {
+            id: w.id,
+            label: `${w.label} — ${w.cost}g`,
+            detail: locked ? 'Too deep for this stock' : afford ? 'Purchase' : 'Not enough gold',
+            enabled: !locked && afford
+          };
+        }),
         onPick: (id) => buyMerchant(id, ctx)
       };
+    }
     case 'altar_sacrifice':
       return {
         title: 'Altar of Sacrifice',
@@ -97,7 +103,10 @@ function applyShrine(id, ctx) {
 
 function buyMerchant(id, ctx) {
   const ware = MERCHANT_WARES.find((w) => w.id === id);
+  const floorNum = (ctx.floor?.definition?.index ?? 0) + 1;
   if (!ware || ctx.player.gold < ware.cost) return;
+  if ((ware.floorMin ?? 1) > floorNum) return;
+  if (!ctx.itemDefs?.[ware.id]) return;
   ctx.player.gold -= ware.cost;
   const item = ctx.itemFactory.create(ware.id, 1);
   if (item && ctx.player.inventory.add(item)) {

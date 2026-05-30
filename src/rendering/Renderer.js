@@ -833,6 +833,13 @@ export class Renderer {
         ctx.fillStyle = col;
         ctx.globalAlpha = t.visible ? 0.35 : 0.15;
         ctx.fill();
+        if (ix.kind === 'merchant' && t.visible) {
+          ctx.fillStyle = '#ffe08a';
+          ctx.font = `bold ${Math.max(9, Math.floor(TILE_SIZE * 0.42))}px serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('$', cx, cy);
+        }
         ctx.restore();
       }
     }

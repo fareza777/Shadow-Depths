@@ -2,6 +2,7 @@
  * Minimap — floor overview in the control band center slot.
  */
 import { COLOR, TILE, FONT_DISPLAY, uiSize } from '../config/constants.js';
+import { INTERACT_EVENT_KINDS } from '../gameplay/floorEvents.js';
 import { MobileControls } from './MobileControls.js';
 import { IRON, drawIronPlate, drawIronRivet } from './ironHud.js';
 
@@ -70,6 +71,19 @@ export class Minimap {
       }
     }
 
+    const ev = floor.microEvent;
+    if (ev?.interactPos && INTERACT_EVENT_KINDS.has(ev.kind)) {
+      const ip = ev.interactPos;
+      if (this._insideBounds(ip.x, ip.y, bounds)) {
+        const mx = x + (ip.x - bounds.x0) * px;
+        const my = y + (ip.y - bounds.y0) * px;
+        const t = floor.tileAt(ip.x, ip.y);
+        const bright = t?.explored;
+        renderer.drawRect(mx, my, Math.max(px, 3), Math.max(px, 3),
+          ev.kind === 'merchant' ? (bright ? '#ffd76a' : '#a88430') : (bright ? '#c8a0ff' : '#6a5080'));
+      }
+    }
+
     for (const e of floor.enemies()) {
       const t = floor.tileAt(e.x, e.y);
       if (!t || !t.visible) continue;
@@ -119,6 +133,13 @@ export class Minimap {
       x1 = Math.max(x1, player.x);
       y0 = Math.min(y0, player.y);
       y1 = Math.max(y1, player.y);
+    }
+    const ip = floor.microEvent?.interactPos;
+    if (ip) {
+      x0 = Math.min(x0, ip.x);
+      x1 = Math.max(x1, ip.x);
+      y0 = Math.min(y0, ip.y);
+      y1 = Math.max(y1, ip.y);
     }
     if (x0 > x1 || y0 > y1) {
       x0 = player?.x || 0; x1 = x0;

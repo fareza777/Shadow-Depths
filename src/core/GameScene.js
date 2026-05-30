@@ -29,7 +29,9 @@ import {
   beginPlayerTurnPassives, effectiveTorchRadius, markHeroMoved, onHeroDescend,
   tickHeroPassivesEndOfTurn
 } from '../gameplay/heroPassives.js';
-import { resetFloorModifiers, EVENT_LABELS } from '../gameplay/floorEvents.js';
+import {
+  resetFloorModifiers, EVENT_LABELS, INTERACT_EVENT_KINDS, isGuaranteedMerchantFloor
+} from '../gameplay/floorEvents.js';
 import {
   findInteractTarget, buildEventPanelConfig, applyRestAlcove, applyMysteryChest,
   tryTriggerAmbush, tickAmbientHazard, revealRandomRoom, markInteractUsed,
@@ -238,7 +240,20 @@ export class GameScene {
     this._floorBanner = this._buildFloorBanner(index, def);
     if (def.microEventKind && floor.microEvent) {
       const label = EVENT_LABELS[def.microEventKind] || 'Strange place';
-      this.bus.emit('floor:event', { message: `A ${label.toLowerCase()} lies somewhere on this floor.` });
+      const pos = floor.microEvent.interactPos;
+      if (def.microEventKind === 'merchant') {
+        this.bus.emit('floor:event', {
+          message: isGuaranteedMerchantFloor(index + 1, this.balance.dungeon)
+            ? 'A wandering merchant is here — gold dot on the minimap.'
+            : 'A wandering merchant is on this floor — gold dot on the minimap.'
+        });
+      } else if (INTERACT_EVENT_KINDS.has(def.microEventKind) && pos) {
+        this.bus.emit('floor:event', {
+          message: `${label} nearby — look for the glowing ring (gold on map).`
+        });
+      } else {
+        this.bus.emit('floor:event', { message: `A ${label.toLowerCase()} lies somewhere on this floor.` });
+      }
     }
     // Rest floors fully heal the player on entry — incentive to push deeper.
     if ((def.type === 'rest' || def.type === 'forge') && this.player && !this.player.isDead) {
