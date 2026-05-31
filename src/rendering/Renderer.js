@@ -30,6 +30,7 @@ import { drawBiomeWall, drawBiomeFloor, hasBiome } from './biomeTiles.js';
 import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
 import { HAZARDS } from '../gameplay/hazards.js';
 import { drawVectorNPC } from './npcArtVector.jsx';
+import { drawVectorDecor, drawVectorFixture } from './furnishingArtVector.jsx';
 
 export class Renderer {
   /**
@@ -298,7 +299,7 @@ export class Renderer {
             break;
           case TILE.STAIRS_DOWN:
             if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
-            this._drawStairsDownFixture(ctx, tx + TILE_SIZE / 2, ty + TILE_SIZE / 2, TILE_SIZE, this._timeSec || 0);
+            this._drawStairsDownFixture(ctx, tx + TILE_SIZE / 2, ty + TILE_SIZE / 2, TILE_SIZE, this._timeSec || 0, def);
             break;
           case TILE.STAIRS_UP:
             if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
@@ -378,7 +379,7 @@ export class Renderer {
 
     if (def.type === 'rest' || def.type === 'forge') {
       if (def.type === 'forge') {
-        this._drawForgeFixture(ctx, cx, cy, TILE_SIZE, t);
+        this._drawForgeFixture(ctx, cx, cy, TILE_SIZE, t, def);
         return;
       }
       // Forge sanctuary — an anvil/ember shrine where the Veiled Smith appears.
@@ -827,13 +828,14 @@ export class Renderer {
         ctx.save();
         ctx.globalAlpha = tile.visible ? 0.95 : 0.38;
         this._drawDecorSprite(ctx, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2,
-          TILE_SIZE, decor.kind, this._timeSec || 0);
+          TILE_SIZE, decor.kind, this._timeSec || 0, floor.definition || {});
         ctx.restore();
       }
     }
   }
 
-  _drawDecorSprite(ctx, cx, cy, s, kind, t) {
+  _drawDecorSprite(ctx, cx, cy, s, kind, t, def = {}) {
+    if (drawVectorDecor(ctx, cx - s / 2, cy - s / 2, s, kind, def)) return;
     const u = s / 32;
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
     ctx.save();
@@ -891,7 +893,8 @@ export class Renderer {
     ctx.beginPath(); ctx.moveTo(cx, cy - 4.5 * u * f); ctx.quadraticCurveTo(cx + 2 * u, cy, cx + 1 * u, cy + 4 * u); ctx.lineTo(cx - 1 * u, cy + 4 * u); ctx.quadraticCurveTo(cx - 2 * u, cy, cx, cy - 4.5 * u * f); ctx.fill();
   }
 
-  _drawStairsDownFixture(ctx, cx, cy, s, t) {
+  _drawStairsDownFixture(ctx, cx, cy, s, t, def = {}) {
+    if (drawVectorFixture(ctx, cx - s / 2, cy - s / 2, s, 'stair_down', def)) return;
     const u = s / 32;
     ctx.save();
     const g = ctx.createRadialGradient(cx, cy - 4 * u, 2 * u, cx, cy, 23 * u);
@@ -911,7 +914,8 @@ export class Renderer {
     ctx.restore();
   }
 
-  _drawForgeFixture(ctx, cx, cy, s, t) {
+  _drawForgeFixture(ctx, cx, cy, s, t, def = {}) {
+    if (drawVectorFixture(ctx, cx - s / 2, cy - s / 2, s, 'forge', def)) return;
     const u = s / 32;
     ctx.save();
     const glow = ctx.createRadialGradient(cx, cy, 2 * u, cx, cy, 28 * u);
@@ -969,7 +973,7 @@ export class Renderer {
         switch (ix.kind) {
           case 'merchant':       this._drawMerchantSprite(ctx, cx, cy, s, t); break;
           case 'keeper':         this._drawKeeperSprite(ctx, cx, cy, s, t); break;
-          case 'shrine':         this._drawShrineSprite(ctx, cx, cy, s, t); break;
+          case 'shrine':         this._drawShrineSprite(ctx, cx, cy, s, t, floor.definition || {}); break;
           case 'altar_sacrifice':this._drawAltarSprite(ctx, cx, cy, s, t); break;
           case 'mystery_chest':  this._drawChestSprite(ctx, cx, cy, s); break;
           case 'rest_alcove':    this._drawRestSprite(ctx, cx, cy, s, t); break;
@@ -1160,7 +1164,8 @@ export class Renderer {
   }
 
   /** Stone shrine idol on a pedestal with a pulsing arcane gem. */
-  _drawShrineSprite(ctx, cx, cy, s, t) {
+  _drawShrineSprite(ctx, cx, cy, s, t, def = {}) {
+    if (drawVectorFixture(ctx, cx - s / 2, cy - s / 2, s, 'shrine', def)) return;
     const u = s / 32;
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
     ctx.fillStyle = 'rgba(0,0,0,0.28)';

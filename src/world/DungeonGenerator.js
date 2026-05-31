@@ -221,10 +221,13 @@ export class DungeonGenerator {
     for (const it of spawns.items || []) solid.add(`${it.x},${it.y}`);
     for (const en of spawns.enemies || []) solid.add(`${en.x},${en.y}`);
 
-    const wallKinds = ['wall_torch', 'banner', 'wall_chains', 'gargoyle', 'rune_crack', 'cobweb'];
-    const count = floorDef.tutorial ? 8 : this.rng.randInt(6, 10);
+    const wallKinds = ['wall_torch', 'banner', 'wall_chains', 'rune_crack', 'cobweb'];
+    const floorKinds = ['brazier', 'bone_pile', 'broken_pillar', 'gargoyle'];
+    const wallCount = floorDef.tutorial ? 8 : this.rng.randInt(10, 16);
+    const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(8, 14);
 
     const wallCandidates = [];
+    const floorCandidates = [];
     const nearFloor = (x, y) => {
       const n = [[0, -1], [0, 1], [-1, 0], [1, 0]];
       return n.some(([dx, dy]) => floor.tileAt(x + dx, y + dy)?.type === TILE.FLOOR);
@@ -232,12 +235,27 @@ export class DungeonGenerator {
     for (let y = 1; y < floor.height - 1; y++) {
       for (let x = 1; x < floor.width - 1; x++) {
         const t = floor.tileAt(x, y);
-        if (!t || t.type !== TILE.WALL || t.decor || t.secret) continue;
-        if (!nearFloor(x, y)) continue;
-        if (!floorDef.tutorial && spawnRoom
+        if (t?.type === TILE.WALL && !t.decor && !t.secret && nearFloor(x, y)) {
+          if (!floorDef.tutorial && spawnRoom
           && x >= spawnRoom.x - 1 && x <= spawnRoom.x + spawnRoom.w
           && y >= spawnRoom.y - 1 && y <= spawnRoom.y + spawnRoom.h) continue;
-        wallCandidates.push(t);
+          wallCandidates.push(t);
+        }
+      }
+    }
+    for (const room of rooms) {
+      if (room === spawnRoom && !floorDef.tutorial) continue;
+      for (let y = room.y; y < room.y + room.h; y++) {
+        for (let x = room.x; x < room.x + room.w; x++) {
+          const t = floor.tileAt(x, y);
+          if (!t || t.type !== TILE.FLOOR || t.decor || t.interact || t.hazard) continue;
+          if (solid.has(`${x},${y}`)) continue;
+          const nearWall = x <= room.x + 1 || y <= room.y + 1
+            || x >= room.x + room.w - 2 || y >= room.y + room.h - 2;
+          const largeRoomCenter = room.large && x > room.x + 2 && y > room.y + 2
+            && x < room.x + room.w - 3 && y < room.y + room.h - 3;
+          if (nearWall || largeRoomCenter) floorCandidates.push(t);
+        }
       }
     }
 
@@ -252,24 +270,39 @@ export class DungeonGenerator {
       const sy = spawnRoom.y;
       const sw = spawnRoom.w;
       const sh = spawnRoom.h;
-      const curated = [
+      const curatedWall = [
         [Math.floor(sx + sw * 0.28), sy - 1, 'wall_torch', true],
         [Math.floor(sx + sw * 0.72), sy - 1, 'banner', true],
         [sx - 1, Math.floor(sy + sh * 0.5), 'wall_chains', true],
         [sx + sw, Math.floor(sy + sh * 0.5), 'rune_crack', true],
         [sx + 2, sy + sh, 'cobweb', true],
-        [sx + sw - 3, sy + sh, 'gargoyle', true]
+        [sx + sw - 3, sy + sh, 'wall_torch', true]
       ];
-      for (const [x, y, kind, wall] of curated) {
+      for (const [x, y, kind, wall] of curatedWall) {
         const tile = floor.tileAt(x, y);
         if (tile?.type === TILE.WALL && !solid.has(`${x},${y}`)) put(tile, kind, wall);
+      }
+      const curatedFloor = [
+        [sx + 1, sy + 1, 'brazier', false],
+        [sx + sw - 2, sy + 1, 'gargoyle', false],
+        [sx + 1, sy + sh - 2, 'bone_pile', false],
+        [sx + sw - 2, sy + sh - 2, 'broken_pillar', false]
+      ];
+      for (const [x, y, kind, wall] of curatedFloor) {
+        const tile = floor.tileAt(x, y);
+        if (tile?.type === TILE.FLOOR && !solid.has(`${x},${y}`)) put(tile, kind, wall);
       }
     }
 
     let placed = 0;
-    for (const tile of this.rng.shuffle(wallCandidates).slice(0, count)) {
+    for (const tile of this.rng.shuffle(wallCandidates).slice(0, wallCount)) {
       if (put(tile, this.rng.pick(wallKinds), true)) placed++;
-      if (placed >= count) return;
+      if (placed >= wallCount) break;
+    }
+    placed = 0;
+    for (const tile of this.rng.shuffle(floorCandidates).slice(0, floorCount)) {
+      if (put(tile, this.rng.pick(floorKinds), false)) placed++;
+      if (placed >= floorCount) break;
     }
   }
 
