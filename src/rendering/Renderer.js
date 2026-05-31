@@ -1028,30 +1028,131 @@ export class Renderer {
 
   /** Kindly tutorial guide: lantern, ledger, soft blue title-bob silhouette. */
   _drawKeeperSprite(ctx, cx, cy, s, t) {
-    const u = s / 42;
-    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
-    const bob = Math.sin(t * 2.2) * 1.1 * u;
+    const u = s / 32;
+    const x = (v) => cx + (v - 16) * u;
+    const y = (v) => cy + (v - 16) * u;
+    const rect = (rx, ry, rw, rh, fill) => {
+      ctx.fillStyle = fill;
+      ctx.fillRect(x(rx), y(ry), rw * u, rh * u);
+    };
+    const strokePath = (fill = null, stroke = '#08070c', lw = 0.6) => {
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lw * u;
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
+      ctx.stroke();
+    };
+    const bob = Math.sin(t * 2.2) * 0.9 * u;
+    const soul = '#7fe8ff';
+    const robe = '#36506a';
+    const robeLo = '#243a50';
+    const robeHi = '#4e7090';
+    const skin = '#caa884';
+    const gilt = '#d4be7a';
+
     ctx.save();
-    ctx.translate(0, 3 * u + bob);
-    const halo = ctx.createRadialGradient(cx - 8 * u, cy - 9 * u, 1 * u, cx - 8 * u, cy - 9 * u, 16 * u);
-    halo.addColorStop(0, 'rgba(114,215,255,0.42)');
-    halo.addColorStop(1, 'rgba(114,215,255,0)');
-    ctx.fillStyle = halo; ctx.fillRect(cx - 24 * u, cy - 24 * u, 32 * u, 32 * u);
+    ctx.translate(0, bob);
+
+    // Ground shadow from the handoff SVG.
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
-    ctx.beginPath(); ctx.ellipse(cx, cy + 13 * u, 10 * u, 3 * u, 0, 0, Math.PI * 2); ctx.fill();
-    px(-13, -9, 3, 24, '#2b211c');
-    px(-16, -16, 8, 10, '#2f465d'); px(-14, -14, 4, 5, '#d8f5ff');
-    px(-12, -2, 24, 17, '#33465c'); px(-9, 13, 18, 3, '#a9b77a');
-    px(-10, -3, 20, 3, '#bfd6d8');
-    ctx.fillStyle = '#b8a69c';
-    ctx.beginPath(); ctx.arc(cx + 1 * u, cy - 9 * u, 8 * u, 0, Math.PI * 2); ctx.fill();
-    px(-7, -17, 16, 5, '#d8d6d4'); px(-5, -19, 10, 3, '#596171');
-    px(-3, -11, 2, 2, '#1d2130'); px(4, -11, 2, 2, '#1d2130');
-    ctx.strokeStyle = '#5b3c45'; ctx.lineWidth = 1.3 * u;
-    ctx.beginPath(); ctx.arc(cx + 1 * u, cy - 8 * u, 4 * u, 0.15, Math.PI - 0.15); ctx.stroke();
-    px(9, -1, 9, 10, '#d9d3b8'); px(10, 0, 1, 8, '#756d5b'); px(13, 1, 1, 7, '#756d5b');
-    ctx.fillStyle = '#72d7ff';
-    ctx.beginPath(); ctx.arc(cx + 15 * u, cy - 9 * u, 2.3 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(x(16), y(30.2), 9 * u, 2 * u, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Staff + raised lantern behind the body.
+    rect(6.8, 6, 1.5, 22, '#3a2818');
+    ctx.strokeStyle = '#08070c'; ctx.lineWidth = 0.4 * u; ctx.strokeRect(x(6.8), y(6), 1.5 * u, 22 * u);
+    rect(5.4, 4.6, 3.2, 1.4, '#2a2a32');
+    ctx.strokeRect(x(5.4), y(4.6), 3.2 * u, 1.4 * u);
+    const lanternGlow = ctx.createRadialGradient(x(7), y(9), 1 * u, x(7), y(9), 7.5 * u);
+    lanternGlow.addColorStop(0, `rgba(127,232,255,${0.18 + Math.sin(t * 3.1) * 0.04})`);
+    lanternGlow.addColorStop(1, 'rgba(127,232,255,0)');
+    ctx.fillStyle = lanternGlow; ctx.fillRect(x(0), y(2), 16 * u, 16 * u);
+    ctx.beginPath();
+    ctx.roundRect(x(4.8), y(6), 4.4 * u, 6 * u, 0.6 * u);
+    strokePath('#2a2a32', '#08070c', 0.5);
+    rect(5.6, 6.8, 2.8, 4.4, soul);
+    rect(6.4, 7.4, 1.2, 3.2, '#eafcff');
+    rect(4.8, 11.6, 4.4, 1, '#3a3a44');
+
+    // Robe body, mantle, sash.
+    ctx.beginPath();
+    ctx.moveTo(x(11.5), y(14)); ctx.lineTo(x(20.5), y(14));
+    ctx.lineTo(x(23), y(30)); ctx.lineTo(x(9.5), y(30));
+    ctx.closePath(); strokePath(robe);
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x(11.5), y(14)); ctx.lineTo(x(16), y(14)); ctx.lineTo(x(16), y(30)); ctx.lineTo(x(9.5), y(30));
+    ctx.closePath(); ctx.fillStyle = robeLo; ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = robeHi; ctx.lineWidth = 0.5 * u; ctx.globalAlpha = 0.4;
+    ctx.beginPath(); ctx.moveTo(x(18), y(15)); ctx.lineTo(x(20), y(29)); ctx.stroke(); ctx.globalAlpha = 1;
+    ctx.beginPath();
+    ctx.moveTo(x(10.5), y(14));
+    ctx.quadraticCurveTo(x(16), y(11.5), x(21.5), y(14));
+    ctx.lineTo(x(20), y(18));
+    ctx.quadraticCurveTo(x(16), y(16), x(12), y(18));
+    ctx.closePath(); strokePath(robeHi);
+    rect(10, 27.4, 13.5, 1.6, 'rgba(212,190,122,0.6)');
+    ctx.strokeStyle = gilt; ctx.lineWidth = 1.2 * u; ctx.globalAlpha = 0.8;
+    ctx.beginPath(); ctx.moveTo(x(11), y(16)); ctx.lineTo(x(21), y(19)); ctx.stroke(); ctx.globalAlpha = 1;
+
+    // Arms and ledger.
+    ctx.beginPath();
+    ctx.moveTo(x(11.5), y(15)); ctx.lineTo(x(7.8), y(9)); ctx.lineTo(x(9.6), y(8)); ctx.lineTo(x(13), y(14));
+    ctx.closePath(); strokePath(robe);
+    ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(x(8.4), y(8.6), 1.4 * u, 1.3 * u, 0, 0, Math.PI * 2); strokePath(skin, '#08070c', 0.4);
+    ctx.beginPath();
+    ctx.moveTo(x(20.5), y(15)); ctx.lineTo(x(24), y(20)); ctx.lineTo(x(22), y(22)); ctx.lineTo(x(18.5), y(17));
+    ctx.closePath(); strokePath(robe);
+    ctx.beginPath();
+    ctx.moveTo(x(20), y(20)); ctx.lineTo(x(27), y(19)); ctx.lineTo(x(27), y(24)); ctx.lineTo(x(20), y(25));
+    ctx.closePath(); strokePath('#c8bda0', '#08070c', 0.4);
+    ctx.strokeStyle = '#9a8e6c'; ctx.lineWidth = 0.5 * u;
+    ctx.beginPath(); ctx.moveTo(x(23.5), y(19.4)); ctx.lineTo(x(23.5), y(24.4)); ctx.stroke();
+    ctx.strokeStyle = '#7a6e54'; ctx.lineWidth = 0.3 * u;
+    for (const yy of [21, 22.2, 23.4]) { ctx.beginPath(); ctx.moveTo(x(21), y(yy)); ctx.lineTo(x(26), y(yy - 0.7)); ctx.stroke(); }
+
+    // Hood down, face, beard.
+    ctx.fillStyle = skin; ctx.beginPath(); ctx.ellipse(x(16), y(9.5), 4.4 * u, 4.8 * u, 0, 0, Math.PI * 2); strokePath(skin);
+    ctx.beginPath();
+    ctx.moveTo(x(11.5), y(9));
+    ctx.quadraticCurveTo(x(11), y(4), x(16), y(4));
+    ctx.quadraticCurveTo(x(21), y(4), x(20.5), y(9));
+    ctx.quadraticCurveTo(x(18), y(6.5), x(16), y(6.8));
+    ctx.quadraticCurveTo(x(14), y(6.5), x(11.5), y(9));
+    strokePath('#8a8e98', '#08070c', 0.5);
+    ctx.beginPath(); ctx.moveTo(x(11), y(11)); ctx.quadraticCurveTo(x(9.5), y(15), x(12), y(16)); ctx.lineTo(x(12), y(13)); ctx.closePath(); strokePath(robeLo, '#08070c', 0.5);
+    ctx.beginPath(); ctx.moveTo(x(21), y(11)); ctx.quadraticCurveTo(x(22.5), y(15), x(20), y(16)); ctx.lineTo(x(20), y(13)); ctx.closePath(); strokePath(robeLo, '#08070c', 0.5);
+
+    const eye = (ex, ey) => {
+      ctx.fillStyle = '#3a2a4a';
+      ctx.beginPath(); ctx.arc(x(ex), y(ey), 0.85 * u, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.beginPath(); ctx.arc(x(ex - 0.2), y(ey - 0.2), 0.34 * u, 0, Math.PI * 2); ctx.fill();
+    };
+    eye(14.3, 9.4); eye(17.7, 9.4);
+    ctx.strokeStyle = '#6a6056'; ctx.lineWidth = 0.4 * u;
+    ctx.beginPath(); ctx.moveTo(x(12.6), y(8)); ctx.quadraticCurveTo(x(14.3), y(7.2), x(15.6), y(8)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x(16.4), y(8)); ctx.quadraticCurveTo(x(17.7), y(7.2), x(19.4), y(8)); ctx.stroke();
+    ctx.strokeStyle = '#8a5a4a'; ctx.lineWidth = 0.5 * u;
+    ctx.beginPath(); ctx.moveTo(x(14), y(12)); ctx.quadraticCurveTo(x(16), y(13.4), x(18), y(12)); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x(12.6), y(11.5));
+    ctx.quadraticCurveTo(x(16), y(16.5), x(19.4), y(11.5));
+    ctx.quadraticCurveTo(x(18), y(14), x(16), y(14));
+    ctx.quadraticCurveTo(x(14), y(14), x(12.6), y(11.5));
+    strokePath('#9a9ea8', '#08070c', 0.4);
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath(); ctx.ellipse(x(13.8), y(7.2), 1.5 * u, 1 * u, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Guiding wisp, same "follow me" cue from the handoff.
+    const wx = 24 + Math.sin(t * 1.55) * 1.5;
+    const wy = 9.8 + Math.cos(t * 1.55) * 1.3;
+    const wg = ctx.createRadialGradient(x(wx), y(wy), 0.2 * u, x(wx), y(wy), 4 * u);
+    wg.addColorStop(0, 'rgba(127,232,255,0.95)');
+    wg.addColorStop(1, 'rgba(127,232,255,0)');
+    ctx.fillStyle = wg; ctx.fillRect(x(wx - 4), y(wy - 4), 8 * u, 8 * u);
+    ctx.fillStyle = soul; ctx.beginPath(); ctx.arc(x(wx), y(wy), 1 * u, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
