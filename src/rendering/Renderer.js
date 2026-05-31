@@ -29,6 +29,7 @@ import { fillRect, strokeRect } from './SpriteRegistry.js';
 import { drawBiomeWall, drawBiomeFloor, hasBiome } from './biomeTiles.js';
 import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
 import { HAZARDS } from '../gameplay/hazards.js';
+import { drawVectorNPC } from './npcArtVector.jsx';
 
 export class Renderer {
   /**
@@ -987,6 +988,7 @@ export class Renderer {
 
   /** Hooded wandering merchant: robe, hood, face, coin-pouch, gold glint. */
   _drawMerchantSprite(ctx, cx, cy, s, t) {
+    if (drawVectorNPC(ctx, cx - s / 2, cy - s / 2, s, 'merchant')) return;
     const u = s / 32; // unit scale relative to a 32px tile
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
     // ground shadow
@@ -1028,6 +1030,7 @@ export class Renderer {
 
   /** Kindly tutorial guide: lantern, ledger, soft blue title-bob silhouette. */
   _drawKeeperSprite(ctx, cx, cy, s, t) {
+    if (drawVectorNPC(ctx, cx - s / 2, cy - s / 2, s, 'keeper')) return;
     const u = s / 32;
     const x = (v) => cx + (v - 16) * u;
     const y = (v) => cy + (v - 16) * u;
