@@ -221,9 +221,15 @@ export class DungeonGenerator {
     for (const it of spawns.items || []) solid.add(`${it.x},${it.y}`);
     for (const en of spawns.enemies || []) solid.add(`${en.x},${en.y}`);
 
-    const wallKinds = ['wall_torch', 'banner', 'wall_chains', 'rune_crack', 'cobweb'];
+    const wallKinds = [
+      { value: 'wall_torch', weight: 5 },
+      { value: 'wall_chains', weight: 4 },
+      { value: 'rune_crack', weight: 4 },
+      { value: 'cobweb', weight: 4 },
+      { value: 'banner', weight: 1 }
+    ];
     const floorKinds = ['brazier', 'bone_pile', 'broken_pillar', 'gargoyle'];
-    const wallCount = floorDef.tutorial ? 8 : this.rng.randInt(10, 16);
+    const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(20, 30);
     const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(8, 14);
 
     const wallCandidates = [];
@@ -306,7 +312,7 @@ export class DungeonGenerator {
 
     let placed = 0;
     for (const tile of this.rng.shuffle(wallCandidates).slice(0, wallCount)) {
-      if (put(tile, this.rng.pick(wallKinds), true)) placed++;
+      if (put(tile, this.rng.weightedPick(wallKinds), true)) placed++;
       if (placed >= wallCount) break;
     }
     placed = 0;

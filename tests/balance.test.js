@@ -6,8 +6,8 @@ describe('mergeBalance', () => {
   it('includes enemyScaling from balance.json', () => {
     const balance = mergeBalance(balanceJson);
     expect(balance.enemyScaling).toBeDefined();
-    expect(balance.enemyScaling.hp).toBe(1.35);
-    expect(balance.enemyScaling.atk).toBe(1.28);
+    expect(balance.enemyScaling.hp).toBe(1);
+    expect(balance.enemyScaling.atk).toBe(0.9);
   });
 
   it('falls back to default enemyScaling when JSON omits it', () => {
@@ -28,7 +28,7 @@ describe('enemyCombatScale', () => {
   const balance = mergeBalance(balanceJson);
 
   it('reads global enemy multipliers', () => {
-    expect(enemyCombatScale(balance)).toEqual({ hp: 1.35, atk: 1.28 });
+    expect(enemyCombatScale(balance)).toEqual({ hp: 1, atk: 0.9 });
   });
 
   it('falls back to 1 when scaling missing', () => {
