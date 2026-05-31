@@ -1,6 +1,6 @@
 {
   "name": "shadow-depths",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shadow Depths — a turn-based roguelike dark fantasy. Foundation build (v0.1).",
   "type": "module",
   "private": true,
