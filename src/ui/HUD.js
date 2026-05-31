@@ -225,24 +225,18 @@ export class HUD {
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
 
-    // Brass piping above + below (gradient fade to transparent at ends).
-    const pipeFn = (py) => {
-      const lg = ctx.createLinearGradient(x, py, x + w, py);
-      lg.addColorStop(0,    'rgba(212,172,108,0)');
-      lg.addColorStop(0.18, BRASS_DARK);
-      lg.addColorStop(0.5,  BRASS_HI);
-      lg.addColorStop(0.82, BRASS_DARK);
-      lg.addColorStop(1,    'rgba(212,172,108,0)');
-      ctx.fillStyle = lg;
-      ctx.fillRect(x, py, w, 1);
-    };
-    const pipeTop = y + 5;
+    // Brass hairline below title only (top line removed — it clipped long floor names).
     const pipeBot = y + h - 6;
-    pipeFn(pipeTop);
-    pipeFn(pipeBot);
+    const lg = ctx.createLinearGradient(x, pipeBot, x + w, pipeBot);
+    lg.addColorStop(0,    'rgba(212,172,108,0)');
+    lg.addColorStop(0.18, BRASS_DARK);
+    lg.addColorStop(0.5,  BRASS_HI);
+    lg.addColorStop(0.82, BRASS_DARK);
+    lg.addColorStop(1,    'rgba(212,172,108,0)');
+    ctx.fillStyle = lg;
+    ctx.fillRect(x, pipeBot, w, 1);
 
     const studs = [
-      [x + 6, pipeTop + 2], [x + w - 6, pipeTop + 2],
       [x + 6, pipeBot - 2], [x + w - 6, pipeBot - 2]
     ];
     for (const [sx, sy] of studs) {
@@ -259,7 +253,7 @@ export class HUD {
     // Gilt sweep — soft band moves across, scoped to plate by clip.
     ctx.save();
     ctx.beginPath();
-    ctx.rect(x, pipeTop + 2, w, pipeBot - pipeTop - 3);
+    ctx.rect(x, y + 2, w, pipeBot - y - 4);
     ctx.clip();
     const sweepPhase = ((t * 0.22) % 1);
     const sweepX = x - w * 0.4 + sweepPhase * w * 1.8;
