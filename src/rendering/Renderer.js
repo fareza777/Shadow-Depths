@@ -23,7 +23,7 @@ import {
   GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, TILE, COLOR, TIMING
 } from '../config/constants.js';
 import {
-  Layout, syncLayoutFromWindow, viewportX, viewportY, viewportW, viewportH
+  Layout, prefersLeanCombatFx, syncLayoutFromWindow, viewportX, viewportY, viewportW, viewportH
 } from '../config/layoutMetrics.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
 import { drawBiomeWall, drawBiomeFloor, hasBiome } from './biomeTiles.js';
@@ -63,6 +63,7 @@ export class Renderer {
     /** @type {WeakMap<object, number>} entity → flash end timestamp (ms) */
     this._hitFlashes = new WeakMap();
     this._attackFlashes = [];
+    this._leanCombatFx = prefersLeanCombatFx();
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
@@ -72,9 +73,14 @@ export class Renderer {
     // Game-feel: trigger camera shake on damage automatically.
     this.bus.on('entity:damaged', ({ amount, isCrit, entity }) => {
       if (!entity) return;
-      const base = entity.kind === 'player' ? 6 : 3;
-      const px = Math.min(14, base + amount * 0.35);
-      this.cameraShake.trigger(px, isCrit ? TIMING.cameraShakeLong : TIMING.cameraShakeShort);
+      const base = this._leanCombatFx
+        ? (entity.kind === 'player' ? 3.5 : 1.5)
+        : (entity.kind === 'player' ? 6 : 3);
+      const px = Math.min(this._leanCombatFx ? 7 : 14, base + amount * (this._leanCombatFx ? 0.18 : 0.35));
+      const duration = this._leanCombatFx && !isCrit
+        ? Math.round(TIMING.cameraShakeShort * 0.55)
+        : (isCrit ? TIMING.cameraShakeLong : TIMING.cameraShakeShort);
+      this.cameraShake.trigger(px, duration);
       const until = performance.now() + (isCrit ? TIMING.hitFlash * 2 : TIMING.hitFlash);
       this._hitFlashes.set(entity, until);
     });
@@ -88,7 +94,8 @@ export class Renderer {
         startedAt: performance.now(),
         duration: isCrit ? 190 : 140
       });
-      if (this._attackFlashes.length > 16) this._attackFlashes.shift();
+      const cap = this._leanCombatFx ? 6 : 16;
+      if (this._attackFlashes.length > cap) this._attackFlashes.shift();
     });
   }
 
@@ -668,6 +675,10 @@ export class Renderer {
         const r = TILE_SIZE * (0.22 + t * 0.42);
         ctx.arc(tx, ty, r, -Math.PI * 0.75, Math.PI * 0.25);
         ctx.stroke();
+        if (this._leanCombatFx && !f.isCrit) {
+          ctx.restore();
+          continue;
+        }
         ctx.strokeStyle = f.isCrit ? '#e85a4a' : '#d4be7a';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -719,7 +730,7 @@ export class Renderer {
   _drawThreatAura(ctx, entity, px, py) {
     const isBoss = entity.defId?.startsWith('boss_');
     const isSub = entity.defId?.startsWith('subboss_');
-    const elite = isBoss || isSub || (entity.stats?.hpMax ?? 0) >= 28;
+    const elite = isBoss || isSub || !!entity.elite;
     if (!elite) return;
     const pulse = 0.55 + Math.sin((this._timeSec || 0) * 3.5) * 0.25;
     const color = isBoss ? '#d4be7a' : isSub ? '#c080ff' : '#8060a0';

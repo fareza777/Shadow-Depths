@@ -11,6 +11,7 @@
  * Anything that needs per-frame work subscribes to 'tick' on the bus.
  */
 import { LOG } from '../config/constants.js';
+import { prefersLeanCombatFx } from '../config/layoutMetrics.js';
 
 export class GameLoop {
   /**
@@ -46,13 +47,7 @@ export class GameLoop {
   }
 
   static _preferSteady30() {
-    if (typeof navigator === 'undefined') return false;
-    const ua = navigator.userAgent || '';
-    const mobile = /Android|iPhone|iPad|iPod/i.test(ua) || navigator.maxTouchPoints > 1;
-    if (!mobile) return false;
-    const mem = navigator.deviceMemory || 0;
-    const cores = navigator.hardwareConcurrency || 0;
-    return /Android/i.test(ua) || (mem && mem <= 4) || (cores && cores <= 4);
+    return prefersLeanCombatFx();
   }
 
   start() {
