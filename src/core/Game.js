@@ -90,7 +90,8 @@ export class Game {
       console.warn(LOG.CORE, 'newRun called before GameScene factory is registered');
       return;
     }
-    if (!opts.skipIntro && this._sceneFactories.opening) {
+    const mode = opts.mode || 'normal';
+    if (!opts.skipIntro && mode !== 'tutorial' && this._sceneFactories.opening) {
       const scene = this._sceneFactories.opening({
         bus: this.bus,
         state: this.state,
@@ -110,7 +111,7 @@ export class Game {
       content: this.content,
       balance: this.balance,
       seed: opts.seed,
-      mode: opts.mode || 'normal',
+      mode,
       heroKind: opts.heroKind || this.meta?.state?.settings?.lastHero || 'vigil'
     });
     this.state.setScene('game');

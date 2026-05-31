@@ -126,7 +126,7 @@ export class GameScene {
 
     this.itemFactory = new ItemFactory(this.content.items);
     this.dungeon = new Dungeon({
-      balance: this.balance, rng: this.rng, content: this.content
+      balance: this.balance, rng: this.rng, content: this.content, mode: this.mode
     });
 
     this.player = null;
@@ -189,8 +189,8 @@ export class GameScene {
     this.state.setRun({ seed: this.seed, floorIndex: 0, mode: this.mode });
     this._emitFloorEntered(0, floor);
     this._saveRun();
-    if (this.tutorial && this.state.state.meta?.settings?.showTutorial !== false) {
-      this.tutorial.show(true);
+    if (this.tutorial && (this.mode === 'tutorial' || this.state.state.meta?.settings?.showTutorial !== false)) {
+      this.tutorial.show(this.mode === 'tutorial' ? 'keeper' : true);
     }
   }
 
@@ -904,6 +904,13 @@ export class GameScene {
     if (kind === 'forge') {
       // The anvil is a permanent structure — open the smith, never mark used.
       this.bus.emit('request:openCrafting', {});
+      return;
+    }
+    if (kind === 'keeper') {
+      this.tutorial?.show?.('keeper');
+      this.bus.emit('floor:event', {
+        message: interact.label || 'The Keeper raises a lantern: move, fight, loot, then use stairs.'
+      });
       return;
     }
     if (kind === 'rest_alcove') {

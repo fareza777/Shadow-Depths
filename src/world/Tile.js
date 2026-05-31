@@ -29,6 +29,8 @@ export class Tile {
     this.ambient = null;
     /** Secret door: a WALL that opens to a hidden cache when found. */
     this.secret = null;
+    /** Cosmetic room/wall dressing: { kind, wall }. Never affects gameplay. */
+    this.decor = null;
   }
 
   /** Does this tile block movement? Includes walls, voids, closed doors. */

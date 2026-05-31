@@ -42,10 +42,11 @@ export class Dungeon {
   /**
    * @param {object} deps { balance, rng, content }
    */
-  constructor({ balance, rng, content }) {
+  constructor({ balance, rng, content, mode = 'normal' }) {
     this.balance = balance;
     this.rng = rng;
     this.content = content;
+    this.mode = mode;
     this.generator = new DungeonGenerator(balance, rng.fork('dungeon'));
 
     // Optional hand-authored overrides (data/floors.json). Indexed by
@@ -65,7 +66,7 @@ export class Dungeon {
 
   isFinalFloor(index = this.currentIndex) {
     const def = this.floorDefs[index];
-    return !!(def && def.isFinalFloor);
+    return !!(def && (def.isFinalFloor || def.tutorialLast));
   }
 
   getOrGenerate(index) {
@@ -97,6 +98,8 @@ export class Dungeon {
 
   // --- procedural floor list ------------------------------------------
   _buildFloorList() {
+    if (this.mode === 'tutorial') return this._buildTutorialFloorList();
+
     const out = [];
     const biomeCount = this.biomes.length || 1;
 
@@ -171,6 +174,44 @@ export class Dungeon {
     // Force the last floor to be the final, regardless of biome flags.
     if (out.length > 0) out[out.length - 1].isFinalFloor = true;
     return out;
+  }
+
+  _buildTutorialFloorList() {
+    const biome = this.biomes.find((b) => b.id === 'forgotten_crypts') || this.biomes[0] || {};
+    const base = {
+      atmosphere: 'A guided first descent under the Keeper lantern.',
+      wallPalette: biome.wallPalette || ['#3a3340', '#1a1820'],
+      floorPalette: biome.floorPalette || ['#2a2630', '#15131a'],
+      biomeId: biome.id || 'forgotten_crypts',
+      torchRadius: Math.max(6, biome.torchRadius || 5),
+      depthScale: 1,
+      tutorial: true,
+      vaultDepthBoost: 0
+    };
+    return [
+      {
+        ...base,
+        index: 0,
+        name: 'Keeper Tutorial I',
+        subtitle: 'Step-by-step basics',
+        enemyPool: ['cave_bat', 'goblin_scout'],
+        enemyCount: 2,
+        itemCount: 3,
+        tutorialStep: 'basics'
+      },
+      {
+        ...base,
+        index: 1,
+        name: 'Keeper Tutorial II',
+        subtitle: 'Combat, loot, and descent',
+        enemyPool: ['goblin_scout', 'skeleton_archer'],
+        enemyCount: 3,
+        itemCount: 4,
+        type: 'tutorial_trial',
+        tutorialStep: 'trial',
+        tutorialLast: true
+      }
+    ];
   }
 
   static _indexOverrides(floorsContent) {

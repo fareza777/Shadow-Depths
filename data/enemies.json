@@ -1150,5 +1150,643 @@
         "value": 10
       }
     ]
+  },
+  "reliquary_rat": {
+    "id": "reliquary_rat",
+    "name": "Reliquary Rat",
+    "spriteKey": "enemy_reliquary_rat",
+    "stats": {
+      "hp": 24,
+      "atk": 5,
+      "def": 1
+    },
+    "behavior": "erratic",
+    "behaviorParams": {
+      "missChance": 0.18,
+      "randomMoveChance": 0.45
+    },
+    "xp": 9,
+    "goldDrop": [
+      1,
+      4
+    ],
+    "floorMin": 1,
+    "spawnWeight": 7
+  },
+  "tomb_lantern": {
+    "id": "tomb_lantern",
+    "name": "Tomb Lantern",
+    "spriteKey": "enemy_tomb_lantern",
+    "stats": {
+      "hp": 28,
+      "atk": 6,
+      "def": 1
+    },
+    "behavior": "ranged",
+    "behaviorParams": {
+      "preferredDistance": 4,
+      "minDistance": 2,
+      "range": 5
+    },
+    "xp": 12,
+    "goldDrop": [
+      2,
+      5
+    ],
+    "floorMin": 2,
+    "spawnWeight": 5,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "burn",
+        "value": 2,
+        "duration": 2
+      }
+    ]
+  },
+  "oathless_squire": {
+    "id": "oathless_squire",
+    "name": "Oathless Squire",
+    "spriteKey": "enemy_oathless_squire",
+    "stats": {
+      "hp": 36,
+      "atk": 6,
+      "def": 3
+    },
+    "behavior": "chase",
+    "xp": 16,
+    "goldDrop": [
+      2,
+      7
+    ],
+    "floorMin": 4,
+    "spawnWeight": 5
+  },
+  "bone_choir": {
+    "id": "bone_choir",
+    "name": "Bone Choir",
+    "spriteKey": "enemy_bone_choir",
+    "stats": {
+      "hp": 26,
+      "atk": 7,
+      "def": 2
+    },
+    "behavior": "ranged",
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 6
+    },
+    "xp": 22,
+    "goldDrop": [
+      4,
+      9
+    ],
+    "floorMin": 11,
+    "spawnWeight": 5,
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 2
+      }
+    ]
+  },
+  "marrow_jailer": {
+    "id": "marrow_jailer",
+    "name": "Marrow Jailer",
+    "spriteKey": "enemy_marrow_jailer",
+    "stats": {
+      "hp": 42,
+      "atk": 8,
+      "def": 4
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
+    "xp": 28,
+    "goldDrop": [
+      5,
+      12
+    ],
+    "floorMin": 13,
+    "spawnWeight": 4
+  },
+  "carrion_censer": {
+    "id": "carrion_censer",
+    "name": "Carrion Censer",
+    "spriteKey": "enemy_carrion_censer",
+    "stats": {
+      "hp": 30,
+      "atk": 7,
+      "def": 2
+    },
+    "behavior": "phase",
+    "xp": 26,
+    "goldDrop": [
+      5,
+      11
+    ],
+    "floorMin": 16,
+    "spawnWeight": 4,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 1,
+        "duration": 4,
+        "stackable": true
+      }
+    ]
+  },
+  "rime_sentinel": {
+    "id": "rime_sentinel",
+    "name": "Rime Sentinel",
+    "spriteKey": "enemy_rime_sentinel",
+    "stats": {
+      "hp": 44,
+      "atk": 8,
+      "def": 5
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
+    "xp": 34,
+    "goldDrop": [
+      6,
+      15
+    ],
+    "floorMin": 21,
+    "spawnWeight": 4,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "slow",
+        "value": 1,
+        "duration": 2
+      }
+    ]
+  },
+  "frost_abbot": {
+    "id": "frost_abbot",
+    "name": "Frost Abbot",
+    "spriteKey": "enemy_frost_abbot",
+    "stats": {
+      "hp": 32,
+      "atk": 9,
+      "def": 3
+    },
+    "behavior": "ranged",
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 6
+    },
+    "xp": 38,
+    "goldDrop": [
+      7,
+      16
+    ],
+    "floorMin": 24,
+    "spawnWeight": 4,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "freeze",
+        "value": 1,
+        "duration": 1
+      }
+    ]
+  },
+  "root_mimic": {
+    "id": "root_mimic",
+    "name": "Root Mimic",
+    "spriteKey": "enemy_root_mimic",
+    "stats": {
+      "hp": 38,
+      "atk": 9,
+      "def": 3
+    },
+    "behavior": "chase",
+    "xp": 40,
+    "goldDrop": [
+      7,
+      18
+    ],
+    "floorMin": 31,
+    "spawnWeight": 5,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 2,
+        "duration": 3,
+        "stackable": true
+      }
+    ]
+  },
+  "sap_witch": {
+    "id": "sap_witch",
+    "name": "Sap Witch",
+    "spriteKey": "enemy_sap_witch",
+    "stats": {
+      "hp": 30,
+      "atk": 10,
+      "def": 2
+    },
+    "behavior": "phase",
+    "xp": 44,
+    "goldDrop": [
+      8,
+      20
+    ],
+    "floorMin": 34,
+    "spawnWeight": 4
+  },
+  "gearbound_acolyte": {
+    "id": "gearbound_acolyte",
+    "name": "Gearbound Acolyte",
+    "spriteKey": "enemy_gearbound_acolyte",
+    "stats": {
+      "hp": 40,
+      "atk": 11,
+      "def": 4
+    },
+    "behavior": "chase",
+    "xp": 50,
+    "goldDrop": [
+      10,
+      23
+    ],
+    "floorMin": 41,
+    "spawnWeight": 5
+  },
+  "furnace_jailer": {
+    "id": "furnace_jailer",
+    "name": "Furnace Jailer",
+    "spriteKey": "enemy_furnace_jailer",
+    "stats": {
+      "hp": 58,
+      "atk": 12,
+      "def": 7
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
+    "xp": 62,
+    "goldDrop": [
+      12,
+      28
+    ],
+    "floorMin": 44,
+    "spawnWeight": 3,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "burn",
+        "value": 3,
+        "duration": 3
+      }
+    ]
+  },
+  "rivet_colossus": {
+    "id": "rivet_colossus",
+    "name": "Rivet Colossus",
+    "spriteKey": "enemy_rivet_colossus",
+    "stats": {
+      "hp": 72,
+      "atk": 13,
+      "def": 8
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 3
+    },
+    "xp": 80,
+    "goldDrop": [
+      18,
+      36
+    ],
+    "floorMin": 48,
+    "spawnWeight": 2
+  },
+  "dune_pilgrim": {
+    "id": "dune_pilgrim",
+    "name": "Dune Pilgrim",
+    "spriteKey": "enemy_dune_pilgrim",
+    "stats": {
+      "hp": 34,
+      "atk": 12,
+      "def": 3
+    },
+    "behavior": "erratic",
+    "behaviorParams": {
+      "missChance": 0.12,
+      "randomMoveChance": 0.38
+    },
+    "xp": 58,
+    "goldDrop": [
+      11,
+      25
+    ],
+    "floorMin": 51,
+    "spawnWeight": 5
+  },
+  "sunscar_javelin": {
+    "id": "sunscar_javelin",
+    "name": "Sunscar Javelin",
+    "spriteKey": "enemy_sunscar_javelin",
+    "stats": {
+      "hp": 32,
+      "atk": 13,
+      "def": 2
+    },
+    "behavior": "ranged",
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 7
+    },
+    "xp": 64,
+    "goldDrop": [
+      12,
+      28
+    ],
+    "floorMin": 55,
+    "spawnWeight": 4,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "burn",
+        "value": 2,
+        "duration": 2
+      }
+    ]
+  },
+  "reflection_duelist": {
+    "id": "reflection_duelist",
+    "name": "Reflection Duelist",
+    "spriteKey": "enemy_reflection_duelist",
+    "stats": {
+      "hp": 38,
+      "atk": 13,
+      "def": 3
+    },
+    "behavior": "phase",
+    "xp": 68,
+    "goldDrop": [
+      13,
+      30
+    ],
+    "floorMin": 61,
+    "spawnWeight": 5
+  },
+  "silver_masque": {
+    "id": "silver_masque",
+    "name": "Silver Masque",
+    "spriteKey": "enemy_silver_masque",
+    "stats": {
+      "hp": 34,
+      "atk": 14,
+      "def": 2
+    },
+    "behavior": "erratic",
+    "behaviorParams": {
+      "missChance": 0.08,
+      "randomMoveChance": 0.42
+    },
+    "xp": 70,
+    "goldDrop": [
+      13,
+      31
+    ],
+    "floorMin": 64,
+    "spawnWeight": 4,
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 5
+      }
+    ]
+  },
+  "prism_archer": {
+    "id": "prism_archer",
+    "name": "Prism Archer",
+    "spriteKey": "enemy_prism_archer",
+    "stats": {
+      "hp": 36,
+      "atk": 15,
+      "def": 2
+    },
+    "behavior": "ranged",
+    "behaviorParams": {
+      "preferredDistance": 6,
+      "minDistance": 3,
+      "range": 8
+    },
+    "xp": 76,
+    "goldDrop": [
+      15,
+      34
+    ],
+    "floorMin": 67,
+    "spawnWeight": 4
+  },
+  "slag_impaler": {
+    "id": "slag_impaler",
+    "name": "Slag Impaler",
+    "spriteKey": "enemy_slag_impaler",
+    "stats": {
+      "hp": 46,
+      "atk": 16,
+      "def": 4
+    },
+    "behavior": "chase",
+    "xp": 82,
+    "goldDrop": [
+      16,
+      38
+    ],
+    "floorMin": 71,
+    "spawnWeight": 5,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "bleed",
+        "value": 3,
+        "duration": 3
+      }
+    ]
+  },
+  "kiln_mother": {
+    "id": "kiln_mother",
+    "name": "Kiln Mother",
+    "spriteKey": "enemy_kiln_mother",
+    "stats": {
+      "hp": 64,
+      "atk": 15,
+      "def": 6
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
+    "xp": 95,
+    "goldDrop": [
+      20,
+      45
+    ],
+    "floorMin": 75,
+    "spawnWeight": 3,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "burn",
+        "value": 4,
+        "duration": 3
+      }
+    ]
+  },
+  "brackish_monk": {
+    "id": "brackish_monk",
+    "name": "Brackish Monk",
+    "spriteKey": "enemy_brackish_monk",
+    "stats": {
+      "hp": 48,
+      "atk": 16,
+      "def": 5
+    },
+    "behavior": "chase",
+    "xp": 90,
+    "goldDrop": [
+      18,
+      42
+    ],
+    "floorMin": 81,
+    "spawnWeight": 5,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "slow",
+        "value": 2,
+        "duration": 2
+      }
+    ]
+  },
+  "drowned_bellman": {
+    "id": "drowned_bellman",
+    "name": "Drowned Bellman",
+    "spriteKey": "enemy_drowned_bellman",
+    "stats": {
+      "hp": 42,
+      "atk": 17,
+      "def": 4
+    },
+    "behavior": "ranged",
+    "behaviorParams": {
+      "preferredDistance": 5,
+      "minDistance": 3,
+      "range": 7
+    },
+    "xp": 96,
+    "goldDrop": [
+      20,
+      46
+    ],
+    "floorMin": 84,
+    "spawnWeight": 4,
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 6
+      }
+    ]
+  },
+  "kelp_revenant": {
+    "id": "kelp_revenant",
+    "name": "Kelp Revenant",
+    "spriteKey": "enemy_kelp_revenant",
+    "stats": {
+      "hp": 58,
+      "atk": 17,
+      "def": 5
+    },
+    "behavior": "phase",
+    "xp": 105,
+    "goldDrop": [
+      22,
+      50
+    ],
+    "floorMin": 87,
+    "spawnWeight": 4,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "poison",
+        "value": 3,
+        "duration": 4,
+        "stackable": true
+      }
+    ]
+  },
+  "null_cantor": {
+    "id": "null_cantor",
+    "name": "Null Cantor",
+    "spriteKey": "enemy_null_cantor",
+    "stats": {
+      "hp": 54,
+      "atk": 19,
+      "def": 5
+    },
+    "behavior": "ranged",
+    "behaviorParams": {
+      "preferredDistance": 6,
+      "minDistance": 3,
+      "range": 8
+    },
+    "xp": 120,
+    "goldDrop": [
+      26,
+      60
+    ],
+    "floorMin": 91,
+    "spawnWeight": 4,
+    "onHitPlayer": [
+      {
+        "type": "drainXP",
+        "value": 9
+      }
+    ]
+  },
+  "throne_without_king": {
+    "id": "throne_without_king",
+    "name": "Throne Without King",
+    "spriteKey": "enemy_throne_without_king",
+    "stats": {
+      "hp": 92,
+      "atk": 20,
+      "def": 9
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 2
+    },
+    "xp": 155,
+    "goldDrop": [
+      35,
+      80
+    ],
+    "floorMin": 96,
+    "spawnWeight": 2,
+    "onHitPlayer": [
+      {
+        "type": "applyStatus",
+        "status": "stun",
+        "value": 1,
+        "duration": 1
+      }
+    ]
   }
 }

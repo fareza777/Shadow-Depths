@@ -29,6 +29,7 @@ const BRASS_WHITE = '#fff5d0';
 
 const MENU = [
   { id: 'newRun',   icon: '+', label: 'NEW DESCENT',  sub: 'Permadeath' },
+  { id: 'tutorial', icon: '?', label: 'TUTORIAL',      sub: '2 floors' },
   { id: 'daily',    icon: '☼', label: 'DAILY SEED',   sub: '' },
   { id: 'shop',     icon: '◈', label: 'EMPORIUM',     sub: '' },
   { id: 'codex',    icon: '✦', label: 'CODEX',        sub: '' },
@@ -40,13 +41,13 @@ const LAYOUT = IS_LANDSCAPE
   ? {
       logoY: 28, logoSize: 30, ornY: 56, tagY: 70, tagSize: 11,
       hsY: 92, coinY: 108,
-      baseY: 138, rowH: 44, rowGap: 6, rowW: 360,
+      baseY: 122, rowH: 36, rowGap: 5, rowW: 360,
       footerY: CANVAS_HEIGHT - 14
     }
   : {
       logoY: 72, logoSize: 48, ornY: 128, tagY: 150, tagSize: 16,
       hsY: 178, coinY: 200,
-      baseY: 238, rowH: 58, rowGap: 10, rowW: 360,
+      baseY: 228, rowH: 50, rowGap: 7, rowW: 360,
       footerY: CANVAS_HEIGHT - 28
     };
 
@@ -272,6 +273,7 @@ export class TitleScreen {
       return `F${floor}/100 · Lv ${run.level || 1}`;
     }
     if (item.id === 'newRun') return 'permadeath';
+    if (item.id === 'tutorial') return 'guided';
     if (item.id === 'shop') {
       const coins = this.state.state.meta.coins || 0;
       return `${coins} ◈`;
@@ -406,6 +408,9 @@ export class TitleScreen {
     else if (id === 'newRun') {
       // Open the character picker; it emits request:newRun with heroKind.
       this.bus.emit('request:openCharacterSelect', { mode: 'normal' });
+    }
+    else if (id === 'tutorial') {
+      this.bus.emit('request:openCharacterSelect', { mode: 'tutorial' });
     }
     else if (id === 'daily') {
       const seed = TitleScreen.dailySeed();

@@ -25,6 +25,29 @@ const STEPS = [
   }
 ];
 
+const KEEPER_STEPS = [
+  {
+    title: 'THE KEEPER',
+    body: 'Welcome to a two-floor lesson. Move one tile at a time, keep the lantern circle around you, and use PICK beside glowing objects.'
+  },
+  {
+    title: 'READ THE ROOM',
+    body: 'Gold glows mark people or shrines. Blue cracks, bones, banners, and torches are landmarks that help you remember each room.'
+  },
+  {
+    title: 'FIRST FIGHT',
+    body: 'Step next to an enemy and tap it, or walk into it, to attack. Back away when low HP and use your quick row for consumables.'
+  },
+  {
+    title: 'LOOT & EQUIP',
+    body: 'Stand on loot and press PICK. Open BAG to equip better gear; your hero silhouette changes as armor and weapons improve.'
+  },
+  {
+    title: 'DESCEND',
+    body: 'Find the stair sigil, stand on it, then press DOWN. The second tutorial floor ends the lesson and returns you ready for a real descent.'
+  }
+];
+
 export class TutorialOverlay {
   /**
    * @param {{ metaProgress?: { setSetting: Function } }} deps
@@ -34,6 +57,7 @@ export class TutorialOverlay {
     this.bus = bus || null;
     this.open = false;
     this._step = 0;
+    this._variant = 'firstRun';
     if (this.bus) {
       this.bus.on('request:newRun', () => this.hide());
       this.bus.on('scene:switched', ({ to }) => {
@@ -43,6 +67,7 @@ export class TutorialOverlay {
   }
 
   show(show = true) {
+    this._variant = show === 'keeper' ? 'keeper' : 'firstRun';
     this.open = !!show;
     this._step = 0;
   }
@@ -54,7 +79,8 @@ export class TutorialOverlay {
 
   render(renderer) {
     if (!this.open) return;
-    const step = STEPS[this._step] || STEPS[STEPS.length - 1];
+    const steps = this._variant === 'keeper' ? KEEPER_STEPS : STEPS;
+    const step = steps[this._step] || steps[steps.length - 1];
     const r = renderer;
     const panelW = Layout.canvasW - 32;
     const panelH = 200;
@@ -66,7 +92,7 @@ export class TutorialOverlay {
     r.drawStrokedRect(x, y, panelW, panelH, COLOR.gold, 2);
     r.drawRect(x, y, panelW, 3, COLOR.gold);
 
-    r.drawText('FIRST RUN', CANVAS_WIDTH / 2, y + 22,
+    r.drawText(this._variant === 'keeper' ? 'GUIDED TUTORIAL' : 'FIRST RUN', CANVAS_WIDTH / 2, y + 22,
       { size: uiSize(11), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
     r.drawText(step.title, Layout.canvasW / 2, y + 50,
       { size: uiSize(20), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
@@ -79,8 +105,8 @@ export class TutorialOverlay {
       ly += uiSize(16);
     }
 
-    const hint = this._step < STEPS.length - 1 ? 'Tap or use D-pad to continue' : 'Tap or move to play';
-    r.drawText(`${this._step + 1} / ${STEPS.length}  ·  ${hint}`,
+    const hint = this._step < steps.length - 1 ? 'Tap or use D-pad to continue' : 'Tap or move to play';
+    r.drawText(`${this._step + 1} / ${steps.length}  ·  ${hint}`,
       Layout.canvasW / 2, y + panelH - 20,
       { size: uiSize(12), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
     r.drawText('SKIP', Layout.canvasW / 2, y + panelH + 14,
@@ -106,7 +132,8 @@ export class TutorialOverlay {
   }
 
   _advance() {
-    if (this._step < STEPS.length - 1) {
+    const steps = this._variant === 'keeper' ? KEEPER_STEPS : STEPS;
+    if (this._step < steps.length - 1) {
       this._step += 1;
       return;
     }

@@ -297,7 +297,7 @@ export class Renderer {
             break;
           case TILE.STAIRS_DOWN:
             if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
-            this.sprites.draw('tile_stairs_down', ctx, tx, ty, opts);
+            this._drawStairsDownFixture(ctx, tx + TILE_SIZE / 2, ty + TILE_SIZE / 2, TILE_SIZE, this._timeSec || 0);
             break;
           case TILE.STAIRS_UP:
             if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
@@ -341,6 +341,7 @@ export class Renderer {
 
     // Revealed traps (drawn over floor, under entities/motif).
     this._drawHazards(ctx, floor, x0, y0, x1, y1);
+    this._drawRoomDecor(ctx, floor, x0, y0, x1, y1);
     this._drawFloorInteracts(ctx, floor, x0, y0, x1, y1);
     this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
 
@@ -375,6 +376,10 @@ export class Renderer {
     const cy = anchor.y * TILE_SIZE + TILE_SIZE / 2;
 
     if (def.type === 'rest' || def.type === 'forge') {
+      if (def.type === 'forge') {
+        this._drawForgeFixture(ctx, cx, cy, TILE_SIZE, t);
+        return;
+      }
       // Forge sanctuary — an anvil/ember shrine where the Veiled Smith appears.
       ctx.save();
       // Glow halo
@@ -812,10 +817,129 @@ export class Renderer {
     fillRect(this.ctx, x, y, w, h, color);
   }
 
+  _drawRoomDecor(ctx, floor, x0, y0, x1, y1) {
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const tile = floor.tiles[y][x];
+        const decor = tile?.decor;
+        if (!decor || !tile.explored) continue;
+        ctx.save();
+        ctx.globalAlpha = tile.visible ? 0.95 : 0.38;
+        this._drawDecorSprite(ctx, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2,
+          TILE_SIZE, decor.kind, this._timeSec || 0);
+        ctx.restore();
+      }
+    }
+  }
+
+  _drawDecorSprite(ctx, cx, cy, s, kind, t) {
+    const u = s / 32;
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = 5 * u;
+    if (kind === 'wall_torch') {
+      this._drawTinyFlame(ctx, cx, cy - 4 * u, u, t, '#ffd98a');
+      px(-2, 0, 4, 7, '#2b2630'); px(-3, 7, 6, 2, '#5b5668');
+    } else if (kind === 'brazier') {
+      px(-7, 5, 14, 4, '#2b2630'); px(-5, 2, 10, 3, '#6a3a22');
+      this._drawTinyFlame(ctx, cx, cy + 2 * u, u, t, '#ffb45c');
+    } else if (kind === 'banner') {
+      px(-1, -10, 2, 3, '#6a6474'); px(-7, -7, 14, 13, '#35465e');
+      ctx.fillStyle = '#7fa6d9';
+      ctx.beginPath(); ctx.moveTo(cx - 5 * u, cy - 4 * u); ctx.lineTo(cx, cy - 8 * u); ctx.lineTo(cx + 5 * u, cy - 4 * u); ctx.lineTo(cx, cy - 2 * u); ctx.closePath(); ctx.fill();
+      px(-1, 2, 2, 2, '#89a8d0');
+    } else if (kind === 'bone_pile') {
+      ctx.strokeStyle = '#c9b37e'; ctx.lineWidth = 2 * u; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - 8 * u, cy + 5 * u); ctx.lineTo(cx + 8 * u, cy - 3 * u); ctx.moveTo(cx - 7 * u, cy - 4 * u); ctx.lineTo(cx + 7 * u, cy + 5 * u); ctx.stroke();
+      ctx.fillStyle = '#d8c896'; ctx.beginPath(); ctx.arc(cx - 2 * u, cy - 7 * u, 4 * u, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#09070d'; ctx.fillRect(cx - 4 * u, cy - 8 * u, 1.4 * u, 1.7 * u); ctx.fillRect(cx + 1.5 * u, cy - 8 * u, 1.4 * u, 1.7 * u);
+    } else if (kind === 'broken_pillar') {
+      px(-5, -6, 10, 17, '#45414e'); px(-7, 10, 14, 3, '#2a2730');
+      ctx.fillStyle = '#6b6574'; ctx.beginPath(); ctx.moveTo(cx - 5 * u, cy - 7 * u); ctx.lineTo(cx + 2 * u, cy - 11 * u); ctx.lineTo(cx + 6 * u, cy - 6 * u); ctx.closePath(); ctx.fill();
+    } else if (kind === 'wall_chains') {
+      ctx.strokeStyle = '#6f6a78'; ctx.lineWidth = 2 * u;
+      for (const ox of [-5, 5]) {
+        ctx.beginPath();
+        for (let i = 0; i < 4; i++) ctx.ellipse(cx + ox * u, cy + (-8 + i * 5) * u, 2 * u, 3 * u, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (kind === 'gargoyle') {
+      px(-6, -5, 12, 12, '#3f3b48');
+      ctx.fillStyle = '#2e2a36'; ctx.beginPath(); ctx.moveTo(cx - 6 * u, cy - 5 * u); ctx.lineTo(cx - 9 * u, cy - 10 * u); ctx.lineTo(cx - 2 * u, cy - 5 * u); ctx.moveTo(cx + 6 * u, cy - 5 * u); ctx.lineTo(cx + 9 * u, cy - 10 * u); ctx.lineTo(cx + 2 * u, cy - 5 * u); ctx.fill();
+      px(-3, -1, 2, 2, '#69a2d8'); px(2, -1, 2, 2, '#69a2d8'); px(-2, 5, 4, 2, '#e2d19a');
+    } else if (kind === 'rune_crack') {
+      ctx.strokeStyle = '#58a7ff'; ctx.lineWidth = 1.5 * u; ctx.shadowColor = '#58a7ff'; ctx.shadowBlur = 6 * u;
+      ctx.beginPath(); ctx.moveTo(cx - 4 * u, cy - 11 * u); ctx.lineTo(cx - 1 * u, cy - 3 * u); ctx.lineTo(cx - 5 * u, cy + 3 * u); ctx.lineTo(cx + 2 * u, cy + 11 * u); ctx.stroke();
+      px(5, -4, 2, 2, '#6bc0ff'); px(4, 5, 2, 2, '#6bc0ff');
+    } else {
+      ctx.strokeStyle = '#8c8796'; ctx.lineWidth = 1 * u; ctx.globalAlpha *= 0.75;
+      ctx.beginPath(); ctx.moveTo(cx - 10 * u, cy - 8 * u); ctx.quadraticCurveTo(cx + 1 * u, cy - 10 * u, cx + 9 * u, cy - 1 * u);
+      ctx.moveTo(cx - 10 * u, cy - 8 * u); ctx.lineTo(cx + 6 * u, cy + 8 * u);
+      ctx.moveTo(cx - 6 * u, cy - 9 * u); ctx.lineTo(cx - 2 * u, cy + 6 * u);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  _drawTinyFlame(ctx, cx, cy, u, t, core = '#ffd070') {
+    const f = 0.9 + Math.sin(t * 6.4 + cx * 0.01) * 0.12;
+    ctx.fillStyle = '#ff7040';
+    ctx.beginPath(); ctx.moveTo(cx, cy - 8 * u * f); ctx.quadraticCurveTo(cx + 5 * u, cy - 2 * u, cx + 2 * u, cy + 5 * u); ctx.lineTo(cx - 2 * u, cy + 5 * u); ctx.quadraticCurveTo(cx - 5 * u, cy - 2 * u, cx, cy - 8 * u * f); ctx.fill();
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.moveTo(cx, cy - 4.5 * u * f); ctx.quadraticCurveTo(cx + 2 * u, cy, cx + 1 * u, cy + 4 * u); ctx.lineTo(cx - 1 * u, cy + 4 * u); ctx.quadraticCurveTo(cx - 2 * u, cy, cx, cy - 4.5 * u * f); ctx.fill();
+  }
+
+  _drawStairsDownFixture(ctx, cx, cy, s, t) {
+    const u = s / 32;
+    ctx.save();
+    const g = ctx.createRadialGradient(cx, cy - 4 * u, 2 * u, cx, cy, 23 * u);
+    g.addColorStop(0, 'rgba(236,210,140,0.18)');
+    g.addColorStop(1, 'rgba(236,210,140,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(cx - 24 * u, cy - 24 * u, 48 * u, 48 * u);
+    ctx.fillStyle = '#24212b';
+    ctx.beginPath(); ctx.moveTo(cx - 13 * u, cy - 16 * u); ctx.lineTo(cx + 13 * u, cy - 16 * u); ctx.lineTo(cx + 10 * u, cy + 13 * u); ctx.lineTo(cx - 10 * u, cy + 13 * u); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#08070c'; ctx.fillRect(cx - 8 * u, cy + 2 * u, 16 * u, 9 * u);
+    ctx.fillStyle = '#292530'; ctx.fillRect(cx - 12 * u, cy - 10 * u, 24 * u, 4 * u); ctx.fillRect(cx - 9 * u, cy - 2 * u, 18 * u, 4 * u);
+    ctx.strokeStyle = '#6ca9ed'; ctx.lineWidth = 2 * u; ctx.strokeRect(cx - 8 * u, cy + 2 * u, 16 * u, 9 * u);
+    for (const ox of [-12, 12]) {
+      ctx.fillStyle = '#3b2b21'; ctx.fillRect(cx + ox * u - 1.5 * u, cy - 9 * u, 3 * u, 18 * u);
+      this._drawTinyFlame(ctx, cx + ox * u, cy - 10 * u, u * 0.72, t, '#fff1c6');
+    }
+    ctx.restore();
+  }
+
+  _drawForgeFixture(ctx, cx, cy, s, t) {
+    const u = s / 32;
+    ctx.save();
+    const glow = ctx.createRadialGradient(cx, cy, 2 * u, cx, cy, 28 * u);
+    glow.addColorStop(0, 'rgba(255,146,65,0.34)');
+    glow.addColorStop(1, 'rgba(255,146,65,0)');
+    ctx.fillStyle = glow; ctx.fillRect(cx - 30 * u, cy - 26 * u, 60 * u, 54 * u);
+    ctx.fillStyle = '#4b2b23'; ctx.fillRect(cx - 14 * u, cy - 4 * u, 28 * u, 13 * u);
+    ctx.fillStyle = '#7a4630'; ctx.fillRect(cx - 12 * u, cy + 1 * u, 24 * u, 5 * u);
+    for (let i = 0; i < 5; i++) {
+      ctx.fillStyle = i % 2 ? '#f0b864' : '#e36f2d';
+      ctx.beginPath(); ctx.arc(cx + (-9 + i * 4.5) * u, cy + 3.5 * u, 2 * u, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#4d4b54'; ctx.fillRect(cx - 9 * u, cy - 15 * u, 18 * u, 6 * u);
+    ctx.fillStyle = '#b8b1a8'; ctx.fillRect(cx - 12 * u, cy - 17 * u, 24 * u, 3 * u);
+    ctx.fillStyle = '#5f5962'; ctx.fillRect(cx - 4 * u, cy - 13 * u, 8 * u, 7 * u);
+    ctx.save(); ctx.translate(cx + 13 * u, cy - 8 * u); ctx.rotate(0.18); ctx.fillStyle = '#5b3926'; ctx.fillRect(-1.5 * u, -8 * u, 3 * u, 19 * u); ctx.restore();
+    ctx.fillStyle = '#ffd783';
+    for (let i = 0; i < 4; i++) {
+      const phase = (t * (1.2 + i * 0.2) + i) % 2;
+      ctx.globalAlpha = 1 - phase / 2;
+      ctx.fillRect(cx + (-8 + i * 5) * u, cy - (19 + phase * 10) * u, 1.4 * u, 1.4 * u);
+    }
+    ctx.restore();
+  }
+
   /** Hand-drawn structures for shrine / merchant / altar / chest interactables. */
   _drawFloorInteracts(ctx, floor, x0, y0, x1, y1) {
     const glowCol = {
-      shrine: '#c8a0ff', merchant: '#ffd98a', rest_alcove: '#80c0ff',
+      shrine: '#c8a0ff', merchant: '#ffd98a', keeper: '#72d7ff', rest_alcove: '#80c0ff',
       mystery_chest: '#ffcc66', altar_sacrifice: '#ff6655', lore_omen: '#a0d0e0'
     };
     const t = this._timeSec || 0;
@@ -843,6 +967,7 @@ export class Renderer {
 
         switch (ix.kind) {
           case 'merchant':       this._drawMerchantSprite(ctx, cx, cy, s, t); break;
+          case 'keeper':         this._drawKeeperSprite(ctx, cx, cy, s, t); break;
           case 'shrine':         this._drawShrineSprite(ctx, cx, cy, s, t); break;
           case 'altar_sacrifice':this._drawAltarSprite(ctx, cx, cy, s, t); break;
           case 'mystery_chest':  this._drawChestSprite(ctx, cx, cy, s); break;
@@ -899,6 +1024,35 @@ export class Renderer {
     ctx.font = `bold ${Math.max(6, Math.floor(s * 0.2))}px serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('$', cx + 9 * u, cy - 9 * u + bob * u + 0.5);
+  }
+
+  /** Kindly tutorial guide: lantern, ledger, soft blue title-bob silhouette. */
+  _drawKeeperSprite(ctx, cx, cy, s, t) {
+    const u = s / 32;
+    const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
+    const bob = Math.sin(t * 2.2) * 1.1 * u;
+    ctx.save();
+    ctx.translate(0, bob);
+    const halo = ctx.createRadialGradient(cx - 8 * u, cy - 9 * u, 1 * u, cx - 8 * u, cy - 9 * u, 16 * u);
+    halo.addColorStop(0, 'rgba(114,215,255,0.42)');
+    halo.addColorStop(1, 'rgba(114,215,255,0)');
+    ctx.fillStyle = halo; ctx.fillRect(cx - 24 * u, cy - 24 * u, 32 * u, 32 * u);
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath(); ctx.ellipse(cx, cy + 13 * u, 10 * u, 3 * u, 0, 0, Math.PI * 2); ctx.fill();
+    px(-13, -9, 3, 24, '#2b211c');
+    px(-16, -16, 8, 10, '#2f465d'); px(-14, -14, 4, 5, '#d8f5ff');
+    px(-12, -2, 24, 17, '#33465c'); px(-9, 13, 18, 3, '#a9b77a');
+    px(-10, -3, 20, 3, '#bfd6d8');
+    ctx.fillStyle = '#b8a69c';
+    ctx.beginPath(); ctx.arc(cx + 1 * u, cy - 9 * u, 8 * u, 0, Math.PI * 2); ctx.fill();
+    px(-7, -17, 16, 5, '#d8d6d4'); px(-5, -19, 10, 3, '#596171');
+    px(-3, -11, 2, 2, '#1d2130'); px(4, -11, 2, 2, '#1d2130');
+    ctx.strokeStyle = '#5b3c45'; ctx.lineWidth = 1.3 * u;
+    ctx.beginPath(); ctx.arc(cx + 1 * u, cy - 8 * u, 4 * u, 0.15, Math.PI - 0.15); ctx.stroke();
+    px(9, -1, 9, 10, '#d9d3b8'); px(10, 0, 1, 8, '#756d5b'); px(13, 1, 1, 7, '#756d5b');
+    ctx.fillStyle = '#72d7ff';
+    ctx.beginPath(); ctx.arc(cx + 15 * u, cy - 9 * u, 2.3 * u, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
   }
 
   /** Stone shrine idol on a pedestal with a pulsing arcane gem. */
