@@ -446,27 +446,37 @@ export function drawStairsUpTile(ctx, x, y, s, opts = {}) {
   }
 }
 
+/** Open secret passage (walkable) — not a closed door. */
 export function drawDoorTile(ctx, x, y, s, opts = {}) {
   drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
-  const stone = opts.dim ? '#2a2430' : '#3a3448';
-  const wood = opts.dim ? '#4a3828' : '#7a5436';
-  const iron = opts.dim ? '#4a4a52' : '#8a9098';
+  const dim = !!opts.dim;
   const u = s / 32;
+  const stone = dim ? '#3a3448' : '#524c5c';
+  const stoneHi = dim ? '#4a4554' : '#6e6678';
+  const voidCol = dim ? '#0a0810' : '#120e18';
+  const brass = dim ? '#8a7048' : '#d4be7a';
+
+  // Collapsed wall rubble on the sides.
   p(ctx, x, y, s, [
-    [6, 2, 20, 3, stone], [5, 5, 22, 2, shade(stone, 8)],
-    [8, 3, 16, 2, shade(stone, 18)], [7, 2, 18, 1, '#ffffff12']
+    [2, 4, 7, 24, stone], [23, 4, 7, 24, stone],
+    [3, 3, 6, 3, stoneHi], [23, 3, 6, 3, stoneHi]
   ]);
-  fillRect(ctx, x + 10 * u, y + 6 * u, 12 * u, 23 * u, wood);
-  fillRect(ctx, x + 11 * u, y + 7 * u, 10 * u, 1, shade(wood, 30));
-  fillRect(ctx, x + 10 * u, y + 14 * u, 1 * u, 10 * u, shade(wood, -25));
-  fillRect(ctx, x + 21 * u, y + 14 * u, 1 * u, 10 * u, shade(wood, -25));
-  fillRect(ctx, x + 19 * u, y + 18 * u, 2 * u, 2 * u, '#d4be7a');
-  fillRect(ctx, x + 19 * u, y + 18 * u, 2 * u, 1, '#ffffff33');
+
+  // Dark opening you can walk through.
+  fillRect(ctx, x + 9 * u, y + 5 * u, 14 * u, 24 * u, voidCol);
+  fillRect(ctx, x + 10 * u, y + 6 * u, 12 * u, 22 * u, '#000000');
+
+  // Brass arch at the top (matches stairs-down accent).
   p(ctx, x, y, s, [
-    [9, 8, 2, 20, iron], [21, 8, 2, 20, iron],
-    [10, 6, 12, 2, iron]
+    [10, 4, 12, 2, brass],
+    [11, 6, 10, 1, shade(brass, -20)],
+    [15, 5, 2, 1, '#ffffff44']
   ]);
-  fillRect(ctx, x + 10 * u, y + 6 * u, 1 * u, 23 * u, '#00000055');
+
+  if (!dim) {
+    fillRect(ctx, x + 12 * u, y + 14 * u, 1 * u, 1 * u, '#d4be7a88');
+    fillRect(ctx, x + 19 * u, y + 20 * u, 1 * u, 1 * u, '#d4be7a66');
+  }
 }
 
 /** @returns {Record<string, function>} */

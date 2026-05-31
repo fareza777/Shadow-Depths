@@ -228,7 +228,7 @@ export class DungeonGenerator {
       { value: 'cobweb', weight: 4 },
       { value: 'banner', weight: 1 }
     ];
-    const floorKinds = ['brazier', 'bone_pile', 'broken_pillar', 'gargoyle'];
+    const floorKinds = ['brazier', 'bone_pile', 'broken_pillar'];
     const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(20, 30);
     const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(8, 14);
 

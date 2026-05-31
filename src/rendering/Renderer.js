@@ -835,7 +835,7 @@ export class Renderer {
       for (let x = x0; x <= x1; x++) {
         const tile = floor.tiles[y][x];
         const decor = tile?.decor;
-        if (!decor || !tile.explored) continue;
+        if (!decor || !tile.explored || decor.kind === 'gargoyle') continue;
         ctx.save();
         ctx.globalAlpha = tile.visible ? 0.95 : 0.38;
         this._drawDecorSprite(ctx, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2,
