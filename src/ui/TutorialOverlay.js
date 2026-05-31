@@ -82,35 +82,43 @@ export class TutorialOverlay {
     const steps = this._variant === 'keeper' ? KEEPER_STEPS : STEPS;
     const step = steps[this._step] || steps[steps.length - 1];
     const r = renderer;
-    const panelW = Layout.canvasW - 32;
-    const panelH = 200;
-    const x = 16;
-    const y = Math.floor((Layout.canvasH - panelH) / 2) - 40;
+    const compact = this._variant === 'keeper';
+    const panelW = Layout.canvasW - (compact ? 20 : 32);
+    const panelH = compact ? 88 : 200;
+    const x = compact ? 10 : 16;
+    const y = compact ? Math.max(104, getViewportBottomY() - panelH - 10)
+      : Math.floor((Layout.canvasH - panelH) / 2) - 40;
 
-    r.drawRect(0, 0, Layout.canvasW, getViewportBottomY(), 'rgba(0,0,0,0.55)');
-    r.drawRect(x, y, panelW, panelH, COLOR.bgPanel);
-    r.drawStrokedRect(x, y, panelW, panelH, COLOR.gold, 2);
+    if (!compact) r.drawRect(0, 0, Layout.canvasW, getViewportBottomY(), 'rgba(0,0,0,0.55)');
+    r.drawRect(x, y, panelW, panelH, compact ? '#1c1822' : COLOR.bgPanel);
+    r.drawStrokedRect(x, y, panelW, panelH, COLOR.gold, compact ? 1 : 2);
     r.drawRect(x, y, panelW, 3, COLOR.gold);
 
-    r.drawText(this._variant === 'keeper' ? 'GUIDED TUTORIAL' : 'FIRST RUN', CANVAS_WIDTH / 2, y + 22,
-      { size: uiSize(11), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
-    r.drawText(step.title, Layout.canvasW / 2, y + 50,
-      { size: uiSize(20), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
+    r.drawText(this._variant === 'keeper' ? 'GUIDED TUTORIAL' : 'FIRST RUN', CANVAS_WIDTH / 2, y + (compact ? 14 : 22),
+      { size: uiSize(compact ? 9 : 11), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
+    r.drawText(step.title, Layout.canvasW / 2, y + (compact ? 32 : 50),
+      { size: uiSize(compact ? 15 : 20), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
 
-    const lines = wrapText(step.body, 36);
-    let ly = y + 82;
+    const lines = wrapText(step.body, compact ? 54 : 36).slice(0, compact ? 2 : 5);
+    let ly = y + (compact ? 50 : 82);
     for (const line of lines) {
       r.drawText(line, Layout.canvasW / 2, ly,
-        { size: uiSize(13), align: 'center', color: COLOR.textPrimary, family: FONT_BODY });
-      ly += uiSize(16);
+        { size: uiSize(compact ? 10 : 13), align: 'center', color: COLOR.textPrimary, family: FONT_BODY });
+      ly += uiSize(compact ? 12 : 16);
     }
 
     const hint = this._step < steps.length - 1 ? 'Tap or use D-pad to continue' : 'Tap or move to play';
-    r.drawText(`${this._step + 1} / ${steps.length}  ·  ${hint}`,
-      Layout.canvasW / 2, y + panelH - 20,
-      { size: uiSize(12), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
-    r.drawText('SKIP', Layout.canvasW / 2, y + panelH + 14,
-      { size: uiSize(11), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
+    if (compact) {
+      r.drawText(`${this._step + 1}/${steps.length}`,
+        x + panelW - 14, y + 12,
+        { size: uiSize(9), align: 'right', color: COLOR.textMuted, family: FONT_BODY });
+    } else {
+      r.drawText(`${this._step + 1} / ${steps.length}  ·  ${hint}`,
+        Layout.canvasW / 2, y + panelH - 20,
+        { size: uiSize(12), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
+      r.drawText('SKIP', Layout.canvasW / 2, y + panelH + 14,
+        { size: uiSize(11), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
+    }
   }
 
   handleInput(action) {

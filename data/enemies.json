@@ -1,4 +1,47 @@
 {
+  "tutorial_wisp": {
+    "id": "tutorial_wisp",
+    "name": "Training Wisp",
+    "spriteKey": "enemy_bat",
+    "stats": {
+      "hp": 8,
+      "atk": 1,
+      "def": 0
+    },
+    "behavior": "erratic",
+    "behaviorParams": {
+      "missChance": 0.75,
+      "randomMoveChance": 0.75
+    },
+    "xp": 1,
+    "goldDrop": [
+      0,
+      0
+    ],
+    "floorMin": 1,
+    "spawnWeight": 1
+  },
+  "tutorial_husk": {
+    "id": "tutorial_husk",
+    "name": "Training Husk",
+    "spriteKey": "enemy_goblin",
+    "stats": {
+      "hp": 12,
+      "atk": 1,
+      "def": 0
+    },
+    "behavior": "heavy",
+    "behaviorParams": {
+      "actEveryNTurns": 3
+    },
+    "xp": 2,
+    "goldDrop": [
+      0,
+      1
+    ],
+    "floorMin": 1,
+    "spawnWeight": 1
+  },
   "goblin_scout": {
     "id": "goblin_scout",
     "name": "Goblin Scout",

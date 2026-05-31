@@ -222,22 +222,22 @@ export class DungeonGenerator {
     for (const en of spawns.enemies || []) solid.add(`${en.x},${en.y}`);
 
     const wallKinds = ['wall_torch', 'banner', 'wall_chains', 'gargoyle', 'rune_crack', 'cobweb'];
-    const floorKinds = ['brazier', 'bone_pile', 'broken_pillar', 'cobweb'];
-    const count = floorDef.tutorial ? 13 : this.rng.randInt(7, 12);
+    const count = floorDef.tutorial ? 8 : this.rng.randInt(6, 10);
 
-    const floorCandidates = [];
     const wallCandidates = [];
-    for (const room of rooms) {
-      for (let y = room.y; y < room.y + room.h; y++) {
-        for (let x = room.x; x < room.x + room.w; x++) {
-          const t = floor.tileAt(x, y);
-          if (!t || t.type !== TILE.FLOOR || t.interact || t.hazard) continue;
-          if (solid.has(`${x},${y}`)) continue;
-          if (room === spawnRoom && !floorDef.tutorial) continue;
-          floorCandidates.push(t);
-          const edge = x === room.x || y === room.y || x === room.x + room.w - 1 || y === room.y + room.h - 1;
-          if (edge) wallCandidates.push(t);
-        }
+    const nearFloor = (x, y) => {
+      const n = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+      return n.some(([dx, dy]) => floor.tileAt(x + dx, y + dy)?.type === TILE.FLOOR);
+    };
+    for (let y = 1; y < floor.height - 1; y++) {
+      for (let x = 1; x < floor.width - 1; x++) {
+        const t = floor.tileAt(x, y);
+        if (!t || t.type !== TILE.WALL || t.decor || t.secret) continue;
+        if (!nearFloor(x, y)) continue;
+        if (!floorDef.tutorial && spawnRoom
+          && x >= spawnRoom.x - 1 && x <= spawnRoom.x + spawnRoom.w
+          && y >= spawnRoom.y - 1 && y <= spawnRoom.y + spawnRoom.h) continue;
+        wallCandidates.push(t);
       }
     }
 
@@ -253,16 +253,16 @@ export class DungeonGenerator {
       const sw = spawnRoom.w;
       const sh = spawnRoom.h;
       const curated = [
-        [Math.floor(sx + sw * 0.28), sy, 'wall_torch', true],
-        [Math.floor(sx + sw * 0.72), sy, 'banner', true],
-        [sx + 1, Math.floor(sy + sh * 0.5), 'wall_chains', true],
-        [sx + sw - 2, Math.floor(sy + sh * 0.5), 'rune_crack', true],
-        [sx + 2, sy + sh - 2, 'bone_pile', false],
-        [sx + sw - 3, sy + sh - 2, 'cobweb', false]
+        [Math.floor(sx + sw * 0.28), sy - 1, 'wall_torch', true],
+        [Math.floor(sx + sw * 0.72), sy - 1, 'banner', true],
+        [sx - 1, Math.floor(sy + sh * 0.5), 'wall_chains', true],
+        [sx + sw, Math.floor(sy + sh * 0.5), 'rune_crack', true],
+        [sx + 2, sy + sh, 'cobweb', true],
+        [sx + sw - 3, sy + sh, 'gargoyle', true]
       ];
       for (const [x, y, kind, wall] of curated) {
         const tile = floor.tileAt(x, y);
-        if (tile?.type === TILE.FLOOR && !solid.has(`${x},${y}`)) put(tile, kind, wall);
+        if (tile?.type === TILE.WALL && !solid.has(`${x},${y}`)) put(tile, kind, wall);
       }
     }
 
@@ -270,9 +270,6 @@ export class DungeonGenerator {
     for (const tile of this.rng.shuffle(wallCandidates).slice(0, count)) {
       if (put(tile, this.rng.pick(wallKinds), true)) placed++;
       if (placed >= count) return;
-    }
-    for (const tile of this.rng.shuffle(floorCandidates).slice(0, count - placed)) {
-      put(tile, this.rng.pick(floorKinds), false);
     }
   }
 

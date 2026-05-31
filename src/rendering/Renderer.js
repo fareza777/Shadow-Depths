@@ -1028,11 +1028,11 @@ export class Renderer {
 
   /** Kindly tutorial guide: lantern, ledger, soft blue title-bob silhouette. */
   _drawKeeperSprite(ctx, cx, cy, s, t) {
-    const u = s / 32;
+    const u = s / 42;
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
     const bob = Math.sin(t * 2.2) * 1.1 * u;
     ctx.save();
-    ctx.translate(0, bob);
+    ctx.translate(0, 3 * u + bob);
     const halo = ctx.createRadialGradient(cx - 8 * u, cy - 9 * u, 1 * u, cx - 8 * u, cy - 9 * u, 16 * u);
     halo.addColorStop(0, 'rgba(114,215,255,0.42)');
     halo.addColorStop(1, 'rgba(114,215,255,0)');
