@@ -60,6 +60,9 @@ const IPAL = {
   speed:{1:'#0a3a38',2:'#147a6a',3:'#22a890',4:'#48d0b8',5:'#92f0d8'},
   wards:{1:'#102a5a',2:'#1e4a8a',3:'#2e6fc4',4:'#58a0e8',5:'#9ad0ff'},
   called:{1:'#5a2a08',2:'#8a4810',3:'#c47a20',4:'#e8a840',5:'#ffd070'},
+  gold:{1:'#5a4410',2:'#8a6a18',3:'#c79a2e',4:'#e8c860',5:'#fff0a8'},
+  stone:{1:'#2a2630',2:'#46424e',3:'#6a6676',4:'#9a96a6',5:'#c8c4d2'},
+  frost:{1:'#163048',2:'#2e5a7a',3:'#4a8ab0',4:'#9ad0ee',5:'#e2f4ff'},
 };
 
 const ITEM_ART = {};
@@ -70,6 +73,7 @@ const ITEM_SPRITE_MAP = {
   potion_pink:{s:'bottle',p:'pink'},potion_red:{s:'bottle',p:'red'},
   potion_red_large:{s:'bottle_large',p:'red'},potion_crimson:{s:'bottle',p:'crimson'},
   potion_orange:{s:'bottle',p:'orange'},potion_blue:{s:'bottle',p:'blue'},
+  potion_gold:{s:'bottle',p:'gold'},
   potion_dark_red:{s:'bottle',p:'dark_red'},potion_dark_blue:{s:'bottle',p:'dark_blue'},
   potion_teal:{s:'bottle',p:'teal'},potion_silver:{s:'bottle',p:'silver'},
   potion_yellow:{s:'bottle',p:'yellow'},potion_dark_green:{s:'bottle',p:'dark_green'},
@@ -77,16 +81,23 @@ const ITEM_SPRITE_MAP = {
   potion_white:{s:'bottle',p:'white'},potion_brown:{s:'bottle',p:'brown'},
   vial_green:{s:'vial',p:'green'},vial_dark_green:{s:'vial',p:'dark_green'},
   vial_white:{s:'vial',p:'white'},vial_teal:{s:'vial',p:'teal'},vial_purple:{s:'vial',p:'purple'},
+  vial_black:{s:'vial',p:'black'},
   crystal_pink:{s:'crystal',p:'pink'},crystal_grey:{s:'crystal',p:'silver'},crystal_red:{s:'crystal',p:'red'},
   bomb_grey:{s:'bomb',p:'grey'},bomb_red:{s:'bomb',p:'red'},
   bomb_purple:{s:'bomb',p:'purple'},bomb_white:{s:'bomb',p:'white'},
+  bomb_blue:{s:'bomb',p:'blue'},bomb_gold:{s:'bomb',p:'gold'},
   pouch_brown:{s:'pouch',p:'brown'},
   scroll_yellow:{s:'scroll',p:'yellow'},scroll_white:{s:'scroll',p:'white'},scroll_red:{s:'scroll',p:'red'},
   book_blue:{s:'book',p:'blue'},book_black:{s:'book',p:'black'},paper_torn:{s:'page',p:'bone'},
   charm_white:{s:'charm',p:'white'},charm_bone:{s:'charm',p:'bone'},charm_twin:{s:'charm_twin',p:'bone'},
+  charm_stone:{s:'charm',p:'stone'},charm_iron:{s:'charm',p:'iron'},
+  charm_blue:{s:'charm',p:'blue'},charm_void:{s:'charm',p:'void'},
   ring_tin:{s:'ring',p:'tin'},ring_bone:{s:'ring',p:'bone'},ring_vigor:{s:'ring',p:'vigor'},
   ring_speed:{s:'ring',p:'speed'},ring_wards:{s:'ring',p:'wards'},ring_called:{s:'ring',p:'called'},
   necklace_bone:{s:'necklace',p:'bone'},necklace_tin:{s:'necklace',p:'tin'},
+  necklace_gold:{s:'necklace',p:'gold'},necklace_void:{s:'necklace',p:'void'},
+  necklace_sigil:{s:'necklace_sigil',p:'gold'},necklace_crystal:{s:'necklace_crystal',p:'frost'},
+  necklace_chain:{s:'necklace_chain',p:'iron'},
   necklace_orange:{s:'necklace',p:'orange'},necklace_white:{s:'necklace',p:'white'},
   necklace_silver:{s:'necklace',p:'silver'},necklace_purple:{s:'necklace',p:'purple'},
   necklace_green:{s:'necklace',p:'green'},necklace_crimson:{s:'necklace',p:'crimson'},
@@ -112,6 +123,7 @@ const ITEM_SPRITE_MAP = {
   armor_plate:{s:'armor_plate',p:'iron'},armor_bone:{s:'armor_plate',p:'bone'},
   armor_robe:{s:'armor_cloak',p:'purple'},
   legs_grey:{s:'greaves',p:'grey'},legs_iron:{s:'greaves',p:'iron'},
+  legs_cloth:{s:'greaves',p:'cloth'},legs_leather:{s:'greaves',p:'leather'},legs_boots:{s:'boots',p:'leather'},
   legs_black:{s:'greaves',p:'black'},legs_green:{s:'greaves',p:'green'},
   legs_brown:{s:'greaves',p:'brown'},legs_yellow:{s:'greaves',p:'yellow'},
   legs_bone:{s:'greaves',p:'bone'},legs_purple:{s:'greaves',p:'purple'},
@@ -641,6 +653,70 @@ regItemArt('greaves', (p, h) => (<>
     <path d={`M${cx-1.8} 16 L${cx+1.8} 16 L${cx+2.6} 19.5 Q${cx+2.6} 20.5 ${cx+1.5} 20.5 L${cx-2} 20.5 Z`} fill={p[2]} {...h.ol(h.IINK,0.5)} />
     <path d={`M${cx-1.8} 17 L${cx+2} 17`} stroke={p[4]} strokeWidth="0.5" opacity="0.6" />
   </g>))}
+</>));
+
+// ── BOOTS — paired soft travel boots (distinct from plate greaves) ──
+regItemArt('boots', (p, h) => (<>
+  {[7.5,15].map((cx,i)=>(<g key={i}>
+    <path d={`M${cx-2} 6 L${cx+2} 6 L${cx+2.2} 14 L${cx-1.6} 14 Z`} fill={p[3]} {...h.ol(h.IINK,0.55)} />
+    <path d={`M${cx-2} 6 L${cx} 6 L${cx} 14 L${cx-1.6} 14 Z`} fill={p[2]} opacity="0.5" />
+    <path d={`M${cx-2.4} 5.4 L${cx+2.4} 5.4 L${cx+2} 7.4 L${cx-2} 7.4 Z`} fill={p[4]} {...h.ol(h.IINK,0.45)} />
+    <path d={`M${cx-1.6} 14 L${cx+2.2} 14 L${cx+3.4} 18.5 Q${cx+3.6} 20 ${cx+2} 20 L${cx-2} 20 Z`} fill={p[3]} {...h.ol(h.IINK,0.55)} />
+    <path d={`M${cx-1.6} 14 L${cx} 14 L${cx} 20 L${cx-2} 20 Z`} fill={p[2]} opacity="0.5" />
+    <path d={`M${cx-2.2} 20 L${cx+3} 20 L${cx+3} 21.4 L${cx-2.2} 21.4 Z`} fill={p[1]} {...h.ol(h.IINK,0.4)} />
+    <rect x={cx-1.8} y="9" width="3.6" height="1.2" fill={p.g} {...h.ol(h.IINK,0.3)} />
+    <circle cx={cx} cy="9.6" r="0.5" fill={p.Y} />
+    <path d={`M${cx-1.4} 15 L${cx+1.4} 15.6 M${cx-1.4} 16.6 L${cx+1.4} 17.2`} stroke={p[1]} strokeWidth="0.4" opacity="0.7" />
+    <path d={`M${cx-1.6} 6.6 L${cx+1.8} 6.6`} stroke={p[5]} strokeWidth="0.4" opacity="0.6" />
+  </g>))}
+</>));
+
+// ── NECKLACE_SIGIL — chain + flat engraved medallion ──
+regItemArt('necklace_sigil', (p, h) => (<>
+  <path d="M6 5 Q6 12 12 13 Q18 12 18 5" fill="none" stroke={p.g} strokeWidth="1" {...h.ol(h.IINK,0.3)} />
+  {[[6.5,6.5],[7.6,9.4],[9.4,11.6],[14.6,11.6],[16.4,9.4],[17.5,6.5]].map((b,i)=>(
+    <circle key={i} cx={b[0]} cy={b[1]} r="0.8" fill={p.G} {...h.ol(h.IINK,0.3)} />
+  ))}
+  <circle cx="12" cy="16.5" r="4.4" fill={p[3]} {...h.ol(h.IINK,0.6)} />
+  <circle cx="12" cy="16.5" r="3.5" fill="none" stroke={p[5]} strokeWidth="0.5" opacity="0.7" />
+  <circle cx="10.4" cy="14.9" r="1" fill={p[5]} opacity="0.35" />
+  <g stroke={p[5]} strokeWidth="0.7" fill="none" opacity="0.92" {...h.glow(p[5],1)}>
+    <path d="M9.6 15.5 L12 17.4 L14.4 15.5" />
+    <path d="M9.6 17.2 L12 19 L14.4 17.2" />
+  </g>
+  <circle cx="12" cy="14.4" r="0.7" fill={p[5]} {...h.glow(p[5],1)} />
+  <rect x="11.2" y="12" width="1.6" height="1.6" rx="0.5" fill={p.G} {...h.ol(h.IINK,0.3)} />
+</>));
+
+// ── NECKLACE_CRYSTAL — chain + raw faceted crystal pendant ──
+regItemArt('necklace_crystal', (p, h) => (<>
+  <path d="M6 5 Q6 12 12 13 Q18 12 18 5" fill="none" stroke={p.s} strokeWidth="1" {...h.ol(h.IINK,0.3)} />
+  {[[6.5,6.5],[7.6,9.4],[9.4,11.6],[14.6,11.6],[16.4,9.4],[17.5,6.5]].map((b,i)=>(
+    <circle key={i} cx={b[0]} cy={b[1]} r="0.75" fill={p.S} {...h.ol(h.IINK,0.3)} />
+  ))}
+  <path d="M10.5 12.5 L13.5 12.5 L12.6 14 L11.4 14 Z" fill={p.S} {...h.ol(h.IINK,0.3)} />
+  <ellipse cx="12" cy="17.5" rx="3.4" ry="4.6" fill={p[4]} opacity="0.22" />
+  <path d="M12 13.6 L15 17 L13.6 21.5 L10.4 21.5 L9 17 Z" fill={p[3]} {...h.ol(h.IINK,0.55)} />
+  <path d="M12 13.6 L12 21.5 L10.4 21.5 L9 17 Z" fill={p[2]} />
+  <path d="M9 17 L15 17" stroke={p[5]} strokeWidth="0.4" opacity="0.6" />
+  <path d="M12 13.6 L12 21.5" stroke={h.IINK} strokeWidth="0.3" opacity="0.5" />
+  <path d="M10.8 17 L13.2 17 L12.5 20 L11.5 20 Z" fill={p[5]} opacity="0.9" {...h.glow(p[5],1.6)} />
+  <circle cx="13.4" cy="15.4" r="0.6" fill="#fff" opacity="0.75" />
+</>));
+
+// ── NECKLACE_CHAIN — heavy iron prayer chain + ring pendant ──
+regItemArt('necklace_chain', (p, h) => (<>
+  {[[6.5,7],[8.2,9.6],[10.2,11.6],[13.8,11.6],[15.8,9.6],[17.5,7]].map((b,i)=>(
+    <ellipse key={i} cx={b[0]} cy={b[1]} rx="1.3" ry="1.9" fill="none" stroke={p.s} strokeWidth="1.1"
+      transform={`rotate(${(b[0]-12)*4} ${b[0]} ${b[1]})`} />
+  ))}
+  <path d="M6.5 6 L8.2 9 M15.8 6 L17.5 9" stroke={p.S} strokeWidth="0.4" opacity="0.6" />
+  <circle cx="12" cy="17" r="3.8" fill="none" stroke={p.s} strokeWidth="2" {...h.ol(h.IINK,0.4)} />
+  <circle cx="12" cy="17" r="3.8" fill="none" stroke={p.S} strokeWidth="0.5" opacity="0.6" />
+  <rect x="11.2" y="11.6" width="1.6" height="2.2" rx="0.5" fill={p.s} {...h.ol(h.IINK,0.3)} />
+  <circle cx="12" cy="20.8" r="1.1" fill={p[4]} {...h.ol(h.IINK,0.35)} />
+  <circle cx="11.6" cy="20.4" r="0.4" fill="#fff" opacity="0.5" />
+  <circle cx="9.6" cy="15.4" r="0.5" fill={p.S} opacity="0.7" />
 </>));
 
 // ═══════════════════════════════════════════════════════════════════════

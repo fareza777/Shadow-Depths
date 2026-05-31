@@ -419,6 +419,8 @@ const PAL = {
   titan:{dark:'#2a1408',mid:'#5a2c12',light:'#8a4824',accent:'#ff5530',eye:'#ffd060',metal:'#6a4430'},
   oracle:{dark:'#2a1c08',mid:'#5a4014',light:'#9a7028',accent:'#ffe488',eye:'#fff2c0'},
   below:{dark:'#02000a',mid:'#160826',light:'#2e1248',accent:'#9a40e8',eye:'#ff5530'},
+  sand:{dark:'#4a3014',mid:'#9a7434',light:'#d8b878',accent:'#ffd86a',eye:'#fff0a8'},
+  silver:{dark:'#363c44',mid:'#7a828e',light:'#bcc6d2',accent:'#eef4fa',eye:'#dff0ff',metal:'#9aa2ac'},
 };
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -426,6 +428,8 @@ const PAL = {
 // keyed by enemy id; each receives the palette p. This is the individuality.
 // ═══════════════════════════════════════════════════════════════════════
 const SIG = {
+  tutorial_wisp: p => <g opacity="0.8"><circle cx="16" cy="16" r="5.2" fill="none" stroke={p.accent} strokeWidth="0.7" opacity="0.45"/><circle cx="16" cy="16" r="1.4" fill={p.eye} style={{filter:`drop-shadow(0 0 5px ${p.eye})`}}/>{[[11,12],[21,12],[16,8]].map(([x,y],i)=><circle key={i} cx={x} cy={y} r="0.6" fill={p.accent} opacity="0.6"/>)}</g>,
+  tutorial_husk: p => <g opacity="0.75"><rect x="12" y="15" width="8" height="4" fill="none" stroke={p.accent} strokeWidth="0.5"/><path d="M12 17 L20 17" stroke={p.accent} strokeWidth="0.4"/><circle cx="16" cy="17" r="0.7" fill={p.accent}/></g>,
   goblin_scout: p => <><rect x="6" y="20" width="4" height="3" fill="#3a2818" {...outline(_ink,0.4)}/><circle cx="8" cy="21.5" r="0.8" fill={p.accent}/></>, // belt pouch
   skeleton_archer: p => <g opacity="0.85">{[0,1,2].map(i=><line key={i} x1={26+i*0.4} y1={4+i} x2={28} y2={2+i} stroke="#e0d4a8" strokeWidth="0.5"/>)}</g>, // quiver arrows
   cave_bat: p => <ellipse cx="16" cy="22" rx="2" ry="0.8" fill={p.dark} opacity="0.5"/>,
@@ -469,6 +473,31 @@ const SIG = {
   wyrm_spawn: p => <g opacity="0.7">{[[12,15],[20,15]].map(([x,y],i)=><path key={i} d={`M${x} ${y} l-2 -3`} stroke={p.accent} strokeWidth="0.7"/>)}</g>, // horn spikes
   the_called: p => <>{[[16,16,5]].map(([cx,cy,r],i)=><circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={p.eye} strokeWidth="0.5" opacity="0.6"/>)}<circle cx="16" cy="16" r="1.4" fill={p.eye} style={{filter:`drop-shadow(0 0 6px ${p.eye})`}}/></>, // calling sigil
   null_weaver: p => <g opacity="0.6">{[[8,11],[24,11],[10,22],[22,22]].map(([x,y],i)=><line key={i} x1="16" y1="16" x2={x} y2={y} stroke={p.accent} strokeWidth="0.4"/>)}</g>, // web threads
+  reliquary_rat: p => <g opacity="0.9"><rect x="18" y="14" width="6" height="5" fill="#7a5e34" {...outline(_ink,0.5)}/><rect x="18" y="14" width="6" height="1.4" fill={p.accent}/><rect x="20.6" y="14" width="0.8" height="5" fill="#3a2a14"/><circle cx="21" cy="16.4" r="0.7" fill={p.eye} style={{filter:`drop-shadow(0 0 2px ${p.accent})`}}/></g>,
+  tomb_lantern: p => <g><rect x="14.5" y="3" width="3" height="2" fill="#3a3a44"/><path d="M13.5 5 L18.5 5 L18 12 L14 12 Z" fill="none" stroke={p.metal||'#9a8e6c'} strokeWidth="0.7"/><rect x="14.4" y="6" width="3.2" height="5" fill={p.accent} opacity="0.9" style={{filter:`drop-shadow(0 0 4px ${p.accent})`}}><animate attributeName="opacity" values="0.6;1;0.6" dur="1.6s" repeatCount="indefinite"/></rect><rect x="15.4" y="7" width="1.2" height="3" fill="#fff3d0"/></g>,
+  oathless_squire: p => <g opacity="0.85"><path d="M11 14 L21 19 L20.4 20.6 L10.4 15.6 Z" fill={p.accent} opacity="0.6"/><path d="M11 14 L13 15 L12 17 Z" fill={p.light}/><circle cx="16" cy="17" r="0.9" fill={p.accent}/></g>,
+  bone_choir: p => <g opacity="0.9">{[[8,7],[24,7],[16,4]].map(([x,y],i)=>(<g key={i}><circle cx={x} cy={y} r="1.6" fill="#e0d4a8" {...outline(_ink,0.4)}/><circle cx={x-0.6} cy={y} r="0.4" fill={_ink}/><circle cx={x+0.6} cy={y} r="0.4" fill={_ink}/><ellipse cx={x} cy={y+1.2} rx="0.5" ry="0.7" fill={_ink}/></g>))}<text x="11" y="6" fontSize="3" fill={p.accent} opacity="0.8">♪</text><text x="19" y="6" fontSize="3" fill={p.accent} opacity="0.8">♪</text></g>,
+  marrow_jailer: p => <g opacity="0.9">{[12,15,18].map((x,i)=><rect key={i} x={x} y="14" width="0.9" height="8" fill="#e0d4a8" opacity="0.8"/>)}<circle cx="22" cy="20" r="1.6" fill="none" stroke={p.accent} strokeWidth="0.8"/><rect x="21.6" y="21" width="0.8" height="2.4" fill={p.accent}/></g>,
+  carrion_censer: p => <g><path d="M16 13 L16 18" stroke={p.metal||'#9a8e6c'} strokeWidth="0.6"/><path d="M13.5 18 Q16 22 18.5 18 Z" fill={p.metal||'#7a6e54'} {...outline(_ink,0.5)}/><circle cx="16" cy="19" r="0.7" fill={p.accent} style={{filter:`drop-shadow(0 0 3px ${p.accent})`}}/>{[14,16,18].map((x,i)=><circle key={i} cx={x} cy={22+i} r="0.6" fill={p.accent} opacity="0.5"><animate attributeName="cy" values={`${22+i};${18+i};${22+i}`} dur={`${2+i*0.4}s`} repeatCount="indefinite"/><animate attributeName="opacity" values="0.6;0;0.6" dur={`${2+i*0.4}s`} repeatCount="indefinite"/></circle>)}</g>,
+  rime_sentinel: p => <g opacity="0.85">{[[7,12],[25,12],[16,9]].map(([x,y],i)=><polygon key={i} points={`${x-1},${y} ${x+1},${y} ${x},${y+4}`} fill="#dff0ff" style={{filter:'drop-shadow(0 0 2px #bfd6ff)'}}/>)}</g>,
+  frost_abbot: p => <g opacity="0.9"><path d="M13 7 L16 1.5 L19 7 Z" fill={p.light} {...outline(_ink,0.5)}/><path d="M16 1.5 L16 7" stroke={p.accent} strokeWidth="0.4"/><circle cx="16" cy="4.5" r="0.7" fill={p.eye} style={{filter:`drop-shadow(0 0 2px ${p.accent})`}}/></g>,
+  root_mimic: p => <g><path d="M9 16 Q16 13 23 16 L23 17 L9 17 Z" fill="#3a2818"/>{[10,12.5,15,17.5,20,22].map((x,i)=><path key={i} d={`M${x} 16.5 L${x+1} 19 L${x+2} 16.5 Z`} fill="#e8dcb8" {...outline(_ink,0.3)}/>)}<circle cx="13" cy="13" r="1" fill={p.eye} style={{filter:`drop-shadow(0 0 2px ${p.accent})`}}/><circle cx="19" cy="13" r="1" fill={p.eye} style={{filter:`drop-shadow(0 0 2px ${p.accent})`}}/></g>,
+  sap_witch: p => <g><path d="M10 9 L22 9 L16 1 Z" fill={p.dark} {...outline(_ink,0.5)}/><path d="M10 9 L22 9 L21 11 L11 11 Z" fill={p.mid} {...outline(_ink,0.4)}/><circle cx="16" cy="6" r="0.8" fill={p.accent}/>{[12,16,20].map((x,i)=><path key={i} d={`M${x} 24 q0 3 0 4`} stroke={p.accent} strokeWidth="0.7" fill="none" opacity="0.7"><animate attributeName="opacity" values="0.7;0.2;0.7" dur={`${1.8+i*0.3}s`} repeatCount="indefinite"/></path>)}</g>,
+  gearbound_acolyte: p => <g opacity="0.85">{[0,45,90,135,180,225,270,315].map((a,i)=>{const r=a*Math.PI/180;return <rect key={i} x={16+Math.cos(r)*5-0.5} y={8+Math.sin(r)*5-0.5} width="1.6" height="1.6" fill={p.accent} transform={`rotate(${a} ${16+Math.cos(r)*5} ${8+Math.sin(r)*5})`}/>;})}<circle cx="16" cy="8" r="3.4" fill="none" stroke={p.accent} strokeWidth="0.6"/></g>,
+  furnace_jailer: p => <g><rect x="11" y="14" width="10" height="8" rx="0.6" fill="#1a0e08" {...outline(_ink,0.5)}/>{[12.5,16,19.5].map((x,i)=><rect key={i} x={x} y="15" width="1.4" height="6" fill={p.accent} style={{filter:`drop-shadow(0 0 3px ${p.accent})`}}><animate attributeName="opacity" values="0.5;1;0.5" dur={`${1+i*0.3}s`} repeatCount="indefinite"/></rect>)}</g>,
+  rivet_colossus: p => <g opacity="0.7">{[[9,13],[23,13],[9,23],[23,23],[16,12],[16,24]].map(([x,y],i)=><g key={i}><circle cx={x} cy={y} r="1.2" fill={_ink}/><circle cx={x-0.3} cy={y-0.3} r="0.4" fill={p.light}/></g>)}</g>,
+  dune_pilgrim: p => <g><path d="M11 8 Q16 6 21 8 L20 13 Q16 11.5 12 13 Z" fill={p.light} opacity="0.7" {...outline(_ink,0.4)}/><rect x="6" y="6" width="1.2" height="22" fill="#5a3a1c" {...outline(_ink,0.4)}/><circle cx="6.6" cy="6" r="1.4" fill={p.accent} opacity="0.6"/></g>,
+  sunscar_javelin: p => <g><rect x="24" y="4" width="1.1" height="22" fill="#5a3a1c" transform="rotate(8 24.5 15)" {...outline(_ink,0.4)}/><path d="M24.6 2 L26.4 6 L24.6 5 L22.8 6 Z" fill={p.light} transform="rotate(8 24.5 4)" {...outline(_ink,0.4)}/><circle cx="16" cy="8" r="2.2" fill="none" stroke={p.accent} strokeWidth="0.5" opacity="0.7"/>{[0,60,120,180,240,300].map((a,i)=>{const r=a*Math.PI/180;return <line key={i} x1={16+Math.cos(r)*2.4} y1={8+Math.sin(r)*2.4} x2={16+Math.cos(r)*3.4} y2={8+Math.sin(r)*3.4} stroke={p.accent} strokeWidth="0.5"/>;})}</g>,
+  reflection_duelist: p => <g opacity="0.45"><path d="M10 13 L22 13 L20 24 L12 24 Z" fill="none" stroke={p.eye} strokeWidth="0.5"/><path d="M24 6 L26 22" stroke={p.accent} strokeWidth="0.6" style={{filter:`drop-shadow(0 0 2px ${p.accent})`}}/></g>,
+  silver_masque: p => <g><path d="M12 7 Q16 5.5 20 7 L19 12.5 Q16 14.5 13 12.5 Z" fill={p.light} {...outline(_ink,0.5)}/><ellipse cx="14.4" cy="9.4" rx="1" ry="1.3" fill={_ink}/><ellipse cx="17.6" cy="9.4" rx="1" ry="1.3" fill={_ink}/><path d="M14 11.6 Q16 12.6 18 11.6" stroke={_ink} strokeWidth="0.5" fill="none"/><circle cx="13.6" cy="7.6" r="0.8" fill="#fff" opacity="0.4"/></g>,
+  prism_archer: p => <g><path d="M25.4 5.5 Q31 14 25.4 22.5" fill="none" stroke={p.accent} strokeWidth="1.4" strokeLinecap="round"/><line x1="14" y1="14" x2="25.4" y2="14" stroke={p.eye} strokeWidth="0.6"/><polygon points="13,14 16,12 16,16" fill={p.light} style={{filter:`drop-shadow(0 0 3px ${p.accent})`}}/>{[[10,10],[12,18]].map(([x,y],i)=>Eye(x,y,0.6,p.accent,i))}</g>,
+  slag_impaler: p => <g><path d="M22 12 L20 5 L25 10 Z" fill={p.accent} style={{filter:`drop-shadow(0 0 3px ${p.accent})`}} {...outline(_ink,0.4)}/>{[[10,20],[22,22],[16,25]].map(([x,y],i)=><circle key={i} cx={x} cy={y} r="0.8" fill={p.accent} style={{filter:`drop-shadow(0 0 3px ${p.accent})`}}><animate attributeName="cy" values={`${y};${y+2};${y}`} dur={`${1.6+i*0.3}s`} repeatCount="indefinite"/></circle>)}</g>,
+  kiln_mother: p => <g><path d="M10 16 Q16 13 22 16 L22 24 L10 24 Z" fill="#1a0a06" {...outline(_ink,0.5)}/><ellipse cx="16" cy="20" rx="3.6" ry="3" fill={p.accent} opacity="0.5" style={{filter:`drop-shadow(0 0 4px ${p.accent})`}}><animate attributeName="opacity" values="0.3;0.6;0.3" dur="2s" repeatCount="indefinite"/></ellipse>{[14,16,18].map((x,i)=>Eye(x,20,0.6,p.eye,i))}</g>,
+  brackish_monk: p => <g opacity="0.85"><path d="M11 12 Q12 16 11 20" stroke={p.accent} strokeWidth="0.5" fill="none"/>{[12,14.5,17].map((y,i)=><circle key={i} cx={11} cy={y} r="0.8" fill={p.light} {...outline(_ink,0.3)}/>)}<path d="M19 22 q0 3 1 4" stroke={p.eye} strokeWidth="0.5" fill="none" opacity="0.7"/></g>,
+  drowned_bellman: p => <g><path d="M13 14 Q13 9 16 9 Q19 9 19 14 Z" fill={p.metal||'#7a6e54'} {...outline(_ink,0.5)}/><rect x="12.6" y="14" width="6.8" height="1.4" fill={p.dark}/><circle cx="16" cy="16.4" r="0.9" fill={p.accent} style={{filter:`drop-shadow(0 0 2px ${p.accent})`}}/><circle cx="16" cy="24" r="4" fill="none" stroke={p.accent} strokeWidth="0.4" opacity="0.5"><animate attributeName="r" values="2;6;2" dur="3s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.6;0;0.6" dur="3s" repeatCount="indefinite"/></circle></g>,
+  kelp_revenant: p => <g opacity="0.7">{[8,12,20,24].map((x,i)=><path key={i} d={`M${x} 12 q${i%2?2:-2} 6 0 16`} stroke={p.accent} strokeWidth="1" fill="none"><animate attributeName="d" values={`M${x} 12 q${i%2?2:-2} 6 0 16;M${x} 12 q${i%2?-2:2} 6 0 16;M${x} 12 q${i%2?2:-2} 6 0 16`} dur={`${3+i*0.4}s`} repeatCount="indefinite"/></path>)}</g>,
+  null_cantor: p => <g><circle cx="16" cy="8" r="4.4" fill="none" stroke={p.accent} strokeWidth="0.5" opacity="0.7" style={{filter:`drop-shadow(0 0 3px ${p.accent})`}}/><circle cx="16" cy="8" r="1.2" fill={_ink}/><circle cx="16" cy="8" r="0.6" fill={p.eye} style={{filter:`drop-shadow(0 0 4px ${p.eye})`}}/>{[[8,6],[24,6],[10,14],[22,14]].map(([x,y],i)=><text key={i} x={x} y={y} fontSize="3" fill={p.accent} opacity="0.6">♪</text>)}</g>,
+  throne_without_king: p => <g opacity="0.9"><path d="M9 9 L23 9 L23 24 L9 24 Z" fill="none" stroke={p.accent} strokeWidth="0.6" opacity="0.5"/><path d="M10 9 L10 4 L13 4 L13 9 M19 9 L19 4 L22 4 L22 9" fill={p.dark} {...outline(_ink,0.4)}/><path d="M12.5 5 L14 1.5 L16 4 L18 1.5 L19.5 5 Z" fill={p.accent} style={{filter:`drop-shadow(0 0 3px ${p.accent})`}}><animate attributeName="opacity" values="0.6;1;0.6" dur="2.4s" repeatCount="indefinite"/></path></g>,
   subboss_cairn_knight: p => <><rect x="10" y="15" width="12" height="2" fill={p.accent} opacity="0.5"/><circle cx="16" cy="16" r="1.2" fill={p.accent}/></>, // cairn rune sash
   subboss_veil_stalker: p => <g opacity="0.5">{[6,26].map((x,i)=><path key={i} d={`M${x} 8 Q${x} 20 ${x+(i?-3:3)} 30`} stroke={p.accent} strokeWidth="0.7" fill="none"/>)}</g>, // veil drapes
   subboss_iron_prior: p => <><rect x="13" y="13" width="6" height="4" fill="none" stroke={p.accent} strokeWidth="0.7"/><path d="M16 13 L16 17 M13 15 L19 15" stroke={p.accent} strokeWidth="0.5"/></>, // prior cross
@@ -483,6 +512,8 @@ const SIG = {
 // ENEMY SPECS (id → archetype + palette + feature opts + scale)
 // ═══════════════════════════════════════════════════════════════════════
 const ENEMY_SPECS = {
+  tutorial_wisp:{arch:'wraith',pal:'pale',opts:{},gid:'tw',scale:0.78},
+  tutorial_husk:{arch:'humanoid',pal:'bone',opts:{skull:true},scale:0.86},
   goblin_scout:{arch:'humanoid',pal:'goblin',opts:{ears:true,weapon:'sword'}},
   skeleton_archer:{arch:'humanoid',pal:'bone',opts:{skull:true,weapon:'bow'}},
   cave_bat:{arch:'flyer',pal:'shadow',opts:{fangs:true}},
@@ -526,6 +557,31 @@ const ENEMY_SPECS = {
   wyrm_spawn:{arch:'flyer',pal:'wyrm',opts:{fangs:true,tail:true}},
   the_called:{arch:'wraith',pal:'void',opts:{reach:true,crown:true,chains:true},gid:'tc'},
   null_weaver:{arch:'seraph',pal:'void',opts:{manyEyes:true,ribs:true},gid:'nw'},
+  reliquary_rat:{arch:'beast',pal:'marrow',opts:{fangs:true}},
+  tomb_lantern:{arch:'wraith',pal:'candle',opts:{},gid:'tl'},
+  oathless_squire:{arch:'humanoid',pal:'stone',opts:{helm:true,weapon:'sword'}},
+  bone_choir:{arch:'caster',pal:'bone',opts:{halo:true},gid:'bc'},
+  marrow_jailer:{arch:'golem',pal:'marrow',opts:{}},
+  carrion_censer:{arch:'wraith',pal:'moss',opts:{reach:true},gid:'cc'},
+  rime_sentinel:{arch:'golem',pal:'ice',opts:{coreGlow:true}},
+  frost_abbot:{arch:'caster',pal:'ice',opts:{staff:true,halo:true},gid:'fa'},
+  root_mimic:{arch:'slime',pal:'moss',opts:{fangs:true,tendrils:true}},
+  sap_witch:{arch:'caster',pal:'wyrm',opts:{tome:true},gid:'sw2'},
+  gearbound_acolyte:{arch:'humanoid',pal:'iron',opts:{pauldrons:true}},
+  furnace_jailer:{arch:'golem',pal:'titan',opts:{coreGlow:true}},
+  rivet_colossus:{arch:'golem',pal:'iron',opts:{coreGlow:true,runes:true},scale:1.18},
+  dune_pilgrim:{arch:'humanoid',pal:'sand',opts:{cloak:true}},
+  sunscar_javelin:{arch:'humanoid',pal:'sand',opts:{}},
+  reflection_duelist:{arch:'humanoid',pal:'glass',opts:{weapon:'sword'}},
+  silver_masque:{arch:'humanoid',pal:'silver',opts:{}},
+  prism_archer:{arch:'humanoid',pal:'glass',opts:{weapon:'bow'}},
+  slag_impaler:{arch:'beast',pal:'ember',opts:{spines:true,fangs:true}},
+  kiln_mother:{arch:'golem',pal:'titan',opts:{coreGlow:true,crown:true},scale:1.15},
+  brackish_monk:{arch:'humanoid',pal:'brine',opts:{cloak:true}},
+  drowned_bellman:{arch:'caster',pal:'brine',opts:{staff:true},gid:'db'},
+  kelp_revenant:{arch:'wraith',pal:'brine',opts:{reach:true},gid:'kr'},
+  null_cantor:{arch:'caster',pal:'void',opts:{halo:true,tome:true},gid:'nc'},
+  throne_without_king:{arch:'golem',pal:'regent',opts:{crown:true,runes:true},scale:1.22},
   subboss_cairn_knight:{arch:'humanoid',pal:'stone',opts:{helm:true,pauldrons:true,weapon:'sword',cloak:true},scale:1.15},
   subboss_veil_stalker:{arch:'wraith',pal:'shadow',opts:{reach:true,crown:true,chains:true},gid:'vs',scale:1.15},
   subboss_iron_prior:{arch:'golem',pal:'iron',opts:{coreGlow:true,crown:true,runes:true},scale:1.15},
@@ -537,6 +593,7 @@ const ENEMY_SPECS = {
 };
 
 const ENEMY_META = {
+  tutorial_wisp:'Training Wisp',tutorial_husk:'Training Husk',
   goblin_scout:'Goblin Scout',skeleton_archer:'Skeleton Archer',cave_bat:'Cave Bat',
   shroud_crawler:'Shroud Crawler',candle_licker:'Candle Licker',stone_golem:'Stone Golem',
   grave_moss:'Grave Moss',bell_haunt:'Bell Haunt',marrow_hound:'Marrow Hound',
@@ -551,7 +608,17 @@ const ENEMY_META = {
   ear_worm:'Ear Worm',scale_skitter:'Scale Skitter',banner_void:'Banner Void',
   hive_warden:'Hive Warden',sting_matron:'Sting Matron',starved_seraph:'Starved Seraph',
   hollow_marcher:'Hollow Marcher',wyrm_spawn:'Wyrm Spawn',the_called:'The Called',
-  null_weaver:'Null Weaver',subboss_cairn_knight:'Cairn Knight',subboss_veil_stalker:'Veil Stalker',
+  null_weaver:'Null Weaver',
+  reliquary_rat:'Reliquary Rat',tomb_lantern:'Tomb Lantern',oathless_squire:'Oathless Squire',
+  bone_choir:'Bone Choir',marrow_jailer:'Marrow Jailer',carrion_censer:'Carrion Censer',
+  rime_sentinel:'Rime Sentinel',frost_abbot:'Frost Abbot',root_mimic:'Root Mimic',
+  sap_witch:'Sap Witch',gearbound_acolyte:'Gearbound Acolyte',furnace_jailer:'Furnace Jailer',
+  rivet_colossus:'Rivet Colossus',dune_pilgrim:'Dune Pilgrim',sunscar_javelin:'Sunscar Javelin',
+  reflection_duelist:'Reflection Duelist',silver_masque:'Silver Masque',prism_archer:'Prism Archer',
+  slag_impaler:'Slag Impaler',kiln_mother:'Kiln Mother',brackish_monk:'Brackish Monk',
+  drowned_bellman:'Drowned Bellman',kelp_revenant:'Kelp Revenant',null_cantor:'Null Cantor',
+  throne_without_king:'Throne Without King',
+  subboss_cairn_knight:'Cairn Knight',subboss_veil_stalker:'Veil Stalker',
   subboss_iron_prior:'Iron Prior',subboss_void_seraph:'Void Seraph',boss_crypt_regent:'Crypt Regent',
   boss_ash_titan:'Ash Titan',boss_sunless_oracle:'Sunless Oracle',boss_the_below:'The Below',
 };
