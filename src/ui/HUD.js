@@ -99,7 +99,7 @@ export class HUD {
       this._drawDepthMeter(r, floorIndex, totalFloors);
     }
 
-    const chipY = TOP_PAD + 98;
+    const chipY = TOP_PAD + 104;
     const chipH = 15;
     let chipX = 8;
     if (floor && (floorIndex + 1) % 20 === 0) {
@@ -208,9 +208,9 @@ export class HUD {
   _drawFloorBanner(r, name, floorIndex, totalFloors, daily = false, floorType = null) {
     const ctx = r.ctx;
     const x = 8;
-    const y = TOP_PAD + 56;
+    const y = TOP_PAD + 58;
     const w = Layout.canvasW - 32;
-    const h = 40;
+    const h = 44;
     const t = hudNow();
     const cx = Layout.canvasW / 2;
     const upper = name.toUpperCase();
@@ -236,8 +236,8 @@ export class HUD {
       ctx.fillStyle = lg;
       ctx.fillRect(x, py, w, 1);
     };
-    const pipeTop = y + 2;
-    const pipeBot = y + h - 3;
+    const pipeTop = y + 5;
+    const pipeBot = y + h - 6;
     pipeFn(pipeTop);
     pipeFn(pipeBot);
 
@@ -275,7 +275,7 @@ export class HUD {
     ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const labelY = y + 11;
+    const labelY = y + 16;
     // Engraved back-shadow
     ctx.fillStyle = IRON.ink;
     ctx.fillText(upper, cx + 1, labelY + 1);
@@ -296,8 +296,8 @@ export class HUD {
               : floorType === 'forge' ? '⚒ FORGE'
               : floorType === 'vault' ? '◈ VAULT'
               : '';
-    const floorSubY = y + 21;
-    const badgeSubY = y + 31;
+    const floorSubY = y + 27;
+    const badgeSubY = y + 37;
     ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -318,7 +318,7 @@ export class HUD {
 
   _drawFloorChip(r, floor, floorIndex) {
     const special = floor?.definition?.specialEnemyId || '';
-    const y = TOP_PAD + 98;
+    const y = TOP_PAD + 104;
     const chipH = 15;
     if (!special) return;
     const boss = special.startsWith('boss_');

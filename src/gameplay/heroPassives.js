@@ -18,7 +18,7 @@ export const HERO_PASSIVE_LABELS = {
   hollow: 'Grave Feeding: heal 1 on kill if wounded',
   inquisitor: 'Still Flame: +1 torch if you did not move',
   reaver: 'Blood Tithe: +1 ATK next turn after a kill',
-  pilgrim: 'Wayfarer: heal 4 on descend; −1 damage below half HP',
+  pilgrim: 'Wayfarer: heal 4 on descend; −1 damage on floors 1–2 or below half HP',
   warden: 'Phalanx: −1 damage per adjacent foe; −1 poison tick',
   bladedancer: 'Red Waltz: +5% crit per DEX above 4',
   echobinder: 'Void Resonance: −2 damage when wounded; spell grants ward'
@@ -55,10 +55,11 @@ export function passiveFlatDamageReduction(player, floor, attacker) {
     const pct = player.stats.hp / Math.max(1, player.stats.hpMax);
     if (pct < 0.8) return 2;
   }
-  // Pilgrim Wayfarer: a hardened traveller — soaks 1 when badly hurt.
+  // Pilgrim Wayfarer: forgiving on early floors and when wounded.
   if (player.heroKind === 'pilgrim') {
+    const floorIdx = floor?.definition?.index ?? 99;
     const pct = player.stats.hp / Math.max(1, player.stats.hpMax);
-    if (pct <= 0.5) return 1;
+    if (floorIdx <= 1 || pct <= 0.5) return 1;
   }
   if (player.heroKind !== 'warden' || !floor) return 0;
   let adjacent = 0;

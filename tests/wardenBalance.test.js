@@ -47,3 +47,17 @@ describe('Warden balance passives', () => {
     expect(player.stats.hp).toBe(18);
   });
 });
+
+describe('Pilgrim early-floor passive', () => {
+  it('reduces damage on floor index 0–1', () => {
+    const player = { kind: 'player', heroKind: 'pilgrim', stats: { hp: 30, hpMax: 36 } };
+    const floor = { definition: { index: 0 }, entityAt: () => null };
+    expect(passiveFlatDamageReduction(player, floor, { kind: 'enemy' })).toBe(1);
+  });
+
+  it('reduces damage when below half HP on deeper floors', () => {
+    const player = { kind: 'player', heroKind: 'pilgrim', stats: { hp: 10, hpMax: 36 } };
+    const floor = { definition: { index: 5 }, entityAt: () => null };
+    expect(passiveFlatDamageReduction(player, floor, { kind: 'enemy' })).toBe(1);
+  });
+});

@@ -373,7 +373,7 @@ export const HERO_DEFS = {
     subtitle: 'A long walk. The wrong shrine.',
     tags: ['Wide-brim hat', 'Travel coat', 'Lantern staff'],
     role: 'Scout',
-    stats: { hp: 32, atk: 4, def: 4, dex: 5, torchRadius: 8 }
+    stats: { hp: 36, atk: 3, def: 5, dex: 5, torchRadius: 8 }
   },
   warden: {
     kind: 'warden',

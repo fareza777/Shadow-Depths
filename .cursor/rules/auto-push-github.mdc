@@ -1,0 +1,27 @@
+---
+description: After finishing code changes, commit and push to origin main without asking.
+alwaysApply: true
+---
+
+# Auto-push to GitHub (Shadow Depths)
+
+When you **finish** a task that changed files in this repo, do this automatically — **do not ask** "mau push?".
+
+## Steps
+
+1. `git status` — if nothing to commit, skip.
+2. Run `npm test` when you changed gameplay/logic (skip only for pure docs if tests are unrelated).
+3. Stage changes. **Never** commit: `.env`, `android/release.keystore`, `android/keystore.properties`, `android/local.properties`, signing passwords.
+4. Commit with a clear 1–2 sentence message (why, not just what).
+5. `git pull --rebase origin main` then `git push origin main`.
+6. Briefly tell the user the commit hash and that Vercel will redeploy web; remind them to bump version + rebuild AAB for Play Store when gameplay/data changed.
+
+## Remote
+
+- `https://github.com/fareza777/Shadow-Depths.git`
+- Branch: `main`
+
+## Conflicts
+
+- Resolve rebase conflicts, re-run tests if needed, then `git rebase --continue` and push.
+- Do not force-push `main`.
