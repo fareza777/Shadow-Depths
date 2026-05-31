@@ -266,32 +266,42 @@ export class DungeonGenerator {
     };
 
     if (floorDef.tutorial && spawnRoom) {
-      const sx = spawnRoom.x;
-      const sy = spawnRoom.y;
-      const sw = spawnRoom.w;
-      const sh = spawnRoom.h;
-      const curatedWall = [
-        [Math.floor(sx + sw * 0.28), sy - 1, 'wall_torch', true],
-        [Math.floor(sx + sw * 0.72), sy - 1, 'banner', true],
-        [sx - 1, Math.floor(sy + sh * 0.5), 'wall_chains', true],
-        [sx + sw, Math.floor(sy + sh * 0.5), 'rune_crack', true],
-        [sx + 2, sy + sh, 'cobweb', true],
-        [sx + sw - 3, sy + sh, 'wall_torch', true]
+      // The tutorial gets a hand-placed, symmetric set only — no random
+      // scatter — so the lesson room reads deliberate, not cluttered.
+      const sx = spawnRoom.x, sy = spawnRoom.y, sw = spawnRoom.w, sh = spawnRoom.h;
+      const cx = Math.floor(sx + sw / 2), cy = Math.floor(sy + sh / 2);
+      // Keep the hero's start + the ring around it (the Keeper's tile) clear.
+      const keep = new Set([
+        `${cx},${cy}`, `${cx + 1},${cy}`, `${cx - 1},${cy}`,
+        `${cx},${cy + 1}`, `${cx},${cy - 1}`
+      ]);
+
+      // Wall landmarks: two torches flanking a central banner up top, a chain
+      // and a glowing rune-crack on opposite side walls — the exact cues the
+      // Keeper's script points at.
+      const wallDecor = [
+        [cx - 2, sy - 1, 'wall_torch'], [cx + 2, sy - 1, 'wall_torch'],
+        [cx, sy - 1, 'banner'],
+        [sx - 1, cy, 'wall_chains'], [sx + sw, cy, 'rune_crack'],
+        [sx + 1, sy + sh, 'cobweb']
       ];
-      for (const [x, y, kind, wall] of curatedWall) {
+      for (const [x, y, kind] of wallDecor) {
         const tile = floor.tileAt(x, y);
-        if (tile?.type === TILE.WALL && !solid.has(`${x},${y}`)) put(tile, kind, wall);
+        if (tile?.type === TILE.WALL && !tile.decor && !solid.has(`${x},${y}`)) put(tile, kind, true);
       }
-      const curatedFloor = [
-        [sx + 1, sy + 1, 'brazier', false],
-        [sx + sw - 2, sy + 1, 'gargoyle', false],
-        [sx + 1, sy + sh - 2, 'bone_pile', false],
-        [sx + sw - 2, sy + sh - 2, 'broken_pillar', false]
+      // Floor dressing tucked into the four corners only — never on the play
+      // path. No gargoyle (it reads as a foe); the bone pile sits in a far
+      // corner as a landmark rather than something you walk up to.
+      const floorDecor = [
+        [sx + 1, sy + 1, 'brazier'], [sx + sw - 2, sy + 1, 'brazier'],
+        [sx + 1, sy + sh - 2, 'bone_pile'], [sx + sw - 2, sy + sh - 2, 'broken_pillar']
       ];
-      for (const [x, y, kind, wall] of curatedFloor) {
+      for (const [x, y, kind] of floorDecor) {
         const tile = floor.tileAt(x, y);
-        if (tile?.type === TILE.FLOOR && !solid.has(`${x},${y}`)) put(tile, kind, wall);
+        if (tile?.type === TILE.FLOOR && !tile.decor && !tile.interact
+            && !solid.has(`${x},${y}`) && !keep.has(`${x},${y}`)) put(tile, kind, false);
       }
+      return; // tutorial layout is fully curated — skip the random scatter
     }
 
     let placed = 0;

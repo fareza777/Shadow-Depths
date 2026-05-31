@@ -2,7 +2,7 @@
  * TutorialOverlay — 3-step first-run hints (move, attack, pickup).
  * Centered modal so it never hides the control band. D-pad moves dismiss it.
  */
-import { CANVAS_WIDTH, COLOR, FONT_DISPLAY, FONT_BODY, uiSize } from '../config/constants.js';
+import { COLOR, FONT_DISPLAY, FONT_BODY, uiSize } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
 import { getViewportBottomY } from './controlBandLayout.js';
 
@@ -84,7 +84,7 @@ export class TutorialOverlay {
     const r = renderer;
     const compact = this._variant === 'keeper';
     const panelW = Layout.canvasW - (compact ? 20 : 32);
-    const panelH = compact ? 88 : 200;
+    const panelH = compact ? 110 : 200;
     const x = compact ? 10 : 16;
     const y = compact ? Math.max(104, getViewportBottomY() - panelH - 10)
       : Math.floor((Layout.canvasH - panelH) / 2) - 40;
@@ -94,27 +94,33 @@ export class TutorialOverlay {
     r.drawStrokedRect(x, y, panelW, panelH, COLOR.gold, compact ? 1 : 2);
     r.drawRect(x, y, panelW, 3, COLOR.gold);
 
-    r.drawText(this._variant === 'keeper' ? 'GUIDED TUTORIAL' : 'FIRST RUN', CANVAS_WIDTH / 2, y + (compact ? 14 : 22),
-      { size: uiSize(compact ? 9 : 11), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
-    r.drawText(step.title, Layout.canvasW / 2, y + (compact ? 32 : 50),
+    // Eyebrow (left) + step counter (right) on the same header line.
+    const eyebrow = this._variant === 'keeper' ? 'GUIDED TUTORIAL' : 'FIRST RUN';
+    const headY = y + (compact ? 15 : 22);
+    r.drawText(eyebrow, x + 12, headY,
+      { size: uiSize(compact ? 9 : 11), align: 'left', color: COLOR.textMuted, family: FONT_BODY });
+    r.drawText(`STEP ${this._step + 1} / ${steps.length}`, x + panelW - 12, headY,
+      { size: uiSize(compact ? 9 : 11), align: 'right', color: COLOR.gold, family: FONT_BODY });
+
+    r.drawText(step.title, Layout.canvasW / 2, y + (compact ? 33 : 50),
       { size: uiSize(compact ? 15 : 20), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
 
-    const lines = wrapText(step.body, compact ? 54 : 36).slice(0, compact ? 2 : 5);
-    let ly = y + (compact ? 50 : 82);
+    const lines = wrapText(step.body, compact ? 50 : 36).slice(0, compact ? 3 : 5);
+    let ly = y + (compact ? 49 : 82);
     for (const line of lines) {
       r.drawText(line, Layout.canvasW / 2, ly,
         { size: uiSize(compact ? 10 : 13), align: 'center', color: COLOR.textPrimary, family: FONT_BODY });
       ly += uiSize(compact ? 12 : 16);
     }
 
-    const hint = this._step < steps.length - 1 ? 'Tap or use D-pad to continue' : 'Tap or move to play';
+    // Always-visible call to action so the player knows how to proceed.
+    const last = this._step >= steps.length - 1;
+    const hint = last ? 'Tap or move to begin' : 'Tap or move to continue';
     if (compact) {
-      r.drawText(`${this._step + 1}/${steps.length}`,
-        x + panelW - 14, y + 12,
-        { size: uiSize(9), align: 'right', color: COLOR.textMuted, family: FONT_BODY });
+      r.drawText(hint, Layout.canvasW / 2, y + panelH - 12,
+        { size: uiSize(10), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
     } else {
-      r.drawText(`${this._step + 1} / ${steps.length}  ·  ${hint}`,
-        Layout.canvasW / 2, y + panelH - 20,
+      r.drawText(hint, Layout.canvasW / 2, y + panelH - 20,
         { size: uiSize(12), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
       r.drawText('SKIP', Layout.canvasW / 2, y + panelH + 14,
         { size: uiSize(11), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
