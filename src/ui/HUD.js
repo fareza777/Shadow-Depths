@@ -99,7 +99,7 @@ export class HUD {
       this._drawDepthMeter(r, floorIndex, totalFloors);
     }
 
-    const chipY = TOP_PAD + 104;
+    const chipY = TOP_PAD + 110;
     const chipH = 15;
     let chipX = 8;
     if (floor && (floorIndex + 1) % 20 === 0) {
@@ -210,7 +210,12 @@ export class HUD {
     const x = 8;
     const y = TOP_PAD + 58;
     const w = Layout.canvasW - 32;
-    const h = 44;
+    const tag = floorType === 'rest'  ? '✜ REST'
+              : floorType === 'forge' ? '⚒ FORGE'
+              : floorType === 'vault' ? '◈ VAULT'
+              : '';
+    const badgeRow = daily || tag;
+    const h = badgeRow ? 50 : 42;
     const t = hudNow();
     const cx = Layout.canvasW / 2;
     const upper = name.toUpperCase();
@@ -225,35 +230,38 @@ export class HUD {
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
 
-    // Brass hairline below title only (top line removed — it clipped long floor names).
-    const pipeBot = y + h - 6;
-    const lg = ctx.createLinearGradient(x, pipeBot, x + w, pipeBot);
-    lg.addColorStop(0,    'rgba(212,172,108,0)');
-    lg.addColorStop(0.18, BRASS_DARK);
-    lg.addColorStop(0.5,  BRASS_HI);
-    lg.addColorStop(0.82, BRASS_DARK);
-    lg.addColorStop(1,    'rgba(212,172,108,0)');
-    ctx.fillStyle = lg;
-    ctx.fillRect(x, pipeBot, w, 1);
+    const labelY = y + 14;
+    const floorSubY = badgeRow ? y + 25 : y + 27;
+    const pipeBot = badgeRow ? y + 32 : y + h - 5;
+    const badgeSubY = y + 40;
 
-    const studs = [
-      [x + 6, pipeBot - 2], [x + w - 6, pipeBot - 2]
-    ];
-    for (const [sx, sy] of studs) {
-      const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 2);
-      sg.addColorStop(0, BRASS_HI);
-      sg.addColorStop(0.6, BRASS_DARK);
-      sg.addColorStop(1, IRON.ink);
-      ctx.fillStyle = sg;
-      ctx.beginPath();
-      ctx.arc(sx, sy, 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    const drawBrassPipe = (py) => {
+      const lg = ctx.createLinearGradient(x, py, x + w, py);
+      lg.addColorStop(0,    'rgba(212,172,108,0)');
+      lg.addColorStop(0.18, BRASS_DARK);
+      lg.addColorStop(0.5,  BRASS_HI);
+      lg.addColorStop(0.82, BRASS_DARK);
+      lg.addColorStop(1,    'rgba(212,172,108,0)');
+      ctx.fillStyle = lg;
+      ctx.fillRect(x, py, w, 1);
+      for (const sx of [x + 6, x + w - 6]) {
+        const sy = py - 2;
+        const sg = ctx.createRadialGradient(sx, sy, 0, sx, sy, 2);
+        sg.addColorStop(0, BRASS_HI);
+        sg.addColorStop(0.6, BRASS_DARK);
+        sg.addColorStop(1, IRON.ink);
+        ctx.fillStyle = sg;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
+    drawBrassPipe(pipeBot);
 
     // Gilt sweep — soft band moves across, scoped to plate by clip.
     ctx.save();
     ctx.beginPath();
-    ctx.rect(x, y + 2, w, pipeBot - y - 4);
+    ctx.rect(x, y + 2, w, (badgeRow ? badgeSubY + 6 : pipeBot) - y - 4);
     ctx.clip();
     const sweepPhase = ((t * 0.22) % 1);
     const sweepX = x - w * 0.4 + sweepPhase * w * 1.8;
@@ -269,7 +277,6 @@ export class HUD {
     ctx.font = `bold ${uiSize(13)}px ${FONT_DISPLAY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const labelY = y + 16;
     // Engraved back-shadow
     ctx.fillStyle = IRON.ink;
     ctx.fillText(upper, cx + 1, labelY + 1);
@@ -286,18 +293,11 @@ export class HUD {
     ctx.fillText(upper, cx, labelY);
 
     const floorLine = `FLOOR ${floorIndex + 1} OF ${totalFloors}`;
-    const tag = floorType === 'rest'  ? '✜ REST'
-              : floorType === 'forge' ? '⚒ FORGE'
-              : floorType === 'vault' ? '◈ VAULT'
-              : '';
-    const floorSubY = y + 27;
-    const badgeSubY = y + 37;
     ctx.font = `${uiSize(9)}px ${FONT_MONO}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = IRON.boneDim;
-    const badgeRow = daily || tag;
-    ctx.fillText(floorLine, cx, badgeRow ? floorSubY : floorSubY + 3);
+    ctx.fillText(floorLine, cx, floorSubY);
     if (badgeRow) {
       const badges = [];
       if (daily) badges.push('☼ DAILY');
@@ -312,7 +312,7 @@ export class HUD {
 
   _drawFloorChip(r, floor, floorIndex) {
     const special = floor?.definition?.specialEnemyId || '';
-    const y = TOP_PAD + 104;
+    const y = TOP_PAD + 110;
     const chipH = 15;
     if (!special) return;
     const boss = special.startsWith('boss_');
