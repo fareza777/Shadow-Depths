@@ -99,16 +99,16 @@ export class TitleScreen {
   }
 
   render(renderer) {
-    this._renderBackdrop(renderer);
-    const menuItems = this._menuItems();
-    if (this.selected >= menuItems.length) this.selected = 0;
-
     // If the character picker is up, render it FULL-PANEL on top of the
-    // title and skip the rest of the title decoration entirely.
+    // title and skip every title decoration behind it.
     if (this.characterSelect?.open) {
       this.characterSelect.render(renderer);
       return;
     }
+
+    this._renderBackdrop(renderer);
+    const menuItems = this._menuItems();
+    if (this.selected >= menuItems.length) this.selected = 0;
 
     // Rising embers (instead of falling dust)
     this._renderEmbers(renderer);

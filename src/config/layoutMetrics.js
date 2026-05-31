@@ -27,10 +27,13 @@ export const Layout = {
 export function currentDpr() {
   if (typeof window === 'undefined') return 1;
   const raw = window.devicePixelRatio || 1;
+  const ua = navigator.userAgent || '';
+  const mobile = /Android|iPhone|iPad|iPod/i.test(ua) || navigator.maxTouchPoints > 1;
+  const android = /Android/i.test(ua);
   const mem = navigator.deviceMemory || 0;          // GB, coarse (0 if unknown)
   const cores = navigator.hardwareConcurrency || 0;
   const lowEnd = (mem && mem <= 4) || (cores && cores <= 4);
-  const cap = lowEnd ? 1.25 : 1.5;
+  const cap = android ? 1 : lowEnd || mobile ? 1.25 : 1.5;
   return Math.max(1, Math.min(cap, raw));
 }
 

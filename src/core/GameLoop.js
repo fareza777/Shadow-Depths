@@ -40,8 +40,19 @@ export class GameLoop {
     // lifting back to 60 when the device proves it can keep up.
     this._lastWorkTs = 0;
     this._frameEma = 16;          // ms, exponential moving average of work
-    this._targetMs = 1000 / 60;   // current min interval between rendered frames
+    this._preferSteady30 = GameLoop._preferSteady30();
+    this._targetMs = this._preferSteady30 ? 1000 / 30 : 1000 / 60;
     this._loop = this._loop.bind(this);
+  }
+
+  static _preferSteady30() {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent || '';
+    const mobile = /Android|iPhone|iPad|iPod/i.test(ua) || navigator.maxTouchPoints > 1;
+    if (!mobile) return false;
+    const mem = navigator.deviceMemory || 0;
+    const cores = navigator.hardwareConcurrency || 0;
+    return /Android/i.test(ua) || (mem && mem <= 4) || (cores && cores <= 4);
   }
 
   start() {
@@ -103,7 +114,7 @@ export class GameLoop {
     // doesn't flap around the threshold).
     const work = performance.now() - workStart;
     this._frameEma += (work - this._frameEma) * 0.1;
-    if (this._frameEma > 20) this._targetMs = 1000 / 30;
+    if (this._preferSteady30 || this._frameEma > 20) this._targetMs = 1000 / 30;
     else if (this._frameEma < 12) this._targetMs = 1000 / 60;
 
     this._rafId = requestAnimationFrame(this._loop);
