@@ -136,6 +136,10 @@ export class GameScene {
     this._forgeOffers = {};
     this._forgeUsed = {};
     this._processingTurn = false;
+    this._runSaveTimer = 0;
+    this._runSaveIdle = 0;
+    this._runSaveQueued = false;
+    this._runEnded = false;
     this._busHandlers = [];
     this._wireCommands();
     this._wireDeathCleanup();
@@ -146,6 +150,7 @@ export class GameScene {
   }
 
   exit() {
+    if (!this._runEnded) this._flushRunSave();
     for (const { event, fn } of this._busHandlers) {
       this.bus.off(event, fn);
     }
@@ -169,6 +174,7 @@ export class GameScene {
   _enterImpl(_opts) {
     this._resetBlockingUI();
     this._processingTurn = false;
+    this._runEnded = false;
     if (this.resumeSnapshot) {
       this._enterFromSnapshot(this.resumeSnapshot);
       this.resumeSnapshot = null;
@@ -1514,6 +1520,8 @@ export class GameScene {
 
   // --- finalization --------------------------------------------------
   _endRun(victory) {
+    this._runEnded = true;
+    this._cancelPendingRunSave();
     this.save?.clearRun?.();
     const summary = {
       ...this.player.runStats,
@@ -1606,11 +1614,63 @@ export class GameScene {
     return parts.join('   ');
   }
 
-  _saveRun() {
+  _saveRun({ immediate = false } = {}) {
     if (!this.save || !this.player || !this.floor || this.player.isDead) return;
+    const savedAt = Date.now();
+    this.state.setRun({
+      seed: this.seed,
+      mode: this.mode,
+      floorIndex: this.dungeon.currentIndex,
+      canContinue: true,
+      level: this.player.level,
+      hp: this.player.stats.hp,
+      savedAt
+    });
+    if (immediate) {
+      this._flushRunSave(savedAt);
+      return;
+    }
+    this._scheduleRunSave();
+  }
+
+  _scheduleRunSave() {
+    if (this._runSaveQueued) return;
+    this._runSaveQueued = true;
+    const scheduleIdle = () => {
+      this._runSaveTimer = 0;
+      if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+        this._runSaveIdle = window.requestIdleCallback(() => {
+          this._runSaveIdle = 0;
+          this._flushRunSave();
+        }, { timeout: 900 });
+      } else {
+        this._runSaveTimer = setTimeout(() => {
+          this._runSaveTimer = 0;
+          this._flushRunSave();
+        }, 120);
+      }
+    };
+    this._runSaveTimer = setTimeout(scheduleIdle, 260);
+  }
+
+  _cancelPendingRunSave() {
+    if (this._runSaveTimer) {
+      clearTimeout(this._runSaveTimer);
+      this._runSaveTimer = 0;
+    }
+    if (this._runSaveIdle && typeof window !== 'undefined' && typeof window.cancelIdleCallback === 'function') {
+      window.cancelIdleCallback(this._runSaveIdle);
+      this._runSaveIdle = 0;
+    }
+    this._runSaveQueued = false;
+  }
+
+  _flushRunSave(savedAt = Date.now()) {
+    this._cancelPendingRunSave();
+    if (!this.save || !this.player || !this.floor || this.player.isDead || this._runEnded) return;
     const snapshot = {
       version: 1,
-      savedAt: Date.now(),
+      savedAt,
       seed: this.seed,
       mode: this.mode,
       heroKind: this.heroKind,
@@ -1619,15 +1679,6 @@ export class GameScene {
       floor: this._floorSnapshot(this.floor)
     };
     this.save.saveRun(snapshot);
-    this.state.setRun({
-      seed: this.seed,
-      mode: this.mode,
-      floorIndex: this.dungeon.currentIndex,
-      canContinue: true,
-      level: this.player.level,
-      hp: this.player.stats.hp,
-      savedAt: snapshot.savedAt
-    });
   }
 
   _playerSnapshot() {
