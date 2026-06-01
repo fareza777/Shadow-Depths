@@ -309,11 +309,14 @@ export class Renderer {
   }
 
   _drawCachedTileBase(ctx, floor, x0, y0, x1, y1) {
-    const width = floor.width * TILE_SIZE;
-    const height = floor.height * TILE_SIZE;
+    const sx = x0 * TILE_SIZE;
+    const sy = y0 * TILE_SIZE;
+    const width = (x1 - x0 + 1) * TILE_SIZE;
+    const height = (y1 - y0 + 1) * TILE_SIZE;
     const def = floor.definition || {};
     const key = [
       floor.seed, floor.index, floor.renderRevision || 0,
+      x0, y0, x1, y1,
       def.biomeId || '', (def.wallPalette || []).join(','),
       (def.floorPalette || []).join(',')
     ].join('|');
@@ -327,15 +330,12 @@ export class Renderer {
       canvas.height = height;
       const cctx = canvas.getContext('2d', { alpha: true });
       cctx.imageSmoothingEnabled = true;
-      this._paintTileBase(cctx, floor, 0, 0, floor.width - 1, floor.height - 1);
+      cctx.translate(-sx, -sy);
+      this._paintTileBase(cctx, floor, x0, y0, x1, y1);
       cache = { floor, key, canvas };
       this._tileBaseCache = cache;
     }
-    const sx = x0 * TILE_SIZE;
-    const sy = y0 * TILE_SIZE;
-    const sw = (x1 - x0 + 1) * TILE_SIZE;
-    const sh = (y1 - y0 + 1) * TILE_SIZE;
-    ctx.drawImage(cache.canvas, sx, sy, sw, sh, sx, sy, sw, sh);
+    ctx.drawImage(cache.canvas, sx, sy);
   }
 
   _paintTileBase(ctx, floor, x0, y0, x1, y1) {
