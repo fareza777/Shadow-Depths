@@ -130,7 +130,7 @@ export class SkillPickerUI {
 
   _pick(skill) {
     if (!skill || !this.player) return;
-    this.player.applySkill(skill.id);
+    this.player.applySkill(skill.id, skill);
     // Recompute emergent tag synergies from the full owned set.
     const pool = (this.content.skills && this.content.skills.skills) || [];
     this.player.setSynergyMods(

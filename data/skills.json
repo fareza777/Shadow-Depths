@@ -250,6 +250,779 @@
       "tags": [
         "arcane"
       ]
+    },
+    {
+      "id": "whetstone_rite",
+      "name": "Whetstone Rite",
+      "description": "+1 permanent ATK.",
+      "rarity": "common",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "atk": 1
+      }
+    },
+    {
+      "id": "honed_edge",
+      "name": "Honed Edge",
+      "description": "+1 ATK and +2% crit chance.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "atk": 1,
+        "crit": 0.02
+      }
+    },
+    {
+      "id": "reaving_strikes",
+      "name": "Reaving Strikes",
+      "description": "+2 ATK, −1 DEF.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "atk": 2,
+        "def": -1
+      }
+    },
+    {
+      "id": "executioner",
+      "name": "Executioner",
+      "description": "+5% crit chance.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "crit": 0.05
+      }
+    },
+    {
+      "id": "savage_momentum",
+      "name": "Savage Momentum",
+      "description": "+1 ATK and +1 DEX.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury",
+        "hunt"
+      ],
+      "effect": {
+        "atk": 1,
+        "dex": 1
+      }
+    },
+    {
+      "id": "bloodlust",
+      "name": "Bloodlust",
+      "description": "+5% lifesteal on every hit.",
+      "rarity": "common",
+      "spriteKey": "skill_blood",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "lifesteal": 0.05
+      }
+    },
+    {
+      "id": "gore_drinker",
+      "name": "Gore Drinker",
+      "description": "+6% lifesteal on every hit.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_blood",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "lifesteal": 0.06
+      }
+    },
+    {
+      "id": "berserkers_gift",
+      "name": "Berserker's Gift",
+      "description": "+2 permanent ATK.",
+      "rarity": "rare",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "atk": 2
+      }
+    },
+    {
+      "id": "keen_steel",
+      "name": "Keen Steel",
+      "description": "+3% crit chance.",
+      "rarity": "common",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "crit": 0.03
+      }
+    },
+    {
+      "id": "cruel_precision",
+      "name": "Cruel Precision",
+      "description": "+1 DEX and +4% crit chance.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury",
+        "hunt"
+      ],
+      "effect": {
+        "dex": 1,
+        "crit": 0.04
+      }
+    },
+    {
+      "id": "frenzy",
+      "name": "Frenzy",
+      "description": "+1 ATK and +4% lifesteal.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_blood",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "atk": 1,
+        "lifesteal": 0.04
+      }
+    },
+    {
+      "id": "heavy_blows",
+      "name": "Heavy Blows",
+      "description": "+1 ATK and +1 DEF.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury",
+        "ward"
+      ],
+      "effect": {
+        "atk": 1,
+        "def": 1
+      }
+    },
+    {
+      "id": "mortal_edge",
+      "name": "Mortal Edge",
+      "description": "+6% crit chance.",
+      "rarity": "rare",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "crit": 0.06
+      }
+    },
+    {
+      "id": "carnage",
+      "name": "Carnage",
+      "description": "+1 ATK and +3% crit chance.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury"
+      ],
+      "effect": {
+        "atk": 1,
+        "crit": 0.03
+      }
+    },
+    {
+      "id": "iron_skin",
+      "name": "Iron Skin",
+      "description": "+1 permanent DEF.",
+      "rarity": "common",
+      "spriteKey": "skill_shield",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "def": 1
+      }
+    },
+    {
+      "id": "bulwark",
+      "name": "Bulwark",
+      "description": "+2 permanent DEF.",
+      "rarity": "rare",
+      "spriteKey": "skill_shield",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "def": 2
+      }
+    },
+    {
+      "id": "stone_hide",
+      "name": "Stone Hide",
+      "description": "−5% damage taken.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_stout",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "dr": 0.05
+      }
+    },
+    {
+      "id": "thick_hide",
+      "name": "Thick Hide",
+      "description": "−4% damage taken.",
+      "rarity": "common",
+      "spriteKey": "skill_stout",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "dr": 0.04
+      }
+    },
+    {
+      "id": "vital_surge",
+      "name": "Vital Surge",
+      "description": "+8 max HP. Heals 8.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_armor",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "hpMax": 8
+      }
+    },
+    {
+      "id": "hearty",
+      "name": "Hearty",
+      "description": "+5 max HP. Heals 5.",
+      "rarity": "common",
+      "spriteKey": "skill_armor",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "hpMax": 5
+      }
+    },
+    {
+      "id": "ironbound",
+      "name": "Ironbound",
+      "description": "+12 max HP. Heals 12.",
+      "rarity": "rare",
+      "spriteKey": "skill_armor",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "hpMax": 12
+      }
+    },
+    {
+      "id": "stalwart",
+      "name": "Stalwart",
+      "description": "+1 DEF and +5 max HP.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_shield",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "def": 1,
+        "hpMax": 5
+      }
+    },
+    {
+      "id": "guardians_resolve",
+      "name": "Guardian's Resolve",
+      "description": "+1 DEF and −4% damage taken.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_shield",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "def": 1,
+        "dr": 0.04
+      }
+    },
+    {
+      "id": "warding_step",
+      "name": "Warding Step",
+      "description": "+1 DEF and +1 DEX.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_shield",
+      "tags": [
+        "ward",
+        "hunt"
+      ],
+      "effect": {
+        "def": 1,
+        "dex": 1
+      }
+    },
+    {
+      "id": "endurance",
+      "name": "Endurance",
+      "description": "+8 max HP and heal 1 every 9 turns.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_armor",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "hpMax": 8,
+        "regenEveryN": 9,
+        "regenAmount": 1
+      }
+    },
+    {
+      "id": "bracing",
+      "name": "Bracing",
+      "description": "−6% damage taken.",
+      "rarity": "rare",
+      "spriteKey": "skill_stout",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "dr": 0.06
+      }
+    },
+    {
+      "id": "toughened",
+      "name": "Toughened",
+      "description": "+1 DEF and +5 max HP.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_armor",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "def": 1,
+        "hpMax": 5
+      }
+    },
+    {
+      "id": "mending_trance",
+      "name": "Mending Trance",
+      "description": "Heal 2 every 8 turns.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_armor",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "regenEveryN": 8,
+        "regenAmount": 2
+      }
+    },
+    {
+      "id": "cats_grace",
+      "name": "Cat's Grace",
+      "description": "+1 permanent DEX.",
+      "rarity": "common",
+      "spriteKey": "skill_speed",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "dex": 1
+      }
+    },
+    {
+      "id": "fleetfoot",
+      "name": "Fleetfoot",
+      "description": "+2 permanent DEX.",
+      "rarity": "rare",
+      "spriteKey": "skill_speed",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "dex": 2
+      }
+    },
+    {
+      "id": "keen_senses",
+      "name": "Keen Senses",
+      "description": "+1 DEX and +1 torch radius.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_wind",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "dex": 1,
+        "torch": 1
+      }
+    },
+    {
+      "id": "hunters_mark",
+      "name": "Hunter's Mark",
+      "description": "+1 DEX and +2% crit chance.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_speed",
+      "tags": [
+        "hunt",
+        "fury"
+      ],
+      "effect": {
+        "dex": 1,
+        "crit": 0.02
+      }
+    },
+    {
+      "id": "lanternheart",
+      "name": "Lanternheart",
+      "description": "+1 torch radius.",
+      "rarity": "common",
+      "spriteKey": "skill_wind",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "torch": 1
+      }
+    },
+    {
+      "id": "far_sight",
+      "name": "Far Sight",
+      "description": "+1 ranged range and +1 torch radius.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_reach",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "range": 1,
+        "torch": 1
+      }
+    },
+    {
+      "id": "deadeye",
+      "name": "Deadeye",
+      "description": "+1 ranged weapon range.",
+      "rarity": "common",
+      "spriteKey": "skill_reach",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "range": 1
+      }
+    },
+    {
+      "id": "longshot",
+      "name": "Longshot",
+      "description": "+1 ranged range and +1 DEX.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_reach",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "range": 1,
+        "dex": 1
+      }
+    },
+    {
+      "id": "nimble",
+      "name": "Nimble",
+      "description": "+1 DEX and −3% damage taken.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_speed",
+      "tags": [
+        "hunt",
+        "ward"
+      ],
+      "effect": {
+        "dex": 1,
+        "dr": 0.03
+      }
+    },
+    {
+      "id": "evasive",
+      "name": "Evasive",
+      "description": "+2 permanent DEX.",
+      "rarity": "rare",
+      "spriteKey": "skill_speed",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "dex": 2
+      }
+    },
+    {
+      "id": "quick_hands",
+      "name": "Quick Hands",
+      "description": "+1 inventory slot and +1 DEX.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_bag",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "invSlots": 1,
+        "dex": 1
+      }
+    },
+    {
+      "id": "trailblazer",
+      "name": "Trailblazer",
+      "description": "+1 torch radius and +1 DEX.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_wind",
+      "tags": [
+        "hunt"
+      ],
+      "effect": {
+        "torch": 1,
+        "dex": 1
+      }
+    },
+    {
+      "id": "pathfinder",
+      "name": "Pathfinder",
+      "description": "+1 DEX and +1 DEF.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_speed",
+      "tags": [
+        "hunt",
+        "ward"
+      ],
+      "effect": {
+        "dex": 1,
+        "def": 1
+      }
+    },
+    {
+      "id": "arcane_spark",
+      "name": "Arcane Spark",
+      "description": "+1 magic power for hero spells.",
+      "rarity": "common",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ],
+      "effect": {
+        "magic": 1
+      }
+    },
+    {
+      "id": "spellforged",
+      "name": "Spellforged",
+      "description": "+2 magic power for hero spells.",
+      "rarity": "rare",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ],
+      "effect": {
+        "magic": 2
+      }
+    },
+    {
+      "id": "mana_flow",
+      "name": "Mana Flow",
+      "description": "Hero spell cooldowns are 1 turn shorter.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ],
+      "effect": {
+        "spellCDR": 1
+      }
+    },
+    {
+      "id": "soulbinder",
+      "name": "Soulbinder",
+      "description": "Hero spell damage heals you for 15%.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ],
+      "effect": {
+        "spellLifesteal": 0.15
+      }
+    },
+    {
+      "id": "scholar",
+      "name": "Scholar",
+      "description": "+15% XP from all sources.",
+      "rarity": "common",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ],
+      "effect": {
+        "xp": 0.15
+      }
+    },
+    {
+      "id": "sage",
+      "name": "Sage",
+      "description": "+20% XP from all sources.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ],
+      "effect": {
+        "xp": 0.2
+      }
+    },
+    {
+      "id": "ember_sigil",
+      "name": "Ember Sigil",
+      "description": "+1 magic power and +1 torch radius.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane",
+        "hunt"
+      ],
+      "effect": {
+        "magic": 1,
+        "torch": 1
+      }
+    },
+    {
+      "id": "runed_mind",
+      "name": "Runed Mind",
+      "description": "+1 magic power and +2% crit chance.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane",
+        "fury"
+      ],
+      "effect": {
+        "magic": 1,
+        "crit": 0.02
+      }
+    },
+    {
+      "id": "channeler",
+      "name": "Channeler",
+      "description": "+1 magic power and spell heals 10%.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ],
+      "effect": {
+        "magic": 1,
+        "spellLifesteal": 0.1
+      }
+    },
+    {
+      "id": "warded_soul",
+      "name": "Warded Soul",
+      "description": "+1 magic power and −3% damage taken.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane",
+        "ward"
+      ],
+      "effect": {
+        "magic": 1,
+        "dr": 0.03
+      }
+    },
+    {
+      "id": "deep_focus",
+      "name": "Deep Focus",
+      "description": "+2 magic power for hero spells.",
+      "rarity": "rare",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ],
+      "effect": {
+        "magic": 2
+      }
+    },
+    {
+      "id": "wanderers_lore",
+      "name": "Wanderer's Lore",
+      "description": "+15% XP and +1 torch radius.",
+      "rarity": "uncommon",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane",
+        "hunt"
+      ],
+      "effect": {
+        "xp": 0.15,
+        "torch": 1
+      }
+    },
+    {
+      "id": "warden_aegis",
+      "name": "Warden Aegis",
+      "description": "Warden only: +2 DEF, +6 max HP, heal 6.",
+      "rarity": "epic",
+      "spriteKey": "skill_shield",
+      "tags": [
+        "ward"
+      ],
+      "effect": {
+        "def": 2,
+        "hpMax": 6
+      },
+      "hero": "warden"
+    },
+    {
+      "id": "bladedancer_flourish",
+      "name": "Crimson Flourish",
+      "description": "Blade Dancer only: +1 DEX and +5% crit.",
+      "rarity": "epic",
+      "spriteKey": "skill_sword",
+      "tags": [
+        "fury",
+        "hunt"
+      ],
+      "effect": {
+        "dex": 1,
+        "crit": 0.05
+      },
+      "hero": "bladedancer"
+    },
+    {
+      "id": "echobinder_resonance",
+      "name": "Deep Resonance",
+      "description": "Echobinder only: +2 magic and spell heals 10%.",
+      "rarity": "epic",
+      "spriteKey": "skill_book",
+      "tags": [
+        "arcane"
+      ],
+      "effect": {
+        "magic": 2,
+        "spellLifesteal": 0.1
+      },
+      "hero": "echobinder"
     }
   ]
 }

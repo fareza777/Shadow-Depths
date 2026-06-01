@@ -110,7 +110,7 @@ export class Player extends Entity {
    * @param {string} id
    * @returns {boolean} true if the skill was recognized
    */
-  applySkill(id) {
+  applySkill(id, def = null) {
     if (this.skills.includes(id)) return false; // no duplicates this run
     this.skills.push(id);
     switch (id) {
@@ -218,8 +218,47 @@ export class Player extends Entity {
         if (this.regenEveryNTurns > 0) this.regenAmount = Math.min(this.regenAmount + 1, 3);
         return true;
       default:
-        return false;
+        // Data-driven skills (the large expansion pool) carry an `effect`
+        // object in skills.json and need no bespoke case here.
+        return this._applySkillEffect(def?.effect);
     }
+  }
+
+  /**
+   * Apply a generic skill effect blob (see data/skills.json). Each field is a
+   * small, stacking bonus; the hard caps (damageReduction, crit via getters)
+   * keep large skill collections from snowballing into something OP.
+   * @returns {boolean} true if anything was applied
+   */
+  _applySkillEffect(eff) {
+    if (!eff || typeof eff !== 'object') return false;
+    if (eff.hpMax) { this.stats.hpMax += eff.hpMax; this.heal(eff.hpMax); }
+    if (eff.atk) this.stats.atk += eff.atk;
+    if (eff.def) this.stats.def = Math.max(0, this.stats.def + eff.def);
+    if (eff.dex) this.stats.dex += eff.dex;
+    if (eff.crit) this.critSkillBonus += eff.crit;
+    if (eff.lifesteal) this.skillLifesteal += eff.lifesteal;
+    if (eff.dr) this.damageReduction = Math.min(0.6, this.damageReduction + eff.dr);
+    if (eff.range) this.skillRangeBonus += eff.range;
+    if (eff.torch) this.torchRadius += eff.torch;
+    if (eff.magic) this.magicPower += eff.magic;
+    if (eff.spellCDR) this.spellCooldownReduction += eff.spellCDR;
+    if (eff.spellLifesteal) this.spellLifesteal += eff.spellLifesteal;
+    if (eff.xp) this.xpMultiplier += eff.xp;
+    if (eff.invSlots && this.inventory) {
+      for (let i = 0; i < eff.invSlots; i++) { this.inventory.size += 1; this.inventory.slots.push(null); }
+    }
+    if (eff.regenEveryN) {
+      // Match field_mender semantics: improve existing regen or start fresh.
+      if (this.regenEveryNTurns > 0) {
+        this.regenAmount = Math.min(this.regenAmount + (eff.regenAmount || 1), 3);
+        this.regenEveryNTurns = Math.min(this.regenEveryNTurns, eff.regenEveryN);
+      } else {
+        this.regenEveryNTurns = eff.regenEveryN;
+        this.regenAmount = eff.regenAmount || 1;
+      }
+    }
+    return true;
   }
 
   /**
