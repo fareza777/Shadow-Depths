@@ -31,6 +31,10 @@ import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
 import { HAZARDS } from '../gameplay/hazards.js';
 import { drawVectorNPC } from './npcArtVector.jsx';
 import { drawVectorDecor, drawVectorFixture } from './furnishingArtVector.jsx';
+import { drawVectorTrap } from './dungeonTrapsVector.jsx';
+import { drawVectorChest } from './dungeonChestsVector.jsx';
+import { drawVectorStairsDown } from './dungeonStairsVector.jsx';
+import { drawVectorDecorX } from './dungeonDecorExtVector.jsx';
 
 export class Renderer {
   /**
@@ -438,6 +442,7 @@ export class Renderer {
       }
       ctx.restore();
     } else if (def.type === 'vault') {
+      if (drawVectorChest(ctx, cx - TILE_SIZE * 0.62, cy - TILE_SIZE * 0.62, TILE_SIZE * 1.24, 'runed', false)) return;
       // Treasure chest — brass-trimmed wooden chest with subtle glow.
       ctx.save();
       const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, TILE_SIZE * 1.2);
@@ -846,6 +851,7 @@ export class Renderer {
   }
 
   _drawDecorSprite(ctx, cx, cy, s, kind, t, def = {}) {
+    if (drawVectorDecorX(ctx, cx - s / 2, cy - s / 2, s, kind, def)) return;
     if (drawVectorDecor(ctx, cx - s / 2, cy - s / 2, s, kind, def)) return;
     const u = s / 32;
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
@@ -905,6 +911,7 @@ export class Renderer {
   }
 
   _drawStairsDownFixture(ctx, cx, cy, s, t, def = {}) {
+    if (drawVectorStairsDown(ctx, cx - s / 2, cy - s / 2, s, def)) return;
     if (drawVectorFixture(ctx, cx - s / 2, cy - s / 2, s, 'stair_down', def)) return;
     const u = s / 32;
     ctx.save();
@@ -1224,6 +1231,7 @@ export class Renderer {
 
   /** Treasure chest (brass-banded). */
   _drawChestSprite(ctx, cx, cy, s) {
+    if (drawVectorChest(ctx, cx - s / 2, cy - s / 2, s, 'gold', false)) return;
     const u = s / 32;
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
@@ -1295,11 +1303,17 @@ export class Renderer {
         const hz = t.hazard;
         if (!hz || !hz.revealed || !t.explored) continue;
         const col = (HAZARDS[hz.type]?.color || '#cdd5dd');
-        const cx = x * TILE_SIZE + TILE_SIZE / 2;
-        const cy = y * TILE_SIZE + TILE_SIZE / 2;
+        const tx = x * TILE_SIZE;
+        const ty = y * TILE_SIZE;
+        const cx = tx + TILE_SIZE / 2;
+        const cy = ty + TILE_SIZE / 2;
         const r = TILE_SIZE * 0.26;
         ctx.save();
         ctx.globalAlpha = hz.armed ? (t.visible ? 0.9 : 0.4) : 0.3;
+        if (drawVectorTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed ? 'armed' : 'sprung')) {
+          ctx.restore();
+          continue;
+        }
         ctx.strokeStyle = col;
         ctx.lineWidth = 1.5;
         // diamond warning frame

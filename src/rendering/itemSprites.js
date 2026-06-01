@@ -2,6 +2,8 @@
  * Pixel-art item sprites — registered into SpriteRegistry at boot.
  * Replaces flat magenta fallbacks with detailed procedural icons.
  */
+import { drawVectorMaterial } from './forgeMaterialsVector.jsx';
+
 function fillRect(ctx, x, y, w, h, color) {
   ctx.fillStyle = color;
   ctx.fillRect(x | 0, y | 0, Math.ceil(w), Math.ceil(h));
@@ -180,30 +182,6 @@ function charm(ctx, x, y, s, gem) {
   ]);
 }
 
-function materialShard(ctx, x, y, s, main, hi, dark) {
-  p(ctx, x, y, s, [
-    [9, 20, 14, 4, dark],
-    [11, 12, 5, 9, main],
-    [16, 9, 5, 12, shade(main, 10)],
-    [21, 14, 4, 7, shade(main, -15)],
-    [12, 13, 2, 4, hi],
-    [17, 10, 2, 6, hi],
-    [10, 23, 12, 2, '#00000044']
-  ]);
-}
-
-function materialDust(ctx, x, y, s, main, glow) {
-  p(ctx, x, y, s, [
-    [10, 21, 12, 4, '#3a2418'],
-    [11, 16, 10, 6, main],
-    [13, 13, 6, 4, glow],
-    [15, 9, 2, 3, '#fff0a0'],
-    [9, 18, 2, 2, glow],
-    [22, 17, 2, 2, glow],
-    [12, 24, 8, 2, '#00000055']
-  ]);
-}
-
 /** @returns {Record<string, function>} */
 export function buildItemSprites() {
   const out = {};
@@ -275,23 +253,12 @@ export function buildItemSprites() {
   out.charm_twin = (ctx, x, y, s) => charm(ctx, x, y, s, '#c878a8');
   out.charm_white = (ctx, x, y, s) => charm(ctx, x, y, s, '#f0f0ff');
 
-  out.material_scrap_iron = (ctx, x, y, s) => materialShard(ctx, x, y, s, '#8f949c', '#d7d9df', '#34323a');
-  out.material_bone_shard = (ctx, x, y, s) => materialShard(ctx, x, y, s, '#d7c9a8', '#fff0c8', '#66553a');
-  out.material_ember_dust = (ctx, x, y, s) => materialDust(ctx, x, y, s, '#b85830', '#ffb048');
-  out.material_frost_thread = (ctx, x, y, s) => p(ctx, x, y, s, [
-    [9, 18, 14, 2, '#b8e8ff'], [10, 20, 12, 2, '#80b8d8'],
-    [12, 14, 8, 2, '#d8f8ff'], [14, 10, 4, 2, '#ffffff'],
-    [16, 12, 2, 10, '#8ed8ff'], [12, 23, 8, 2, '#284860']
-  ]);
-  out.material_void_essence = (ctx, x, y, s) => {
-    materialShard(ctx, x, y, s, '#4b2a6a', '#c060ff', '#120818');
-    p(ctx, x, y, s, [[15, 14, 3, 3, '#f0d0ff'], [13, 18, 2, 2, '#9050c0']]);
-  };
-  out.material_verdant_sap = (ctx, x, y, s) => potion(ctx, x, y, s, '#48b858', false);
-  out.material_mirror_shard = (ctx, x, y, s) => materialShard(ctx, x, y, s, '#9fb6d8', '#ffffff', '#3e4560');
-  out.material_iron_chip = (ctx, x, y, s) => materialShard(ctx, x, y, s, '#6f7480', '#c8cbd0', '#2e2c34');
-  out.material_sun_glass = (ctx, x, y, s) => crystal(ctx, x, y, s, '#f0c060');
-  out.material_crypt_dust = (ctx, x, y, s) => materialDust(ctx, x, y, s, '#8a7868', '#d0c0a0');
+  for (const id of [
+    'scrap_iron', 'iron_chip', 'crypt_dust', 'bone_shard', 'ember_dust',
+    'sun_glass', 'frost_thread', 'void_essence', 'mirror_shard', 'verdant_sap'
+  ]) {
+    out[`material_${id}`] = (ctx, x, y, s) => drawVectorMaterial(ctx, x, y, s, id);
+  }
 
   return out;
 }

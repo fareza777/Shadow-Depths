@@ -226,9 +226,17 @@ export class DungeonGenerator {
       { value: 'wall_chains', weight: 4 },
       { value: 'rune_crack', weight: 4 },
       { value: 'cobweb', weight: 4 },
+      { value: 'weapon_rack', weight: 3 },
+      { value: 'alcove_urn', weight: 3 },
+      { value: 'hanging_cage', weight: 2 },
+      { value: 'shelf', weight: 3 },
+      { value: 'moss_vines', weight: 3 },
       { value: 'banner', weight: 1 }
     ];
-    const floorKinds = ['brazier', 'bone_pile', 'broken_pillar'];
+    const floorKinds = [
+      'brazier', 'bone_pile', 'broken_pillar', 'supply_crate',
+      'candelabra', 'mushroom_cluster'
+    ];
     const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(20, 30);
     const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(8, 14);
 
