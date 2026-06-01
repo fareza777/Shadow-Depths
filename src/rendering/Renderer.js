@@ -295,12 +295,11 @@ export class Renderer {
 
     if (this._leanCombatFx) {
       const def = floor.definition || {};
-      const timeBucket = Math.floor((this._timeSec || 0) * 4);
       const key = [
         floor.seed, floor.index, floor.renderRevision || 0,
         vx, vy, vw, vh, cam.x, cam.y, x0, y0, x1, y1,
         player?.x ?? '', player?.y ?? '', player?.torchRadius ?? '',
-        def.biomeId || '', def.type || '', timeBucket
+        def.biomeId || '', def.type || ''
       ].join('|');
       let cache = this._floorLayerCache;
       if (!cache || cache.floor !== floor || cache.key !== key
