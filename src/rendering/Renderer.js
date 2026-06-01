@@ -949,6 +949,21 @@ export class Renderer {
     ctx.restore();
   }
 
+  /** Cached elite/boss aura gradient (per colour+radius, local origin). */
+  _auraGrad(ctx, color, r) {
+    let cache = this._auraCache;
+    if (!cache) cache = this._auraCache = new Map();
+    const key = color + '|' + r;
+    let g = cache.get(key);
+    if (!g) {
+      g = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
+      g.addColorStop(0, color);
+      g.addColorStop(1, 'transparent');
+      cache.set(key, g);
+    }
+    return g;
+  }
+
   _drawThreatAura(ctx, entity, px, py) {
     const isBoss = entity.defId?.startsWith('boss_');
     const isSub = entity.defId?.startsWith('subboss_');
@@ -956,24 +971,22 @@ export class Renderer {
     if (!elite) return;
     const pulse = 0.55 + Math.sin((this._timeSec || 0) * 3.5) * 0.25;
     const color = isBoss ? '#d4be7a' : isSub ? '#c080ff' : '#8060a0';
-    ctx.save();
-    ctx.globalAlpha = (isBoss ? 0.38 : 0.24) * pulse;
     const cx = px + TILE_SIZE / 2;
     const cy = py + TILE_SIZE * 0.55;
     const r = TILE_SIZE * (isBoss ? 0.52 : 0.44);
-    const g = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r);
-    g.addColorStop(0, color);
-    g.addColorStop(1, 'transparent');
-    ctx.fillStyle = g;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.globalAlpha = (isBoss ? 0.38 : 0.24) * pulse;
+    ctx.fillStyle = this._auraGrad(ctx, color, r);
     ctx.beginPath();
-    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
     ctx.fill();
     if (isBoss) {
       ctx.globalAlpha = 0.35 * pulse;
       ctx.strokeStyle = color;
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(cx, cy, r + 2, 0, Math.PI * 2);
+      ctx.arc(0, 0, r + 2, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
