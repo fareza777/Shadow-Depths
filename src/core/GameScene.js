@@ -348,9 +348,9 @@ export class GameScene {
     if (!this.floor || !this.player) return;
     if (!this.renderer) this.renderer = renderer;
     renderer.setCameraFor(this.player.renderX, this.player.renderY);
-    renderer.drawFloor(this.floor, this.player);
-    renderer.drawGroundItems(this.floor);
-    renderer.drawTelegraphs(this.floor, this.player);
+    perfMeter.measure('worldFloor', () => renderer.drawFloor(this.floor, this.player));
+    perfMeter.measure('groundItems', () => renderer.drawGroundItems(this.floor));
+    perfMeter.measure('telegraphs', () => renderer.drawTelegraphs(this.floor, this.player));
     const now = performance.now();
     const dt = this._lastRenderTime ? (now - this._lastRenderTime) / 1000 : 0;
     this._lastRenderTime = now;
@@ -371,17 +371,19 @@ export class GameScene {
   }
 
   _renderUIUncached(renderer) {
-    try {
-      this.hud.render(renderer, {
-        player: this.player, floor: this.floor,
-        floorIndex: this.dungeon.currentIndex,
-        totalFloors: this.dungeon.totalFloors,
-        mode: this.mode,
-        suppressMessages: !!this._floorBanner
-      });
-    } catch (err) {
-      console.error(LOG.CORE, 'HUD render failed:', err);
-    }
+    perfMeter.measure('uiHud', () => {
+      try {
+        this.hud.render(renderer, {
+          player: this.player, floor: this.floor,
+          floorIndex: this.dungeon.currentIndex,
+          totalFloors: this.dungeon.totalFloors,
+          mode: this.mode,
+          suppressMessages: !!this._floorBanner
+        });
+      } catch (err) {
+        console.error(LOG.CORE, 'HUD render failed:', err);
+      }
+    });
 
     if (this.controls && !this.crafting?.open && !this.floorEvents?.open) {
       // Tell the iron HUD what's actionable this frame so AIM / DOWN /
@@ -410,22 +412,24 @@ export class GameScene {
           pickAvailable: itemsHere.length > 0 || forgeHere || interactHere
         });
       }
-      this.controls.renderBackground(renderer);
-      this._renderControlBandContent(renderer);
-      this.controls.renderControls(renderer);
+      perfMeter.measure('uiControlsBg', () => this.controls.renderBackground(renderer));
+      perfMeter.measure('uiMinimap', () => this._renderControlBandContent(renderer));
+      perfMeter.measure('uiControls', () => this.controls.renderControls(renderer));
     }
 
-    this._renderBossBar(renderer);
-    this._renderLootToast(renderer);
-    this._renderDangerVignette(renderer);
-    this._renderFloorBanner(renderer);
-    this.inventoryUI.render(renderer, this.player);
-    if (this.vigil) this.vigil.render(renderer, this.player);
-    if (this.skillPicker) this.skillPicker.render(renderer);
-    if (this.pause) this.pause.render(renderer);
-    if (this.crafting) this.crafting.render(renderer);
-    if (this.floorEvents) this.floorEvents.render(renderer);
-    if (this.tutorial?.open) this.tutorial.render(renderer);
+    perfMeter.measure('uiOverlays', () => {
+      this._renderBossBar(renderer);
+      this._renderLootToast(renderer);
+      this._renderDangerVignette(renderer);
+      this._renderFloorBanner(renderer);
+      this.inventoryUI.render(renderer, this.player);
+      if (this.vigil) this.vigil.render(renderer, this.player);
+      if (this.skillPicker) this.skillPicker.render(renderer);
+      if (this.pause) this.pause.render(renderer);
+      if (this.crafting) this.crafting.render(renderer);
+      if (this.floorEvents) this.floorEvents.render(renderer);
+      if (this.tutorial?.open) this.tutorial.render(renderer);
+    });
   }
 
   _uiCacheKey() {

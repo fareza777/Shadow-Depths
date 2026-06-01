@@ -157,6 +157,15 @@ export class MobileControls {
   renderBackground(renderer) {
     if (this._currentScene !== 'game') return;
     const LAYOUT = buildLayout();
+    const key = [
+      'mobile-controls-bg',
+      Layout.canvasW, Layout.canvasH, Layout.hud, Layout.control,
+      LAYOUT.portrait ? 1 : 0
+    ].join('|');
+    if (typeof renderer.drawCachedScreenLayer === 'function') {
+      renderer.drawCachedScreenLayer(key, () => this._renderPanel(renderer, LAYOUT));
+      return;
+    }
     this._renderPanel(renderer, LAYOUT);
   }
 
@@ -318,10 +327,19 @@ export class MobileControls {
     const padX = LAYOUT.dpadX - 10;
     const padY = LAYOUT.dpadY - 10;
     const padS = LAYOUT.dpadSize + 20;
-    this._drawDpadBackplate(ctx, padX, padY, padS, performance.now() / 1000);
-
-    // Iron lattice behind buttons.
-    drawIronLattice(ctx, LAYOUT.dpadX, LAYOUT.dpadY, LAYOUT.dpadSize);
+    const key = [
+      'mobile-dpad-base',
+      Layout.canvasW, Layout.canvasH,
+      padX, padY, padS, LAYOUT.dpadX, LAYOUT.dpadY, LAYOUT.dpadSize
+    ].join('|');
+    const paintBase = () => {
+      const bctx = r.ctx;
+      this._drawDpadBackplate(bctx, padX, padY, padS, 0);
+      // Iron lattice behind buttons.
+      drawIronLattice(bctx, LAYOUT.dpadX, LAYOUT.dpadY, LAYOUT.dpadSize);
+    };
+    if (typeof r.drawCachedScreenLayer === 'function') r.drawCachedScreenLayer(key, paintBase);
+    else paintBase();
 
     // Buttons.
     for (const b of DPAD_BUTTONS) {

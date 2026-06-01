@@ -18,8 +18,23 @@ export class Minimap {
     if (!this.visible) return;
     const { floor, player } = renderCtx;
     if (!floor) return;
-
     const slot = MobileControls.geometry.centerRect;
+    const timeBucket = Math.floor((typeof performance !== 'undefined' ? performance.now() : Date.now()) / 250);
+    const key = [
+      'minimap',
+      slot.x, slot.y, slot.w, slot.h,
+      floor.seed, floor.index, floor.renderRevision || 0, floor.entityRevision || 0,
+      player?.x ?? '', player?.y ?? '', timeBucket
+    ].join('|');
+    if (typeof renderer.drawCachedScreenLayer === 'function') {
+      renderer.drawCachedScreenLayer(key, () => this._renderUncached(renderer, renderCtx, slot));
+      return;
+    }
+    this._renderUncached(renderer, renderCtx, slot);
+  }
+
+  _renderUncached(renderer, renderCtx, slot) {
+    const { floor, player } = renderCtx;
     const pad = 8;
     const innerX = slot.x + pad;
     const innerY = slot.y + pad;

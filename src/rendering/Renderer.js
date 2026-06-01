@@ -75,7 +75,7 @@ export class Renderer {
     this._entitySortCache = null;
     this._backdropCache = null;
     this._floorLayerCache = null;
-    this._screenLayerCache = null;
+    this._screenLayerCaches = new Map();
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
@@ -120,7 +120,7 @@ export class Renderer {
     this._tileBaseCache = null;
     this._backdropCache = null;
     this._floorLayerCache = null;
-    this._screenLayerCache = null;
+    this._screenLayerCaches?.clear();
   }
 
   // --- camera ---------------------------------------------------------
@@ -243,9 +243,8 @@ export class Renderer {
     }
     const w = Layout.canvasW;
     const h = Layout.canvasH;
-    if (!this._screenLayerCache || this._screenLayerCache.key !== key
-        || this._screenLayerCache.canvas.width !== w
-        || this._screenLayerCache.canvas.height !== h) {
+    let cache = this._screenLayerCaches.get(key);
+    if (!cache || cache.canvas.width !== w || cache.canvas.height !== h) {
       const canvas = (typeof document !== 'undefined')
         ? document.createElement('canvas')
         : new OffscreenCanvas(w, h);
@@ -261,9 +260,16 @@ export class Renderer {
       } finally {
         this.ctx = mainCtx;
       }
-      this._screenLayerCache = { key, canvas };
+      cache = { canvas };
+      this._screenLayerCaches.set(key, cache);
+      if (this._screenLayerCaches.size > 8) {
+        const firstKey = this._screenLayerCaches.keys().next().value;
+        this._screenLayerCaches.delete(firstKey);
+      }
     }
-    this.ctx.drawImage(this._screenLayerCache.canvas, 0, 0);
+    this._screenLayerCaches.delete(key);
+    this._screenLayerCaches.set(key, cache);
+    this.ctx.drawImage(cache.canvas, 0, 0);
   }
 
   // --- world primitives ----------------------------------------------
