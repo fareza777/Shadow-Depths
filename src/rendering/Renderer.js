@@ -71,6 +71,8 @@ export class Renderer {
     this._attackFlashes = [];
     this._leanCombatFx = prefersLeanCombatFx();
     this._tileBaseCache = null;
+    this._entitySortCache = null;
+    this._backdropCache = null;
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
@@ -113,6 +115,7 @@ export class Renderer {
 
   invalidateFloorCache() {
     this._tileBaseCache = null;
+    this._backdropCache = null;
   }
 
   // --- camera ---------------------------------------------------------
@@ -245,8 +248,7 @@ export class Renderer {
     const vh = viewportH();
     ctx.rect(vx, vy, vw, vh);
     ctx.clip();
-    this._drawViewportAbyss(ctx, floor.definition || {});
-    this._drawBiomeBackdropDetails(ctx, floor.definition || {});
+    this._drawCachedViewportBackdrop(ctx, floor.definition || {});
     ctx.translate(cam.x, cam.y);
 
     const x0 = Math.max(0, Math.floor((vx - cam.x) / TILE_SIZE));
@@ -656,7 +658,7 @@ export class Renderer {
     ctx.clip();
     ctx.translate(cam.x, cam.y);
 
-    const list = Array.from(floor.entities.values()).sort((a, b) => a.renderY - b.renderY);
+    const list = this._sortedEntities(floor);
     this._drawAttackFlashes(ctx, cam);
     for (const e of list) {
       if (e.isDead) continue;
@@ -874,6 +876,39 @@ export class Renderer {
     fillRect(this.ctx, x, y, w, h, color);
   }
 
+  _drawCachedViewportBackdrop(ctx, def = {}) {
+    if (!this._leanCombatFx) {
+      this._drawViewportAbyss(ctx, def);
+      this._drawBiomeBackdropDetails(ctx, def);
+      return;
+    }
+    const vx = viewportX();
+    const vy = viewportY();
+    const vw = viewportW();
+    const vh = viewportH();
+    const timeBucket = Math.floor((this._timeSec || 0) * 4);
+    const key = [
+      def.biomeId || '', vx, vy, vw, vh,
+      timeBucket,
+      getAbyssPalette(def.biomeId || '').top
+    ].join('|');
+    let cache = this._backdropCache;
+    if (!cache || cache.key !== key || cache.canvas.width !== vw || cache.canvas.height !== vh) {
+      const canvas = (typeof document !== 'undefined')
+        ? document.createElement('canvas')
+        : new OffscreenCanvas(vw, vh);
+      canvas.width = vw;
+      canvas.height = vh;
+      const cctx = canvas.getContext('2d', { alpha: true });
+      cctx.translate(-vx, -vy);
+      this._drawViewportAbyss(cctx, def);
+      this._drawBiomeBackdropDetails(cctx, def);
+      cache = { key, canvas };
+      this._backdropCache = cache;
+    }
+    ctx.drawImage(cache.canvas, vx, vy);
+  }
+
   _drawRoomDecor(ctx, floor, x0, y0, x1, y1) {
     let drawn = 0;
     const maxLeanDecor = 14;
@@ -893,6 +928,18 @@ export class Renderer {
         drawn++;
       }
     }
+  }
+
+  _sortedEntities(floor) {
+    const rev = floor.entityRevision || 0;
+    const cache = this._entitySortCache;
+    if (cache && cache.floor === floor && cache.rev === rev) return cache.list;
+    const list = Array.from(floor.entities.values()).sort((a, b) => {
+      if (a.y !== b.y) return a.y - b.y;
+      return a.x - b.x;
+    });
+    this._entitySortCache = { floor, rev, list };
+    return list;
   }
 
   _drawDecorSprite(ctx, cx, cy, s, kind, t, def = {}) {

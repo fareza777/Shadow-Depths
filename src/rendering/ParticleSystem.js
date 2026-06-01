@@ -312,6 +312,10 @@ export class ParticleSystem {
    * @param {{ x:number, y:number }} cameraOffset
    */
   render(ctx, cameraOffset = { x: 0, y: 0 }) {
+    if (this._leanCombatFx) {
+      this._renderLean(ctx, cameraOffset);
+      return;
+    }
     ctx.save();
     ctx.translate(cameraOffset.x, cameraOffset.y);
     for (const p of this._particles) {
@@ -412,6 +416,68 @@ export class ParticleSystem {
         ctx.fillText(p.text, p.x, p.y);
       }
       ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  _renderLean(ctx, cameraOffset = { x: 0, y: 0 }) {
+    ctx.save();
+    ctx.translate(cameraOffset.x, cameraOffset.y);
+    for (const p of this._particles) {
+      const t = Math.max(0, p.life / p.maxLife);
+      const alpha = p.kind === 'text' ? Math.min(1, t * 1.4) : t;
+      ctx.globalAlpha = alpha;
+
+      if (p.kind === 'spark') {
+        const r = p.size / 2;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.kind === 'ring') {
+        const grow = 1 - t;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2 + grow * 1.5;
+        ctx.globalAlpha = alpha * 0.65;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size + (p.maxSize - p.size) * grow, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.kind === 'flash') {
+        const s = p.size * (1 + (1 - t) * 0.1);
+        ctx.globalAlpha = alpha * 0.45;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - s / 2, p.y - s / 2, s, s);
+      } else if (p.kind === 'beam') {
+        const pulse = 1 - t;
+        ctx.globalAlpha = alpha * 0.85;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.size + pulse * 3;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x2, p.y2);
+        ctx.stroke();
+      } else if (p.kind === 'rune') {
+        const grow = 0.75 + (1 - t) * 0.45;
+        ctx.globalAlpha = alpha * 0.5;
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * grow, 0, Math.PI * 2);
+        ctx.stroke();
+      } else {
+        const px = 14 * (p.scale ?? 1);
+        ctx.font = `bold ${px}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        if (p.stroke) {
+          ctx.strokeStyle = p.stroke;
+          ctx.lineWidth = 3;
+          ctx.strokeText(p.text, p.x, p.y);
+        }
+        ctx.fillStyle = p.color;
+        ctx.fillText(p.text, p.x, p.y);
+      }
     }
     ctx.globalAlpha = 1;
     ctx.restore();

@@ -51,6 +51,7 @@ export class Floor {
     // revealed hazards, used room events). Renderer uses it to keep its tile
     // cache exact without repainting biome tiles every battle frame.
     this.renderRevision = 0;
+    this.entityRevision = 0;
   }
 
   static _createGrid(w, h) {
@@ -99,6 +100,7 @@ export class Floor {
     if (!entity || !entity.id) throw new Error('Floor.addEntity: entity needs id');
     this.entities.set(entity.id, entity);
     this._entityIndex.set(Floor._key(entity.x, entity.y), entity.id);
+    this.entityRevision += 1;
   }
 
   removeEntity(entity) {
@@ -108,6 +110,7 @@ export class Floor {
     if (this._entityIndex.get(key) === entity.id) {
       this._entityIndex.delete(key);
     }
+    this.entityRevision += 1;
   }
 
   /**
@@ -121,6 +124,7 @@ export class Floor {
     entity.x = nx;
     entity.y = ny;
     this._entityIndex.set(Floor._key(nx, ny), entity.id);
+    this.entityRevision += 1;
   }
 
   entityAt(x, y) {
