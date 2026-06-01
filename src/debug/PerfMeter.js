@@ -8,17 +8,17 @@ function initialEnabled() {
     const params = new URLSearchParams(window.location.search || '');
     const q = params.get('perf');
     if (q === '1' || q === 'true') {
-      localStorage.setItem('shadowdepths_perf', '1');
       return true;
     }
     if (q === '0' || q === 'false') {
-      localStorage.setItem('shadowdepths_perf', '0');
+      localStorage.removeItem('shadowdepths_perf');
       return false;
     }
+    if (!/^(127\.0\.0\.1|localhost)$/i.test(window.location.hostname || '')) return false;
     const stored = localStorage.getItem('shadowdepths_perf');
     if (stored === '1') return true;
     if (stored === '0') return false;
-    return /^(127\.0\.0\.1|localhost)$/i.test(window.location.hostname || '');
+    return true;
   } catch {
     return false;
   }
