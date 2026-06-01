@@ -1542,6 +1542,10 @@ export class Renderer {
         const r = TILE_SIZE * 0.26;
         ctx.save();
         ctx.globalAlpha = hz.armed ? (t.visible ? 0.9 : 0.4) : 0.3;
+        if (this._leanCombatFx && this._drawCanvasTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed)) {
+          ctx.restore();
+          continue;
+        }
         if (drawVectorTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed ? 'armed' : 'sprung')) {
           ctx.restore();
           continue;
@@ -1584,6 +1588,132 @@ export class Renderer {
         ctx.restore();
       }
     }
+  }
+
+  _drawCanvasTrap(ctx, x, y, s, kind, armed) {
+    const u = s / 32;
+    const X = (v) => x + v * u;
+    const Y = (v) => y + v * u;
+    const path = (d, fill, stroke = '#08070c', lw = 0.6) => {
+      const p = new Path2D(d);
+      if (fill) { ctx.fillStyle = fill; ctx.fill(p); }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lw * u;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.stroke(p);
+      }
+    };
+    const poly = (pts, fill, stroke = '#08070c', lw = 0.45) => {
+      ctx.beginPath();
+      pts.forEach(([px, py], i) => i ? ctx.lineTo(X(px), Y(py)) : ctx.moveTo(X(px), Y(py)));
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lw * u;
+        ctx.stroke();
+      }
+    };
+    const line = (x1, y1, x2, y2, col, lw = 0.8) => {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = lw * u;
+      ctx.beginPath();
+      ctx.moveTo(X(x1), Y(y1));
+      ctx.lineTo(X(x2), Y(y2));
+      ctx.stroke();
+    };
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = 2 * u;
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath();
+    ctx.ellipse(X(16), Y(29), 10.5 * u, 2.2 * u, 0, 0, Math.PI * 2);
+    ctx.fill();
+    path(`M${X(3)} ${Y(4)} L${X(29)} ${Y(4)} L${X(28)} ${Y(28)} L${X(4)} ${Y(28)} Z`, '#2a2630', '#08070c', 0.7);
+    poly([[3, 4], [29, 4], [27.4, 6], [4.6, 6]], '#585260', null);
+    path(`M${X(6)} ${Y(7)} L${X(26)} ${Y(7)} L${X(25)} ${Y(25)} L${X(7)} ${Y(25)} Z`, '#0a0810', '#08070c', 0.5);
+    if (kind === 'venom') {
+      path(`M${X(7)} ${Y(8)} L${X(25)} ${Y(8)} L${X(24)} ${Y(24)} L${X(8)} ${Y(24)} Z`, '#3a4438', '#08070c', 0.5);
+      ctx.fillStyle = '#5a6a52'; ctx.globalAlpha *= 0.7; ctx.fillRect(X(7.6), Y(9), 16.8 * u, 1.2 * u); ctx.globalAlpha /= 0.7;
+      for (const [hx, hy] of [[11, 12], [16, 12], [21, 12], [11, 16], [16, 16], [21, 16], [12, 20], [16, 20], [20, 20]]) {
+        ctx.fillStyle = '#0a140c';
+        ctx.beginPath(); ctx.arc(X(hx), Y(hy), 1.4 * u, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#08070c'; ctx.lineWidth = 0.3 * u; ctx.stroke();
+        ctx.fillStyle = armed ? '#0d1d0f' : '#1a2a1a';
+        ctx.beginPath(); ctx.arc(X(hx), Y(hy), 0.7 * u, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#5ac06a';
+      ctx.globalAlpha *= armed ? 0.32 : 0.22;
+      for (const [gx, gy, r] of armed ? [[16, 9, 2.2]] : [[12, 7, 2.4], [16, 6, 3], [20, 7, 2.4]]) {
+        ctx.beginPath(); ctx.ellipse(X(gx), Y(gy), r * u, (r * 0.8) * u, 0, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (kind === 'frost') {
+      const glyph = armed ? '#bcd6ff' : '#46566e';
+      ctx.strokeStyle = glyph;
+      ctx.lineWidth = 1 * u;
+      ctx.globalAlpha *= armed ? 0.9 : 0.5;
+      ctx.beginPath(); ctx.arc(X(16), Y(16), 7.5 * u, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 0.6 * u;
+      ctx.beginPath(); ctx.arc(X(16), Y(16), 4.6 * u, 0, Math.PI * 2); ctx.stroke();
+      [[0, 60], [0, 120], [0, 0]].forEach((_, i) => {
+        const deg = [0, 60, 120][i] * Math.PI / 180;
+        const dx = Math.cos(deg) * 4.4;
+        const dy = Math.sin(deg) * 4.4;
+        line(16 - dx, 16 - dy, 16 + dx, 16 + dy, glyph, 0.8);
+      });
+      for (const [cx, cy] of [[16, 7.5], [24, 16], [16, 24.5], [8, 16]]) {
+        poly([[cx, cy - 1.4], [cx + 1.1, cy], [cx, cy + 1.4], [cx - 1.1, cy]], armed ? '#bcd6ff' : '#6f93c8', '#08070c', 0.3);
+      }
+    } else if (kind === 'flame') {
+      ctx.fillStyle = '#1a0e08';
+      ctx.globalAlpha *= 0.7;
+      ctx.beginPath(); ctx.arc(X(16), Y(18), 7.5 * u, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha /= 0.7;
+      poly([[12.5, 19], [19.5, 19], [18.5, 23], [13.5, 23]], '#3a3138', '#08070c', 0.5);
+      ctx.fillStyle = '#0a0604';
+      ctx.beginPath(); ctx.ellipse(X(16), Y(18), 3.4 * u, 1.1 * u, 0, 0, Math.PI * 2); ctx.fill();
+      if (armed) {
+        poly([[16, 14], [14, 17], [15, 19], [16, 17.5], [16, 19.5], [17, 19], [18, 17]], '#ff8844', null);
+      } else {
+        poly([[16, 2], [11, 9], [13, 15], [9, 12], [11.5, 18], [16, 8], [20.5, 18], [23, 12], [19, 15], [21, 9]], '#ff8844', null);
+        poly([[16, 7], [13.5, 12], [14.5, 16], [16, 13], [17.5, 16], [18.5, 12]], '#ffd86a', null);
+      }
+    } else {
+      const cols = [10.5, 16, 21.5];
+      const rows = armed ? [13, 17.5, 22] : [11, 16.5, 22];
+      rows.forEach((cy, ri) => cols.forEach((cx, ci) => {
+        const h = armed ? 3.2 : 5.5;
+        const ox = cx + (ci - 1) * (ri - 1) * 0.4;
+        poly([[ox, cy - h], [ox + 2, cy], [ox, cy + 1.2], [ox - 2, cy]], '#8f949c', '#08070c', 0.4);
+        poly([[ox, cy - h], [ox - 2, cy], [ox, cy]], '#d7d9df', null);
+      }));
+      for (const [rx, ry] of [[7.2, 8], [24.8, 8], [7.6, 24], [24.4, 24]]) {
+        ctx.fillStyle = '#8f949c'; ctx.beginPath(); ctx.arc(X(rx), Y(ry), 0.9 * u, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    if (armed) this._drawCanvasTrapWarning(ctx, X, Y, HAZARDS[kind]?.color || '#cdd5dd', u);
+    ctx.restore();
+    return true;
+  }
+
+  _drawCanvasTrapWarning(ctx, X, Y, col, u) {
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 0.7 * u;
+    ctx.globalAlpha *= 0.46;
+    ctx.setLineDash([2 * u, 2.4 * u]);
+    ctx.beginPath();
+    ctx.moveTo(X(16), Y(2));
+    ctx.lineTo(X(24), Y(16));
+    ctx.lineTo(X(16), Y(30));
+    ctx.lineTo(X(8), Y(16));
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
 
   /** Champion/elite marker — a pulsing coloured ring under the sprite. */
