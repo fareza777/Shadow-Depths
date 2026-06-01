@@ -1615,7 +1615,7 @@ export class Renderer {
           ctx.restore();
           continue;
         }
-        if (this._leanCombatFx && this._drawCanvasTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed)) {
+        if (this._drawCanvasTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed)) {
           ctx.restore();
           continue;
         }
