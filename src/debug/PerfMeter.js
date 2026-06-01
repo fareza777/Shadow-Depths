@@ -8,17 +8,17 @@ function initialEnabled() {
     const params = new URLSearchParams(window.location.search || '');
     const q = params.get('perf');
     if (q === '1' || q === 'true') {
-      localStorage.setItem('shadowdepths_perf', '1');
       return true;
     }
     if (q === '0' || q === 'false') {
-      localStorage.setItem('shadowdepths_perf', '0');
+      localStorage.removeItem('shadowdepths_perf');
       return false;
     }
+    if (!/^(127\.0\.0\.1|localhost)$/i.test(window.location.hostname || '')) return false;
     const stored = localStorage.getItem('shadowdepths_perf');
     if (stored === '1') return true;
     if (stored === '0') return false;
-    return /^(127\.0\.0\.1|localhost)$/i.test(window.location.hostname || '');
+    return true;
   } catch {
     return false;
   }
@@ -78,7 +78,7 @@ class PerfMeter {
       this.ema[k] = this.ema[k] == null ? v : this.ema[k] + (v - this.ema[k]) * 0.18;
       this.max[k] = Math.max(this.max[k] || 0, v);
     }
-    const aggregate = new Set(['tick', 'update', 'render']);
+    const aggregate = new Set(['tick', 'update', 'render', 'world', 'ui']);
     const entries = Object.entries(sections);
     const leafEntries = entries.filter(([k]) => k !== 'total' && !aggregate.has(k));
     const worst = (leafEntries.length ? leafEntries : entries.filter(([k]) => k !== 'total'))
@@ -102,7 +102,12 @@ class PerfMeter {
 
   render(ctx, layout) {
     if (!this.enabled || !ctx || !layout) return;
-    const rows = ['total', 'render', 'world', 'floorLayer', 'tileCache', 'entities', 'particles', 'ui', 'enemyTurn', 'save']
+    const rows = [
+      'total', 'render', 'world', 'worldFloor', 'floorLayer', 'tileCache',
+      'groundItems', 'telegraphs', 'entities', 'particles',
+      'ui', 'uiHud', 'uiControlsBg', 'uiMinimap', 'uiControls', 'uiOverlays',
+      'enemyTurn', 'save'
+    ]
       .filter((k) => this.ema[k] != null)
       .map((k) => `${k.padEnd(9)} ${this.ema[k].toFixed(1).padStart(5)} ms`);
     if (!rows.length) return;

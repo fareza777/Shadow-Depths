@@ -133,8 +133,8 @@ export class MobileControls {
     /** Optional per-frame context set by GameScene before render. */
     this._ctx = null;
     bus.on('scene:switched', ({ to }) => { this._currentScene = to; });
-    bus.on('tick', ({ time }) => {
-      if (this._pressedKey && time > this._pressedClearedAt) this._pressedKey = null;
+    bus.on('tick', () => {
+      if (this._pressedKey && performance.now() / 1000 > this._pressedClearedAt) this._pressedKey = null;
     });
   }
 
@@ -157,6 +157,15 @@ export class MobileControls {
   renderBackground(renderer) {
     if (this._currentScene !== 'game') return;
     const LAYOUT = buildLayout();
+    const key = [
+      'mobile-controls-bg',
+      Layout.canvasW, Layout.canvasH, Layout.hud, Layout.control,
+      LAYOUT.portrait ? 1 : 0
+    ].join('|');
+    if (typeof renderer.drawCachedScreenLayer === 'function') {
+      renderer.drawCachedScreenLayer(key, () => this._renderPanel(renderer, LAYOUT));
+      return;
+    }
     this._renderPanel(renderer, LAYOUT);
   }
 
@@ -227,9 +236,19 @@ export class MobileControls {
     return false;
   }
 
-  _flash(key, time) {
+  _flash(key, _time) {
     this._pressedKey = key;
-    this._pressedClearedAt = (time ?? performance.now() / 1000) + 0.12;
+    this._pressedClearedAt = performance.now() / 1000 + 0.12;
+  }
+
+  _isPressed(key) {
+    if (this._pressedKey !== key) return false;
+    const now = performance.now() / 1000;
+    if (now > this._pressedClearedAt) {
+      this._pressedKey = null;
+      return false;
+    }
+    return true;
   }
 
   // --- panel chrome ----------------------------------------------------
@@ -318,16 +337,25 @@ export class MobileControls {
     const padX = LAYOUT.dpadX - 10;
     const padY = LAYOUT.dpadY - 10;
     const padS = LAYOUT.dpadSize + 20;
-    this._drawDpadBackplate(ctx, padX, padY, padS, performance.now() / 1000);
-
-    // Iron lattice behind buttons.
-    drawIronLattice(ctx, LAYOUT.dpadX, LAYOUT.dpadY, LAYOUT.dpadSize);
+    const key = [
+      'mobile-dpad-base',
+      Layout.canvasW, Layout.canvasH,
+      padX, padY, padS, LAYOUT.dpadX, LAYOUT.dpadY, LAYOUT.dpadSize
+    ].join('|');
+    const paintBase = () => {
+      const bctx = r.ctx;
+      this._drawDpadBackplate(bctx, padX, padY, padS, 0);
+      // Iron lattice behind buttons.
+      drawIronLattice(bctx, LAYOUT.dpadX, LAYOUT.dpadY, LAYOUT.dpadSize);
+    };
+    if (typeof r.drawCachedScreenLayer === 'function') r.drawCachedScreenLayer(key, paintBase);
+    else paintBase();
 
     // Buttons.
     for (const b of DPAD_BUTTONS) {
       const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
-      const pressed = this._pressedKey === `dpad:${b.dir}`;
+      const pressed = this._isPressed(`dpad:${b.dir}`);
       if (b.dir === 'wait') {
         // Brass center jewel for WAIT.
         const cx = bx + LAYOUT.dpadBtn / 2;
@@ -448,7 +476,7 @@ export class MobileControls {
     const canDescend = !!this._ctx?.canDescend;
 
     for (const a of acts) {
-      const pressed = this._pressedKey === `act:${a.key}`;
+      const pressed = this._isPressed(`act:${a.key}`);
       const enabled = (a.key === 'aim') ? !!aimTarget
                     : (a.key === 'cast') ? castReady
                     : (a.key === 'descend') ? canDescend

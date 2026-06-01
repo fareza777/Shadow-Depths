@@ -34,8 +34,39 @@ export class HUD {
    */
   render(renderer, ctx) {
     const { player, floor, floorIndex, totalFloors, mode, suppressMessages } = ctx;
-    this._drawTopStrip(renderer, player, floor, floorIndex, totalFloors, mode);
+    const topKey = HUD._topStripCacheKey(player, floor, floorIndex, totalFloors, mode);
+    if (topKey && typeof renderer.drawCachedScreenRegion === 'function') {
+      renderer.drawCachedScreenRegion(topKey, { x: 0, y: 0, w: Layout.canvasW, h: Layout.hud }, () => {
+        this._drawTopStrip(renderer, player, floor, floorIndex, totalFloors, mode);
+      });
+    } else {
+      this._drawTopStrip(renderer, player, floor, floorIndex, totalFloors, mode);
+    }
     if (!suppressMessages) this._drawMessages(renderer);
+  }
+
+  static _topStripCacheKey(p, floor, floorIndex, totalFloors, mode) {
+    if (!p) return null;
+    const xpNeed = p.xpToNext();
+    const statParts = [
+      p.totalAtk(), p.totalDef(), Math.round(p.critChance() * 100),
+      p.weapon?.stats?.attackRange || 1,
+      p.rangedFocus ?? 0, p.rangedFocusMax ?? 0
+    ].join(',');
+    const statuses = (p.statusEffects || [])
+      .map((s) => `${s.id}:${s.value ?? ''}:${s.duration ?? ''}`).join(',');
+    const skills = (p.skills || []).join(',');
+    const def = floor?.definition || {};
+    return [
+      'hud-top',
+      Layout.canvasW, Layout.hud,
+      p.stats.hp, p.stats.hpMax,
+      p.xp, Number.isFinite(xpNeed) ? xpNeed : 'max',
+      p.level, p.gold, p.reviveCharges,
+      statParts, statuses, skills,
+      floorIndex, totalFloors, mode || '',
+      def.name || '', def.type || '', def.specialEnemyId || ''
+    ].join('|');
   }
 
   _drawTopStrip(r, p, floor, floorIndex, totalFloors, mode) {

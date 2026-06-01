@@ -75,7 +75,7 @@ export class Renderer {
     this._entitySortCache = null;
     this._backdropCache = null;
     this._floorLayerCache = null;
-    this._screenLayerCache = null;
+    this._screenLayerCaches = new Map();
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
@@ -120,7 +120,7 @@ export class Renderer {
     this._tileBaseCache = null;
     this._backdropCache = null;
     this._floorLayerCache = null;
-    this._screenLayerCache = null;
+    this._screenLayerCaches?.clear();
   }
 
   // --- camera ---------------------------------------------------------
@@ -148,6 +148,7 @@ export class Renderer {
   }
 
   get camera() { return this._camera; }
+  get leanCombatFx() { return this._leanCombatFx; }
 
   /**
    * Convert canvas pixel coord → world tile coord. Returns null if the
@@ -243,9 +244,8 @@ export class Renderer {
     }
     const w = Layout.canvasW;
     const h = Layout.canvasH;
-    if (!this._screenLayerCache || this._screenLayerCache.key !== key
-        || this._screenLayerCache.canvas.width !== w
-        || this._screenLayerCache.canvas.height !== h) {
+    let cache = this._screenLayerCaches.get(key);
+    if (!cache || cache.canvas.width !== w || cache.canvas.height !== h) {
       const canvas = (typeof document !== 'undefined')
         ? document.createElement('canvas')
         : new OffscreenCanvas(w, h);
@@ -261,9 +261,56 @@ export class Renderer {
       } finally {
         this.ctx = mainCtx;
       }
-      this._screenLayerCache = { key, canvas };
+      cache = { canvas };
+      this._screenLayerCaches.set(key, cache);
+      if (this._screenLayerCaches.size > 32) {
+        const firstKey = this._screenLayerCaches.keys().next().value;
+        this._screenLayerCaches.delete(firstKey);
+      }
     }
-    this.ctx.drawImage(this._screenLayerCache.canvas, 0, 0);
+    this._screenLayerCaches.delete(key);
+    this._screenLayerCaches.set(key, cache);
+    this.ctx.drawImage(cache.canvas, 0, 0);
+  }
+
+  drawCachedScreenRegion(key, rect, paint) {
+    if (!this._leanCombatFx || typeof paint !== 'function' || !rect) {
+      paint();
+      return;
+    }
+    const x = Math.floor(rect.x || 0);
+    const y = Math.floor(rect.y || 0);
+    const w = Math.max(1, Math.ceil(rect.w || 1));
+    const h = Math.max(1, Math.ceil(rect.h || 1));
+    const cacheKey = `${key}|region:${x},${y},${w},${h}`;
+    let cache = this._screenLayerCaches.get(cacheKey);
+    if (!cache || cache.canvas.width !== w || cache.canvas.height !== h) {
+      const canvas = (typeof document !== 'undefined')
+        ? document.createElement('canvas')
+        : new OffscreenCanvas(w, h);
+      canvas.width = w;
+      canvas.height = h;
+      const cctx = canvas.getContext('2d', { alpha: true });
+      cctx.setTransform(1, 0, 0, 1, 0, 0);
+      cctx.clearRect(0, 0, w, h);
+      cctx.translate(-x, -y);
+      const mainCtx = this.ctx;
+      this.ctx = cctx;
+      try {
+        paint();
+      } finally {
+        this.ctx = mainCtx;
+      }
+      cache = { canvas };
+      this._screenLayerCaches.set(cacheKey, cache);
+      if (this._screenLayerCaches.size > 32) {
+        const firstKey = this._screenLayerCaches.keys().next().value;
+        this._screenLayerCaches.delete(firstKey);
+      }
+    }
+    this._screenLayerCaches.delete(cacheKey);
+    this._screenLayerCaches.set(cacheKey, cache);
+    this.ctx.drawImage(cache.canvas, x, y);
   }
 
   // --- world primitives ----------------------------------------------
@@ -289,38 +336,52 @@ export class Renderer {
 
     if (this._leanCombatFx) {
       const def = floor.definition || {};
-      const timeBucket = Math.floor((this._timeSec || 0) * 4);
+      const sx = x0 * TILE_SIZE;
+      const sy = y0 * TILE_SIZE;
+      const width = (x1 - x0 + 1) * TILE_SIZE;
+      const height = (y1 - y0 + 1) * TILE_SIZE;
+      const paintPlayer = player
+        ? { x: player.x, y: player.y, renderX: player.x, renderY: player.y, torchRadius: player.torchRadius }
+        : null;
       const key = [
         floor.seed, floor.index, floor.renderRevision || 0,
-        vx, vy, vw, vh, cam.x, cam.y, x0, y0, x1, y1,
-        player?.x ?? '', player?.y ?? '', player?.torchRadius ?? '',
-        def.biomeId || '', def.type || '', timeBucket
+        x0, y0, x1, y1,
+        paintPlayer?.x ?? '', paintPlayer?.y ?? '', paintPlayer?.torchRadius ?? '',
+        def.biomeId || '', def.type || ''
       ].join('|');
       let cache = this._floorLayerCache;
       if (!cache || cache.floor !== floor || cache.key !== key
-          || cache.canvas.width !== vw || cache.canvas.height !== vh) {
+          || cache.canvas.width !== width || cache.canvas.height !== height) {
         const canvas = (typeof document !== 'undefined')
           ? document.createElement('canvas')
-          : new OffscreenCanvas(vw, vh);
-        canvas.width = vw;
-        canvas.height = vh;
+          : new OffscreenCanvas(width, height);
+        canvas.width = width;
+        canvas.height = height;
         const cctx = canvas.getContext('2d', { alpha: true });
         cctx.imageSmoothingEnabled = true;
-        cctx.translate(-vx, -vy);
+        cctx.translate(-sx, -sy);
         perfMeter.measure('floorLayer', () => {
-          this._paintFloorViewport(cctx, floor, player, x0, y0, x1, y1);
+          this._paintFloorWorldLayer(cctx, floor, paintPlayer, x0, y0, x1, y1, { skipHazards: true });
         });
-        cache = { floor, key, canvas };
+        cache = { floor, key, canvas, sx, sy };
         this._floorLayerCache = cache;
       }
-      ctx.drawImage(cache.canvas, vx, vy);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(vx, vy, vw, vh);
+      ctx.clip();
+      this._drawCachedViewportBackdrop(ctx, def);
+      ctx.translate(cam.x, cam.y);
+      ctx.drawImage(cache.canvas, cache.sx, cache.sy);
+      ctx.restore();
+      this._drawHazardsLive(ctx, floor, x0, y0, x1, y1);
       return;
     }
 
     this._paintFloorViewport(ctx, floor, player, x0, y0, x1, y1);
   }
 
-  _paintFloorViewport(ctx, floor, player, x0, y0, x1, y1) {
+  _paintFloorViewport(ctx, floor, player, x0, y0, x1, y1, opts = {}) {
     const cam = this._camera;
     ctx.save();
     // Clip to viewport rect so world pixels can never spill into HUD or
@@ -334,12 +395,16 @@ export class Renderer {
     ctx.clip();
     this._drawCachedViewportBackdrop(ctx, floor.definition || {});
     ctx.translate(cam.x, cam.y);
+    this._paintFloorWorldLayer(ctx, floor, player, x0, y0, x1, y1, opts);
+    ctx.restore();
+  }
 
+  _paintFloorWorldLayer(ctx, floor, player, x0, y0, x1, y1, opts = {}) {
     this._drawCachedTileBase(ctx, floor, x0, y0, x1, y1);
 
     // Revealed traps (drawn over floor, under entities/motif).
     this._drawDynamicStairs(ctx, floor, x0, y0, x1, y1);
-    this._drawHazards(ctx, floor, x0, y0, x1, y1);
+    if (!opts.skipHazards) this._drawHazards(ctx, floor, x0, y0, x1, y1);
     this._drawRoomDecor(ctx, floor, x0, y0, x1, y1);
     this._drawFloorInteracts(ctx, floor, x0, y0, x1, y1);
     this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
@@ -350,6 +415,16 @@ export class Renderer {
     if (player) {
       this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
     }
+  }
+
+  _drawHazardsLive(ctx, floor, x0, y0, x1, y1) {
+    const cam = this._camera;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
+    ctx.clip();
+    ctx.translate(cam.x, cam.y);
+    this._drawHazards(ctx, floor, x0, y0, x1, y1);
     ctx.restore();
   }
 
@@ -1494,6 +1569,10 @@ export class Renderer {
         const r = TILE_SIZE * 0.26;
         ctx.save();
         ctx.globalAlpha = hz.armed ? (t.visible ? 0.9 : 0.4) : 0.3;
+        if (this._leanCombatFx && this._drawCanvasTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed)) {
+          ctx.restore();
+          continue;
+        }
         if (drawVectorTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed ? 'armed' : 'sprung')) {
           ctx.restore();
           continue;
@@ -1536,6 +1615,132 @@ export class Renderer {
         ctx.restore();
       }
     }
+  }
+
+  _drawCanvasTrap(ctx, x, y, s, kind, armed) {
+    const u = s / 32;
+    const X = (v) => x + v * u;
+    const Y = (v) => y + v * u;
+    const path = (d, fill, stroke = '#08070c', lw = 0.6) => {
+      const p = new Path2D(d);
+      if (fill) { ctx.fillStyle = fill; ctx.fill(p); }
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lw * u;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.stroke(p);
+      }
+    };
+    const poly = (pts, fill, stroke = '#08070c', lw = 0.45) => {
+      ctx.beginPath();
+      pts.forEach(([px, py], i) => i ? ctx.lineTo(X(px), Y(py)) : ctx.moveTo(X(px), Y(py)));
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lw * u;
+        ctx.stroke();
+      }
+    };
+    const line = (x1, y1, x2, y2, col, lw = 0.8) => {
+      ctx.strokeStyle = col;
+      ctx.lineWidth = lw * u;
+      ctx.beginPath();
+      ctx.moveTo(X(x1), Y(y1));
+      ctx.lineTo(X(x2), Y(y2));
+      ctx.stroke();
+    };
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
+    ctx.shadowBlur = 2 * u;
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.beginPath();
+    ctx.ellipse(X(16), Y(29), 10.5 * u, 2.2 * u, 0, 0, Math.PI * 2);
+    ctx.fill();
+    path(`M${X(3)} ${Y(4)} L${X(29)} ${Y(4)} L${X(28)} ${Y(28)} L${X(4)} ${Y(28)} Z`, '#2a2630', '#08070c', 0.7);
+    poly([[3, 4], [29, 4], [27.4, 6], [4.6, 6]], '#585260', null);
+    path(`M${X(6)} ${Y(7)} L${X(26)} ${Y(7)} L${X(25)} ${Y(25)} L${X(7)} ${Y(25)} Z`, '#0a0810', '#08070c', 0.5);
+    if (kind === 'venom') {
+      path(`M${X(7)} ${Y(8)} L${X(25)} ${Y(8)} L${X(24)} ${Y(24)} L${X(8)} ${Y(24)} Z`, '#3a4438', '#08070c', 0.5);
+      ctx.fillStyle = '#5a6a52'; ctx.globalAlpha *= 0.7; ctx.fillRect(X(7.6), Y(9), 16.8 * u, 1.2 * u); ctx.globalAlpha /= 0.7;
+      for (const [hx, hy] of [[11, 12], [16, 12], [21, 12], [11, 16], [16, 16], [21, 16], [12, 20], [16, 20], [20, 20]]) {
+        ctx.fillStyle = '#0a140c';
+        ctx.beginPath(); ctx.arc(X(hx), Y(hy), 1.4 * u, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#08070c'; ctx.lineWidth = 0.3 * u; ctx.stroke();
+        ctx.fillStyle = armed ? '#0d1d0f' : '#1a2a1a';
+        ctx.beginPath(); ctx.arc(X(hx), Y(hy), 0.7 * u, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.fillStyle = '#5ac06a';
+      ctx.globalAlpha *= armed ? 0.32 : 0.22;
+      for (const [gx, gy, r] of armed ? [[16, 9, 2.2]] : [[12, 7, 2.4], [16, 6, 3], [20, 7, 2.4]]) {
+        ctx.beginPath(); ctx.ellipse(X(gx), Y(gy), r * u, (r * 0.8) * u, 0, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (kind === 'frost') {
+      const glyph = armed ? '#bcd6ff' : '#46566e';
+      ctx.strokeStyle = glyph;
+      ctx.lineWidth = 1 * u;
+      ctx.globalAlpha *= armed ? 0.9 : 0.5;
+      ctx.beginPath(); ctx.arc(X(16), Y(16), 7.5 * u, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 0.6 * u;
+      ctx.beginPath(); ctx.arc(X(16), Y(16), 4.6 * u, 0, Math.PI * 2); ctx.stroke();
+      [[0, 60], [0, 120], [0, 0]].forEach((_, i) => {
+        const deg = [0, 60, 120][i] * Math.PI / 180;
+        const dx = Math.cos(deg) * 4.4;
+        const dy = Math.sin(deg) * 4.4;
+        line(16 - dx, 16 - dy, 16 + dx, 16 + dy, glyph, 0.8);
+      });
+      for (const [cx, cy] of [[16, 7.5], [24, 16], [16, 24.5], [8, 16]]) {
+        poly([[cx, cy - 1.4], [cx + 1.1, cy], [cx, cy + 1.4], [cx - 1.1, cy]], armed ? '#bcd6ff' : '#6f93c8', '#08070c', 0.3);
+      }
+    } else if (kind === 'flame') {
+      ctx.fillStyle = '#1a0e08';
+      ctx.globalAlpha *= 0.7;
+      ctx.beginPath(); ctx.arc(X(16), Y(18), 7.5 * u, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha /= 0.7;
+      poly([[12.5, 19], [19.5, 19], [18.5, 23], [13.5, 23]], '#3a3138', '#08070c', 0.5);
+      ctx.fillStyle = '#0a0604';
+      ctx.beginPath(); ctx.ellipse(X(16), Y(18), 3.4 * u, 1.1 * u, 0, 0, Math.PI * 2); ctx.fill();
+      if (armed) {
+        poly([[16, 14], [14, 17], [15, 19], [16, 17.5], [16, 19.5], [17, 19], [18, 17]], '#ff8844', null);
+      } else {
+        poly([[16, 2], [11, 9], [13, 15], [9, 12], [11.5, 18], [16, 8], [20.5, 18], [23, 12], [19, 15], [21, 9]], '#ff8844', null);
+        poly([[16, 7], [13.5, 12], [14.5, 16], [16, 13], [17.5, 16], [18.5, 12]], '#ffd86a', null);
+      }
+    } else {
+      const cols = [10.5, 16, 21.5];
+      const rows = armed ? [13, 17.5, 22] : [11, 16.5, 22];
+      rows.forEach((cy, ri) => cols.forEach((cx, ci) => {
+        const h = armed ? 3.2 : 5.5;
+        const ox = cx + (ci - 1) * (ri - 1) * 0.4;
+        poly([[ox, cy - h], [ox + 2, cy], [ox, cy + 1.2], [ox - 2, cy]], '#8f949c', '#08070c', 0.4);
+        poly([[ox, cy - h], [ox - 2, cy], [ox, cy]], '#d7d9df', null);
+      }));
+      for (const [rx, ry] of [[7.2, 8], [24.8, 8], [7.6, 24], [24.4, 24]]) {
+        ctx.fillStyle = '#8f949c'; ctx.beginPath(); ctx.arc(X(rx), Y(ry), 0.9 * u, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    if (armed) this._drawCanvasTrapWarning(ctx, X, Y, HAZARDS[kind]?.color || '#cdd5dd', u);
+    ctx.restore();
+    return true;
+  }
+
+  _drawCanvasTrapWarning(ctx, X, Y, col, u) {
+    ctx.save();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 0.7 * u;
+    ctx.globalAlpha *= 0.46;
+    ctx.setLineDash([2 * u, 2.4 * u]);
+    ctx.beginPath();
+    ctx.moveTo(X(16), Y(2));
+    ctx.lineTo(X(24), Y(16));
+    ctx.lineTo(X(16), Y(30));
+    ctx.lineTo(X(8), Y(16));
+    ctx.closePath();
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
   }
 
   /** Champion/elite marker — a pulsing coloured ring under the sprite. */

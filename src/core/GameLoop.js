@@ -11,7 +11,6 @@
  * Anything that needs per-frame work subscribes to 'tick' on the bus.
  */
 import { LOG } from '../config/constants.js';
-import { prefersLeanCombatFx } from '../config/layoutMetrics.js';
 import { perfMeter } from '../debug/PerfMeter.js';
 
 export class GameLoop {
@@ -35,20 +34,12 @@ export class GameLoop {
     this._accumDt = 0;
     this._maxDt = 1 / 15; // clamp to avoid huge jumps after tab-switch
 
-    // Adaptive frame pacing. Budget phones (e.g. Snapdragon 680 / Adreno 610)
-    // can't hold 60fps redrawing the whole world; an inconsistent 40-55fps
-    // reads as "stutter". We measure an EMA of per-frame work and, when it
-    // runs hot, cap the loop to a *steady* 30fps (smoother than a ragged 60),
-    // lifting back to 60 when the device proves it can keep up.
+    // Adaptive frame pacing. Prefer 60fps for touch feel; fall back to a
+    // steady 30fps only while measured frame work is genuinely too high.
     this._lastWorkTs = 0;
     this._frameEma = 16;          // ms, exponential moving average of work
-    this._preferSteady30 = GameLoop._preferSteady30();
-    this._targetMs = this._preferSteady30 ? 1000 / 30 : 1000 / 60;
+    this._targetMs = 1000 / 60;
     this._loop = this._loop.bind(this);
-  }
-
-  static _preferSteady30() {
-    return prefersLeanCombatFx();
   }
 
   start() {
@@ -110,13 +101,13 @@ export class GameLoop {
     // Adapt the target frame rate from measured work (with hysteresis so it
     // doesn't flap around the threshold). _preferSteady30 only sets the
     // conservative *starting* target; once the device proves it can keep up
-    // (sustained work < 12ms) we lift to 60, and drop back to 30 if it runs
+    // (sustained work < 13ms) we lift to 60, and drop back to 30 if it runs
     // hot (> 18ms). The band in between holds the current rate steady.
     const work = performance.now() - workStart;
     perfMeter.endFrame(work);
     this._frameEma += (work - this._frameEma) * 0.1;
     if (this._frameEma > 18) this._targetMs = 1000 / 30;
-    else if (this._frameEma < 12) this._targetMs = 1000 / 60;
+    else if (this._frameEma < 13) this._targetMs = 1000 / 60;
 
     this._rafId = requestAnimationFrame(this._loop);
   }
