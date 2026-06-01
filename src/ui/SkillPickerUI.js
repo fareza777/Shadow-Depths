@@ -122,10 +122,23 @@ export class SkillPickerUI {
       this.hide();
       return;
     }
-    // Pick 3 (or fewer if availability < 3).
-    const shuffled = this.rng.shuffle(available);
-    this.choices = shuffled.slice(0, Math.min(3, shuffled.length));
+    // Draw 3 distinct, weighted by rarity so rare/epic boons feel earned.
+    this.choices = this._weightedDraw(available, 3);
     this.open = true;
+  }
+
+  /** Pick `n` distinct skills weighted by rarity (rarer → less frequent). */
+  _weightedDraw(pool, n) {
+    const RW = { common: 100, uncommon: 42, rare: 16, epic: 6 };
+    const bag = pool.map((s) => ({ value: s, weight: RW[s.rarity] ?? 50 }));
+    const out = [];
+    for (let i = 0; i < n && bag.length > 0; i++) {
+      const pick = this.rng.weightedPick(bag);
+      out.push(pick);
+      const idx = bag.findIndex((b) => b.value === pick);
+      if (idx >= 0) bag.splice(idx, 1);
+    }
+    return out;
   }
 
   _pick(skill) {
@@ -170,14 +183,17 @@ export class SkillPickerUI {
       const accent = rarityColor(skill.rarity);
       renderer.drawRect(cx, cy, CARD_W, CARD_H, '#16141c');
       renderer.drawStrokedRect(cx, cy, CARD_W, CARD_H, accent, 2);
-      renderer.drawText(skill.name, cx + 14, cy + 14,
+      // Rarity-tinted icon plate on the left, then text shifted past it.
+      drawSkillIcon(renderer, cx + 12, cy + 18, 40, skill, accent);
+      const tx = cx + 64;
+      renderer.drawText(skill.name, tx, cy + 14,
         { size: 16, bold: true, color: accent });
-      renderer.drawText(skill.description, cx + 14, cy + 38,
+      renderer.drawText(skill.description, tx, cy + 38,
         { size: 12, color: COLOR.textPrimary });
       renderer.drawText(skill.rarity, cx + CARD_W - 14, cy + 14,
         { size: 10, align: 'right', color: COLOR.textMuted });
       // Tap hint
-      renderer.drawText(`tap to choose  ·  hotkey ${i + 1}`, cx + 14, cy + 56,
+      renderer.drawText(`tap to choose  ·  hotkey ${i + 1}`, tx, cy + 56,
         { size: 10, color: COLOR.textMuted });
     }
   }
@@ -189,5 +205,49 @@ function rarityColor(r) {
     case 'uncommon':return '#5ac06a';
     case 'epic':    return '#b070d8';
     default:        return '#c0c0c8';
+  }
+}
+
+/** Which of the four glyphs a skill shows — primary tag, else infer. */
+function iconCategory(skill) {
+  const t = (skill.tags || [])[0];
+  if (t === 'fury' || t === 'ward' || t === 'hunt' || t === 'arcane') return t;
+  const e = skill.effect || {};
+  if (e.atk || e.crit || e.lifesteal) return 'fury';
+  if (e.def || e.dr || e.hpMax) return 'ward';
+  if (e.magic || e.spellCDR || e.spellLifesteal || e.xp) return 'arcane';
+  if (e.dex || e.range || e.torch || e.invSlots || e.regenEveryN) return 'hunt';
+  const id = skill.id || '';
+  if (/torch|eager|satchel/.test(id)) return 'hunt';
+  return 'ward';
+}
+
+/**
+ * Draw a small rarity-tinted glyph (sword / shield / arrow / tome) for a skill
+ * card. Built from the renderer's rect primitive so it needs no sprite atlas.
+ */
+function drawSkillIcon(r, x, y, s, skill, accent) {
+  r.drawRect(x, y, s, s, '#0e0c14');
+  r.drawStrokedRect(x, y, s, s, '#2a2630', 1);
+  const p = (a, b, w, h, col) => r.drawRect(x + a, y + b, w, h, col);
+  const steel = '#cfc2d8';
+  switch (iconCategory(skill)) {
+    case 'fury': // upright sword
+      p(18, 4, 4, 20, steel); p(19, 2, 2, 2, '#ffffff');
+      p(12, 24, 16, 3, accent); p(18, 27, 4, 7, '#6a5a3a'); p(17, 33, 6, 3, accent);
+      break;
+    case 'ward': // shield
+      p(10, 6, 20, 16, accent); p(13, 9, 14, 9, '#0e0c14');
+      p(16, 22, 8, 5, accent); p(18, 27, 4, 3, accent); p(18, 12, 4, 4, accent);
+      break;
+    case 'hunt': // arrow up-right
+      p(8, 30, 4, 4, accent); p(12, 26, 4, 4, accent); p(16, 22, 4, 4, accent);
+      p(20, 18, 4, 4, accent); p(24, 14, 4, 4, accent);
+      p(28, 8, 6, 6, accent); p(26, 11, 3, 3, accent); p(6, 30, 4, 4, '#7a6e54');
+      break;
+    default: // arcane → tome
+      p(9, 8, 22, 22, accent); p(11, 10, 18, 18, '#e8e0d0'); p(19, 8, 2, 22, '#0e0c14');
+      p(14, 15, 3, 3, accent); p(22, 15, 3, 3, accent); p(15, 22, 9, 2, accent);
+      break;
   }
 }
