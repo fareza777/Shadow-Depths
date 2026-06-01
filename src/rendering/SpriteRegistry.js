@@ -25,6 +25,12 @@ import { drawVectorEnemy, preloadVectorEnemies } from './enemySpritesVector.jsx'
 import { drawDetailedItemSprite } from './itemSpritesDetailed.js';
 import { drawVectorItem, preloadItemArt, hasItemArt } from './itemArtVector.jsx';
 import { drawVectorHero, preloadHeroArt } from './heroArtVector.jsx';
+import { preloadTrapArt } from './dungeonTrapsVector.jsx';
+import { preloadChestArt } from './dungeonChestsVector.jsx';
+import { preloadDecorXArt } from './dungeonDecorExtVector.jsx';
+import { preloadFurnishingArt } from './furnishingArtVector.jsx';
+import { preloadMaterialArt } from './forgeMaterialsVector.jsx';
+import { preloadStairArt } from './dungeonStairsVector.jsx';
 import { HERO_ORDER, drawHeroSprite, drawHeroEquipment } from './heroSprites.js';
 import { paintWeaponAffix } from './weaponComposer.js';
 
@@ -305,6 +311,12 @@ export class SpriteRegistry {
     preloadVectorEnemies();
     preloadItemArt();
     preloadHeroArt();
+    preloadTrapArt();
+    preloadChestArt();
+    preloadDecorXArt();
+    preloadFurnishingArt();
+    preloadMaterialArt();
+    preloadStairArt();
   }
 
   /**

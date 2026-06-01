@@ -1319,20 +1319,41 @@ export class Renderer {
           ctx.restore();
           continue;
         }
-        ctx.strokeStyle = col;
-        ctx.lineWidth = 1.5;
-        // diamond warning frame
-        ctx.beginPath();
-        ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy);
-        ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
-        ctx.closePath();
-        ctx.stroke();
-        // inner X (spike/cross)
-        const i = r * 0.5;
-        ctx.beginPath();
-        ctx.moveTo(cx - i, cy - i); ctx.lineTo(cx + i, cy + i);
-        ctx.moveTo(cx + i, cy - i); ctx.lineTo(cx - i, cy + i);
-        ctx.stroke();
+        ctx.fillStyle = '#16121a';
+        ctx.strokeStyle = '#5b5161';
+        ctx.lineWidth = 1;
+        ctx.fillRect(tx + 8, ty + 10, TILE_SIZE - 16, TILE_SIZE - 18);
+        ctx.strokeRect(tx + 8.5, ty + 10.5, TILE_SIZE - 17, TILE_SIZE - 19);
+        ctx.fillStyle = col;
+        if (hz.type === 'spike') {
+          for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo(cx + i * 8, ty + 12);
+            ctx.lineTo(cx + i * 8 + 4, ty + 23);
+            ctx.lineTo(cx + i * 8 - 4, ty + 23);
+            ctx.closePath();
+            ctx.fill();
+          }
+        } else if (hz.type === 'venom') {
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(cx - 8, cy + 5, 16, 2);
+        } else if (hz.type === 'flame') {
+          ctx.beginPath();
+          ctx.moveTo(cx, ty + 13);
+          ctx.quadraticCurveTo(cx + 8, cy, cx, ty + 28);
+          ctx.quadraticCurveTo(cx - 8, cy, cx, ty + 13);
+          ctx.fill();
+        } else {
+          ctx.strokeStyle = col;
+          ctx.beginPath();
+          ctx.moveTo(cx - 9, cy); ctx.lineTo(cx + 9, cy);
+          ctx.moveTo(cx, cy - 9); ctx.lineTo(cx, cy + 9);
+          ctx.moveTo(cx - 6, cy - 6); ctx.lineTo(cx + 6, cy + 6);
+          ctx.moveTo(cx + 6, cy - 6); ctx.lineTo(cx - 6, cy + 6);
+          ctx.stroke();
+        }
         ctx.restore();
       }
     }

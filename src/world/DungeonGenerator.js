@@ -237,17 +237,20 @@ export class DungeonGenerator {
       'brazier', 'bone_pile', 'broken_pillar', 'supply_crate',
       'candelabra', 'mushroom_cluster'
     ];
-    const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(12, 18);
-    const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(5, 9);
+    const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(18, 26);
+    const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(7, 11);
     const decorCaps = {
       weapon_rack: 1,
       hanging_cage: 1,
       shelf: 2,
       alcove_urn: 2,
-      moss_vines: 3,
+      moss_vines: 4,
+      brazier: 3,
+      bone_pile: 3,
+      broken_pillar: 2,
       supply_crate: 2,
       candelabra: 2,
-      mushroom_cluster: 2
+      mushroom_cluster: 3
     };
 
     const wallCandidates = [];
@@ -300,6 +303,27 @@ export class DungeonGenerator {
       const allowed = weighted.filter((entry) => canPlaceKind(entry.value));
       return this.rng.weightedPick(allowed.length ? allowed : weighted);
     };
+    const placedDecor = [];
+    const minSpacingFor = (kind, wall, relaxed) => {
+      let min = 3;
+      if (kind === 'wall_torch' || kind === 'cobweb' || kind === 'rune_crack') min = 2;
+      else if (kind === 'wall_chains' || kind === 'moss_vines' || kind === 'banner') min = 3;
+      else min = wall ? 5 : 4;
+      return relaxed ? Math.max(2, min - 2) : min;
+    };
+    const tidyEnough = (tile, kind, wall, relaxed = false) => {
+      const min = minSpacingFor(kind, wall, relaxed);
+      for (const d of placedDecor) {
+        const dist = Math.abs(tile.x - d.x) + Math.abs(tile.y - d.y);
+        if (dist < min) return false;
+        if (d.kind === kind && dist < min + (relaxed ? 1 : 3)) return false;
+      }
+      return true;
+    };
+    const recordPlacedDecor = (tile, kind) => {
+      notePlacedKind(kind);
+      placedDecor.push({ x: tile.x, y: tile.y, kind });
+    };
 
     if (floorDef.tutorial && spawnRoom) {
       // The tutorial gets a hand-placed, symmetric set only — no random
@@ -341,24 +365,26 @@ export class DungeonGenerator {
     }
 
     let placed = 0;
-    for (const tile of this.rng.shuffle(wallCandidates).slice(0, wallCount)) {
-      const kind = pickCapped(wallKinds);
-      if (kind && canPlaceKind(kind) && put(tile, kind, true)) {
-        notePlacedKind(kind);
-        placed++;
+    const placeDecor = (candidates, target, wall, relaxed = false) => {
+      for (const tile of this.rng.shuffle(candidates)) {
+        const allowedFloorKinds = wall ? null : floorKinds.filter((entry) => canPlaceKind(entry));
+        const kind = wall
+          ? pickCapped(wallKinds)
+          : this.rng.pick(allowedFloorKinds.length ? allowedFloorKinds : floorKinds);
+        if (kind && canPlaceKind(kind) && tidyEnough(tile, kind, wall, relaxed) && put(tile, kind, wall)) {
+          recordPlacedDecor(tile, kind);
+          placed++;
+        }
+        if (placed >= target) break;
       }
-      if (placed >= wallCount) break;
-    }
+    };
+
+    placeDecor(wallCandidates, wallCount, true);
+    if (placed < Math.floor(wallCount * 0.75)) placeDecor(wallCandidates, wallCount, true, true);
+
     placed = 0;
-    for (const tile of this.rng.shuffle(floorCandidates).slice(0, floorCount)) {
-      const allowed = floorKinds.filter((kind) => canPlaceKind(kind));
-      const kind = this.rng.pick(allowed.length ? allowed : floorKinds);
-      if (kind && canPlaceKind(kind) && put(tile, kind, false)) {
-        notePlacedKind(kind);
-        placed++;
-      }
-      if (placed >= floorCount) break;
-    }
+    placeDecor(floorCandidates, floorCount, false);
+    if (placed < Math.floor(floorCount * 0.75)) placeDecor(floorCandidates, floorCount, false, true);
   }
 
   // --- BSP partitioning ----------------------------------------------
