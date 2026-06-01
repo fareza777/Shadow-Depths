@@ -177,6 +177,13 @@ export class SkillPickerUI {
       { size: 13, align: 'center', color: COLOR.textMuted });
 
     const cx = (CANVAS_WIDTH - CARD_W) / 2;
+    // Count synergy tags the player already owns, so each card can show how
+    // close this pick brings them to the next fury/ward/hunt/arcane tier.
+    const defsById = skillsById((this.content.skills && this.content.skills.skills) || []);
+    const owned = {};
+    for (const sid of this.player?.skills || []) {
+      for (const tag of defsById[sid]?.tags || []) owned[tag] = (owned[tag] || 0) + 1;
+    }
     for (let i = 0; i < this.choices.length; i++) {
       const skill = this.choices[i];
       const cy = FIRST_CARD_Y + i * (CARD_H + CARD_GAP);
@@ -192,12 +199,28 @@ export class SkillPickerUI {
         { size: 12, color: COLOR.textPrimary });
       renderer.drawText(skill.rarity, cx + CARD_W - 14, cy + 14,
         { size: 10, align: 'right', color: COLOR.textMuted });
+      // Synergy progress chips (right side): TAG owned→next, ★ when this pick
+      // reaches a synergy tier (2 or 4 of a tag).
+      const tags = (skill.tags || []).filter((tg) => TAG_LABELS[tg]);
+      let chipY = cy + 34;
+      for (const tg of tags.slice(0, 2)) {
+        const n = owned[tg] || 0;
+        const next = n + 1;
+        const tier = next === 2 || next === 4;
+        renderer.drawText(`${TAG_LABELS[tg]} ${n}→${next}${tier ? ' ★' : ''}`,
+          cx + CARD_W - 14, chipY,
+          { size: 9, align: 'right', color: tier ? TAG_COLORS[tg] : '#8a8494' });
+        chipY += 13;
+      }
       // Tap hint
       renderer.drawText(`tap to choose  ·  hotkey ${i + 1}`, tx, cy + 56,
         { size: 10, color: COLOR.textMuted });
     }
   }
 }
+
+const TAG_LABELS = { fury: 'FURY', ward: 'WARD', hunt: 'HUNT', arcane: 'ARCANE' };
+const TAG_COLORS = { fury: '#ff7a5a', ward: '#6fb6ff', hunt: '#6ee08a', arcane: '#c08aff' };
 
 function rarityColor(r) {
   switch (r) {
