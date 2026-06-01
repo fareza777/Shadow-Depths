@@ -836,16 +836,21 @@ export class Renderer {
   }
 
   _drawRoomDecor(ctx, floor, x0, y0, x1, y1) {
+    let drawn = 0;
+    const maxLeanDecor = 14;
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const tile = floor.tiles[y][x];
         const decor = tile?.decor;
         if (!decor || !tile.explored || decor.kind === 'gargoyle') continue;
+        if (this._leanCombatFx && !tile.visible) continue;
+        if (this._leanCombatFx && drawn >= maxLeanDecor) return;
         ctx.save();
         ctx.globalAlpha = tile.visible ? 0.95 : 0.38;
         this._drawDecorSprite(ctx, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2,
           TILE_SIZE, decor.kind, this._timeSec || 0, floor.definition || {});
         ctx.restore();
+        drawn++;
       }
     }
   }

@@ -226,19 +226,29 @@ export class DungeonGenerator {
       { value: 'wall_chains', weight: 4 },
       { value: 'rune_crack', weight: 4 },
       { value: 'cobweb', weight: 4 },
-      { value: 'weapon_rack', weight: 3 },
-      { value: 'alcove_urn', weight: 3 },
-      { value: 'hanging_cage', weight: 2 },
-      { value: 'shelf', weight: 3 },
-      { value: 'moss_vines', weight: 3 },
+      { value: 'weapon_rack', weight: 1 },
+      { value: 'alcove_urn', weight: 2 },
+      { value: 'hanging_cage', weight: 1 },
+      { value: 'shelf', weight: 2 },
+      { value: 'moss_vines', weight: 2 },
       { value: 'banner', weight: 1 }
     ];
     const floorKinds = [
       'brazier', 'bone_pile', 'broken_pillar', 'supply_crate',
       'candelabra', 'mushroom_cluster'
     ];
-    const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(20, 30);
-    const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(8, 14);
+    const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(12, 18);
+    const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(5, 9);
+    const decorCaps = {
+      weapon_rack: 1,
+      hanging_cage: 1,
+      shelf: 2,
+      alcove_urn: 2,
+      moss_vines: 3,
+      supply_crate: 2,
+      candelabra: 2,
+      mushroom_cluster: 2
+    };
 
     const wallCandidates = [];
     const floorCandidates = [];
@@ -277,6 +287,18 @@ export class DungeonGenerator {
       if (!tile || tile.decor || tile.interact) return false;
       tile.decor = { kind, wall };
       return true;
+    };
+    const placedKinds = {};
+    const canPlaceKind = (kind) => {
+      const cap = decorCaps[kind] ?? Infinity;
+      return (placedKinds[kind] || 0) < cap;
+    };
+    const notePlacedKind = (kind) => {
+      placedKinds[kind] = (placedKinds[kind] || 0) + 1;
+    };
+    const pickCapped = (weighted) => {
+      const allowed = weighted.filter((entry) => canPlaceKind(entry.value));
+      return this.rng.weightedPick(allowed.length ? allowed : weighted);
     };
 
     if (floorDef.tutorial && spawnRoom) {
@@ -320,12 +342,21 @@ export class DungeonGenerator {
 
     let placed = 0;
     for (const tile of this.rng.shuffle(wallCandidates).slice(0, wallCount)) {
-      if (put(tile, this.rng.weightedPick(wallKinds), true)) placed++;
+      const kind = pickCapped(wallKinds);
+      if (kind && canPlaceKind(kind) && put(tile, kind, true)) {
+        notePlacedKind(kind);
+        placed++;
+      }
       if (placed >= wallCount) break;
     }
     placed = 0;
     for (const tile of this.rng.shuffle(floorCandidates).slice(0, floorCount)) {
-      if (put(tile, this.rng.pick(floorKinds), false)) placed++;
+      const allowed = floorKinds.filter((kind) => canPlaceKind(kind));
+      const kind = this.rng.pick(allowed.length ? allowed : floorKinds);
+      if (kind && canPlaceKind(kind) && put(tile, kind, false)) {
+        notePlacedKind(kind);
+        placed++;
+      }
       if (placed >= floorCount) break;
     }
   }
