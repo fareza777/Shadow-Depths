@@ -263,10 +263,10 @@ const DECOR_X_META = {
   mushroom_cluster: { name:'Cave Mushrooms', note:'glowing fungi · biome-tinted' },
 };
 
-const DECOR_X_ORDER = ['weapon_rack','alcove_urn','hanging_cage','shelf','moss_vines','supply_crate','candelabra','mushroom_cluster'];
+const DECOR_X_ORDER = ['shelf','moss_vines','supply_crate','candelabra','mushroom_cluster'];
 
-function DecorX({ kind='weapon_rack', biome, size=104, animate=true, style }) {
-  const fn = DECOR_X[kind] || DECOR_X.weapon_rack;
+function DecorX({ kind='shelf', biome, size=104, animate=true, style }) {
+  const fn = DECOR_X[kind] || DECOR_X.shelf;
   const b = biome || (window.BIOMES_F ? window.BIOMES_F[0] : { stone:['#4a4452','#211d27'], cap:'#9a8c98', ambient:'#4a7eb8', torch:'#b8935a' });
   return (
     <div style={{ display:'inline-block', lineHeight:0, ...(style||{}) }}>
@@ -307,8 +307,8 @@ function biomeFromDef(def = {}) {
 const DECOR_X_OVERSCAN = 0.1;
 const decorXKey = (kind, def = {}) => `decorx:${kind}:${def.biomeId || 'default'}:${(def.wallPalette || []).join(',')}`;
 
-export function decorXSVG(kind = 'weapon_rack', def = {}, px = 256) {
-  const fn = DECOR_X[kind] || DECOR_X.weapon_rack;
+export function decorXSVG(kind = 'shelf', def = {}, px = 256) {
+  const fn = DECOR_X[kind] || DECOR_X.shelf;
   const b = biomeFromDef(def);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-3 -3 38 38" width="${px}" height="${px}" style="overflow:visible">`
     + fn(b, false)

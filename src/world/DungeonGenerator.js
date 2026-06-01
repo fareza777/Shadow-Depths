@@ -226,9 +226,6 @@ export class DungeonGenerator {
       { value: 'wall_chains', weight: 4 },
       { value: 'rune_crack', weight: 4 },
       { value: 'cobweb', weight: 4 },
-      { value: 'weapon_rack', weight: 1 },
-      { value: 'alcove_urn', weight: 2 },
-      { value: 'hanging_cage', weight: 1 },
       { value: 'shelf', weight: 2 },
       { value: 'moss_vines', weight: 2 },
       { value: 'banner', weight: 1 }
@@ -240,10 +237,7 @@ export class DungeonGenerator {
     const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(18, 26);
     const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(7, 11);
     const decorCaps = {
-      weapon_rack: 1,
-      hanging_cage: 1,
       shelf: 2,
-      alcove_urn: 2,
       moss_vines: 4,
       brazier: 3,
       bone_pile: 3,

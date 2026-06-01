@@ -36,6 +36,8 @@ import { drawVectorChest } from './dungeonChestsVector.jsx';
 import { drawVectorStairsDown } from './dungeonStairsVector.jsx';
 import { drawVectorDecorX } from './dungeonDecorExtVector.jsx';
 
+const REMOVED_ROOM_DECOR = new Set(['weapon_rack', 'alcove_urn', 'hanging_cage']);
+
 export class Renderer {
   /**
    * @param {{
@@ -843,6 +845,7 @@ export class Renderer {
         const tile = floor.tiles[y][x];
         const decor = tile?.decor;
         if (!decor || !tile.explored || decor.kind === 'gargoyle') continue;
+        if (REMOVED_ROOM_DECOR.has(decor.kind)) continue;
         if (this._leanCombatFx && !tile.visible) continue;
         if (this._leanCombatFx && drawn >= maxLeanDecor) return;
         ctx.save();

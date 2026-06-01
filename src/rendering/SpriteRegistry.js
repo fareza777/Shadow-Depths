@@ -29,7 +29,7 @@ import { preloadTrapArt } from './dungeonTrapsVector.jsx';
 import { preloadChestArt } from './dungeonChestsVector.jsx';
 import { preloadDecorXArt } from './dungeonDecorExtVector.jsx';
 import { preloadFurnishingArt } from './furnishingArtVector.jsx';
-import { preloadMaterialArt } from './forgeMaterialsVector.jsx';
+import { drawVectorMaterial, preloadMaterialArt } from './forgeMaterialsVector.jsx';
 import { preloadStairArt } from './dungeonStairsVector.jsx';
 import { HERO_ORDER, drawHeroSprite, drawHeroEquipment } from './heroSprites.js';
 import { paintWeaponAffix } from './weaponComposer.js';
@@ -346,6 +346,10 @@ export class SpriteRegistry {
       if (drawDetailedEnemySprite(ctx, x, y, size, key)) {
         return;
       }
+    }
+
+    if (key.startsWith('material_') && drawVectorMaterial(ctx, x, y, size, key.slice(9))) {
+      return;
     }
 
     // Item art: prefer the composable vector engine (matches the item-armory
