@@ -47,7 +47,7 @@ export class Tile {
   isWalkable() {
     // A solid interactable (merchant stall, shrine idol) occupies the tile —
     // it's a structure you use from an adjacent tile, never stand on.
-    if (this.interact?.solid) return false;
+    if (this.interact?.solid && !this.interact.used) return false;
     return this.type === TILE.FLOOR
         || this.type === TILE.DOOR
         || this.type === TILE.STAIRS_DOWN

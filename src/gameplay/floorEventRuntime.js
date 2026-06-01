@@ -256,6 +256,7 @@ export function markInteractUsed(floor, x, y) {
   const t = floor.tileAt(x, y);
   if (!t?.interact) return;
   t.interact.used = true;
+  floor.touchRender?.();
   const key = interactKey(x, y);
   const list = floor.microEvents?.length ? floor.microEvents : (floor.microEvent ? [floor.microEvent] : []);
   const evt = list.find((e) => e.interactPos?.x === x && e.interactPos?.y === y) || list[0];
