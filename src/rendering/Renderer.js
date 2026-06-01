@@ -35,6 +35,7 @@ import { drawVectorTrap } from './dungeonTrapsVector.jsx';
 import { drawVectorChest } from './dungeonChestsVector.jsx';
 import { drawVectorStairsDown } from './dungeonStairsVector.jsx';
 import { drawVectorDecorX } from './dungeonDecorExtVector.jsx';
+import { perfMeter } from '../debug/PerfMeter.js';
 
 const REMOVED_ROOM_DECOR = new Set(['weapon_rack', 'alcove_urn', 'hanging_cage']);
 
@@ -181,9 +182,11 @@ export class Renderer {
     this._lastTime = now;
     this._timeSec = now / 1000;
 
-    this.cameraShake.update(dt);
-    this.particles.update(dt);
-    this._attackFlashes = this._attackFlashes.filter((f) => now - f.startedAt < f.duration);
+    perfMeter.measure('fxUpdate', () => {
+      this.cameraShake.update(dt);
+      this.particles.update(dt);
+      this._attackFlashes = this._attackFlashes.filter((f) => now - f.startedAt < f.duration);
+    });
     const shake = this.cameraShake.offset();
 
     // Establish the HiDPI base transform for this frame: everything below
@@ -200,22 +203,23 @@ export class Renderer {
     // World pass — camera shake applies only to dungeon tiles / entities.
     ctx.save();
     ctx.translate(shake.x, shake.y);
-    sceneManager.render(this);
+    perfMeter.measure('world', () => sceneManager.render(this));
     ctx.save();
     ctx.beginPath();
     ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
     ctx.clip();
-    this.particles.render(ctx, this._camera);
+    perfMeter.measure('particles', () => this.particles.render(ctx, this._camera));
     ctx.restore();
     ctx.restore();
 
     // UI pass — fixed screen space (HUD + D-pad never shaken or clipped).
     this.beginScreenSpace();
-    sceneManager.renderUI(this);
+    perfMeter.measure('ui', () => sceneManager.renderUI(this));
     // Top-most overlay (achievement toasts) — sits above every scene UI.
     if (typeof this.overlayRender === 'function') {
       try { this.overlayRender(this); } catch (err) { console.warn('[overlayRender]', err); }
     }
+    perfMeter.render(this.ctx, Layout);
     this.endScreenSpace();
   }
 
@@ -331,7 +335,7 @@ export class Renderer {
       const cctx = canvas.getContext('2d', { alpha: true });
       cctx.imageSmoothingEnabled = true;
       cctx.translate(-sx, -sy);
-      this._paintTileBase(cctx, floor, x0, y0, x1, y1);
+      perfMeter.measure('tileCache', () => this._paintTileBase(cctx, floor, x0, y0, x1, y1));
       cache = { floor, key, canvas };
       this._tileBaseCache = cache;
     }
@@ -691,7 +695,8 @@ export class Renderer {
     ctx.translate(cam.x, cam.y);
 
     const list = this._sortedEntities(floor);
-    this._drawAttackFlashes(ctx, cam);
+    perfMeter.measure('attackFx', () => this._drawAttackFlashes(ctx, cam));
+    perfMeter.measure('entities', () => {
     for (const e of list) {
       if (e.isDead) continue;
       const t = floor.tileAt(e.x, e.y);
@@ -727,6 +732,7 @@ export class Renderer {
         if (intent) this._drawIntentIcon(ctx, intent, px, py);
       }
     }
+    });
     ctx.restore();
   }
 

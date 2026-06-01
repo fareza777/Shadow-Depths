@@ -63,6 +63,7 @@ import { tickTriggerCooldowns } from '../combat/TriggerSystem.js';
 import { RNG } from './RNG.js';
 import { MobileControls } from '../ui/MobileControls.js';
 import { QuickUseBar } from '../ui/QuickUseBar.js';
+import { perfMeter } from '../debug/PerfMeter.js';
 
 import { ChaseBehavior } from '../entities/behaviors/ChaseBehavior.js';
 import { RangedBehavior, hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
@@ -1354,7 +1355,7 @@ export class GameScene {
     if (typeof this.player.passiveTurnTick === 'function') this.player.passiveTurnTick();
     this.combat.tickEntity(this.player);
     if (this.player.isDead) { this._endRun(false); return; }
-    this._runEnemyTurns();
+    perfMeter.measure('enemyTurn', () => this._runEnemyTurns());
     // CRITICAL: enemy turns can kill the player. Without this check the
     // GameOver scene never triggered and the player was stuck on a dead
     // body that couldn't input. Bug from v0.2.0 first playtest.
@@ -1724,7 +1725,7 @@ export class GameScene {
       player: this._playerSnapshot(),
       floor: this._floorSnapshot(this.floor)
     };
-    this.save.saveRun(snapshot);
+    perfMeter.measure('save', () => this.save.saveRun(snapshot));
   }
 
   _playerSnapshot() {

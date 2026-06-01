@@ -12,6 +12,7 @@
  */
 import { LOG } from '../config/constants.js';
 import { prefersLeanCombatFx } from '../config/layoutMetrics.js';
+import { perfMeter } from '../debug/PerfMeter.js';
 
 export class GameLoop {
   /**
@@ -84,23 +85,24 @@ export class GameLoop {
     this._state.state.time += dt;
 
     const workStart = performance.now();
+    perfMeter.beginFrame();
 
     // 1. Per-frame tick (tweens, particles, audio envelope).
     try {
-      this._bus.emit('tick', { dt, time: this._state.state.time });
+      perfMeter.measure('tick', () => this._bus.emit('tick', { dt, time: this._state.state.time }));
     } catch (err) {
       console.error(LOG.CORE, 'tick threw (loop kept alive):', err);
     }
 
     // 2. Scene update (handles e.g. floor transition animation).
     try {
-      this._scenes.update(dt);
+      perfMeter.measure('update', () => this._scenes.update(dt));
     } catch (err) {
       console.error(LOG.CORE, 'scene update threw (loop kept alive):', err);
     }
 
     try {
-      this._renderer.render(this._scenes, this._state);
+      perfMeter.measure('render', () => this._renderer.render(this._scenes, this._state));
     } catch (err) {
       console.error(LOG.CORE, 'render threw (loop kept alive):', err);
     }
@@ -108,6 +110,7 @@ export class GameLoop {
     // Adapt the target frame rate from measured work (with hysteresis so it
     // doesn't flap around the threshold).
     const work = performance.now() - workStart;
+    perfMeter.endFrame(work);
     this._frameEma += (work - this._frameEma) * 0.1;
     if (this._preferSteady30 || this._frameEma > 20) this._targetMs = 1000 / 30;
     else if (this._frameEma < 12) this._targetMs = 1000 / 60;
