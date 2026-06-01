@@ -45,7 +45,7 @@
     "minRoomsPerFloor": 6,
     "maxRoomsPerFloor": 10,
     "minStairsDistance": 12,
-    "enemySpawnsPerFloor": [3, 5, 8],
+    "enemySpawnsPerFloor": [2, 4, 7],
     "itemSpawnsPerFloor": [5, 5, 6],
     "largeRoomChance": 0.45,
     "arenaChance": 0.6,
@@ -62,8 +62,8 @@
     "perfectFloorBonus": 100
   },
   "enemyScaling": {
-    "hp": 1.35,
-    "atk": 1.28
+    "hp": 1,
+    "atk": 0.9
   },
   "unlocks": [
     { "id": "worn_dagger",    "threshold": 500,  "effect": "startWeapon" },

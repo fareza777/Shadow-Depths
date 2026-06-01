@@ -135,7 +135,7 @@ export class Dungeon {
       // Special floor types: forge sanctuary (7, 17, 27...) + vault (10s).
       // Floor 100 stays the boss arena, so we don't override the last floor.
       let type = null;
-      let enemyCount = Math.min(16, 4 + Math.floor(i * 0.28) + (i >= 40 ? 2 : 0));
+      let enemyCount = Math.min(16, 3 + Math.floor(i * 0.24) + (i >= 40 ? 2 : 0));
       let itemCount  = Math.min(8,  5 + Math.floor(i * 0.04));
       let vaultDepthBoost = 0;
       const isLast = i === TOTAL_FLOORS - 1;
@@ -162,8 +162,9 @@ export class Dungeon {
         enemyPool: biome?.enemyPool || ['goblin_scout'],
         enemyCount, itemCount,
         torchRadius: biome?.torchRadius || 5,
-        // Steeper curve after floor 25 — counters longbow + revive stacking.
-        depthScale: 1.18 + i * 0.14 + (i > 25 ? (i - 25) * 0.03 : 0),
+        // Gentle opening curve; the first biome should teach positioning
+        // before the deep-floor scaling starts to bite.
+        depthScale: 1 + i * 0.08 + (i > 30 ? (i - 30) * 0.02 : 0),
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
         type,

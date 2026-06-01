@@ -86,6 +86,10 @@ export class MessageLog {
       if (message) this.push(message, COLOR.textMuted);
     });
 
+    this.bus.on('floor:secretFound', () => {
+      this.push('A hidden passage opens — walk through to reach the cache.', '#d4be7a');
+    });
+
     this.bus.on('player:revived', () => this.push(`You wake again. The charm is spent.`, COLOR.textHeal));
 
     this.bus.on('floor:entered', ({ index, name, specialEnemyId, floorNumber }) => {

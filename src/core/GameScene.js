@@ -63,6 +63,7 @@ import { tickTriggerCooldowns } from '../combat/TriggerSystem.js';
 import { RNG } from './RNG.js';
 import { MobileControls } from '../ui/MobileControls.js';
 import { QuickUseBar } from '../ui/QuickUseBar.js';
+import { perfMeter } from '../debug/PerfMeter.js';
 
 import { ChaseBehavior } from '../entities/behaviors/ChaseBehavior.js';
 import { RangedBehavior, hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
@@ -136,6 +137,10 @@ export class GameScene {
     this._forgeOffers = {};
     this._forgeUsed = {};
     this._processingTurn = false;
+    this._runSaveTimer = 0;
+    this._runSaveIdle = 0;
+    this._runSaveQueued = false;
+    this._runEnded = false;
     this._busHandlers = [];
     this._wireCommands();
     this._wireDeathCleanup();
@@ -146,6 +151,7 @@ export class GameScene {
   }
 
   exit() {
+    if (!this._runEnded) this._flushRunSave();
     for (const { event, fn } of this._busHandlers) {
       this.bus.off(event, fn);
     }
@@ -169,6 +175,7 @@ export class GameScene {
   _enterImpl(_opts) {
     this._resetBlockingUI();
     this._processingTurn = false;
+    this._runEnded = false;
     if (this.resumeSnapshot) {
       this._enterFromSnapshot(this.resumeSnapshot);
       this.resumeSnapshot = null;
@@ -355,7 +362,15 @@ export class GameScene {
     if (!this.renderer) this.renderer = renderer;
     if (!this.controls) this.controls = new MobileControls({ bus: this.bus });
     if (!this.quickUse) this.quickUse = new QuickUseBar({ bus: this.bus });
+    const cacheKey = this._uiCacheKey();
+    if (cacheKey && typeof renderer.drawCachedScreenLayer === 'function') {
+      renderer.drawCachedScreenLayer(cacheKey, () => this._renderUIUncached(renderer));
+      return;
+    }
+    this._renderUIUncached(renderer);
+  }
 
+  _renderUIUncached(renderer) {
     try {
       this.hud.render(renderer, {
         player: this.player, floor: this.floor,
@@ -411,6 +426,37 @@ export class GameScene {
     if (this.crafting) this.crafting.render(renderer);
     if (this.floorEvents) this.floorEvents.render(renderer);
     if (this.tutorial?.open) this.tutorial.render(renderer);
+  }
+
+  _uiCacheKey() {
+    if (!this.floor || !this.player) return null;
+    if (this._floorBanner || this._lootToast) return null;
+    if (this.tutorial?.open || this.inventoryUI?.open || this.vigil?.open
+        || this.skillPicker?.open || this.pause?.open || this.crafting?.open
+        || this.floorEvents?.open) return null;
+    const hpPct = this.player.stats.hpMax ? this.player.stats.hp / this.player.stats.hpMax : 1;
+    if (hpPct <= 0.35) return null;
+    const inv = this.player.inventory?.slots?.map((item) =>
+      item ? `${item.id}:${item.count || 1}:${item.def?.affixes ? JSON.stringify(item.def.affixes) : ''}` : '-'
+    ).join(',');
+    const statuses = (this.player.statusEffects || [])
+      .map((s) => `${s.id}:${s.value ?? ''}:${s.duration ?? ''}`).join(',');
+    const boss = this.floor.enemies?.().find((e) =>
+      !e.isDead && (e.defId?.startsWith('boss_') || e.defId?.startsWith('subboss_')));
+    const itemKeys = Array.from(this.floor.items?.keys?.() || []).join(';');
+    return [
+      'game-ui', Layout.canvasW, Layout.canvasH,
+      this.mode, this.dungeon.currentIndex, this.dungeon.totalFloors,
+      this.player.x, this.player.y,
+      this.player.stats.hp, this.player.stats.hpMax,
+      this.player.xp, this.player.level, this.player.gold,
+      this.player.rangedFocus, this.player.rangedFocusMax,
+      this.player.reviveCharges, this.player.weapon?.id || '',
+      this.floor.renderRevision || 0, this.floor.entityRevision || 0,
+      this.floor.definition?.type || '', this.floor.definition?.specialEnemyId || '',
+      boss ? `${boss.defId}:${boss.stats.hp}:${boss.stats.hpMax}` : '',
+      statuses, inv, itemKeys
+    ].join('|');
   }
 
   _buildFloorBanner(index, def) {
@@ -789,21 +835,27 @@ export class GameScene {
   _revealNearbyHazards() {
     if (!this.floor || !this.player) return;
     const { x, y } = this.player;
+    let changed = false;
     for (let dy = -1; dy <= 1; dy++) {
       for (let dx = -1; dx <= 1; dx++) {
         const t = this.floor.tileAt(x + dx, y + dy);
         if (!t) continue;
-        if (t.hazard?.armed && t.visible) t.hazard.revealed = true;
+        if (t.hazard?.armed && t.visible && !t.hazard.revealed) {
+          t.hazard.revealed = true;
+          changed = true;
+        }
         // Found a secret wall — it opens into a hidden cache.
         if (t.secret && !t.secret.revealed) {
           t.secret.revealed = true;
           t.type = TILE.DOOR;
           t.explored = true;
+          changed = true;
           this.pathfinding?.invalidate?.();
           this.bus.emit('floor:secretFound', { x: x + dx, y: y + dy });
         }
       }
     }
+    if (changed) this.floor.touchRender?.();
   }
 
   _wireIdentification() {
@@ -1086,6 +1138,7 @@ export class GameScene {
         if (tile) tile.explored = true;
       }
     }
+    this.floor.touchRender?.();
   }
 
   /** Generous tap hit on adjacent foe (sprite larger than one tile). */
@@ -1302,7 +1355,7 @@ export class GameScene {
     if (typeof this.player.passiveTurnTick === 'function') this.player.passiveTurnTick();
     this.combat.tickEntity(this.player);
     if (this.player.isDead) { this._endRun(false); return; }
-    this._runEnemyTurns();
+    perfMeter.measure('enemyTurn', () => this._runEnemyTurns());
     // CRITICAL: enemy turns can kill the player. Without this check the
     // GameOver scene never triggered and the player was stuck on a dead
     // body that couldn't input. Bug from v0.2.0 first playtest.
@@ -1514,6 +1567,8 @@ export class GameScene {
 
   // --- finalization --------------------------------------------------
   _endRun(victory) {
+    this._runEnded = true;
+    this._cancelPendingRunSave();
     this.save?.clearRun?.();
     const summary = {
       ...this.player.runStats,
@@ -1606,19 +1661,9 @@ export class GameScene {
     return parts.join('   ');
   }
 
-  _saveRun() {
+  _saveRun({ immediate = false } = {}) {
     if (!this.save || !this.player || !this.floor || this.player.isDead) return;
-    const snapshot = {
-      version: 1,
-      savedAt: Date.now(),
-      seed: this.seed,
-      mode: this.mode,
-      heroKind: this.heroKind,
-      floorIndex: this.dungeon.currentIndex,
-      player: this._playerSnapshot(),
-      floor: this._floorSnapshot(this.floor)
-    };
-    this.save.saveRun(snapshot);
+    const savedAt = Date.now();
     this.state.setRun({
       seed: this.seed,
       mode: this.mode,
@@ -1626,8 +1671,61 @@ export class GameScene {
       canContinue: true,
       level: this.player.level,
       hp: this.player.stats.hp,
-      savedAt: snapshot.savedAt
+      savedAt
     });
+    if (immediate) {
+      this._flushRunSave(savedAt);
+      return;
+    }
+    this._scheduleRunSave();
+  }
+
+  _scheduleRunSave() {
+    if (this._runSaveQueued) return;
+    this._runSaveQueued = true;
+    const scheduleIdle = () => {
+      this._runSaveTimer = 0;
+      if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+        this._runSaveIdle = window.requestIdleCallback(() => {
+          this._runSaveIdle = 0;
+          this._flushRunSave();
+        }, { timeout: 900 });
+      } else {
+        this._runSaveTimer = setTimeout(() => {
+          this._runSaveTimer = 0;
+          this._flushRunSave();
+        }, 120);
+      }
+    };
+    this._runSaveTimer = setTimeout(scheduleIdle, 260);
+  }
+
+  _cancelPendingRunSave() {
+    if (this._runSaveTimer) {
+      clearTimeout(this._runSaveTimer);
+      this._runSaveTimer = 0;
+    }
+    if (this._runSaveIdle && typeof window !== 'undefined' && typeof window.cancelIdleCallback === 'function') {
+      window.cancelIdleCallback(this._runSaveIdle);
+      this._runSaveIdle = 0;
+    }
+    this._runSaveQueued = false;
+  }
+
+  _flushRunSave(savedAt = Date.now()) {
+    this._cancelPendingRunSave();
+    if (!this.save || !this.player || !this.floor || this.player.isDead || this._runEnded) return;
+    const snapshot = {
+      version: 1,
+      savedAt,
+      seed: this.seed,
+      mode: this.mode,
+      heroKind: this.heroKind,
+      floorIndex: this.dungeon.currentIndex,
+      player: this._playerSnapshot(),
+      floor: this._floorSnapshot(this.floor)
+    };
+    perfMeter.measure('save', () => this.save.saveRun(snapshot));
   }
 
   _playerSnapshot() {

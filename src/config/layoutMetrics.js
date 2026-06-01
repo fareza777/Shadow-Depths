@@ -27,11 +27,32 @@ export const Layout = {
 export function currentDpr() {
   if (typeof window === 'undefined') return 1;
   const raw = window.devicePixelRatio || 1;
+  const android = isAndroidDevice();
+  const mobile = isMobileDevice();
+  const lowEnd = isLowEndDevice();
+  const cap = android ? 1 : lowEnd || mobile ? 1.25 : 1.5;
+  return Math.max(1, Math.min(cap, raw));
+}
+
+export function isAndroidDevice() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent || '');
+}
+
+export function isMobileDevice() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '') || navigator.maxTouchPoints > 1;
+}
+
+export function isLowEndDevice() {
+  if (typeof navigator === 'undefined') return false;
   const mem = navigator.deviceMemory || 0;          // GB, coarse (0 if unknown)
   const cores = navigator.hardwareConcurrency || 0;
-  const lowEnd = (mem && mem <= 4) || (cores && cores <= 4);
-  const cap = lowEnd ? 1.25 : 1.5;
-  return Math.max(1, Math.min(cap, raw));
+  return (mem && mem <= 4) || (cores && cores <= 4);
+}
+
+export function prefersLeanCombatFx() {
+  return isAndroidDevice() || (isMobileDevice() && isLowEndDevice());
 }
 
 export function syncLayoutFromWindow(canvas) {

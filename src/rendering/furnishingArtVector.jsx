@@ -218,4 +218,4 @@ export function preloadFurnishingArt() {
 }
 
 export const WALL_DECOR_KINDS = ['wall_torch', 'banner', 'wall_chains', 'cobweb', 'rune_crack'];
-export const FLOOR_DECOR_KINDS = ['brazier', 'bone_pile', 'broken_pillar', 'gargoyle'];
+export const FLOOR_DECOR_KINDS = ['brazier', 'bone_pile', 'broken_pillar'];

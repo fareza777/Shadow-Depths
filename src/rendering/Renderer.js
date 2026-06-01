@@ -23,7 +23,7 @@ import {
   GRID_WIDTH, GRID_HEIGHT, TILE_SIZE, TILE, COLOR, TIMING
 } from '../config/constants.js';
 import {
-  Layout, syncLayoutFromWindow, viewportX, viewportY, viewportW, viewportH
+  Layout, prefersLeanCombatFx, syncLayoutFromWindow, viewportX, viewportY, viewportW, viewportH
 } from '../config/layoutMetrics.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
 import { drawBiomeWallCached, drawBiomeFloorCached, hasBiome } from './biomeTiles.js';
@@ -31,6 +31,13 @@ import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
 import { HAZARDS } from '../gameplay/hazards.js';
 import { drawVectorNPC } from './npcArtVector.jsx';
 import { drawVectorDecor, drawVectorFixture } from './furnishingArtVector.jsx';
+import { drawVectorTrap } from './dungeonTrapsVector.jsx';
+import { drawVectorChest } from './dungeonChestsVector.jsx';
+import { drawVectorStairsDown } from './dungeonStairsVector.jsx';
+import { drawVectorDecorX } from './dungeonDecorExtVector.jsx';
+import { perfMeter } from '../debug/PerfMeter.js';
+
+const REMOVED_ROOM_DECOR = new Set(['weapon_rack', 'alcove_urn', 'hanging_cage']);
 
 export class Renderer {
   /**
@@ -63,6 +70,12 @@ export class Renderer {
     /** @type {WeakMap<object, number>} entity → flash end timestamp (ms) */
     this._hitFlashes = new WeakMap();
     this._attackFlashes = [];
+    this._leanCombatFx = prefersLeanCombatFx();
+    this._tileBaseCache = null;
+    this._entitySortCache = null;
+    this._backdropCache = null;
+    this._floorLayerCache = null;
+    this._screenLayerCache = null;
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
@@ -72,9 +85,14 @@ export class Renderer {
     // Game-feel: trigger camera shake on damage automatically.
     this.bus.on('entity:damaged', ({ amount, isCrit, entity }) => {
       if (!entity) return;
-      const base = entity.kind === 'player' ? 6 : 3;
-      const px = Math.min(14, base + amount * 0.35);
-      this.cameraShake.trigger(px, isCrit ? TIMING.cameraShakeLong : TIMING.cameraShakeShort);
+      const base = this._leanCombatFx
+        ? (entity.kind === 'player' ? 3.5 : 1.5)
+        : (entity.kind === 'player' ? 6 : 3);
+      const px = Math.min(this._leanCombatFx ? 7 : 14, base + amount * (this._leanCombatFx ? 0.18 : 0.35));
+      const duration = this._leanCombatFx && !isCrit
+        ? Math.round(TIMING.cameraShakeShort * 0.55)
+        : (isCrit ? TIMING.cameraShakeLong : TIMING.cameraShakeShort);
+      this.cameraShake.trigger(px, duration);
       const until = performance.now() + (isCrit ? TIMING.hitFlash * 2 : TIMING.hitFlash);
       this._hitFlashes.set(entity, until);
     });
@@ -88,13 +106,21 @@ export class Renderer {
         startedAt: performance.now(),
         duration: isCrit ? 190 : 140
       });
-      if (this._attackFlashes.length > 16) this._attackFlashes.shift();
+      const cap = this._leanCombatFx ? 6 : 16;
+      if (this._attackFlashes.length > cap) this._attackFlashes.shift();
     });
   }
 
   destroy() {
     window.removeEventListener('resize', this._resizeBound);
     window.visualViewport?.removeEventListener('resize', this._resizeBound);
+  }
+
+  invalidateFloorCache() {
+    this._tileBaseCache = null;
+    this._backdropCache = null;
+    this._floorLayerCache = null;
+    this._screenLayerCache = null;
   }
 
   // --- camera ---------------------------------------------------------
@@ -158,9 +184,11 @@ export class Renderer {
     this._lastTime = now;
     this._timeSec = now / 1000;
 
-    this.cameraShake.update(dt);
-    this.particles.update(dt);
-    this._attackFlashes = this._attackFlashes.filter((f) => now - f.startedAt < f.duration);
+    perfMeter.measure('fxUpdate', () => {
+      this.cameraShake.update(dt);
+      this.particles.update(dt);
+      this._attackFlashes = this._attackFlashes.filter((f) => now - f.startedAt < f.duration);
+    });
     const shake = this.cameraShake.offset();
 
     // Establish the HiDPI base transform for this frame: everything below
@@ -177,22 +205,23 @@ export class Renderer {
     // World pass — camera shake applies only to dungeon tiles / entities.
     ctx.save();
     ctx.translate(shake.x, shake.y);
-    sceneManager.render(this);
+    perfMeter.measure('world', () => sceneManager.render(this));
     ctx.save();
     ctx.beginPath();
     ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
     ctx.clip();
-    this.particles.render(ctx, this._camera);
+    perfMeter.measure('particles', () => this.particles.render(ctx, this._camera));
     ctx.restore();
     ctx.restore();
 
     // UI pass — fixed screen space (HUD + D-pad never shaken or clipped).
     this.beginScreenSpace();
-    sceneManager.renderUI(this);
+    perfMeter.measure('ui', () => sceneManager.renderUI(this));
     // Top-most overlay (achievement toasts) — sits above every scene UI.
     if (typeof this.overlayRender === 'function') {
       try { this.overlayRender(this); } catch (err) { console.warn('[overlayRender]', err); }
     }
+    perfMeter.render(this.ctx, Layout);
     this.endScreenSpace();
   }
 
@@ -207,6 +236,36 @@ export class Renderer {
     this.ctx.restore();
   }
 
+  drawCachedScreenLayer(key, paint) {
+    if (!this._leanCombatFx || typeof paint !== 'function') {
+      paint();
+      return;
+    }
+    const w = Layout.canvasW;
+    const h = Layout.canvasH;
+    if (!this._screenLayerCache || this._screenLayerCache.key !== key
+        || this._screenLayerCache.canvas.width !== w
+        || this._screenLayerCache.canvas.height !== h) {
+      const canvas = (typeof document !== 'undefined')
+        ? document.createElement('canvas')
+        : new OffscreenCanvas(w, h);
+      canvas.width = w;
+      canvas.height = h;
+      const cctx = canvas.getContext('2d', { alpha: true });
+      cctx.setTransform(1, 0, 0, 1, 0, 0);
+      cctx.clearRect(0, 0, w, h);
+      const mainCtx = this.ctx;
+      this.ctx = cctx;
+      try {
+        paint();
+      } finally {
+        this.ctx = mainCtx;
+      }
+      this._screenLayerCache = { key, canvas };
+    }
+    this.ctx.drawImage(this._screenLayerCache.canvas, 0, 0);
+  }
+
   // --- world primitives ----------------------------------------------
   /**
    * Paint the dungeon floor with vision state. Applies camera offset.
@@ -217,20 +276,10 @@ export class Renderer {
   drawFloor(floor, player) {
     const ctx = this.ctx;
     const cam = this._camera;
-    ctx.save();
-    // Clip to viewport rect so world pixels can never spill into HUD or
-    // control band areas. Then translate by camera offset.
-    ctx.beginPath();
     const vx = viewportX();
     const vy = viewportY();
     const vw = viewportW();
     const vh = viewportH();
-    ctx.rect(vx, vy, vw, vh);
-    ctx.clip();
-    this._drawViewportAbyss(ctx, floor.definition || {});
-    this._drawBiomeBackdropDetails(ctx, floor.definition || {});
-    ctx.translate(cam.x, cam.y);
-
     const x0 = Math.max(0, Math.floor((vx - cam.x) / TILE_SIZE));
     const y0 = Math.max(0, Math.floor((vy - cam.y) / TILE_SIZE));
     const x1 = Math.min(floor.width - 1,
@@ -238,10 +287,103 @@ export class Renderer {
     const y1 = Math.min(floor.height - 1,
       Math.ceil((vy + vh - cam.y) / TILE_SIZE));
 
-    // Base abyss wash inside visible tile range.
-    fillRect(ctx, x0 * TILE_SIZE, y0 * TILE_SIZE,
-      (x1 - x0 + 1) * TILE_SIZE, (y1 - y0 + 1) * TILE_SIZE, '#05040a');
+    if (this._leanCombatFx) {
+      const def = floor.definition || {};
+      const timeBucket = Math.floor((this._timeSec || 0) * 4);
+      const key = [
+        floor.seed, floor.index, floor.renderRevision || 0,
+        vx, vy, vw, vh, cam.x, cam.y, x0, y0, x1, y1,
+        player?.x ?? '', player?.y ?? '', player?.torchRadius ?? '',
+        def.biomeId || '', def.type || '', timeBucket
+      ].join('|');
+      let cache = this._floorLayerCache;
+      if (!cache || cache.floor !== floor || cache.key !== key
+          || cache.canvas.width !== vw || cache.canvas.height !== vh) {
+        const canvas = (typeof document !== 'undefined')
+          ? document.createElement('canvas')
+          : new OffscreenCanvas(vw, vh);
+        canvas.width = vw;
+        canvas.height = vh;
+        const cctx = canvas.getContext('2d', { alpha: true });
+        cctx.imageSmoothingEnabled = true;
+        cctx.translate(-vx, -vy);
+        perfMeter.measure('floorLayer', () => {
+          this._paintFloorViewport(cctx, floor, player, x0, y0, x1, y1);
+        });
+        cache = { floor, key, canvas };
+        this._floorLayerCache = cache;
+      }
+      ctx.drawImage(cache.canvas, vx, vy);
+      return;
+    }
 
+    this._paintFloorViewport(ctx, floor, player, x0, y0, x1, y1);
+  }
+
+  _paintFloorViewport(ctx, floor, player, x0, y0, x1, y1) {
+    const cam = this._camera;
+    ctx.save();
+    // Clip to viewport rect so world pixels can never spill into HUD or
+    // control band areas. Then translate by camera offset.
+    const vx = viewportX();
+    const vy = viewportY();
+    const vw = viewportW();
+    const vh = viewportH();
+    ctx.beginPath();
+    ctx.rect(vx, vy, vw, vh);
+    ctx.clip();
+    this._drawCachedViewportBackdrop(ctx, floor.definition || {});
+    ctx.translate(cam.x, cam.y);
+
+    this._drawCachedTileBase(ctx, floor, x0, y0, x1, y1);
+
+    // Revealed traps (drawn over floor, under entities/motif).
+    this._drawDynamicStairs(ctx, floor, x0, y0, x1, y1);
+    this._drawHazards(ctx, floor, x0, y0, x1, y1);
+    this._drawRoomDecor(ctx, floor, x0, y0, x1, y1);
+    this._drawFloorInteracts(ctx, floor, x0, y0, x1, y1);
+    this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
+
+    // Special floor centerpiece (REST campfire / VAULT chest motif).
+    this._drawSpecialFloorMotif(ctx, floor);
+
+    if (player) {
+      this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
+    }
+    ctx.restore();
+  }
+
+  _drawCachedTileBase(ctx, floor, x0, y0, x1, y1) {
+    const sx = x0 * TILE_SIZE;
+    const sy = y0 * TILE_SIZE;
+    const width = (x1 - x0 + 1) * TILE_SIZE;
+    const height = (y1 - y0 + 1) * TILE_SIZE;
+    const def = floor.definition || {};
+    const key = [
+      floor.seed, floor.index, floor.renderRevision || 0,
+      x0, y0, x1, y1,
+      def.biomeId || '', (def.wallPalette || []).join(','),
+      (def.floorPalette || []).join(',')
+    ].join('|');
+    let cache = this._tileBaseCache;
+    if (!cache || cache.floor !== floor || cache.key !== key
+        || cache.canvas.width !== width || cache.canvas.height !== height) {
+      const canvas = (typeof document !== 'undefined')
+        ? document.createElement('canvas')
+        : new OffscreenCanvas(width, height);
+      canvas.width = width;
+      canvas.height = height;
+      const cctx = canvas.getContext('2d', { alpha: true });
+      cctx.imageSmoothingEnabled = true;
+      cctx.translate(-sx, -sy);
+      perfMeter.measure('tileCache', () => this._paintTileBase(cctx, floor, x0, y0, x1, y1));
+      cache = { floor, key, canvas };
+      this._tileBaseCache = cache;
+    }
+    ctx.drawImage(cache.canvas, sx, sy);
+  }
+
+  _paintTileBase(ctx, floor, x0, y0, x1, y1) {
     const def = floor.definition || {};
     const tileOpts = {
       wallLit: def.wallPalette?.[0] || COLOR.wallLit,
@@ -250,19 +392,20 @@ export class Renderer {
       floorDim: def.floorPalette?.[1] || COLOR.floorDim,
       biomeId: def.biomeId || ''
     };
-
     const isWalkSurface = (type) =>
       type === TILE.FLOOR || type === TILE.DOOR
       || type === TILE.STAIRS_DOWN || type === TILE.STAIRS_UP;
-
     const adjFloorAt = (ax, ay) => {
       const nt = floor.tileAt(ax, ay);
       return !!(nt && isWalkSurface(nt.type));
     };
-
     const toPx = (g) => g * TILE_SIZE;
+    const biomeId = tileOpts.biomeId;
+    const useBiome = !!biomeId && hasBiome(biomeId);
 
-    // Pass 1 — void abyss (in & outside rooms), then floors.
+    fillRect(ctx, x0 * TILE_SIZE, y0 * TILE_SIZE,
+      (x1 - x0 + 1) * TILE_SIZE, (y1 - y0 + 1) * TILE_SIZE, '#05040a');
+
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
@@ -276,12 +419,6 @@ export class Renderer {
         });
       }
     }
-
-    // Use biome tile atlas if this floor's biomeId matches one of our 10
-    // hand-designed biomes. Otherwise fall back to the legacy sprite
-    // registry tiles.
-    const biomeId = tileOpts.biomeId;
-    const useBiome = !!biomeId && hasBiome(biomeId);
 
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
@@ -299,7 +436,6 @@ export class Renderer {
             break;
           case TILE.STAIRS_DOWN:
             if (useBiome) drawBiomeFloorCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
-            this._drawStairsDownFixture(ctx, tx + TILE_SIZE / 2, ty + TILE_SIZE / 2, TILE_SIZE, this._timeSec || 0, def);
             break;
           case TILE.STAIRS_UP:
             if (useBiome) drawBiomeFloorCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
@@ -315,7 +451,6 @@ export class Renderer {
       }
     }
 
-    // Pass 2 — walls on top with edge lighting toward open floor.
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
@@ -332,28 +467,22 @@ export class Renderer {
         };
         const tx = toPx(x);
         const ty = toPx(y);
-        if (useBiome) {
-          drawBiomeWallCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
-        } else {
-          this.sprites.draw('tile_wall', ctx, tx, ty, opts);
-        }
+        if (useBiome) drawBiomeWallCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
+        else this.sprites.draw('tile_wall', ctx, tx, ty, opts);
         if (dim) Renderer._applyFog(ctx, tx, ty);
       }
     }
+  }
 
-    // Revealed traps (drawn over floor, under entities/motif).
-    this._drawHazards(ctx, floor, x0, y0, x1, y1);
-    this._drawRoomDecor(ctx, floor, x0, y0, x1, y1);
-    this._drawFloorInteracts(ctx, floor, x0, y0, x1, y1);
-    this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
-
-    // Special floor centerpiece (REST campfire / VAULT chest motif).
-    this._drawSpecialFloorMotif(ctx, floor);
-
-    if (player) {
-      this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
-    }
-    ctx.restore();
+  _drawDynamicStairs(ctx, floor, x0, y0, x1, y1) {
+    const def = floor.definition || {};
+    const down = floor.stairsDown;
+    if (!down || down.x < x0 || down.x > x1 || down.y < y0 || down.y > y1) return;
+    const t = floor.tileAt(down.x, down.y);
+    if (!t?.explored) return;
+    this._drawStairsDownFixture(ctx, down.x * TILE_SIZE + TILE_SIZE / 2,
+      down.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE, this._timeSec || 0, def);
+    if (!t.visible) Renderer._applyFog(ctx, down.x * TILE_SIZE, down.y * TILE_SIZE);
   }
 
   /**
@@ -431,6 +560,7 @@ export class Renderer {
       }
       ctx.restore();
     } else if (def.type === 'vault') {
+      if (drawVectorChest(ctx, cx - TILE_SIZE * 0.62, cy - TILE_SIZE * 0.62, TILE_SIZE * 1.24, 'runed', false)) return;
       // Treasure chest — brass-trimmed wooden chest with subtle glow.
       ctx.save();
       const glow = ctx.createRadialGradient(cx, cy, 4, cx, cy, TILE_SIZE * 1.2);
@@ -605,8 +735,9 @@ export class Renderer {
     ctx.clip();
     ctx.translate(cam.x, cam.y);
 
-    const list = Array.from(floor.entities.values()).sort((a, b) => a.renderY - b.renderY);
-    this._drawAttackFlashes(ctx, cam);
+    const list = this._sortedEntities(floor);
+    perfMeter.measure('attackFx', () => this._drawAttackFlashes(ctx, cam));
+    perfMeter.measure('entities', () => {
     for (const e of list) {
       if (e.isDead) continue;
       const t = floor.tileAt(e.x, e.y);
@@ -642,6 +773,7 @@ export class Renderer {
         if (intent) this._drawIntentIcon(ctx, intent, px, py);
       }
     }
+    });
     ctx.restore();
   }
 
@@ -668,6 +800,10 @@ export class Renderer {
         const r = TILE_SIZE * (0.22 + t * 0.42);
         ctx.arc(tx, ty, r, -Math.PI * 0.75, Math.PI * 0.25);
         ctx.stroke();
+        if (this._leanCombatFx && !f.isCrit) {
+          ctx.restore();
+          continue;
+        }
         ctx.strokeStyle = f.isCrit ? '#e85a4a' : '#d4be7a';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -719,7 +855,7 @@ export class Renderer {
   _drawThreatAura(ctx, entity, px, py) {
     const isBoss = entity.defId?.startsWith('boss_');
     const isSub = entity.defId?.startsWith('subboss_');
-    const elite = isBoss || isSub || (entity.stats?.hpMax ?? 0) >= 28;
+    const elite = isBoss || isSub || !!entity.elite;
     if (!elite) return;
     const pulse = 0.55 + Math.sin((this._timeSec || 0) * 3.5) * 0.25;
     const color = isBoss ? '#d4be7a' : isSub ? '#c080ff' : '#8060a0';
@@ -819,22 +955,74 @@ export class Renderer {
     fillRect(this.ctx, x, y, w, h, color);
   }
 
+  _drawCachedViewportBackdrop(ctx, def = {}) {
+    if (!this._leanCombatFx) {
+      this._drawViewportAbyss(ctx, def);
+      this._drawBiomeBackdropDetails(ctx, def);
+      return;
+    }
+    const vx = viewportX();
+    const vy = viewportY();
+    const vw = viewportW();
+    const vh = viewportH();
+    const timeBucket = Math.floor((this._timeSec || 0) * 4);
+    const key = [
+      def.biomeId || '', vx, vy, vw, vh,
+      timeBucket,
+      getAbyssPalette(def.biomeId || '').top
+    ].join('|');
+    let cache = this._backdropCache;
+    if (!cache || cache.key !== key || cache.canvas.width !== vw || cache.canvas.height !== vh) {
+      const canvas = (typeof document !== 'undefined')
+        ? document.createElement('canvas')
+        : new OffscreenCanvas(vw, vh);
+      canvas.width = vw;
+      canvas.height = vh;
+      const cctx = canvas.getContext('2d', { alpha: true });
+      cctx.translate(-vx, -vy);
+      this._drawViewportAbyss(cctx, def);
+      this._drawBiomeBackdropDetails(cctx, def);
+      cache = { key, canvas };
+      this._backdropCache = cache;
+    }
+    ctx.drawImage(cache.canvas, vx, vy);
+  }
+
   _drawRoomDecor(ctx, floor, x0, y0, x1, y1) {
+    let drawn = 0;
+    const maxLeanDecor = 14;
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const tile = floor.tiles[y][x];
         const decor = tile?.decor;
-        if (!decor || !tile.explored) continue;
+        if (!decor || !tile.explored || decor.kind === 'gargoyle') continue;
+        if (REMOVED_ROOM_DECOR.has(decor.kind)) continue;
+        if (this._leanCombatFx && !tile.visible) continue;
+        if (this._leanCombatFx && drawn >= maxLeanDecor) return;
         ctx.save();
         ctx.globalAlpha = tile.visible ? 0.95 : 0.38;
         this._drawDecorSprite(ctx, x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2,
           TILE_SIZE, decor.kind, this._timeSec || 0, floor.definition || {});
         ctx.restore();
+        drawn++;
       }
     }
   }
 
+  _sortedEntities(floor) {
+    const rev = floor.entityRevision || 0;
+    const cache = this._entitySortCache;
+    if (cache && cache.floor === floor && cache.rev === rev) return cache.list;
+    const list = Array.from(floor.entities.values()).sort((a, b) => {
+      if (a.y !== b.y) return a.y - b.y;
+      return a.x - b.x;
+    });
+    this._entitySortCache = { floor, rev, list };
+    return list;
+  }
+
   _drawDecorSprite(ctx, cx, cy, s, kind, t, def = {}) {
+    if (drawVectorDecorX(ctx, cx - s / 2, cy - s / 2, s, kind, def)) return;
     if (drawVectorDecor(ctx, cx - s / 2, cy - s / 2, s, kind, def)) return;
     const u = s / 32;
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
@@ -894,6 +1082,7 @@ export class Renderer {
   }
 
   _drawStairsDownFixture(ctx, cx, cy, s, t, def = {}) {
+    if (drawVectorStairsDown(ctx, cx - s / 2, cy - s / 2, s, def)) return;
     if (drawVectorFixture(ctx, cx - s / 2, cy - s / 2, s, 'stair_down', def)) return;
     const u = s / 32;
     ctx.save();
@@ -1213,6 +1402,7 @@ export class Renderer {
 
   /** Treasure chest (brass-banded). */
   _drawChestSprite(ctx, cx, cy, s) {
+    if (drawVectorChest(ctx, cx - s / 2, cy - s / 2, s, 'gold', false)) return;
     const u = s / 32;
     const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + a * u, cy + b * u, w * u, h * u); };
     ctx.fillStyle = 'rgba(0,0,0,0.28)';
@@ -1284,25 +1474,52 @@ export class Renderer {
         const hz = t.hazard;
         if (!hz || !hz.revealed || !t.explored) continue;
         const col = (HAZARDS[hz.type]?.color || '#cdd5dd');
-        const cx = x * TILE_SIZE + TILE_SIZE / 2;
-        const cy = y * TILE_SIZE + TILE_SIZE / 2;
+        const tx = x * TILE_SIZE;
+        const ty = y * TILE_SIZE;
+        const cx = tx + TILE_SIZE / 2;
+        const cy = ty + TILE_SIZE / 2;
         const r = TILE_SIZE * 0.26;
         ctx.save();
         ctx.globalAlpha = hz.armed ? (t.visible ? 0.9 : 0.4) : 0.3;
-        ctx.strokeStyle = col;
-        ctx.lineWidth = 1.5;
-        // diamond warning frame
-        ctx.beginPath();
-        ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r, cy);
-        ctx.lineTo(cx, cy + r); ctx.lineTo(cx - r, cy);
-        ctx.closePath();
-        ctx.stroke();
-        // inner X (spike/cross)
-        const i = r * 0.5;
-        ctx.beginPath();
-        ctx.moveTo(cx - i, cy - i); ctx.lineTo(cx + i, cy + i);
-        ctx.moveTo(cx + i, cy - i); ctx.lineTo(cx - i, cy + i);
-        ctx.stroke();
+        if (drawVectorTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed ? 'armed' : 'sprung')) {
+          ctx.restore();
+          continue;
+        }
+        ctx.fillStyle = '#16121a';
+        ctx.strokeStyle = '#5b5161';
+        ctx.lineWidth = 1;
+        ctx.fillRect(tx + 8, ty + 10, TILE_SIZE - 16, TILE_SIZE - 18);
+        ctx.strokeRect(tx + 8.5, ty + 10.5, TILE_SIZE - 17, TILE_SIZE - 19);
+        ctx.fillStyle = col;
+        if (hz.type === 'spike') {
+          for (let i = -1; i <= 1; i++) {
+            ctx.beginPath();
+            ctx.moveTo(cx + i * 8, ty + 12);
+            ctx.lineTo(cx + i * 8 + 4, ty + 23);
+            ctx.lineTo(cx + i * 8 - 4, ty + 23);
+            ctx.closePath();
+            ctx.fill();
+          }
+        } else if (hz.type === 'venom') {
+          ctx.beginPath();
+          ctx.arc(cx, cy, r * 0.45, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillRect(cx - 8, cy + 5, 16, 2);
+        } else if (hz.type === 'flame') {
+          ctx.beginPath();
+          ctx.moveTo(cx, ty + 13);
+          ctx.quadraticCurveTo(cx + 8, cy, cx, ty + 28);
+          ctx.quadraticCurveTo(cx - 8, cy, cx, ty + 13);
+          ctx.fill();
+        } else {
+          ctx.strokeStyle = col;
+          ctx.beginPath();
+          ctx.moveTo(cx - 9, cy); ctx.lineTo(cx + 9, cy);
+          ctx.moveTo(cx, cy - 9); ctx.lineTo(cx, cy + 9);
+          ctx.moveTo(cx - 6, cy - 6); ctx.lineTo(cx + 6, cy + 6);
+          ctx.moveTo(cx + 6, cy - 6); ctx.lineTo(cx - 6, cy + 6);
+          ctx.stroke();
+        }
         ctx.restore();
       }
     }
@@ -1433,6 +1650,7 @@ export class Renderer {
   // --- viewport scaling ----------------------------------------------
   _fitToViewport() {
     syncLayoutFromWindow(this.canvas);
+    this.invalidateFloorCache();
     const vw = window.visualViewport?.width || window.innerWidth;
     const vh = window.visualViewport?.height || window.innerHeight;
     const scale = Math.min(vw / Layout.canvasW, vh / Layout.canvasH);

@@ -444,10 +444,9 @@ export function heroDef(kind) {
   return HERO_DEFS[kind] || HERO_DEFS.vigil;
 }
 
-// ── Equipment overlay (cape / helm / weapon tints) ────────────────────
-// Painted on top of the base hero grid using normalized 0-1 coords so the
-// same patches scale to any render size. Layers are picked by rarity color
-// of the equipped item so upgrades visually read on the avatar.
+// ── Equipment overlay (armor / helm / weapon / jewelry) ────────────────
+// Painted as vector layers over the Claude-style hero raster. These stay
+// intentionally bold at 32px so equipment changes are readable in-world.
 
 const RARITY_TINT = {
   common:   { core: '#9a949e', hi: '#cfc2a4', dark: '#5a5240' },
@@ -461,10 +460,84 @@ function tintFor(item) {
   return RARITY_TINT[item.rarity] || RARITY_TINT.common;
 }
 
-function pxRect(ctx, ox, oy, size, nx, ny, nw, nh, color) {
+function lineW(size, n = 0.9) {
+  return Math.max(1, (size / 32) * n);
+}
+
+function v(ctx, ox, oy, size, x, y) {
+  const u = size / 32;
+  return [ox + x * u, oy + y * u];
+}
+
+function pxRect(ctx, ox, oy, size, nx, ny, nw, nh, color, stroke = null) {
   const u = size / 32;
   ctx.fillStyle = color;
   ctx.fillRect(ox + nx * u, oy + ny * u, Math.max(1, nw * u + 0.6), Math.max(1, nh * u + 0.6));
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = lineW(size, 0.55);
+    ctx.strokeRect(ox + nx * u, oy + ny * u, Math.max(1, nw * u + 0.6), Math.max(1, nh * u + 0.6));
+  }
+}
+
+function poly(ctx, ox, oy, size, points, fill, stroke = '#08070c', width = 0.75) {
+  ctx.beginPath();
+  points.forEach(([x, y], i) => {
+    const [px, py] = v(ctx, ox, oy, size, x, y);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  });
+  ctx.closePath();
+  ctx.fillStyle = fill;
+  ctx.fill();
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = lineW(size, width);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+}
+
+function line(ctx, ox, oy, size, x1, y1, x2, y2, color, width = 1) {
+  const [a, b] = v(ctx, ox, oy, size, x1, y1);
+  const [c, d] = v(ctx, ox, oy, size, x2, y2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineW(size, width);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(a, b);
+  ctx.lineTo(c, d);
+  ctx.stroke();
+}
+
+function circle(ctx, ox, oy, size, x, y, r, fill, stroke = '#08070c', width = 0.55) {
+  const [cx, cy] = v(ctx, ox, oy, size, x, y);
+  const u = size / 32;
+  ctx.beginPath();
+  ctx.arc(cx, cy, Math.max(1, r * u), 0, Math.PI * 2);
+  ctx.fillStyle = fill;
+  ctx.fill();
+  if (stroke) {
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = lineW(size, width);
+    ctx.stroke();
+  }
+}
+
+function glow(ctx, ox, oy, size, x, y, r, color, alpha = 0.25) {
+  const [cx, cy] = v(ctx, ox, oy, size, x, y);
+  const u = size / 32;
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r * u);
+  g.addColorStop(0, color);
+  g.addColorStop(1, 'transparent');
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * u, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 /**
@@ -478,83 +551,155 @@ export function drawHeroEquipment(ctx, ox, oy, size, entity, time = 0) {
   if (!entity) return;
   const helm = tintFor(entity.helm);
   const armor = tintFor(entity.armor);
+  const legs = tintFor(entity.legs);
+  const necklace = tintFor(entity.necklace);
   const ring = tintFor(entity.ring);
   const weapon = entity.weapon || null;
 
-  // Helm visor band — sits at row 6-8 across the head.
-  if (helm) {
-    pxRect(ctx, ox, oy, size, 11, 6,  10, 2, helm.core);
-    pxRect(ctx, ox, oy, size, 11, 6,  10, 1, helm.hi);
-    // Crown studs
-    pxRect(ctx, ox, oy, size, 13, 5,   1, 1, helm.hi);
-    pxRect(ctx, ox, oy, size, 18, 5,   1, 1, helm.hi);
+  if (armor) drawArmorLayer(ctx, ox, oy, size, entity.armor, armor);
+  if (legs) drawLegLayer(ctx, ox, oy, size, entity.legs, legs);
+  if (helm) drawHelmLayer(ctx, ox, oy, size, entity.helm, helm);
+  if (necklace) drawNecklaceLayer(ctx, ox, oy, size, entity.necklace, necklace, time);
+  if (ring) drawRingLayer(ctx, ox, oy, size, ring, time);
+  if (weapon) drawHeldWeapon(ctx, ox, oy, size, weapon, time);
+}
+
+function drawHelmLayer(ctx, ox, oy, size, item, t) {
+  const key = (item.spriteKey || item.id || '').toLowerCase();
+  if (/hood|cowl|mask/.test(key)) {
+    poly(ctx, ox, oy, size, [[10.4, 5.2], [16, 2.5], [21.6, 5.2], [20.8, 12.5], [11.2, 12.5]], t.dark);
+    poly(ctx, ox, oy, size, [[12, 7.2], [16, 5.2], [20, 7.2], [18.9, 11.3], [13.1, 11.3]], '#08070c', null);
+    line(ctx, ox, oy, size, 11.2, 5.9, 16, 3.4, t.hi, 0.45);
+    return;
   }
-  // Armor chest plate across rows 13-16.
-  if (armor) {
-    pxRect(ctx, ox, oy, size, 9,  13, 14, 3, armor.core);
-    pxRect(ctx, ox, oy, size, 9,  13, 14, 1, armor.hi);
-    pxRect(ctx, ox, oy, size, 15, 14,  2, 2, armor.dark);
+  poly(ctx, ox, oy, size, [[10.4, 5.1], [16, 2.7], [21.6, 5.1], [21, 12.2], [11, 12.2]], t.core);
+  poly(ctx, ox, oy, size, [[11, 7.2], [21, 7.2], [20.5, 9.8], [11.5, 9.8]], '#08070c', null);
+  line(ctx, ox, oy, size, 12.2, 5.6, 19.8, 5.6, t.hi, 0.65);
+  line(ctx, ox, oy, size, 16, 3.5, 16, 12, t.hi, 0.55);
+  if (/great|horn|crown|circlet/.test(key)) {
+    poly(ctx, ox, oy, size, [[11.2, 5.2], [12.4, 2.8], [13.4, 5.2]], t.hi);
+    poly(ctx, ox, oy, size, [[18.6, 5.2], [19.6, 2.8], [20.8, 5.2]], t.hi);
   }
-  // Ring glint near right hand (row 19).
-  if (ring) {
-    pxRect(ctx, ox, oy, size, 22, 19,  1, 1, ring.hi);
-    pxRect(ctx, ox, oy, size, 22, 20,  1, 1, ring.core);
+}
+
+function drawArmorLayer(ctx, ox, oy, size, item, t) {
+  const key = (item.spriteKey || item.id || '').toLowerCase();
+  if (/robe|cloth/.test(key)) {
+    poly(ctx, ox, oy, size, [[10, 13.2], [22, 13.2], [23.3, 30.5], [8.7, 30.5]], t.core);
+    poly(ctx, ox, oy, size, [[10, 13.2], [16, 13.2], [15, 30.5], [8.7, 30.5]], t.dark, null);
+    line(ctx, ox, oy, size, 16, 14, 16, 29.7, t.hi, 0.45);
+    return;
   }
-  // Weapon held to the right of the body, glyph depends on weapon kind.
-  if (weapon) {
-    drawHeldWeapon(ctx, ox, oy, size, weapon, time);
+  if (/leather|ranger|hide/.test(key)) {
+    poly(ctx, ox, oy, size, [[9.8, 13], [22.2, 13], [21, 24.5], [11, 24.5]], t.dark);
+    poly(ctx, ox, oy, size, [[11.2, 14], [20.8, 14], [19.8, 23.2], [12.2, 23.2]], t.core);
+    line(ctx, ox, oy, size, 11.2, 15.2, 20.5, 22.2, t.hi, 0.45);
+    line(ctx, ox, oy, size, 20.8, 15.2, 11.5, 22.2, '#08070c', 0.45);
+    return;
   }
+  poly(ctx, ox, oy, size, [[9.2, 13], [22.8, 13], [21.4, 24.3], [10.6, 24.3]], t.core);
+  poly(ctx, ox, oy, size, [[9.2, 13], [16, 13], [15.3, 24.3], [10.6, 24.3]], t.dark, null);
+  line(ctx, ox, oy, size, 11.4, 15, 20.6, 15, t.hi, 0.55);
+  line(ctx, ox, oy, size, 16, 13.7, 16, 23.7, t.hi, 0.45);
+  circle(ctx, ox, oy, size, 16, 20.8, 1.2, t.hi, '#08070c', 0.45);
+}
+
+function drawLegLayer(ctx, ox, oy, size, item, t) {
+  const key = (item.spriteKey || item.id || '').toLowerCase();
+  const accent = /boot|greave|plate|iron/.test(key) ? t.hi : t.core;
+  poly(ctx, ox, oy, size, [[11.6, 23], [15.3, 23], [15, 30.2], [11.2, 30.2]], t.dark);
+  poly(ctx, ox, oy, size, [[16.7, 23], [20.4, 23], [20.8, 30.2], [17, 30.2]], t.dark);
+  line(ctx, ox, oy, size, 12.7, 24.1, 12.5, 29.2, accent, 0.5);
+  line(ctx, ox, oy, size, 18, 24.1, 18.2, 29.2, accent, 0.5);
+  pxRect(ctx, ox, oy, size, 10.8, 28.5, 4.8, 1.8, t.core, '#08070c');
+  pxRect(ctx, ox, oy, size, 16.5, 28.5, 4.8, 1.8, t.core, '#08070c');
+}
+
+function drawNecklaceLayer(ctx, ox, oy, size, item, t, time) {
+  const pulse = 0.55 + Math.sin(time * 3.2) * 0.2;
+  line(ctx, ox, oy, size, 12.7, 13.5, 16, 16.2, t.dark, 0.35);
+  line(ctx, ox, oy, size, 19.3, 13.5, 16, 16.2, t.dark, 0.35);
+  glow(ctx, ox, oy, size, 16, 16.7, 3.4, t.hi, 0.16 + pulse * 0.12);
+  circle(ctx, ox, oy, size, 16, 16.7, 1.1, t.hi, '#08070c', 0.4);
+}
+
+function drawRingLayer(ctx, ox, oy, size, t, time) {
+  const pulse = 0.5 + Math.sin(time * 5) * 0.25;
+  glow(ctx, ox, oy, size, 22.7, 20.1, 2.8, t.hi, 0.18 + pulse * 0.1);
+  circle(ctx, ox, oy, size, 22.7, 20.1, 0.75, t.hi, '#08070c', 0.35);
 }
 
 function drawHeldWeapon(ctx, ox, oy, size, weapon, time) {
   const key = (weapon.spriteKey || weapon.id || '').toLowerCase();
   const t = tintFor(weapon) || RARITY_TINT.common;
   const wobble = Math.sin(time * 2.3) * 0.4;
-  const u = size / 32;
   // bow / crossbow → vertical arc string
   if (/bow|crossbow/.test(key)) {
+    const [sx, sy] = v(ctx, ox, oy, size, 26.8, 11.3 + wobble);
+    const [mx, my] = v(ctx, ox, oy, size, 30.4, 18);
+    const [ex, ey] = v(ctx, ox, oy, size, 26.8, 24.7 + wobble);
     ctx.strokeStyle = t.core;
-    ctx.lineWidth = Math.max(1, u * 0.8);
+    ctx.lineWidth = lineW(size, 0.9);
     ctx.beginPath();
-    ctx.moveTo(ox + 26 * u, oy + (12 + wobble) * u);
-    ctx.quadraticCurveTo(ox + 30 * u, oy + 18 * u, ox + 26 * u, oy + (24 + wobble) * u);
+    ctx.moveTo(sx, sy);
+    ctx.quadraticCurveTo(mx, my, ex, ey);
     ctx.stroke();
-    ctx.strokeStyle = t.hi;
-    ctx.lineWidth = Math.max(1, u * 0.3);
-    ctx.beginPath();
-    ctx.moveTo(ox + 26 * u, oy + (12 + wobble) * u);
-    ctx.lineTo(ox + 26 * u, oy + (24 + wobble) * u);
-    ctx.stroke();
+    line(ctx, ox, oy, size, 26.8, 11.6 + wobble, 26.8, 24.4 + wobble, t.hi, 0.35);
+    line(ctx, ox, oy, size, 24.8, 18.2, 30, 17.5, t.hi, 0.35);
+    if (/crossbow/.test(key)) pxRect(ctx, ox, oy, size, 24.5, 16.3, 5.8, 2, t.dark, '#08070c');
     return;
   }
   // staff / scythe → vertical pole + accent at top
   if (/staff|scythe/.test(key)) {
-    pxRect(ctx, ox, oy, size, 26, 10, 1, 16, t.dark);
-    pxRect(ctx, ox, oy, size, 27, 10, 1, 16, t.core);
-    pxRect(ctx, ox, oy, size, 25, 8, 4, 3, t.core);
-    pxRect(ctx, ox, oy, size, 25, 8, 4, 1, t.hi);
+    line(ctx, ox, oy, size, 26.2, 8, 24.5, 26.2, t.dark, 1.2);
+    line(ctx, ox, oy, size, 27.1, 8.2, 25.4, 25.8, t.core, 0.55);
+    if (/scythe/.test(key)) {
+      const [cx, cy] = v(ctx, ox, oy, size, 26.4, 8.7);
+      ctx.strokeStyle = t.hi;
+      ctx.lineWidth = lineW(size, 0.85);
+      ctx.beginPath();
+      ctx.arc(cx, cy, (size / 32) * 4, -Math.PI * 0.8, Math.PI * 0.15);
+      ctx.stroke();
+    } else {
+      glow(ctx, ox, oy, size, 26.2, 8.4, 3.6, t.hi, 0.24);
+      circle(ctx, ox, oy, size, 26.2, 8.4, 1.4, t.hi);
+    }
     return;
   }
   // dagger / axe / mace / sword / default — short blade beside body
   if (/dagger/.test(key)) {
-    pxRect(ctx, ox, oy, size, 26, 14, 1, 6, t.core);
-    pxRect(ctx, ox, oy, size, 25, 19, 3, 1, t.dark);
+    poly(ctx, ox, oy, size, [[25.3, 13.2], [26.5, 9.5], [27.4, 13.4], [26.3, 20.5]], t.core);
+    line(ctx, ox, oy, size, 25.3, 20.2, 28.1, 20.7, t.dark, 0.9);
     return;
   }
-  if (/axe|hatchet/.test(key)) {
-    pxRect(ctx, ox, oy, size, 26, 12, 1, 10, '#5a3a20');
-    pxRect(ctx, ox, oy, size, 27, 12, 3, 3, t.core);
-    pxRect(ctx, ox, oy, size, 27, 12, 3, 1, t.hi);
+  if (/axe|hatchet|cleaver/.test(key)) {
+    line(ctx, ox, oy, size, 25.4, 11.5, 25.9, 23.5, '#5a3a20', 1.1);
+    if (/cleaver/.test(key)) {
+      poly(ctx, ox, oy, size, [[25.8, 10.8], [30.2, 11.5], [29.4, 17.8], [25.8, 17]], t.core);
+      line(ctx, ox, oy, size, 27, 11.7, 29.4, 12.1, t.hi, 0.4);
+    } else {
+      poly(ctx, ox, oy, size, [[26.2, 11.2], [30.5, 12.4], [29.1, 16.5], [26.3, 15.6]], t.core);
+      line(ctx, ox, oy, size, 27.1, 12.2, 30, 12.9, t.hi, 0.4);
+    }
     return;
   }
   if (/mace|brand/.test(key)) {
-    pxRect(ctx, ox, oy, size, 26, 14, 1, 8, '#5a3a20');
-    pxRect(ctx, ox, oy, size, 25, 11, 3, 3, t.core);
-    pxRect(ctx, ox, oy, size, 25, 11, 3, 1, t.hi);
+    line(ctx, ox, oy, size, 25.4, 13.2, 27, 23.5, '#5a3a20', 1.1);
+    circle(ctx, ox, oy, size, 25.2, 10.8, 2.2, t.core);
+    line(ctx, ox, oy, size, 23.7, 9.6, 26.7, 9.6, t.hi, 0.4);
+    if (/brand/.test(key)) glow(ctx, ox, oy, size, 25.2, 10.8, 4.2, '#ff6040', 0.26);
+    return;
+  }
+  if (/spear|rapier|pick|shard/.test(key)) {
+    line(ctx, ox, oy, size, 25.2, 22.7, 28.5, 6.2, t.core, 0.85);
+    poly(ctx, ox, oy, size, [[28.5, 4.1], [29.8, 7], [27.3, 6.6]], t.hi);
+    line(ctx, ox, oy, size, 24.3, 21.2, 27.2, 21.8, t.dark, 0.75);
+    if (/shard/.test(key)) glow(ctx, ox, oy, size, 28.4, 6.5, 4.8, t.hi, 0.25);
     return;
   }
   // default sword
-  pxRect(ctx, ox, oy, size, 26, 11, 1, 11, t.core);
-  pxRect(ctx, ox, oy, size, 26, 11, 1, 2, t.hi);
-  pxRect(ctx, ox, oy, size, 25, 21, 3, 1, t.dark);
+  poly(ctx, ox, oy, size, [[25.4, 20.7], [26.4, 6.5], [27.4, 20.7]], t.core);
+  line(ctx, ox, oy, size, 26.4, 7.6, 26.4, 19.7, t.hi, 0.4);
+  pxRect(ctx, ox, oy, size, 24.1, 20.4, 4.5, 1.2, t.dark, '#08070c');
+  pxRect(ctx, ox, oy, size, 25.6, 21.3, 1.5, 3.2, '#5a3a20', '#08070c');
 }
