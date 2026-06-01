@@ -347,9 +347,7 @@ export class GameScene {
   renderWorld(renderer) {
     if (!this.floor || !this.player) return;
     if (!this.renderer) this.renderer = renderer;
-    const cameraX = renderer.leanCombatFx ? this.player.x : this.player.renderX;
-    const cameraY = renderer.leanCombatFx ? this.player.y : this.player.renderY;
-    renderer.setCameraFor(cameraX, cameraY);
+    renderer.setCameraFor(this.player.renderX, this.player.renderY);
     perfMeter.measure('worldFloor', () => renderer.drawFloor(this.floor, this.player));
     perfMeter.measure('groundItems', () => renderer.drawGroundItems(this.floor));
     perfMeter.measure('telegraphs', () => renderer.drawTelegraphs(this.floor, this.player));

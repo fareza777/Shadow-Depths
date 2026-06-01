@@ -336,33 +336,44 @@ export class Renderer {
 
     if (this._leanCombatFx) {
       const def = floor.definition || {};
+      const sx = x0 * TILE_SIZE;
+      const sy = y0 * TILE_SIZE;
+      const width = (x1 - x0 + 1) * TILE_SIZE;
+      const height = (y1 - y0 + 1) * TILE_SIZE;
       const paintPlayer = player
         ? { x: player.x, y: player.y, renderX: player.x, renderY: player.y, torchRadius: player.torchRadius }
         : null;
       const key = [
         floor.seed, floor.index, floor.renderRevision || 0,
-        vx, vy, vw, vh, cam.x, cam.y, x0, y0, x1, y1,
+        x0, y0, x1, y1,
         paintPlayer?.x ?? '', paintPlayer?.y ?? '', paintPlayer?.torchRadius ?? '',
         def.biomeId || '', def.type || ''
       ].join('|');
       let cache = this._floorLayerCache;
       if (!cache || cache.floor !== floor || cache.key !== key
-          || cache.canvas.width !== vw || cache.canvas.height !== vh) {
+          || cache.canvas.width !== width || cache.canvas.height !== height) {
         const canvas = (typeof document !== 'undefined')
           ? document.createElement('canvas')
-          : new OffscreenCanvas(vw, vh);
-        canvas.width = vw;
-        canvas.height = vh;
+          : new OffscreenCanvas(width, height);
+        canvas.width = width;
+        canvas.height = height;
         const cctx = canvas.getContext('2d', { alpha: true });
         cctx.imageSmoothingEnabled = true;
-        cctx.translate(-vx, -vy);
+        cctx.translate(-sx, -sy);
         perfMeter.measure('floorLayer', () => {
-          this._paintFloorViewport(cctx, floor, paintPlayer, x0, y0, x1, y1, { skipHazards: true });
+          this._paintFloorWorldLayer(cctx, floor, paintPlayer, x0, y0, x1, y1, { skipHazards: true });
         });
-        cache = { floor, key, canvas };
+        cache = { floor, key, canvas, sx, sy };
         this._floorLayerCache = cache;
       }
-      ctx.drawImage(cache.canvas, vx, vy);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(vx, vy, vw, vh);
+      ctx.clip();
+      this._drawCachedViewportBackdrop(ctx, def);
+      ctx.translate(cam.x, cam.y);
+      ctx.drawImage(cache.canvas, cache.sx, cache.sy);
+      ctx.restore();
       this._drawHazardsLive(ctx, floor, x0, y0, x1, y1);
       return;
     }
@@ -384,7 +395,11 @@ export class Renderer {
     ctx.clip();
     this._drawCachedViewportBackdrop(ctx, floor.definition || {});
     ctx.translate(cam.x, cam.y);
+    this._paintFloorWorldLayer(ctx, floor, player, x0, y0, x1, y1, opts);
+    ctx.restore();
+  }
 
+  _paintFloorWorldLayer(ctx, floor, player, x0, y0, x1, y1, opts = {}) {
     this._drawCachedTileBase(ctx, floor, x0, y0, x1, y1);
 
     // Revealed traps (drawn over floor, under entities/motif).
@@ -400,7 +415,6 @@ export class Renderer {
     if (player) {
       this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
     }
-    ctx.restore();
   }
 
   _drawHazardsLive(ctx, floor, x0, y0, x1, y1) {
