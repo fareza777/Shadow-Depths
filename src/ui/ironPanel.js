@@ -459,10 +459,11 @@ export function drawEquipRow(renderer, x, y, w, h, slot, item) {
   if (has) {
     ctx.font = `bold 13px ${FONT_DISPLAY}`;
     ctx.fillStyle = col;
-    // Truncate name if too wide.
-    const name = item.name || '—';
-    const drawn = truncate(ctx, name.toUpperCase(), tw);
-    ctx.fillText(drawn, tx, y + 18);
+    const name = (item.name || '—').toUpperCase();
+    const nameLines = wrapTextLines(ctx, name, tw, 2);
+    for (let i = 0; i < nameLines.length; i++) {
+      ctx.fillText(nameLines[i], tx, y + 18 + i * 15);
+    }
     // Stat summary.
     if (item.stats) {
       const parts = [];
@@ -555,6 +556,55 @@ export function truncate(ctx, text, maxW) {
   let s = text;
   while (s.length > 1 && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
   return s + '…';
+}
+
+/** Word-wrap for UI labels; breaks long tokens by character when needed. */
+export function wrapTextLines(ctx, text, maxW, maxLines = 2) {
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let line = '';
+
+  const pushLine = (ln) => {
+    if (!ln || lines.length >= maxLines) return;
+    lines.push(ln);
+    line = '';
+  };
+
+  const pushToken = (token) => {
+    let chunk = '';
+    for (const ch of token) {
+      const next = chunk + ch;
+      if (ctx.measureText(next).width <= maxW) {
+        chunk = next;
+      } else {
+        if (chunk) pushLine(line ? `${line} ${chunk}` : chunk);
+        else if (lines.length >= maxLines) return;
+        chunk = ch;
+        line = '';
+      }
+    }
+    if (chunk) line = line ? `${line} ${chunk}` : chunk;
+  };
+
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word;
+    if (ctx.measureText(next).width <= maxW) {
+      line = next;
+      continue;
+    }
+    if (line) pushLine(line);
+    if (ctx.measureText(word).width > maxW) pushToken(word);
+    else line = word;
+    if (lines.length >= maxLines) break;
+  }
+  if (line && lines.length < maxLines) lines.push(line);
+
+  if (lines.length === maxLines && words.join(' ') !== lines.join(' ')) {
+    let last = lines[maxLines - 1];
+    while (last.length > 1 && ctx.measureText(`${last}…`).width > maxW) last = last.slice(0, -1);
+    lines[maxLines - 1] = `${last}…`;
+  }
+  return lines;
 }
 
 function hexAlpha(hex, alpha) {

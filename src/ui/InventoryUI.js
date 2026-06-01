@@ -19,7 +19,7 @@ import { Layout } from '../config/layoutMetrics.js';
 import {
   drawIronPanel, drawIronPlate, drawIronSlot, drawInsetCard,
   drawIronActionButton, drawSpacedText, IRON_PALETTE,
-  rarityColor as ironRarity, truncate
+  rarityColor as ironRarity, truncate, wrapTextLines
 } from './ironPanel.js';
 import { Tooltip } from './Tooltip.js';
 
@@ -523,13 +523,20 @@ export class InventoryUI {
     ctx.rect(textX, cardY + 10, textMaxW, DETAIL_H - 22);
     ctx.clip();
 
-    const nameLine = this._fitLine(r, nameUpper, textMaxW, nameSize, FONT_DISPLAY, true);
-    r.drawText(nameLine, textX, cardY + 14,
-      { size: nameSize, bold: true, family: FONT_DISPLAY, color: col });
+    ctx.save();
+    ctx.font = `bold ${nameSize}px ${FONT_DISPLAY}`;
+    const nameLines = wrapTextLines(ctx, nameUpper, textMaxW, 2);
+    ctx.restore();
+    const nameLineH = Math.ceil(nameSize * 1.12);
+    for (let i = 0; i < nameLines.length; i++) {
+      r.drawText(nameLines[i], textX, cardY + 14 + i * nameLineH,
+        { size: nameSize, bold: true, family: FONT_DISPLAY, color: col });
+    }
 
+    const subY = cardY + 14 + nameLines.length * nameLineH + 4;
     const sub = `${(sel.slot || sel.type || '').toUpperCase()} · ${sel.rarity.toUpperCase()}`;
     r.drawText(this._fitLine(r, sub, textMaxW, uiSize(9), FONT_MONO, false),
-      textX, cardY + 34,
+      textX, subY,
       { size: uiSize(9), family: FONT_MONO, color: IRON_PALETTE.boneDim });
 
     // Equipped chip (small brass tag).
@@ -553,13 +560,13 @@ export class InventoryUI {
 
     ctx.restore();
 
-    const statY = cardY + 50;
+    const statY = subY + 18;
     r.drawText(this._fitLine(r, this._statLine(sel), textMaxW, uiSize(11)),
       textX, statY,
       { size: uiSize(11), family: FONT_MONO, color: IRON_PALETTE.bone });
 
     if (sel.lore) {
-      const loreY = cardY + 66;
+      const loreY = statY + 16;
       const loreH = DETAIL_H - (loreY - cardY) - 8;
       const loreX = textX;
       const loreW = textMaxW;

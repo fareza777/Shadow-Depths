@@ -370,7 +370,7 @@ export const HERO_DEFS = {
     kind: 'pilgrim',
     grid: PILGRIM, pal: PAL_PILGRIM,
     name: 'The Ashen Pilgrim',
-    subtitle: 'A long walk. The wrong shrine.',
+    subtitle: 'A long walk. One wrong turn.',
     tags: ['Wide-brim hat', 'Travel coat', 'Lantern staff'],
     role: 'Scout',
     stats: { hp: 36, atk: 3, def: 5, dex: 5, torchRadius: 8 }

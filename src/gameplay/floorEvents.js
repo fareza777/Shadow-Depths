@@ -35,7 +35,7 @@ export const INTERACT_EVENT_KINDS = new Set([
 ]);
 
 export const EVENT_LABELS = {
-  shrine: 'Shrine',
+  shrine: 'Wayside Pedestal',
   trap_room: 'Trap Vault',
   merchant: 'Wandering Merchant',
   rest_alcove: 'Rest Alcove',
@@ -43,15 +43,15 @@ export const EVENT_LABELS = {
   elite_patrol: 'Elite Patrol',
   hazard_zone: 'Hazard Zone',
   mystery_chest: 'Mystery Chest',
-  altar_sacrifice: 'Altar of Sacrifice',
-  lore_omen: 'Omen Stone'
+  altar_sacrifice: 'Stone Offering Table',
+  lore_omen: 'Marker Stone'
 };
 
-/** Shrine choices shown in FloorEventPanel. */
+/** Pedestal choices shown in FloorEventPanel. */
 export const SHRINE_OPTIONS = [
   {
     id: 'blood_price',
-    label: 'Blood Price',
+    label: 'Health Toll',
     detail: '−15% HP now · +12% damage this floor',
     apply: (player) => {
       const cut = Math.max(1, Math.floor(player.stats.hpMax * 0.15));
@@ -61,7 +61,7 @@ export const SHRINE_OPTIONS = [
   },
   {
     id: 'veiled_gift',
-    label: 'Veiled Gift',
+    label: 'Supply Cache',
     detail: 'Random material ×2',
     apply: (player, ctx) => {
       const ids = Object.values(ctx.itemDefs || {})
@@ -94,7 +94,7 @@ export const MERCHANT_WARES = [
 export const ALTAR_OPTIONS = [
   {
     id: 'sacrifice_hp',
-    label: 'Offer Blood',
+    label: 'Pay in Health',
     detail: 'Lose 12% HP · +8% damage this floor',
     canApply: (p) => p.stats.hp > 2,
     apply: (player) => {
@@ -105,7 +105,7 @@ export const ALTAR_OPTIONS = [
   },
   {
     id: 'sacrifice_gold',
-    label: 'Offer Coin',
+    label: 'Pay in Coin',
     detail: 'Pay 25 gold · +1 torch radius this floor',
     canApply: (p) => p.gold >= 25,
     apply: (player) => {
@@ -115,7 +115,7 @@ export const ALTAR_OPTIONS = [
   },
   {
     id: 'sacrifice_material',
-    label: 'Offer Scrap',
+    label: 'Pay in Scrap',
     detail: 'Spend 2× any material · restore all focus',
     canApply: (p) => totalMaterials(p) >= 2,
     apply: (player) => {
@@ -130,7 +130,7 @@ export const ALTAR_OPTIONS = [
 export const LORE_OMENS = [
   {
     id: 'whisper_north',
-    label: 'Read the Omen',
+    label: 'Read the Inscription',
     detail: 'Reveal a distant room on the map',
     apply: (_p, ctx) => { ctx.revealRandomRoom?.(); }
   },
@@ -142,7 +142,7 @@ export const LORE_OMENS = [
   },
   {
     id: 'warning',
-    label: 'Heed the Warning',
+    label: 'Note the Warning',
     detail: '+5% crit this floor',
     apply: (player) => { addFloorMod(player, { critBonus: 0.05 }); }
   }

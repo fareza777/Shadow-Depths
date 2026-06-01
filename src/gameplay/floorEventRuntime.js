@@ -41,8 +41,8 @@ export function buildEventPanelConfig(kind, interact, ctx) {
   switch (kind) {
     case 'shrine':
       return {
-        title: 'Forgotten Shrine',
-        subtitle: 'Choose one blessing',
+        title: eventPanelTitle('shrine'),
+        subtitle: 'Pick one trade-off',
         options: SHRINE_OPTIONS.map((o) => ({
           id: o.id, label: o.label, detail: o.detail, enabled: true
         })),
@@ -68,8 +68,8 @@ export function buildEventPanelConfig(kind, interact, ctx) {
     }
     case 'altar_sacrifice':
       return {
-        title: 'Altar of Sacrifice',
-        subtitle: 'One offering — one boon',
+        title: eventPanelTitle('altar_sacrifice'),
+        subtitle: 'One trade — one floor boon',
         options: ALTAR_OPTIONS.map((o) => ({
           id: o.id, label: o.label, detail: o.detail,
           enabled: o.canApply(ctx.player)
@@ -86,7 +86,7 @@ function buildLorePanel(interact, ctx) {
   const omenId = interact?.omenId;
   if (omenId === 'hazard_warning') {
     return {
-      title: 'Omen Stone',
+      title: eventPanelTitle('lore_omen'),
       subtitle: 'The air here bites.',
       options: [{ id: 'ok', label: 'Understood', detail: 'Hazard zone ahead.', enabled: true }],
       onPick: () => ctx.bus.emit('floor:event', { message: 'You tread carefully.' })
@@ -94,8 +94,8 @@ function buildLorePanel(interact, ctx) {
   }
   const omen = LORE_OMENS.find((o) => o.id === omenId) || LORE_OMENS[0];
   return {
-    title: 'Omen Stone',
-    subtitle: 'Words crawl across the stone',
+    title: eventPanelTitle('lore_omen'),
+    subtitle: 'Words are carved into the stone',
     options: [{ id: omen.id, label: omen.label, detail: omen.detail, enabled: true }],
     onPick: (id) => {
       const pick = LORE_OMENS.find((o) => o.id === id) || omen;
