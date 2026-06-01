@@ -699,18 +699,27 @@ export class Renderer {
       this._glowHalo = halo;
       this._glowKey = key;
     }
+    // Both gradients fall to zero past radius*1.24, so only paint that
+    // bounding box (clamped to the visible range) instead of the whole tall
+    // portrait viewport — identical pixels, a fraction of the fill-rate.
+    const R = radius * 1.24;
+    const fx = Math.max(left, px - R);
+    const fy = Math.max(top, py - R);
+    const fw = Math.min(left + w, px + R) - fx;
+    const fh = Math.min(top + h, py + R) - fy;
+    if (fw <= 0 || fh <= 0) return;
     ctx.save();
     ctx.beginPath();
-    ctx.rect(left, top, w, h);
+    ctx.rect(fx, fy, fw, fh);
     ctx.clip();
     ctx.globalCompositeOperation = 'screen';
     ctx.globalAlpha = flicker;
     ctx.fillStyle = this._glowGrad;
-    ctx.fillRect(left, top, w, h);
+    ctx.fillRect(fx, fy, fw, fh);
     ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = this._glowHalo;
-    ctx.fillRect(left, top, w, h);
+    ctx.fillRect(fx, fy, fw, fh);
     ctx.globalAlpha = 0.12 * flicker;
     ctx.fillStyle = '#ffe8b0';
     ctx.beginPath();
@@ -1219,6 +1228,21 @@ export class Renderer {
   }
 
   /** Hand-drawn structures for shrine / merchant / altar / chest interactables. */
+  /** Position-independent interact glow gradient, cached per colour (full
+   *  opacity at centre — callers scale it with globalAlpha for the pulse). */
+  _interactGlowGrad(ctx, col, s) {
+    let cache = this._iGlowCache;
+    if (!cache) cache = this._iGlowCache = new Map();
+    let g = cache.get(col);
+    if (!g) {
+      g = ctx.createRadialGradient(0, s * 0.28, 1, 0, s * 0.28, s * 0.7);
+      g.addColorStop(0, this._hexA(col, 1));
+      g.addColorStop(1, this._hexA(col, 0));
+      cache.set(col, g);
+    }
+    return g;
+  }
+
   _drawFloorInteracts(ctx, floor, x0, y0, x1, y1) {
     const glowCol = {
       shrine: '#c8a0ff', merchant: '#ffd98a', keeper: '#72d7ff', rest_alcove: '#80c0ff',
@@ -1236,17 +1260,22 @@ export class Renderer {
         const cy = y * TILE_SIZE + TILE_SIZE / 2;
         const s = TILE_SIZE;
         ctx.save();
-        ctx.globalAlpha = tile.visible ? 1 : 0.5;
+        const vis = tile.visible ? 1 : 0.5;
 
-        // Soft floor glow marks every interactable as usable.
+        // Soft floor glow marks every interactable as usable. The gradient is
+        // identical per colour, so build it once at a local origin and reuse it
+        // by translating the context — pulse rides on globalAlpha. (Avoids a
+        // createRadialGradient allocation per interactable per frame.)
         const col = glowCol[ix.kind] || '#d4ac6c';
         const pulse = 0.5 + Math.sin(t * 2.6 + x * 0.7) * 0.16;
-        const g = ctx.createRadialGradient(cx, cy + s * 0.28, 1, cx, cy + s * 0.28, s * 0.7);
-        g.addColorStop(0, this._hexA(col, 0.34 * pulse + 0.12));
-        g.addColorStop(1, this._hexA(col, 0));
-        ctx.fillStyle = g;
-        ctx.fillRect(cx - s * 0.75, cy - s * 0.5, s * 1.5, s);
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.globalAlpha = vis * (0.34 * pulse + 0.12);
+        ctx.fillStyle = this._interactGlowGrad(ctx, col, s);
+        ctx.fillRect(-s * 0.75, -s * 0.5, s * 1.5, s);
+        ctx.restore();
 
+        ctx.globalAlpha = vis;
         switch (ix.kind) {
           case 'merchant':       this._drawMerchantSprite(ctx, cx, cy, s, t); break;
           case 'keeper':         this._drawKeeperSprite(ctx, cx, cy, s, t); break;
