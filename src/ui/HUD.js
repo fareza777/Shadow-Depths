@@ -35,8 +35,8 @@ export class HUD {
   render(renderer, ctx) {
     const { player, floor, floorIndex, totalFloors, mode, suppressMessages } = ctx;
     const topKey = HUD._topStripCacheKey(player, floor, floorIndex, totalFloors, mode);
-    if (topKey && typeof renderer.drawCachedScreenLayer === 'function') {
-      renderer.drawCachedScreenLayer(topKey, () => {
+    if (topKey && typeof renderer.drawCachedScreenRegion === 'function') {
+      renderer.drawCachedScreenRegion(topKey, { x: 0, y: 0, w: Layout.canvasW, h: Layout.hud }, () => {
         this._drawTopStrip(renderer, player, floor, floorIndex, totalFloors, mode);
       });
     } else {

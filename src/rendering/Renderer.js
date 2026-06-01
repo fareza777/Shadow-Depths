@@ -148,6 +148,7 @@ export class Renderer {
   }
 
   get camera() { return this._camera; }
+  get leanCombatFx() { return this._leanCombatFx; }
 
   /**
    * Convert canvas pixel coord → world tile coord. Returns null if the
@@ -262,7 +263,7 @@ export class Renderer {
       }
       cache = { canvas };
       this._screenLayerCaches.set(key, cache);
-      if (this._screenLayerCaches.size > 8) {
+      if (this._screenLayerCaches.size > 32) {
         const firstKey = this._screenLayerCaches.keys().next().value;
         this._screenLayerCaches.delete(firstKey);
       }
@@ -270,6 +271,46 @@ export class Renderer {
     this._screenLayerCaches.delete(key);
     this._screenLayerCaches.set(key, cache);
     this.ctx.drawImage(cache.canvas, 0, 0);
+  }
+
+  drawCachedScreenRegion(key, rect, paint) {
+    if (!this._leanCombatFx || typeof paint !== 'function' || !rect) {
+      paint();
+      return;
+    }
+    const x = Math.floor(rect.x || 0);
+    const y = Math.floor(rect.y || 0);
+    const w = Math.max(1, Math.ceil(rect.w || 1));
+    const h = Math.max(1, Math.ceil(rect.h || 1));
+    const cacheKey = `${key}|region:${x},${y},${w},${h}`;
+    let cache = this._screenLayerCaches.get(cacheKey);
+    if (!cache || cache.canvas.width !== w || cache.canvas.height !== h) {
+      const canvas = (typeof document !== 'undefined')
+        ? document.createElement('canvas')
+        : new OffscreenCanvas(w, h);
+      canvas.width = w;
+      canvas.height = h;
+      const cctx = canvas.getContext('2d', { alpha: true });
+      cctx.setTransform(1, 0, 0, 1, 0, 0);
+      cctx.clearRect(0, 0, w, h);
+      cctx.translate(-x, -y);
+      const mainCtx = this.ctx;
+      this.ctx = cctx;
+      try {
+        paint();
+      } finally {
+        this.ctx = mainCtx;
+      }
+      cache = { canvas };
+      this._screenLayerCaches.set(cacheKey, cache);
+      if (this._screenLayerCaches.size > 32) {
+        const firstKey = this._screenLayerCaches.keys().next().value;
+        this._screenLayerCaches.delete(firstKey);
+      }
+    }
+    this._screenLayerCaches.delete(cacheKey);
+    this._screenLayerCaches.set(cacheKey, cache);
+    this.ctx.drawImage(cache.canvas, x, y);
   }
 
   // --- world primitives ----------------------------------------------
@@ -295,10 +336,13 @@ export class Renderer {
 
     if (this._leanCombatFx) {
       const def = floor.definition || {};
+      const paintPlayer = player
+        ? { x: player.x, y: player.y, renderX: player.x, renderY: player.y, torchRadius: player.torchRadius }
+        : null;
       const key = [
         floor.seed, floor.index, floor.renderRevision || 0,
         vx, vy, vw, vh, cam.x, cam.y, x0, y0, x1, y1,
-        player?.x ?? '', player?.y ?? '', player?.torchRadius ?? '',
+        paintPlayer?.x ?? '', paintPlayer?.y ?? '', paintPlayer?.torchRadius ?? '',
         def.biomeId || '', def.type || ''
       ].join('|');
       let cache = this._floorLayerCache;
@@ -313,7 +357,7 @@ export class Renderer {
         cctx.imageSmoothingEnabled = true;
         cctx.translate(-vx, -vy);
         perfMeter.measure('floorLayer', () => {
-          this._paintFloorViewport(cctx, floor, player, x0, y0, x1, y1);
+          this._paintFloorViewport(cctx, floor, paintPlayer, x0, y0, x1, y1);
         });
         cache = { floor, key, canvas };
         this._floorLayerCache = cache;
