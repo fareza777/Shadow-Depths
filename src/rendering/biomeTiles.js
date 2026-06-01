@@ -817,6 +817,67 @@ export function hasBiome(biomeId) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// PER-TILE BITMAP CACHE  (mobile "world" cost killer)
+// ═══════════════════════════════════════════════════════════════════════
+// drawBiomeWall / drawBiomeFloor each run dozens of canvas ops, and the
+// dungeon paints ~200 tiles every frame — that procedural work dominates the
+// "world" budget on phones. But a tile is fully deterministic on
+// (biomeId, x, y): it never changes between frames, and it's even identical
+// across floors of the same biome (the draw never reads the floor index).
+//
+// So bake each distinct tile to a small offscreen ONCE and blit it after.
+// Baking is at device resolution (so 1px mortar lines stay crisp) and the
+// universal side-bevels already darken both vertical edges, so clipping the
+// tiny mortar bleed past the tile edge is visually identical.
+const _tileBmpCache = new Map();
+const _TILE_BMP_MAX = 1600; // ≥ a fully-explored floor; clears wholesale if hit
+
+function _makeCanvas(w, h) {
+  if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
+  if (typeof document !== 'undefined') {
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    return c;
+  }
+  return null;
+}
+
+function _bakedTile(kind, biomeId, x, y, size, scale) {
+  const key = biomeId + kind + x + ',' + y + '@' + size + 'x' + scale;
+  let cv = _tileBmpCache.get(key);
+  if (cv) return cv;
+  const dim = Math.max(1, Math.round(size * scale));
+  cv = _makeCanvas(dim, dim);
+  if (!cv) return null;
+  const octx = cv.getContext('2d');
+  octx.scale(scale, scale);
+  if (kind === 'W') drawBiomeWall(octx, 0, 0, size, x, y, biomeId);
+  else drawBiomeFloor(octx, 0, 0, size, x, y, biomeId);
+  if (_tileBmpCache.size >= _TILE_BMP_MAX) _tileBmpCache.clear();
+  _tileBmpCache.set(key, cv);
+  return cv;
+}
+
+function _blitTile(kind, ctx, ox, oy, size, x, y, biomeId, dpr) {
+  const scale = Math.min(Math.max(dpr || 1, 1), 2); // bake ≤2× to bound memory
+  const cv = _bakedTile(kind, biomeId, x, y, size, scale);
+  if (!cv) { // no canvas available (SSR/tests) — draw procedurally
+    if (kind === 'W') drawBiomeWall(ctx, ox, oy, size, x, y, biomeId);
+    else drawBiomeFloor(ctx, ox, oy, size, x, y, biomeId);
+    return;
+  }
+  ctx.drawImage(cv, ox, oy, size, size);
+}
+
+/** Cached equivalents of drawBiomeWall/Floor — same pixels, far cheaper. */
+export function drawBiomeWallCached(ctx, ox, oy, size, x, y, biomeId, dpr) {
+  _blitTile('W', ctx, ox, oy, size, x, y, biomeId, dpr);
+}
+export function drawBiomeFloorCached(ctx, ox, oy, size, x, y, biomeId, dpr) {
+  _blitTile('F', ctx, ox, oy, size, x, y, biomeId, dpr);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // PUBLIC DRAW API — wall + floor with universal overlays
 // ═══════════════════════════════════════════════════════════════════════
 

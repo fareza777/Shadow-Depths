@@ -26,7 +26,7 @@ import {
   Layout, syncLayoutFromWindow, viewportX, viewportY, viewportW, viewportH
 } from '../config/layoutMetrics.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
-import { drawBiomeWall, drawBiomeFloor, hasBiome } from './biomeTiles.js';
+import { drawBiomeWallCached, drawBiomeFloorCached, hasBiome } from './biomeTiles.js';
 import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
 import { HAZARDS } from '../gameplay/hazards.js';
 import { drawVectorNPC } from './npcArtVector.jsx';
@@ -294,19 +294,19 @@ export class Renderer {
         if (t.type === TILE.VOID || t.type === TILE.WALL) continue;
         switch (t.type) {
           case TILE.FLOOR:
-            if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+            if (useBiome) drawBiomeFloorCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
             else this.sprites.draw('tile_floor', ctx, tx, ty, opts);
             break;
           case TILE.STAIRS_DOWN:
-            if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+            if (useBiome) drawBiomeFloorCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
             this._drawStairsDownFixture(ctx, tx + TILE_SIZE / 2, ty + TILE_SIZE / 2, TILE_SIZE, this._timeSec || 0, def);
             break;
           case TILE.STAIRS_UP:
-            if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+            if (useBiome) drawBiomeFloorCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
             this.sprites.draw('tile_stairs_up', ctx, tx, ty, opts);
             break;
           case TILE.DOOR:
-            if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+            if (useBiome) drawBiomeFloorCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
             this.sprites.draw('tile_door', ctx, tx, ty, opts);
             break;
           default: break;
@@ -333,7 +333,7 @@ export class Renderer {
         const tx = toPx(x);
         const ty = toPx(y);
         if (useBiome) {
-          drawBiomeWall(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+          drawBiomeWallCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
         } else {
           this.sprites.draw('tile_wall', ctx, tx, ty, opts);
         }
