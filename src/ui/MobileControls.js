@@ -133,8 +133,8 @@ export class MobileControls {
     /** Optional per-frame context set by GameScene before render. */
     this._ctx = null;
     bus.on('scene:switched', ({ to }) => { this._currentScene = to; });
-    bus.on('tick', ({ time }) => {
-      if (this._pressedKey && time > this._pressedClearedAt) this._pressedKey = null;
+    bus.on('tick', () => {
+      if (this._pressedKey && performance.now() / 1000 > this._pressedClearedAt) this._pressedKey = null;
     });
   }
 
@@ -236,9 +236,19 @@ export class MobileControls {
     return false;
   }
 
-  _flash(key, time) {
+  _flash(key, _time) {
     this._pressedKey = key;
-    this._pressedClearedAt = (time ?? performance.now() / 1000) + 0.12;
+    this._pressedClearedAt = performance.now() / 1000 + 0.12;
+  }
+
+  _isPressed(key) {
+    if (this._pressedKey !== key) return false;
+    const now = performance.now() / 1000;
+    if (now > this._pressedClearedAt) {
+      this._pressedKey = null;
+      return false;
+    }
+    return true;
   }
 
   // --- panel chrome ----------------------------------------------------
@@ -345,7 +355,7 @@ export class MobileControls {
     for (const b of DPAD_BUTTONS) {
       const bx = LAYOUT.dpadX + b.col * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
       const by = LAYOUT.dpadY + b.row * (LAYOUT.dpadBtn + LAYOUT.dpadGap);
-      const pressed = this._pressedKey === `dpad:${b.dir}`;
+      const pressed = this._isPressed(`dpad:${b.dir}`);
       if (b.dir === 'wait') {
         // Brass center jewel for WAIT.
         const cx = bx + LAYOUT.dpadBtn / 2;
@@ -466,7 +476,7 @@ export class MobileControls {
     const canDescend = !!this._ctx?.canDescend;
 
     for (const a of acts) {
-      const pressed = this._pressedKey === `act:${a.key}`;
+      const pressed = this._isPressed(`act:${a.key}`);
       const enabled = (a.key === 'aim') ? !!aimTarget
                     : (a.key === 'cast') ? castReady
                     : (a.key === 'descend') ? canDescend

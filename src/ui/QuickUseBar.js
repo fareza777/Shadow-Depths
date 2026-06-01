@@ -24,8 +24,8 @@ export class QuickUseBar {
     this._pressedUntil = 0;
     /** Optional context (player, pickAvailable) set per render frame. */
     this._ctx = null;
-    bus.on('tick', ({ time }) => {
-      if (this._pressed >= 0 && time > this._pressedUntil) this._pressed = -1;
+    bus.on('tick', () => {
+      if (this._pressed >= 0 && performance.now() / 1000 > this._pressedUntil) this._pressed = -1;
     });
   }
 
@@ -174,7 +174,7 @@ export class QuickUseBar {
     ctx.restore();
   }
 
-  hitTest(canvasX, canvasY, time, inventory) {
+  hitTest(canvasX, canvasY, _time, inventory) {
     if (canvasY < getViewportBottomY()) return -1;
     const LAYOUT = getQuickUseLayout();
     const slots = inventory ? findQuickUseSlots(inventory) : [];
@@ -184,7 +184,7 @@ export class QuickUseBar {
           canvasY >= r.y && canvasY <= r.y + r.h) {
         if (slots[i] === undefined || slots[i] < 0) return -1;
         this._pressed = i;
-        this._pressedUntil = (time ?? performance.now() / 1000) + 0.12;
+        this._pressedUntil = performance.now() / 1000 + 0.12;
         return i;
       }
     }
@@ -193,7 +193,7 @@ export class QuickUseBar {
       if (canvasX >= r.x && canvasX <= r.x + r.w &&
           canvasY >= r.y && canvasY <= r.y + r.h) {
         this._pressed = QUICK_SLOT_COUNT + i;
-        this._pressedUntil = (time ?? performance.now() / 1000) + 0.12;
+        this._pressedUntil = performance.now() / 1000 + 0.12;
         return { type: r.type };
       }
     }

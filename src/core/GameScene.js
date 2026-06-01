@@ -364,11 +364,6 @@ export class GameScene {
     if (!this.renderer) this.renderer = renderer;
     if (!this.controls) this.controls = new MobileControls({ bus: this.bus });
     if (!this.quickUse) this.quickUse = new QuickUseBar({ bus: this.bus });
-    const cacheKey = this._uiCacheKey();
-    if (cacheKey && typeof renderer.drawCachedScreenLayer === 'function') {
-      renderer.drawCachedScreenLayer(cacheKey, () => this._renderUIUncached(renderer));
-      return;
-    }
     this._renderUIUncached(renderer);
   }
 
