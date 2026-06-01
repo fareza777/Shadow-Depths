@@ -70,6 +70,7 @@ export class Renderer {
     this._hitFlashes = new WeakMap();
     this._attackFlashes = [];
     this._leanCombatFx = prefersLeanCombatFx();
+    this._tileBaseCache = null;
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
@@ -108,6 +109,10 @@ export class Renderer {
   destroy() {
     window.removeEventListener('resize', this._resizeBound);
     window.visualViewport?.removeEventListener('resize', this._resizeBound);
+  }
+
+  invalidateFloorCache() {
+    this._tileBaseCache = null;
   }
 
   // --- camera ---------------------------------------------------------
@@ -251,10 +256,55 @@ export class Renderer {
     const y1 = Math.min(floor.height - 1,
       Math.ceil((vy + vh - cam.y) / TILE_SIZE));
 
-    // Base abyss wash inside visible tile range.
-    fillRect(ctx, x0 * TILE_SIZE, y0 * TILE_SIZE,
-      (x1 - x0 + 1) * TILE_SIZE, (y1 - y0 + 1) * TILE_SIZE, '#05040a');
+    this._drawCachedTileBase(ctx, floor, x0, y0, x1, y1);
 
+    // Revealed traps (drawn over floor, under entities/motif).
+    this._drawDynamicStairs(ctx, floor, x0, y0, x1, y1);
+    this._drawHazards(ctx, floor, x0, y0, x1, y1);
+    this._drawRoomDecor(ctx, floor, x0, y0, x1, y1);
+    this._drawFloorInteracts(ctx, floor, x0, y0, x1, y1);
+    this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
+
+    // Special floor centerpiece (REST campfire / VAULT chest motif).
+    this._drawSpecialFloorMotif(ctx, floor);
+
+    if (player) {
+      this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
+    }
+    ctx.restore();
+  }
+
+  _drawCachedTileBase(ctx, floor, x0, y0, x1, y1) {
+    const width = floor.width * TILE_SIZE;
+    const height = floor.height * TILE_SIZE;
+    const def = floor.definition || {};
+    const key = [
+      floor.seed, floor.index, floor.renderRevision || 0,
+      def.biomeId || '', (def.wallPalette || []).join(','),
+      (def.floorPalette || []).join(',')
+    ].join('|');
+    let cache = this._tileBaseCache;
+    if (!cache || cache.floor !== floor || cache.key !== key
+        || cache.canvas.width !== width || cache.canvas.height !== height) {
+      const canvas = (typeof document !== 'undefined')
+        ? document.createElement('canvas')
+        : new OffscreenCanvas(width, height);
+      canvas.width = width;
+      canvas.height = height;
+      const cctx = canvas.getContext('2d', { alpha: true });
+      cctx.imageSmoothingEnabled = true;
+      this._paintTileBase(cctx, floor, 0, 0, floor.width - 1, floor.height - 1);
+      cache = { floor, key, canvas };
+      this._tileBaseCache = cache;
+    }
+    const sx = x0 * TILE_SIZE;
+    const sy = y0 * TILE_SIZE;
+    const sw = (x1 - x0 + 1) * TILE_SIZE;
+    const sh = (y1 - y0 + 1) * TILE_SIZE;
+    ctx.drawImage(cache.canvas, sx, sy, sw, sh, sx, sy, sw, sh);
+  }
+
+  _paintTileBase(ctx, floor, x0, y0, x1, y1) {
     const def = floor.definition || {};
     const tileOpts = {
       wallLit: def.wallPalette?.[0] || COLOR.wallLit,
@@ -263,19 +313,20 @@ export class Renderer {
       floorDim: def.floorPalette?.[1] || COLOR.floorDim,
       biomeId: def.biomeId || ''
     };
-
     const isWalkSurface = (type) =>
       type === TILE.FLOOR || type === TILE.DOOR
       || type === TILE.STAIRS_DOWN || type === TILE.STAIRS_UP;
-
     const adjFloorAt = (ax, ay) => {
       const nt = floor.tileAt(ax, ay);
       return !!(nt && isWalkSurface(nt.type));
     };
-
     const toPx = (g) => g * TILE_SIZE;
+    const biomeId = tileOpts.biomeId;
+    const useBiome = !!biomeId && hasBiome(biomeId);
 
-    // Pass 1 — void abyss (in & outside rooms), then floors.
+    fillRect(ctx, x0 * TILE_SIZE, y0 * TILE_SIZE,
+      (x1 - x0 + 1) * TILE_SIZE, (y1 - y0 + 1) * TILE_SIZE, '#05040a');
+
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
@@ -289,12 +340,6 @@ export class Renderer {
         });
       }
     }
-
-    // Use biome tile atlas if this floor's biomeId matches one of our 10
-    // hand-designed biomes. Otherwise fall back to the legacy sprite
-    // registry tiles.
-    const biomeId = tileOpts.biomeId;
-    const useBiome = !!biomeId && hasBiome(biomeId);
 
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
@@ -312,7 +357,6 @@ export class Renderer {
             break;
           case TILE.STAIRS_DOWN:
             if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
-            this._drawStairsDownFixture(ctx, tx + TILE_SIZE / 2, ty + TILE_SIZE / 2, TILE_SIZE, this._timeSec || 0, def);
             break;
           case TILE.STAIRS_UP:
             if (useBiome) drawBiomeFloor(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
@@ -328,7 +372,6 @@ export class Renderer {
       }
     }
 
-    // Pass 2 — walls on top with edge lighting toward open floor.
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
@@ -345,28 +388,22 @@ export class Renderer {
         };
         const tx = toPx(x);
         const ty = toPx(y);
-        if (useBiome) {
-          drawBiomeWall(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
-        } else {
-          this.sprites.draw('tile_wall', ctx, tx, ty, opts);
-        }
+        if (useBiome) drawBiomeWall(ctx, tx, ty, TILE_SIZE, x, y, biomeId);
+        else this.sprites.draw('tile_wall', ctx, tx, ty, opts);
         if (dim) Renderer._applyFog(ctx, tx, ty);
       }
     }
+  }
 
-    // Revealed traps (drawn over floor, under entities/motif).
-    this._drawHazards(ctx, floor, x0, y0, x1, y1);
-    this._drawRoomDecor(ctx, floor, x0, y0, x1, y1);
-    this._drawFloorInteracts(ctx, floor, x0, y0, x1, y1);
-    this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
-
-    // Special floor centerpiece (REST campfire / VAULT chest motif).
-    this._drawSpecialFloorMotif(ctx, floor);
-
-    if (player) {
-      this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
-    }
-    ctx.restore();
+  _drawDynamicStairs(ctx, floor, x0, y0, x1, y1) {
+    const def = floor.definition || {};
+    const down = floor.stairsDown;
+    if (!down || down.x < x0 || down.x > x1 || down.y < y0 || down.y > y1) return;
+    const t = floor.tileAt(down.x, down.y);
+    if (!t?.explored) return;
+    this._drawStairsDownFixture(ctx, down.x * TILE_SIZE + TILE_SIZE / 2,
+      down.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE, this._timeSec || 0, def);
+    if (!t.visible) Renderer._applyFog(ctx, down.x * TILE_SIZE, down.y * TILE_SIZE);
   }
 
   /**
@@ -1487,6 +1524,7 @@ export class Renderer {
   // --- viewport scaling ----------------------------------------------
   _fitToViewport() {
     syncLayoutFromWindow(this.canvas);
+    this.invalidateFloorCache();
     const vw = window.visualViewport?.width || window.innerWidth;
     const vh = window.visualViewport?.height || window.innerHeight;
     const scale = Math.min(vw / Layout.canvasW, vh / Layout.canvasH);

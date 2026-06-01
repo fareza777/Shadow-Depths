@@ -46,6 +46,11 @@ export class Floor {
 
     // Set true when player has cleared all enemies on this floor (for scoring).
     this.clearedWithoutDamage = true;
+
+    // Incremented when static floor visuals change (lighting, explored tiles,
+    // revealed hazards, used room events). Renderer uses it to keep its tile
+    // cache exact without repainting biome tiles every battle frame.
+    this.renderRevision = 0;
   }
 
   static _createGrid(w, h) {
@@ -72,6 +77,11 @@ export class Floor {
   setTile(x, y, type) {
     if (!this.inBounds(x, y)) return;
     this.tiles[y][x].type = type;
+    this.touchRender();
+  }
+
+  touchRender() {
+    this.renderRevision = (this.renderRevision || 0) + 1;
   }
 
   /** True if the tile is walkable AND no entity stands there. */
@@ -161,6 +171,7 @@ export class Floor {
         row[x].visible = false;
       }
     }
+    this.touchRender();
   }
 
   /** Reveal every tile (Scroll of Mapping). Does NOT change current visibility. */
@@ -171,6 +182,7 @@ export class Floor {
         row[x].explored = true;
       }
     }
+    this.touchRender();
   }
 
   static _key(x, y) {
