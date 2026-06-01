@@ -357,19 +357,20 @@ export class Renderer {
         cctx.imageSmoothingEnabled = true;
         cctx.translate(-vx, -vy);
         perfMeter.measure('floorLayer', () => {
-          this._paintFloorViewport(cctx, floor, paintPlayer, x0, y0, x1, y1);
+          this._paintFloorViewport(cctx, floor, paintPlayer, x0, y0, x1, y1, { skipHazards: true });
         });
         cache = { floor, key, canvas };
         this._floorLayerCache = cache;
       }
       ctx.drawImage(cache.canvas, vx, vy);
+      this._drawHazardsLive(ctx, floor, x0, y0, x1, y1);
       return;
     }
 
     this._paintFloorViewport(ctx, floor, player, x0, y0, x1, y1);
   }
 
-  _paintFloorViewport(ctx, floor, player, x0, y0, x1, y1) {
+  _paintFloorViewport(ctx, floor, player, x0, y0, x1, y1, opts = {}) {
     const cam = this._camera;
     ctx.save();
     // Clip to viewport rect so world pixels can never spill into HUD or
@@ -388,7 +389,7 @@ export class Renderer {
 
     // Revealed traps (drawn over floor, under entities/motif).
     this._drawDynamicStairs(ctx, floor, x0, y0, x1, y1);
-    this._drawHazards(ctx, floor, x0, y0, x1, y1);
+    if (!opts.skipHazards) this._drawHazards(ctx, floor, x0, y0, x1, y1);
     this._drawRoomDecor(ctx, floor, x0, y0, x1, y1);
     this._drawFloorInteracts(ctx, floor, x0, y0, x1, y1);
     this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
@@ -399,6 +400,17 @@ export class Renderer {
     if (player) {
       this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
     }
+    ctx.restore();
+  }
+
+  _drawHazardsLive(ctx, floor, x0, y0, x1, y1) {
+    const cam = this._camera;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
+    ctx.clip();
+    ctx.translate(cam.x, cam.y);
+    this._drawHazards(ctx, floor, x0, y0, x1, y1);
     ctx.restore();
   }
 
