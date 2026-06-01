@@ -604,24 +604,37 @@ export class Renderer {
     const h = (y1 - y0 + 1) * TILE_SIZE;
     const flicker = 0.88 + Math.sin((this._timeSec || 0) * 5.2) * 0.08
       + Math.sin((this._timeSec || 0) * 11.7) * 0.04;
+    // The two gradients depend only on (center, radius) — flicker just scales
+    // their alpha, which we apply via globalAlpha. Rebuild them only when the
+    // center/radius actually changes (i.e. while walking), not every frame, to
+    // avoid two CanvasGradient allocations per frame and the GC churn that
+    // causes micro-stutter.
+    const key = `${Math.round(px)},${Math.round(py)},${Math.round(radius)}`;
+    if (key !== this._glowKey) {
+      const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.3, px, py, radius);
+      g.addColorStop(0, 'rgba(245, 214, 150, 0.28)');
+      g.addColorStop(0.34, 'rgba(190, 136, 74, 0.14)');
+      g.addColorStop(0.72, 'rgba(92, 62, 92, 0.05)');
+      g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      const halo = ctx.createRadialGradient(px, py, radius * 0.48, px, py, radius * 1.24);
+      halo.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      halo.addColorStop(0.82, 'rgba(6, 4, 12, 0.08)');
+      halo.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+      this._glowGrad = g;
+      this._glowHalo = halo;
+      this._glowKey = key;
+    }
     ctx.save();
     ctx.beginPath();
     ctx.rect(left, top, w, h);
     ctx.clip();
-    const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.3, px, py, radius);
-    g.addColorStop(0, `rgba(245, 214, 150, ${0.28 * flicker})`);
-    g.addColorStop(0.34, `rgba(190, 136, 74, ${0.14 * flicker})`);
-    g.addColorStop(0.72, 'rgba(92, 62, 92, 0.05)');
-    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
     ctx.globalCompositeOperation = 'screen';
-    ctx.fillStyle = g;
+    ctx.globalAlpha = flicker;
+    ctx.fillStyle = this._glowGrad;
     ctx.fillRect(left, top, w, h);
-    const halo = ctx.createRadialGradient(px, py, radius * 0.48, px, py, radius * 1.24);
-    halo.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    halo.addColorStop(0.82, 'rgba(6, 4, 12, 0.08)');
-    halo.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+    ctx.globalAlpha = 1;
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = halo;
+    ctx.fillStyle = this._glowHalo;
     ctx.fillRect(left, top, w, h);
     ctx.globalAlpha = 0.12 * flicker;
     ctx.fillStyle = '#ffe8b0';

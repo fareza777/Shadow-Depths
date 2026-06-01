@@ -108,11 +108,14 @@ export class GameLoop {
     }
 
     // Adapt the target frame rate from measured work (with hysteresis so it
-    // doesn't flap around the threshold).
+    // doesn't flap around the threshold). _preferSteady30 only sets the
+    // conservative *starting* target; once the device proves it can keep up
+    // (sustained work < 12ms) we lift to 60, and drop back to 30 if it runs
+    // hot (> 18ms). The band in between holds the current rate steady.
     const work = performance.now() - workStart;
     perfMeter.endFrame(work);
     this._frameEma += (work - this._frameEma) * 0.1;
-    if (this._preferSteady30 || this._frameEma > 20) this._targetMs = 1000 / 30;
+    if (this._frameEma > 18) this._targetMs = 1000 / 30;
     else if (this._frameEma < 12) this._targetMs = 1000 / 60;
 
     this._rafId = requestAnimationFrame(this._loop);
