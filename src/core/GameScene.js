@@ -361,7 +361,15 @@ export class GameScene {
     if (!this.renderer) this.renderer = renderer;
     if (!this.controls) this.controls = new MobileControls({ bus: this.bus });
     if (!this.quickUse) this.quickUse = new QuickUseBar({ bus: this.bus });
+    const cacheKey = this._uiCacheKey();
+    if (cacheKey && typeof renderer.drawCachedScreenLayer === 'function') {
+      renderer.drawCachedScreenLayer(cacheKey, () => this._renderUIUncached(renderer));
+      return;
+    }
+    this._renderUIUncached(renderer);
+  }
 
+  _renderUIUncached(renderer) {
     try {
       this.hud.render(renderer, {
         player: this.player, floor: this.floor,
@@ -417,6 +425,37 @@ export class GameScene {
     if (this.crafting) this.crafting.render(renderer);
     if (this.floorEvents) this.floorEvents.render(renderer);
     if (this.tutorial?.open) this.tutorial.render(renderer);
+  }
+
+  _uiCacheKey() {
+    if (!this.floor || !this.player) return null;
+    if (this._floorBanner || this._lootToast) return null;
+    if (this.tutorial?.open || this.inventoryUI?.open || this.vigil?.open
+        || this.skillPicker?.open || this.pause?.open || this.crafting?.open
+        || this.floorEvents?.open) return null;
+    const hpPct = this.player.stats.hpMax ? this.player.stats.hp / this.player.stats.hpMax : 1;
+    if (hpPct <= 0.35) return null;
+    const inv = this.player.inventory?.slots?.map((item) =>
+      item ? `${item.id}:${item.count || 1}:${item.def?.affixes ? JSON.stringify(item.def.affixes) : ''}` : '-'
+    ).join(',');
+    const statuses = (this.player.statusEffects || [])
+      .map((s) => `${s.id}:${s.value ?? ''}:${s.duration ?? ''}`).join(',');
+    const boss = this.floor.enemies?.().find((e) =>
+      !e.isDead && (e.defId?.startsWith('boss_') || e.defId?.startsWith('subboss_')));
+    const itemKeys = Array.from(this.floor.items?.keys?.() || []).join(';');
+    return [
+      'game-ui', Layout.canvasW, Layout.canvasH,
+      this.mode, this.dungeon.currentIndex, this.dungeon.totalFloors,
+      this.player.x, this.player.y,
+      this.player.stats.hp, this.player.stats.hpMax,
+      this.player.xp, this.player.level, this.player.gold,
+      this.player.rangedFocus, this.player.rangedFocusMax,
+      this.player.reviveCharges, this.player.weapon?.id || '',
+      this.floor.renderRevision || 0, this.floor.entityRevision || 0,
+      this.floor.definition?.type || '', this.floor.definition?.specialEnemyId || '',
+      boss ? `${boss.defId}:${boss.stats.hp}:${boss.stats.hpMax}` : '',
+      statuses, inv, itemKeys
+    ].join('|');
   }
 
   _buildFloorBanner(index, def) {

@@ -73,6 +73,7 @@ export class Renderer {
     this._tileBaseCache = null;
     this._entitySortCache = null;
     this._backdropCache = null;
+    this._screenLayerCache = null;
 
     this._resizeBound = this._fitToViewport.bind(this);
     window.addEventListener('resize', this._resizeBound);
@@ -116,6 +117,7 @@ export class Renderer {
   invalidateFloorCache() {
     this._tileBaseCache = null;
     this._backdropCache = null;
+    this._screenLayerCache = null;
   }
 
   // --- camera ---------------------------------------------------------
@@ -226,6 +228,36 @@ export class Renderer {
 
   endScreenSpace() {
     this.ctx.restore();
+  }
+
+  drawCachedScreenLayer(key, paint) {
+    if (!this._leanCombatFx || typeof paint !== 'function') {
+      paint();
+      return;
+    }
+    const w = Layout.canvasW;
+    const h = Layout.canvasH;
+    if (!this._screenLayerCache || this._screenLayerCache.key !== key
+        || this._screenLayerCache.canvas.width !== w
+        || this._screenLayerCache.canvas.height !== h) {
+      const canvas = (typeof document !== 'undefined')
+        ? document.createElement('canvas')
+        : new OffscreenCanvas(w, h);
+      canvas.width = w;
+      canvas.height = h;
+      const cctx = canvas.getContext('2d', { alpha: true });
+      cctx.setTransform(1, 0, 0, 1, 0, 0);
+      cctx.clearRect(0, 0, w, h);
+      const mainCtx = this.ctx;
+      this.ctx = cctx;
+      try {
+        paint();
+      } finally {
+        this.ctx = mainCtx;
+      }
+      this._screenLayerCache = { key, canvas };
+    }
+    this.ctx.drawImage(this._screenLayerCache.canvas, 0, 0);
   }
 
   // --- world primitives ----------------------------------------------
