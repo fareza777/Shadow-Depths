@@ -78,8 +78,10 @@ class PerfMeter {
       this.ema[k] = this.ema[k] == null ? v : this.ema[k] + (v - this.ema[k]) * 0.18;
       this.max[k] = Math.max(this.max[k] || 0, v);
     }
-    const worst = Object.entries(sections)
-      .filter(([k]) => k !== 'total')
+    const aggregate = new Set(['tick', 'update', 'render']);
+    const entries = Object.entries(sections);
+    const leafEntries = entries.filter(([k]) => k !== 'total' && !aggregate.has(k));
+    const worst = (leafEntries.length ? leafEntries : entries.filter(([k]) => k !== 'total'))
       .sort((a, b) => b[1] - a[1])[0] || ['none', 0];
     if (totalMs > 33 || worst[1] > 12) {
       this.lastSlow = {
@@ -100,7 +102,7 @@ class PerfMeter {
 
   render(ctx, layout) {
     if (!this.enabled || !ctx || !layout) return;
-    const rows = ['total', 'world', 'tileCache', 'entities', 'particles', 'ui', 'enemyTurn', 'save']
+    const rows = ['total', 'render', 'world', 'floorLayer', 'tileCache', 'entities', 'particles', 'ui', 'enemyTurn', 'save']
       .filter((k) => this.ema[k] != null)
       .map((k) => `${k.padEnd(9)} ${this.ema[k].toFixed(1).padStart(5)} ms`);
     if (!rows.length) return;

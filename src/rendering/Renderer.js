@@ -74,6 +74,7 @@ export class Renderer {
     this._tileBaseCache = null;
     this._entitySortCache = null;
     this._backdropCache = null;
+    this._floorLayerCache = null;
     this._screenLayerCache = null;
 
     this._resizeBound = this._fitToViewport.bind(this);
@@ -118,6 +119,7 @@ export class Renderer {
   invalidateFloorCache() {
     this._tileBaseCache = null;
     this._backdropCache = null;
+    this._floorLayerCache = null;
     this._screenLayerCache = null;
   }
 
@@ -274,25 +276,64 @@ export class Renderer {
   drawFloor(floor, player) {
     const ctx = this.ctx;
     const cam = this._camera;
-    ctx.save();
-    // Clip to viewport rect so world pixels can never spill into HUD or
-    // control band areas. Then translate by camera offset.
-    ctx.beginPath();
     const vx = viewportX();
     const vy = viewportY();
     const vw = viewportW();
     const vh = viewportH();
-    ctx.rect(vx, vy, vw, vh);
-    ctx.clip();
-    this._drawCachedViewportBackdrop(ctx, floor.definition || {});
-    ctx.translate(cam.x, cam.y);
-
     const x0 = Math.max(0, Math.floor((vx - cam.x) / TILE_SIZE));
     const y0 = Math.max(0, Math.floor((vy - cam.y) / TILE_SIZE));
     const x1 = Math.min(floor.width - 1,
       Math.ceil((vx + vw - cam.x) / TILE_SIZE));
     const y1 = Math.min(floor.height - 1,
       Math.ceil((vy + vh - cam.y) / TILE_SIZE));
+
+    if (this._leanCombatFx) {
+      const def = floor.definition || {};
+      const timeBucket = Math.floor((this._timeSec || 0) * 4);
+      const key = [
+        floor.seed, floor.index, floor.renderRevision || 0,
+        vx, vy, vw, vh, cam.x, cam.y, x0, y0, x1, y1,
+        player?.x ?? '', player?.y ?? '', player?.torchRadius ?? '',
+        def.biomeId || '', def.type || '', timeBucket
+      ].join('|');
+      let cache = this._floorLayerCache;
+      if (!cache || cache.floor !== floor || cache.key !== key
+          || cache.canvas.width !== vw || cache.canvas.height !== vh) {
+        const canvas = (typeof document !== 'undefined')
+          ? document.createElement('canvas')
+          : new OffscreenCanvas(vw, vh);
+        canvas.width = vw;
+        canvas.height = vh;
+        const cctx = canvas.getContext('2d', { alpha: true });
+        cctx.imageSmoothingEnabled = true;
+        cctx.translate(-vx, -vy);
+        perfMeter.measure('floorLayer', () => {
+          this._paintFloorViewport(cctx, floor, player, x0, y0, x1, y1);
+        });
+        cache = { floor, key, canvas };
+        this._floorLayerCache = cache;
+      }
+      ctx.drawImage(cache.canvas, vx, vy);
+      return;
+    }
+
+    this._paintFloorViewport(ctx, floor, player, x0, y0, x1, y1);
+  }
+
+  _paintFloorViewport(ctx, floor, player, x0, y0, x1, y1) {
+    const cam = this._camera;
+    ctx.save();
+    // Clip to viewport rect so world pixels can never spill into HUD or
+    // control band areas. Then translate by camera offset.
+    const vx = viewportX();
+    const vy = viewportY();
+    const vw = viewportW();
+    const vh = viewportH();
+    ctx.beginPath();
+    ctx.rect(vx, vy, vw, vh);
+    ctx.clip();
+    this._drawCachedViewportBackdrop(ctx, floor.definition || {});
+    ctx.translate(cam.x, cam.y);
 
     this._drawCachedTileBase(ctx, floor, x0, y0, x1, y1);
 
