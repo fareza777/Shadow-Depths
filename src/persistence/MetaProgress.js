@@ -32,6 +32,7 @@ const DEFAULT_META = Object.freeze({
   settings: {
     volume: 0.6,
     vibration: true,
+    ambient: true,
     showTutorial: true,
     orientation: 'portrait'
   },

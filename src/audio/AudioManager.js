@@ -14,6 +14,8 @@
  */
 import { LOG } from '../config/constants.js';
 import { SynthSFX } from './SynthSFX.js';
+import { AmbientBed } from './AmbientBed.js';
+import { biomeIdForFloor } from '../rendering/biomeTiles.js';
 
 export class AudioManager {
   /**
@@ -26,6 +28,9 @@ export class AudioManager {
     this._master = null;
     this._muted = false;
     this._volume = metaProgress?.state?.settings?.volume ?? 0.6;
+    this._ambient = null;
+    this._ambientEnabled = metaProgress?.state?.settings?.ambient !== false;
+    this._ambientBiome = 'forgotten_crypts';
 
     this._wireEvents();
   }
@@ -63,10 +68,34 @@ export class AudioManager {
     this.bus.on('entity:moved', ({ entity }) => {
       if (entity?.kind === 'player') this.play('footstep');
     });
-    this.bus.on('floor:entered', () => this.play('floorEntry'));
+    this.bus.on('floor:entered', ({ biomeId, index }) => {
+      this.play('floorEntry');
+      this._ambientBiome = biomeId || biomeIdForFloor(index || 0);
+      this._startAmbient();
+    });
     this.bus.on('settings:changed', ({ key, value }) => {
       if (key === 'volume') this.setVolume(value);
+      else if (key === 'ambient') this.setAmbientEnabled(value);
     });
+    // Atmosphere is for the dungeon only — silence it on menus / end screens.
+    this.bus.on('scene:switched', ({ to }) => {
+      if (to !== 'game') this._ambient?.stop();
+    });
+  }
+
+  /** Lazily build + start the procedural ambient bed for the current biome. */
+  _startAmbient() {
+    if (this._muted || !this._ambientEnabled) return;
+    if (!this._ensureCtx()) return;
+    if (!this._ambient) this._ambient = new AmbientBed(this._ctx, this._master);
+    this._ambient.start();
+    this._ambient.setBiome(this._ambientBiome);
+  }
+
+  setAmbientEnabled(on) {
+    this._ambientEnabled = on !== false;
+    if (this._ambientEnabled) this._startAmbient();
+    else this._ambient?.stop();
   }
 
   /**
@@ -92,8 +121,12 @@ export class AudioManager {
     this._volume = Math.max(0, Math.min(1, v));
     if (this._master) this._master.gain.value = this._volume;
   }
-  setMuted(m) { this._muted = !!m; }
-  toggleMuted() { this._muted = !this._muted; return this._muted; }
+  setMuted(m) {
+    this._muted = !!m;
+    if (this._muted) this._ambient?.stop();
+    else this._startAmbient();
+  }
+  toggleMuted() { this.setMuted(!this._muted); return this._muted; }
 
   _vibrate(pattern) {
     if (this.meta?.state?.settings?.vibration === false) return;
