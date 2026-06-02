@@ -26,7 +26,7 @@ import {
   Layout, prefersLeanCombatFx, syncLayoutFromWindow, viewportX, viewportY, viewportW, viewportH
 } from '../config/layoutMetrics.js';
 import { fillRect, strokeRect } from './SpriteRegistry.js';
-import { drawBiomeWallCached, drawBiomeFloorCached, hasBiome } from './biomeTiles.js';
+import { drawBiomeWallCached, drawBiomeFloorCached, hasBiome, beginTileFrame } from './biomeTiles.js';
 import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
 import { HAZARDS } from '../gameplay/hazards.js';
 import { getStatusMeta } from '../combat/StatusEffects.js';
@@ -460,6 +460,11 @@ export class Renderer {
   }
 
   _paintTileBase(ctx, floor, x0, y0, x1, y1) {
+    // Cap how many fresh tiles bake to a bitmap this frame, so walking into a
+    // newly-revealed room spreads the work over a few frames instead of one
+    // hitch (over-budget tiles draw directly and bake on a later frame).
+    beginTileFrame(6);
+
     const def = floor.definition || {};
     const tileOpts = {
       wallLit: def.wallPalette?.[0] || COLOR.wallLit,

@@ -832,6 +832,13 @@ export function hasBiome(biomeId) {
 const _tileBmpCache = new Map();
 const _TILE_BMP_MAX = 1600; // ≥ a fully-explored floor; clears wholesale if hit
 
+// Baking a tile allocates an offscreen canvas + runs the procedural draw.
+// Walking into a fresh room reveals many tiles at once, so baking them all in
+// one frame causes a visible hitch. Cap bakes per frame; over-budget tiles
+// draw directly that frame (the pre-cache behaviour) and bake on a later one.
+let _bakeBudget = 0;
+export function beginTileFrame(budget = 6) { _bakeBudget = budget; }
+
 function _makeCanvas(w, h) {
   if (typeof OffscreenCanvas !== 'undefined') return new OffscreenCanvas(w, h);
   if (typeof document !== 'undefined') {
@@ -842,12 +849,9 @@ function _makeCanvas(w, h) {
   return null;
 }
 
-function _bakedTile(kind, biomeId, x, y, size, scale) {
-  const key = biomeId + kind + x + ',' + y + '@' + size + 'x' + scale;
-  let cv = _tileBmpCache.get(key);
-  if (cv) return cv;
+function _bake(kind, biomeId, x, y, size, scale, key) {
   const dim = Math.max(1, Math.round(size * scale));
-  cv = _makeCanvas(dim, dim);
+  const cv = _makeCanvas(dim, dim);
   if (!cv) return null;
   const octx = cv.getContext('2d');
   octx.scale(scale, scale);
@@ -858,13 +862,23 @@ function _bakedTile(kind, biomeId, x, y, size, scale) {
   return cv;
 }
 
+function _drawDirect(kind, ctx, ox, oy, size, x, y, biomeId) {
+  if (kind === 'W') drawBiomeWall(ctx, ox, oy, size, x, y, biomeId);
+  else drawBiomeFloor(ctx, ox, oy, size, x, y, biomeId);
+}
+
 function _blitTile(kind, ctx, ox, oy, size, x, y, biomeId, dpr) {
   const scale = Math.min(Math.max(dpr || 1, 1), 2); // bake ≤2× to bound memory
-  const cv = _bakedTile(kind, biomeId, x, y, size, scale);
-  if (!cv) { // no canvas available (SSR/tests) — draw procedurally
-    if (kind === 'W') drawBiomeWall(ctx, ox, oy, size, x, y, biomeId);
-    else drawBiomeFloor(ctx, ox, oy, size, x, y, biomeId);
-    return;
+  const key = biomeId + kind + x + ',' + y + '@' + size + 'x' + scale;
+  let cv = _tileBmpCache.get(key);
+  if (!cv) {
+    if (_bakeBudget <= 0) { // over this frame's budget — draw without caching
+      _drawDirect(kind, ctx, ox, oy, size, x, y, biomeId);
+      return;
+    }
+    _bakeBudget -= 1;
+    cv = _bake(kind, biomeId, x, y, size, scale, key);
+    if (!cv) { _drawDirect(kind, ctx, ox, oy, size, x, y, biomeId); return; }
   }
   ctx.drawImage(cv, ox, oy, size, size);
 }
