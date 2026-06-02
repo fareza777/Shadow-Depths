@@ -221,6 +221,22 @@ export function drawFloorTile(ctx, x, y, s, opts = {}) {
  * Abyss outside rooms — misty cave depth, not flat gray.
  * @param {{ explored?:boolean, tileX?:number, tileY?:number, biomeId?:string }} opts
  */
+// Void gradients have fixed stops, so build each once at a tile-local origin
+// and reuse via translate — the unexplored map is mostly VOID, and allocating
+// a CanvasGradient per void tile per frame was the dominant walking-time GC
+// churn on low-end phones.
+let _voidUnseenG = null, _voidSeenG = null, _voidGradSize = 0;
+function _ensureVoidGrads(ctx, s) {
+  if (_voidGradSize === s && _voidUnseenG && _voidSeenG) return;
+  _voidGradSize = s;
+  let g = ctx.createLinearGradient(0, 0, 0, s);
+  g.addColorStop(0, '#0a0710'); g.addColorStop(0.5, '#030208'); g.addColorStop(1, '#000000');
+  _voidUnseenG = g;
+  g = ctx.createLinearGradient(0, 0, 0, s);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,0.45)');
+  _voidSeenG = g;
+}
+
 export function drawVoidTile(ctx, x, y, s, opts = {}) {
   const tx = opts.tileX ?? 0;
   const ty = opts.tileY ?? 0;
@@ -245,12 +261,10 @@ export function drawVoidTile(ctx, x, y, s, opts = {}) {
     fillRect(ctx, x, y, s, s, '#020106');
     ctx.save();
     ctx.globalAlpha = 0.34;
-    const g = ctx.createLinearGradient(x, y, x, y + s);
-    g.addColorStop(0, '#0a0710');
-    g.addColorStop(0.5, '#030208');
-    g.addColorStop(1, '#000000');
-    ctx.fillStyle = g;
-    ctx.fillRect(x, y, s, s);
+    ctx.translate(x, y);
+    _ensureVoidGrads(ctx, s);
+    ctx.fillStyle = _voidUnseenG;
+    ctx.fillRect(0, 0, s, s);
     ctx.restore();
     if ((h >> 3) % 6 === 0) {
       fillRect(ctx, x + 3, y + ((h >> 5) % 18) + 6, s - 6, 1, '#ffffff04');
@@ -277,11 +291,12 @@ export function drawVoidTile(ctx, x, y, s, opts = {}) {
   ctx.restore();
 
   // Soft vertical depth gradient (farther = darker bottom).
-  const g = ctx.createLinearGradient(x, y, x, y + s);
-  g.addColorStop(0, 'rgba(0,0,0,0)');
-  g.addColorStop(1, 'rgba(0,0,0,0.45)');
-  ctx.fillStyle = g;
-  ctx.fillRect(x, y, s, s);
+  ctx.save();
+  ctx.translate(x, y);
+  _ensureVoidGrads(ctx, s);
+  ctx.fillStyle = _voidSeenG;
+  ctx.fillRect(0, 0, s, s);
+  ctx.restore();
 
   // Drifting mist wisps.
   if ((h >> 3) % 5 === 0) {
