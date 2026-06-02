@@ -3,6 +3,7 @@
  */
 import { COLOR, TIMING, TILE_SIZE } from '../config/constants.js';
 import { prefersLeanCombatFx } from '../config/layoutMetrics.js';
+import { getStatusMeta } from '../combat/StatusEffects.js';
 
 const DEFAULT_MAX_PARTICLES = 256;
 
@@ -30,6 +31,15 @@ export class ParticleSystem {
       this.spawnSparks(entity.renderX, entity.renderY, '#60d080', this._leanCombatFx ? 3 : 6, {
         spread: 0.55,
         life: 0.4,
+        glow: !this._leanCombatFx
+      });
+    });
+    this.bus.on('entity:status', ({ entity, status }) => {
+      if (!entity) return;
+      const col = getStatusMeta(status)?.color || '#ffffff';
+      this.spawnSparks(entity.renderX, entity.renderY, col, this._leanCombatFx ? 4 : 7, {
+        spread: 0.5,
+        life: 0.45,
         glow: !this._leanCombatFx
       });
     });

@@ -29,6 +29,7 @@ import { fillRect, strokeRect } from './SpriteRegistry.js';
 import { drawBiomeWallCached, drawBiomeFloorCached, hasBiome } from './biomeTiles.js';
 import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
 import { HAZARDS } from '../gameplay/hazards.js';
+import { getStatusMeta } from '../combat/StatusEffects.js';
 import { drawVectorNPC } from './npcArtVector.jsx';
 import { drawVectorDecor, drawVectorFixture } from './furnishingArtVector.jsx';
 import { drawVectorTrap } from './dungeonTrapsVector.jsx';
@@ -850,6 +851,7 @@ export class Renderer {
       if (e.elite) this._drawEliteMarker(ctx, e, px, py);
       this.sprites.draw(key, ctx, px, py, { entity: e, time: this._timeSec || 0 });
       this._drawEntityHitFlash(ctx, e, px, py);
+      this._drawStatusFx(ctx, e, px, py);
 
       if (e.kind === 'enemy' && e.stats.hp < e.stats.hpMax) {
         const pct = e.stats.hp / e.stats.hpMax;
@@ -962,6 +964,52 @@ export class Renderer {
       cache.set(key, g);
     }
     return g;
+  }
+
+  /**
+   * In-world status feedback for ANY source (weapon procs, spells, traps): a
+   * dominant-colour wash over the sprite so the creature itself reads tinted
+   * (frozen=blue, poisoned=green, burning=orange…), a soft same-colour glow at
+   * its feet, and one coloured pip per active status above its head.
+   */
+  _drawStatusFx(ctx, e, px, py) {
+    const list = e.statusEffects;
+    if (!list || list.length === 0) return;
+    const t = this._timeSec || 0;
+    const pulse = 0.6 + Math.sin(t * 4.5 + (e.x + e.y)) * 0.4;
+
+    const dom = getStatusMeta(list[0].id);
+    if (dom) {
+      // Tint the body.
+      ctx.save();
+      ctx.globalAlpha = 0.16 * pulse + 0.06;
+      ctx.fillStyle = dom.color;
+      ctx.fillRect(px + 3, py + 2, TILE_SIZE - 6, TILE_SIZE - 4);
+      ctx.restore();
+      // Soft glow at the feet (reuses the cached aura gradient).
+      ctx.save();
+      ctx.globalAlpha = 0.22 * pulse;
+      ctx.translate(px + TILE_SIZE / 2, py + TILE_SIZE * 0.72);
+      ctx.fillStyle = this._auraGrad(ctx, dom.color, TILE_SIZE * 0.42);
+      ctx.beginPath();
+      ctx.arc(0, 0, TILE_SIZE * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // One pip per active status, centred above the head (clear of the HP bar).
+    const n = Math.min(list.length, 4);
+    const pipW = 5, gap = 2;
+    const totalW = n * pipW + (n - 1) * gap;
+    let pipX = Math.round(px + TILE_SIZE / 2 - totalW / 2);
+    const hasBar = e.kind === 'enemy' && e.stats.hp < e.stats.hpMax;
+    const pipY = py - (hasBar ? 13 : 7);
+    for (let i = 0; i < n; i++) {
+      const meta = getStatusMeta(list[i].id);
+      fillRect(ctx, pipX - 1, pipY - 1, pipW + 2, 5, '#0a0a0e');
+      fillRect(ctx, pipX, pipY, pipW, 3, meta?.color || '#ffffff');
+      pipX += pipW + gap;
+    }
   }
 
   _drawThreatAura(ctx, entity, px, py) {
