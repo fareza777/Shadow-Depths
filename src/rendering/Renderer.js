@@ -1659,11 +1659,11 @@ export class Renderer {
         const r = TILE_SIZE * 0.26;
         ctx.save();
         ctx.globalAlpha = hz.armed ? (t.visible ? 0.9 : 0.4) : 0.3;
-        if (this._leanCombatFx && this._drawCanvasTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed)) {
+        if (drawVectorTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed ? 'armed' : 'sprung')) {
           ctx.restore();
           continue;
         }
-        if (drawVectorTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed ? 'armed' : 'sprung')) {
+        if (this._drawCanvasTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed)) {
           ctx.restore();
           continue;
         }

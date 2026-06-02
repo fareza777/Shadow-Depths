@@ -32,7 +32,7 @@ const KEEPER_STEPS = [
   },
   {
     title: 'READ THE ROOM',
-    body: 'Gold glows mark people or shrines. Blue cracks, bones, banners, and torches are landmarks that help you remember each room.'
+    body: 'Gold glows mark people or pedestals. Blue cracks, bones, banners, and torches are landmarks that help you remember each room.'
   },
   {
     title: 'FIRST FIGHT',

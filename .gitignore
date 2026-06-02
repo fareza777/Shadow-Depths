@@ -20,6 +20,9 @@ Thumbs.db
 .env.*
 !.env.example
 
+# Local dev / handoff (not shipped)
+artifacts/
+
 # Build artifacts
 *.log
 npm-debug.log*

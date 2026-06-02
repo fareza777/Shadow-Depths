@@ -12,7 +12,7 @@ import { CANVAS_WIDTH, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize, COLOR } from 
 import { Layout } from '../config/layoutMetrics.js';
 import { IRON } from './ironHud.js';
 import { displayName } from '../items/Identification.js';
-import { truncate } from './ironPanel.js';
+import { wrapTextLines } from './ironPanel.js';
 
 const BRASS = '#d4ac6c';
 
@@ -55,7 +55,7 @@ export class Tooltip {
 
     // Build the line list dynamically — we measure to size the box.
     const lines = [];
-    lines.push({ text: name, kind: 'title', color: RARITY_COLORS[item.rarity] || RARITY_COLORS.common });
+    const titleColor = RARITY_COLORS[item.rarity] || RARITY_COLORS.common;
     if (item.slot) lines.push({ text: item.slot.toUpperCase(), kind: 'sub', color: BRASS });
     if (identified) {
       if (item.stats) {
@@ -89,21 +89,25 @@ export class Tooltip {
     }
 
     const padX = 10, padY = 10, lineGap = 4;
+    const maxLine = Layout.canvasW - 48;
+    const titleSz = uiSize(14);
+    ctx.save();
+    ctx.font = `bold ${titleSz}px ${FONT_DISPLAY}`;
+    const titleLines = wrapTextLines(ctx, name, maxLine, 2);
+    ctx.restore();
+    for (let i = titleLines.length - 1; i >= 0; i--) {
+      lines.unshift({ text: titleLines[i], kind: 'title', color: titleColor });
+    }
+    if (!titleLines.length) {
+      lines.unshift({ text: name, kind: 'title', color: titleColor });
+    }
+
     const widths = [];
     for (const ln of lines) {
       const sz = uiSize(ln.kind === 'title' ? 14 : (ln.kind === 'lore' ? 11 : 12));
       const family = ln.kind === 'lore' ? FONT_BODY : (ln.kind === 'stat' ? FONT_MONO : FONT_DISPLAY);
       const bold = ln.kind === 'title';
-      const maxLine = Layout.canvasW - 48;
-      let text = ln.text;
-      if (ln.kind === 'title') {
-        ctx.save();
-        ctx.font = `${bold ? 'bold ' : ''}${sz}px ${family}`;
-        text = truncate(ctx, text, maxLine);
-        ctx.restore();
-        ln.text = text;
-      }
-      widths.push(renderer.measureText(text, { size: sz, family, bold }));
+      widths.push(renderer.measureText(ln.text, { size: sz, family, bold }));
     }
     const w = Math.min(Layout.canvasW - 24, Math.max(160, Math.max(...widths) + padX * 2));
     const lineH = (kind) => uiSize(kind === 'title' ? 16 : (kind === 'lore' ? 13 : 14));
