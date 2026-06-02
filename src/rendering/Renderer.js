@@ -496,7 +496,8 @@ export class Renderer {
         this.sprites.draw('tile_void', ctx, tx, ty, {
           tileX: x, tileY: y, ...tileOpts,
           explored: t.explored,
-          dim: !t.visible
+          dim: !t.visible,
+          lean: this._leanCombatFx
         });
       }
     }

@@ -73,11 +73,17 @@ export class HUD {
     const ctx = r.ctx;
     r.drawRect(0, 0, Layout.canvasW, Layout.hud, COLOR.bgPanel);
     ctx.save();
-    const g = ctx.createLinearGradient(0, 0, 0, Layout.hud);
-    g.addColorStop(0, '#302536');
-    g.addColorStop(0.46, '#1f1926');
-    g.addColorStop(1, '#120f18');
-    ctx.fillStyle = g;
+    // Static panel gradient — depends only on Layout.hud, so build it once and
+    // reuse instead of allocating a CanvasGradient every frame.
+    if (!this._bgGrad || this._bgGradH !== Layout.hud) {
+      const g = ctx.createLinearGradient(0, 0, 0, Layout.hud);
+      g.addColorStop(0, '#302536');
+      g.addColorStop(0.46, '#1f1926');
+      g.addColorStop(1, '#120f18');
+      this._bgGrad = g;
+      this._bgGradH = Layout.hud;
+    }
+    ctx.fillStyle = this._bgGrad;
     ctx.fillRect(0, 0, Layout.canvasW, Layout.hud);
     ctx.globalAlpha = 0.18;
     for (let x = 10; x < Layout.canvasW; x += 42) {

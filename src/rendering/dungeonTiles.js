@@ -244,6 +244,15 @@ export function drawVoidTile(ctx, x, y, s, opts = {}) {
   const seen = opts.explored !== false;
   const biome = opts.biomeId || '';
 
+  // Lean fast-path: the unexplored map is the bulk of the screen and reads as
+  // flat darkness anyway, so on low-end devices skip the gradient + specks and
+  // lay down a single flat fill (big per-frame draw-call saving while walking).
+  if (!seen && opts.lean) {
+    fillRect(ctx, x, y, s, s, '#040209');
+    fillRect(ctx, x, y, s, 1, '#000000');
+    return;
+  }
+
   let abyss = '#06050c';
   let mist = '#14101c';
   let speck = '#2a2438';
