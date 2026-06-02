@@ -39,6 +39,7 @@ export class KeyboardHandler {
     if (KEYBIND.descend.includes(key))   return { type: 'descend' };
     if (KEYBIND.inventory.includes(key)) return { type: 'inventory' };
     if (KEYBIND.minimap.includes(key))   return { type: 'minimap' };
+    if (KEYBIND.skills.includes(key))    return { type: 'skills' };
     if (KEYBIND.escape.includes(key))    return { type: 'escape' };
     if (key === 'Enter')                 return { type: 'confirm' };
     if (key === 'd' || key === 'D')      return { type: 'drop' };

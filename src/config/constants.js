@@ -177,6 +177,7 @@ export const KEYBIND = Object.freeze({
   descend:   ['>', 'PageDown'],
   inventory: ['i', 'I', 'Tab'],
   minimap:   ['m', 'M'],
+  skills:    ['c', 'C'],
   hotkey1:   ['1'],
   hotkey2:   ['2'],
   hotkey3:   ['3'],

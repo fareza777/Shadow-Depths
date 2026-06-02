@@ -51,6 +51,7 @@ import { HUD } from './ui/HUD.js';
 import { Minimap } from './ui/Minimap.js';
 import { InventoryUI } from './ui/InventoryUI.js';
 import { SkillPickerUI } from './ui/SkillPickerUI.js';
+import { SkillsModal } from './ui/SkillsModal.js';
 import { VigilScreen } from './ui/VigilScreen.js';
 import { TitleScreen } from './ui/TitleScreen.js';
 import { CharacterSelect } from './ui/CharacterSelect.js';
@@ -196,6 +197,7 @@ async function bootstrap() {
   const minimap = new Minimap();
   const inventoryUI = new InventoryUI({ bus, materialDefs: materialsData.materials || {} });
   const skillPicker = new SkillPickerUI({ bus, content });
+  const skillsModal = new SkillsModal({ content });
   const vigilScreen = new VigilScreen({ bus });
   const characterSelect = new CharacterSelect({ bus, metaProgress });
   const mobileControls = new MobileControls({ bus });
@@ -209,6 +211,7 @@ async function bootstrap() {
 
   const resetRunModals = () => {
     skillPicker.hide();
+    skillsModal.hide();
     pauseOverlay.hide();
     inventoryUI.hide();
     vigilScreen.hide();
@@ -230,7 +233,7 @@ async function bootstrap() {
     title: (deps) => new TitleScreen({ ...deps, metaProgress, characterSelect }),
     opening: (deps) => new OpeningCinematic(deps),
     game: (deps) => new GameScene({
-      ...deps, hud, minimap, inventoryUI, skillPicker, vigilScreen,
+      ...deps, hud, minimap, inventoryUI, skillPicker, skillsModal, vigilScreen,
       lighting, renderer, mobileControls, quickUseBar, pauseOverlay,
       craftingPanel, floorEventPanel, tutorial
     }),

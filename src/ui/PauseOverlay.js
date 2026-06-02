@@ -33,8 +33,8 @@ export class PauseOverlay {
     if (!this.open) return false;
     switch (action.type) {
       case 'move':
-        if (action.dy === -1) this.selected = 0;
-        else if (action.dy === 1) this.selected = 1;
+        if (action.dy === -1) this.selected = Math.max(0, this.selected - 1);
+        else if (action.dy === 1) this.selected = Math.min(2, this.selected + 1);
         return true;
       case 'confirm':
         this._activate(this.selected);
@@ -46,7 +46,7 @@ export class PauseOverlay {
       case 'tap':
       case 'pointer': {
         const idx = action.buttonIndex;
-        if (idx === 0 || idx === 1) {
+        if (idx === 0 || idx === 1 || idx === 2) {
           this.selected = idx;
           this._activate(idx);
           return true;
@@ -61,13 +61,14 @@ export class PauseOverlay {
 
   _activate(idx) {
     if (idx === 0) this.hide();
+    else if (idx === 1) { this.hide(); this.bus.emit('request:openSkills', {}); }
     else this.bus.emit('request:quitToTitle', {});
   }
 
   _panelRect() {
     const screenH = Layout.canvasH || CANVAS_HEIGHT;
     const panelW = IS_LANDSCAPE ? 360 : 340;
-    const panelH = IS_LANDSCAPE ? 238 : 276;
+    const panelH = IS_LANDSCAPE ? 300 : 338;
     return {
       x: (CANVAS_WIDTH - panelW) / 2,
       y: (screenH - panelH) / 2,
@@ -83,7 +84,8 @@ export class PauseOverlay {
     const baseY = p.y + 110;
     return [
       { x: btnX, y: baseY, w: btnW, h: btnH },
-      { x: btnX, y: baseY + btnH + 12, w: btnW, h: btnH }
+      { x: btnX, y: baseY + btnH + 12, w: btnW, h: btnH },
+      { x: btnX, y: baseY + (btnH + 12) * 2, w: btnW, h: btnH }
     ];
   }
 
@@ -141,9 +143,16 @@ export class PauseOverlay {
         fontSize: 15
       });
     drawIronActionButton(renderer, btns[1].x, btns[1].y, btns[1].w, btns[1].h,
+      'SKILLS', {
+        accent: IRON_PALETTE.brass,
+        pressed: this.selected === 1,
+        glyph: '✦',
+        fontSize: 14
+      });
+    drawIronActionButton(renderer, btns[2].x, btns[2].y, btns[2].w, btns[2].h,
       t('pause.quit'), {
         accent: IRON_PALETTE.blood,
-        pressed: this.selected === 1,
+        pressed: this.selected === 2,
         glyph: '✕',
         fontSize: 13
       });

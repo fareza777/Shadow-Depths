@@ -219,8 +219,8 @@ export class SkillPickerUI {
   }
 }
 
-const TAG_LABELS = { fury: 'FURY', ward: 'WARD', hunt: 'HUNT', arcane: 'ARCANE' };
-const TAG_COLORS = { fury: '#ff7a5a', ward: '#6fb6ff', hunt: '#6ee08a', arcane: '#c08aff' };
+export const TAG_LABELS = { fury: 'FURY', ward: 'WARD', hunt: 'HUNT', arcane: 'ARCANE' };
+export const TAG_COLORS = { fury: '#ff7a5a', ward: '#6fb6ff', hunt: '#6ee08a', arcane: '#c08aff' };
 
 function rarityColor(r) {
   switch (r) {
@@ -232,7 +232,7 @@ function rarityColor(r) {
 }
 
 /** Which of the four glyphs a skill shows — primary tag, else infer. */
-function iconCategory(skill) {
+export function iconCategory(skill) {
   const t = (skill.tags || [])[0];
   if (t === 'fury' || t === 'ward' || t === 'hunt' || t === 'arcane') return t;
   const e = skill.effect || {};
@@ -249,7 +249,7 @@ function iconCategory(skill) {
  * Draw a small rarity-tinted glyph (sword / shield / arrow / tome) for a skill
  * card. Built from the renderer's rect primitive so it needs no sprite atlas.
  */
-function drawSkillIcon(r, x, y, s, skill, accent) {
+export function drawSkillIcon(r, x, y, s, skill, accent) {
   r.drawRect(x, y, s, s, '#0e0c14');
   r.drawStrokedRect(x, y, s, s, '#2a2630', 1);
   const p = (a, b, w, h, col) => r.drawRect(x + a, y + b, w, h, col);

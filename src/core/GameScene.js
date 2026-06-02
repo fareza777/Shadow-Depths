@@ -97,6 +97,7 @@ export class GameScene {
     this.inventoryUI = deps.inventoryUI;
     this.skillPicker = deps.skillPicker || null;
     this.vigil = deps.vigilScreen || null;
+    this.skillsModal = deps.skillsModal || null;
     this.controls = deps.mobileControls || new MobileControls({ bus: this.bus });
     this.quickUse = deps.quickUseBar || new QuickUseBar({ bus: this.bus });
     this.pause = deps.pauseOverlay || null;
@@ -419,6 +420,7 @@ export class GameScene {
       this._renderFloorBanner(renderer);
       this.inventoryUI.render(renderer, this.player);
       if (this.vigil) this.vigil.render(renderer, this.player);
+      if (this.skillsModal) this.skillsModal.render(renderer, this.player);
       if (this.skillPicker) this.skillPicker.render(renderer);
       if (this.pause) this.pause.render(renderer);
       if (this.crafting) this.crafting.render(renderer);
@@ -698,6 +700,11 @@ export class GameScene {
       return;
     }
 
+    // Skills modal — full-canvas overlay; any input dismisses it.
+    if (this.skillsModal?.open) {
+      if (this.skillsModal.handleInput(action)) return;
+    }
+
     // Vigil (character) screen — full-canvas modal.
     if (this.vigil?.open) {
       if (action.type === 'pointer') {
@@ -743,6 +750,12 @@ export class GameScene {
       case 'cast':
         return this._playerCastSpell();
       case 'minimap':    return this.minimap.toggle();
+      case 'skills':
+        if (this.skillsModal) {
+          if (this.skillsModal.open) this.skillsModal.hide();
+          else { this.inventoryUI.hide(); this.vigil?.hide(); this.skillsModal.show(); }
+        }
+        return;
       case 'quickUse':   return this._playerQuickUse(action.index);
       case 'useSlot':    return this._playerUseSlot(action.index);
       case 'pointer': {
@@ -872,6 +885,9 @@ export class GameScene {
   }
 
   _wireCraftingEvents() {
+    this._listen('request:openSkills', () => {
+      if (this.skillsModal) { this.inventoryUI.hide(); this.vigil?.hide(); this.skillsModal.show(); }
+    });
     this._listen('request:openCrafting', () => {
       if (this.crafting && this.player) {
         if (this.floor?.definition?.type !== 'forge') {
