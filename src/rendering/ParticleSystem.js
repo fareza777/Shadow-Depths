@@ -36,12 +36,25 @@ export class ParticleSystem {
     });
     this.bus.on('entity:status', ({ entity, status }) => {
       if (!entity) return;
-      const col = getStatusMeta(status)?.color || '#ffffff';
+      const meta = getStatusMeta(status);
+      const col = meta?.color || '#ffffff';
       this.spawnSparks(entity.renderX, entity.renderY, col, this._leanCombatFx ? 4 : 7, {
         spread: 0.5,
         life: 0.45,
         glow: !this._leanCombatFx
       });
+      // Floating label names the status (teaches what each colour means).
+      if (meta?.name) {
+        this._pushText({
+          x: (entity.renderX + 0.5) * TILE_SIZE,
+          y: entity.renderY * TILE_SIZE - 6,
+          text: meta.name.toUpperCase(),
+          color: col,
+          stroke: '#10101a',
+          scale: 0.8,
+          life: 0.8
+        });
+      }
     });
     this.bus.on('entity:died', ({ entity }) => {
       const isBoss = entity.defId?.startsWith('boss_');
