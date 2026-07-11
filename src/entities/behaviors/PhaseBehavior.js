@@ -8,12 +8,20 @@
 import { greedyStep } from './ChaseBehavior.js';
 
 export class PhaseBehavior {
-  constructor(_params) { this.params = _params || {}; }
+  constructor(_params) {
+    this.params = _params || {};
+    this.pathfindDistance = this.params.pathfindDistance ?? 6;
+  }
 
   decideAction(enemy, ctx) {
     const { floor, player, pathfinding } = ctx;
-    if (manhattan(enemy, player) === 1) {
+    const dist = manhattan(enemy, player);
+    if (dist === 1) {
       return { type: 'attack', target: { x: player.x, y: player.y } };
+    }
+    // ignoreWalls A* explores a huge space — only use it up close.
+    if (dist > this.pathfindDistance) {
+      return greedyStep(enemy, player, floor) || { type: 'wait' };
     }
     const path = pathfinding.findPath(
       floor,

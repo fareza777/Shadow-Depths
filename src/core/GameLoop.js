@@ -11,6 +11,7 @@
  * Anything that needs per-frame work subscribes to 'tick' on the bus.
  */
 import { LOG } from '../config/constants.js';
+import { prefersLeanCombatFx } from '../config/layoutMetrics.js';
 import { perfMeter } from '../debug/PerfMeter.js';
 
 export class GameLoop {
@@ -34,11 +35,13 @@ export class GameLoop {
     this._accumDt = 0;
     this._maxDt = 1 / 15; // clamp to avoid huge jumps after tab-switch
 
-    // Adaptive frame pacing. Prefer 60fps for touch feel; fall back to a
-    // steady 30fps only while measured frame work is genuinely too high.
+    // Adaptive frame pacing. Budget phones can't hold 60fps redrawing the
+    // whole world; a ragged 40–55fps reads as stutter. Prefer a steady 30fps
+    // on lean/mobile builds, then lift to 60 only when work stays cheap.
     this._lastWorkTs = 0;
-    this._frameEma = 16;          // ms, exponential moving average of work
-    this._targetMs = 1000 / 60;
+    this._frameEma = 16;
+    this._preferSteady30 = prefersLeanCombatFx();
+    this._targetMs = this._preferSteady30 ? 1000 / 30 : 1000 / 60;
     this._loop = this._loop.bind(this);
   }
 
@@ -61,8 +64,7 @@ export class GameLoop {
   _loop(ts) {
     if (!this._running) return;
 
-    // Frame pacing: skip this rAF if we're ahead of the current target
-    // interval. (~1.5ms slack so we don't constantly miss the vsync edge.)
+    // Skip this rAF if we're ahead of the target interval (~1.5ms slack).
     const since = this._lastWorkTs ? ts - this._lastWorkTs : this._targetMs;
     if (since < this._targetMs - 1.5) {
       this._rafId = requestAnimationFrame(this._loop);
@@ -98,16 +100,13 @@ export class GameLoop {
       console.error(LOG.CORE, 'render threw (loop kept alive):', err);
     }
 
-    // Adapt the target frame rate from measured work (with hysteresis so it
-    // doesn't flap around the threshold). _preferSteady30 only sets the
-    // conservative *starting* target; once the device proves it can keep up
-    // (sustained work < 13ms) we lift to 60, and drop back to 30 if it runs
-    // hot (> 18ms). The band in between holds the current rate steady.
     const work = performance.now() - workStart;
     perfMeter.endFrame(work);
     this._frameEma += (work - this._frameEma) * 0.1;
+    // Hysteresis: drop to 30 when hot, lift to 60 only when clearly cheap.
+    // Lean builds stay at 30 unless work is very light (<10ms).
     if (this._frameEma > 18) this._targetMs = 1000 / 30;
-    else if (this._frameEma < 13) this._targetMs = 1000 / 60;
+    else if (this._frameEma < (this._preferSteady30 ? 10 : 13)) this._targetMs = 1000 / 60;
 
     this._rafId = requestAnimationFrame(this._loop);
   }

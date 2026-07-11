@@ -79,6 +79,11 @@ const BEHAVIORS = {
   phase: PhaseBehavior
 };
 
+/** Enemies farther than this (and not visible) skip AI for the turn. */
+const ACTIVE_ENEMY_DISTANCE = 8;
+/** Cap how many nearest enemies actually pathfind/act per player turn. */
+const MAX_ACTING_ENEMIES = 8;
+
 export class GameScene {
   /**
    * @param {{
@@ -1426,8 +1431,19 @@ export class GameScene {
       turn: this.player.runStats.turnsUsed
     };
 
+    let acted = 0;
     for (const enemy of enemies) {
       if (enemy.isDead) continue;
+      const dist = Math.abs(enemy.x - this.player.x) + Math.abs(enemy.y - this.player.y);
+      if (dist > ACTIVE_ENEMY_DISTANCE && !this.floor.tileAt(enemy.x, enemy.y)?.visible) {
+        enemy.intent = { type: 'wait' };
+        continue;
+      }
+      if (acted >= MAX_ACTING_ENEMIES) {
+        enemy.intent = { type: 'wait' };
+        continue;
+      }
+      acted += 1;
       try {
         tickTriggerCooldowns(enemy);
         const action = enemy.decide(ctx);

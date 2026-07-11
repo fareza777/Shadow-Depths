@@ -304,29 +304,25 @@ export class MobileControls {
   }
 
   static _drawHammered(ctx, rect) {
+    // Flat noise dots instead of 11 radial gradients — same “hammered” read,
+    // far cheaper when the panel cache misses (resize / orientation).
     ctx.save();
-    ctx.globalAlpha = 0.10;
+    ctx.globalAlpha = 0.12;
+    ctx.fillStyle = '#aaa0aa';
     for (const [px, py] of [
       [0.08, 0.18], [0.30, 0.12], [0.68, 0.22], [0.92, 0.38],
       [0.18, 0.48], [0.52, 0.62], [0.82, 0.78]
     ]) {
       const cx = rect.x + rect.w * px;
       const cy = rect.y + rect.h * py;
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rect.w * 0.14);
-      g.addColorStop(0, '#aaa0aa');
-      g.addColorStop(1, 'rgba(170,160,170,0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      ctx.fillRect(cx - 3, cy - 2, 6, 4);
     }
-    ctx.globalAlpha = 0.30;
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = '#0f0a0f';
     for (const [px, py] of [[0.22, 0.86], [0.64, 0.90], [0.92, 0.12], [0.06, 0.70]]) {
       const cx = rect.x + rect.w * px;
       const cy = rect.y + rect.h * py;
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rect.w * 0.18);
-      g.addColorStop(0, 'rgba(15,10,15,0.6)');
-      g.addColorStop(1, 'rgba(15,10,15,0)');
-      ctx.fillStyle = g;
-      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      ctx.fillRect(cx - 4, cy - 3, 8, 5);
     }
     ctx.restore();
   }

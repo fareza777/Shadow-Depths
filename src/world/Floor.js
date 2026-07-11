@@ -47,10 +47,12 @@ export class Floor {
     // Set true when player has cleared all enemies on this floor (for scoring).
     this.clearedWithoutDamage = true;
 
-    // Incremented when static floor visuals change (lighting, explored tiles,
-    // revealed hazards, used room events). Renderer uses it to keep its tile
-    // cache exact without repainting biome tiles every battle frame.
+    // Incremented when static floor visuals change (explored tiles, revealed
+    // hazards, used room events). Lighting has its own revision so repeated
+    // same-tile turns do not repaint large cached room layers.
     this.renderRevision = 0;
+    this.visibilityRevision = 0;
+    this._visibilityKey = null;
     this.entityRevision = 0;
   }
 
@@ -83,6 +85,11 @@ export class Floor {
 
   touchRender() {
     this.renderRevision = (this.renderRevision || 0) + 1;
+    this._visibilityKey = null;
+  }
+
+  touchVisibility() {
+    this.visibilityRevision = (this.visibilityRevision || 0) + 1;
   }
 
   /** True if the tile is walkable AND no entity stands there. */
@@ -169,13 +176,13 @@ export class Floor {
    * Reset transient visibility (called each turn before recomputing).
    */
   clearVisibility() {
+    this._visibilityKey = null;
     for (let y = 0; y < this.height; y++) {
       const row = this.tiles[y];
       for (let x = 0; x < this.width; x++) {
         row[x].visible = false;
       }
     }
-    this.touchRender();
   }
 
   /** Reveal every tile (Scroll of Mapping). Does NOT change current visibility. */

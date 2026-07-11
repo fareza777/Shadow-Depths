@@ -16,7 +16,7 @@ export class ParticleSystem {
     /** @type {Array<object>} */
     this._particles = [];
     this._leanCombatFx = prefersLeanCombatFx();
-    this._maxParticles = this._leanCombatFx ? 96 : DEFAULT_MAX_PARTICLES;
+    this._maxParticles = this._leanCombatFx ? 48 : DEFAULT_MAX_PARTICLES;
     this._wireEvents();
   }
 
@@ -127,43 +127,58 @@ export class ParticleSystem {
     const cx = fx.center?.x ?? caster.renderX;
     const cy = fx.center?.y ?? caster.renderY;
     const radius = Math.max(1, fx.radius || 1);
+
+    // Lean / Play Store: one ring + a few sparks — no multi-ring rune storms.
+    if (this._leanCombatFx) {
+      this.spawnRingBurst(caster.renderX, caster.renderY, color, 0.28, 0.9);
+      this.spawnSparks(caster.renderX, caster.renderY, color, 4, {
+        spread: 0.7, life: 0.35, glow: false
+      });
+      if (fx.target) {
+        this.spawnSparks(fx.target.x, fx.target.y, color, 3, {
+          spread: 0.55, life: 0.3, glow: false
+        });
+      }
+      return;
+    }
+
     this.spawnRingBurst(caster.renderX, caster.renderY, color, 0.42, 1.1);
-    const spellScale = this._leanCombatFx ? 0.5 : 1;
+    const spellScale = 1;
     this.spawnSparks(caster.renderX, caster.renderY, color, Math.max(6, Math.round(16 * spellScale)), {
       spread: 1.1,
       life: 0.55,
-      glow: !this._leanCombatFx
+      glow: true
     });
 
     if (fx.kind === 'hollow' && fx.target) {
       this._pushBeam(caster.renderX, caster.renderY, fx.target.x, fx.target.y, color, 0.34, 5);
       this.spawnRingBurst(fx.target.x, fx.target.y, '#c080ff', 0.46, 1.0);
-      this.spawnSparks(fx.target.x, fx.target.y, '#9a60ff', Math.max(6, Math.round(18 * spellScale)), { spread: 1.15, life: 0.62, glow: !this._leanCombatFx });
+      this.spawnSparks(fx.target.x, fx.target.y, '#9a60ff', Math.max(6, Math.round(18 * spellScale)), { spread: 1.15, life: 0.62, glow: true });
     } else if (fx.kind === 'inquisitor') {
       this._pushRune(cx, cy, color, radius, 0.62, 'flare');
       this.spawnRingBurst(cx, cy, color, 0.56, 1.7 + radius * 0.35);
-      this.spawnSparks(cx, cy, '#ff8844', Math.max(8, Math.round(26 * spellScale)), { spread: 1.8, life: 0.7, glow: !this._leanCombatFx });
+      this.spawnSparks(cx, cy, '#ff8844', Math.max(8, Math.round(26 * spellScale)), { spread: 1.8, life: 0.7, glow: true });
     } else if (fx.kind === 'reaver') {
       this._pushRune(cx, cy, color, radius, 0.55, 'storm');
       for (let i = 0; i < 3; i++) this.spawnRingBurst(cx, cy, i % 2 ? '#8a8098' : color, 0.46 + i * 0.08, 1.2 + i * 0.55);
-      this.spawnSparks(cx, cy, '#e8e0d0', Math.max(8, Math.round(24 * spellScale)), { spread: 2.0, life: 0.58, glow: !this._leanCombatFx });
+      this.spawnSparks(cx, cy, '#e8e0d0', Math.max(8, Math.round(24 * spellScale)), { spread: 2.0, life: 0.58, glow: true });
     } else if (fx.kind === 'pilgrim') {
       this._pushRune(cx, cy, color, radius, 0.72, 'sanctuary');
       this.spawnRingBurst(cx, cy, color, 0.72, 1.8 + radius * 0.35);
-      this.spawnSparks(cx, cy, '#fff2c0', Math.max(7, Math.round(20 * spellScale)), { spread: 1.6, life: 0.75, glow: !this._leanCombatFx });
+      this.spawnSparks(cx, cy, '#fff2c0', Math.max(7, Math.round(20 * spellScale)), { spread: 1.6, life: 0.75, glow: true });
     } else if (fx.kind === 'warden') {
       this._pushRune(cx, cy, '#bcd6ff', radius, 0.68, 'ward');
       for (let i = 0; i < 4; i++) this.spawnRingBurst(cx, cy, i % 2 ? '#5a8ed8' : color, 0.44 + i * 0.06, 1.1 + i * 0.34);
-      this.spawnSparks(cx, cy, '#d8ecff', Math.max(6, Math.round(18 * spellScale)), { spread: 1.3, life: 0.72, glow: !this._leanCombatFx });
+      this.spawnSparks(cx, cy, '#d8ecff', Math.max(6, Math.round(18 * spellScale)), { spread: 1.3, life: 0.72, glow: true });
     } else if (fx.kind === 'bladedancer' && fx.target) {
       this._pushBeam(caster.renderX, caster.renderY, fx.target.x, fx.target.y, '#ff8844', 0.22, 3);
       this._pushBeam(caster.renderX, caster.renderY, fx.target.x, fx.target.y, '#ffe0a0', 0.18, 4);
-      this.spawnSparks(fx.target.x, fx.target.y, '#ffb060', Math.max(9, Math.round(28 * spellScale)), { spread: 1.15, life: 0.46, glow: !this._leanCombatFx });
+      this.spawnSparks(fx.target.x, fx.target.y, '#ffb060', Math.max(9, Math.round(28 * spellScale)), { spread: 1.15, life: 0.46, glow: true });
     } else if (fx.kind === 'echobinder') {
       this._pushRune(cx, cy, '#c060ff', radius, 0.64, 'storm');
       this.spawnRingBurst(cx, cy, '#c060ff', 0.52, 1.7 + radius * 0.45);
       this.spawnRingBurst(cx, cy, '#bcd6ff', 0.42, 1.2 + radius * 0.25);
-      this.spawnSparks(cx, cy, '#d8a0ff', Math.max(8, Math.round(24 * spellScale)), { spread: 1.7, life: 0.66, glow: !this._leanCombatFx });
+      this.spawnSparks(cx, cy, '#d8a0ff', Math.max(8, Math.round(24 * spellScale)), { spread: 1.7, life: 0.66, glow: true });
     } else {
       this._pushRune(cx, cy, color, radius, 0.58, 'ward');
       this.spawnRingBurst(cx, cy, '#80b0ff', 0.58, 1.45);
@@ -313,8 +328,10 @@ export class ParticleSystem {
 
   /** @param {number} dt seconds */
   update(dt) {
-    const next = [];
-    for (const p of this._particles) {
+    const list = this._particles;
+    let write = 0;
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
       p.life -= dt;
       if (p.life <= 0) continue;
       p.x += p.vx * dt;
@@ -325,9 +342,9 @@ export class ParticleSystem {
       } else if (p.kind === 'text') {
         p.vy *= 1 - dt * 1.2;
       }
-      next.push(p);
+      list[write++] = p;
     }
-    this._particles = next;
+    list.length = write;
   }
 
   /**

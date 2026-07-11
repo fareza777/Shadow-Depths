@@ -76,7 +76,7 @@ export const DEFAULT_BALANCE = Object.freeze({
     // Fraction of rooms carved as a large hall/cavern (spatial variety).
     largeRoomChance: 0.45,
     // Chance a floor designates an arena set-piece (guards + reward).
-    arenaChance: 0.6,
+    arenaChance: 0.25,
     // Chance a floor hides a secret loot cache behind a breakable wall.
     secretCacheChance: 0.4,
     // One micro-event per normal floor (shrine, trap room, merchant, …).
@@ -112,7 +112,25 @@ export const DEFAULT_BALANCE = Object.freeze({
   ],
 
   // Global enemy HP/ATK multipliers (tunable via data/balance.json).
-  enemyScaling: { hp: 1, atk: 1 }
+  enemyScaling: { hp: 1.05, atk: 1.05 },
+
+  // Depth curve: floor 1 is deliberately forgiving, then the run becomes
+  // harsher in stages. Cap enemy count for Play Store frame budgets.
+  difficultyCurve: {
+    openingScale: 0.95,
+    openingStep: 0.13,
+    baseAfterOpening: 1.22,
+    perFloor: 0.04,
+    midFrom: 20,
+    midBonus: 0.012,
+    deepFrom: 50,
+    deepBonus: 0.010,
+    enemyCountStart: 3,
+    enemyCountGrowth: 0.2,
+    enemyCountMilestoneEvery: 10,
+    enemyCountMilestoneBonus: 1,
+    enemyCountMax: 12
+  }
 });
 
 /**
@@ -126,6 +144,37 @@ export function enemyCombatScale(balance) {
     hp: s.hp ?? s.enemyHp ?? 1,
     atk: s.atk ?? s.enemyAtk ?? 1
   };
+}
+
+export function difficultyScaleForFloor(floorIndex, curve = DEFAULT_BALANCE.difficultyCurve) {
+  const c = { ...DEFAULT_BALANCE.difficultyCurve, ...(curve || {}) };
+  const floorNumber = Math.max(1, (floorIndex || 0) + 1);
+  if (floorNumber <= 3) {
+    return round2(c.openingScale + (floorNumber - 1) * c.openingStep);
+  }
+  const afterOpening = floorNumber - 3;
+  const mid = Math.max(0, floorNumber - c.midFrom);
+  const deep = Math.max(0, floorNumber - c.deepFrom);
+  return round2(
+    c.baseAfterOpening
+    + afterOpening * c.perFloor
+    + mid * c.midBonus
+    + deep * c.deepBonus
+  );
+}
+
+export function enemyCountForFloor(floorIndex, curve = DEFAULT_BALANCE.difficultyCurve) {
+  const c = { ...DEFAULT_BALANCE.difficultyCurve, ...(curve || {}) };
+  const floorNumber = Math.max(1, (floorIndex || 0) + 1);
+  const milestones = c.enemyCountMilestoneEvery > 0
+    ? Math.floor((floorNumber - 1) / c.enemyCountMilestoneEvery) * c.enemyCountMilestoneBonus
+    : 0;
+  const count = c.enemyCountStart + Math.floor((floorNumber - 1) * c.enemyCountGrowth) + milestones;
+  return Math.max(1, Math.min(c.enemyCountMax, count));
+}
+
+function round2(n) {
+  return Math.round(n * 100) / 100;
 }
 
 /**

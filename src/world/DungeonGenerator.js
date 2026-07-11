@@ -234,8 +234,8 @@ export class DungeonGenerator {
       'brazier', 'bone_pile', 'broken_pillar', 'supply_crate',
       'candelabra', 'mushroom_cluster'
     ];
-    const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(18, 26);
-    const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(7, 11);
+    const wallCount = floorDef.tutorial ? 10 : this.rng.randInt(8, 12);
+    const floorCount = floorDef.tutorial ? 4 : this.rng.randInt(3, 5);
     const decorCaps = {
       shelf: 2,
       moss_vines: 4,

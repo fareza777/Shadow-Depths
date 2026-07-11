@@ -19,18 +19,16 @@ export const Layout = {
 };
 
 /**
- * Device pixel ratio for the backing store. Capped at 1.5 (sharp enough on
- * phone panels while keeping fill-rate sane), and tightened to 1.25 on
- * memory-constrained devices — budget GPUs (e.g. Adreno 610) are fill-rate
- * bound, so a full 2x backing store quadruples per-frame pixels and stutters.
+ * Device pixel ratio for the backing store.
+ * Play Store / mobile: force 1× — fill-rate is the #1 lag source on WebView
+ * GPUs. Desktop keeps a mild HiDPI cap for crispness.
  */
 export function currentDpr() {
   if (typeof window === 'undefined') return 1;
   const raw = window.devicePixelRatio || 1;
-  const android = isAndroidDevice();
-  const mobile = isMobileDevice();
+  if (isMobileDevice() || isAndroidDevice()) return 1;
   const lowEnd = isLowEndDevice();
-  const cap = android ? 1 : lowEnd || mobile ? 1.25 : 1.5;
+  const cap = lowEnd ? 1.25 : 1.5;
   return Math.max(1, Math.min(cap, raw));
 }
 
@@ -51,8 +49,12 @@ export function isLowEndDevice() {
   return (mem && mem <= 4) || (cores && cores <= 4);
 }
 
+/**
+ * Lean FX path: fewer particles, cached floor layer, no auras/shadows.
+ * Enabled for every phone/tablet — Play Store smoothness > visual flourish.
+ */
 export function prefersLeanCombatFx() {
-  return isAndroidDevice() || (isMobileDevice() && isLowEndDevice());
+  return isAndroidDevice() || isMobileDevice();
 }
 
 export function syncLayoutFromWindow(canvas) {

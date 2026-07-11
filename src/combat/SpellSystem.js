@@ -247,12 +247,17 @@ export class SpellSystem {
   _revealAround(cx, cy, radius) {
     const floor = this.getFloor();
     if (!floor) return;
+    let changed = false;
     for (let y = cy - radius; y <= cy + radius; y++) {
       for (let x = cx - radius; x <= cx + radius; x++) {
         if (Math.abs(x - cx) + Math.abs(y - cy) > radius) continue;
         const tile = floor.tileAt(x, y);
-        if (tile) tile.explored = true;
+        if (tile && !tile.explored) {
+          tile.explored = true;
+          changed = true;
+        }
       }
     }
+    if (changed) floor.touchRender?.();
   }
 }

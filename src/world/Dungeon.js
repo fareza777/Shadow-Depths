@@ -20,6 +20,7 @@
  */
 import { LOG } from '../config/constants.js';
 import { DungeonGenerator } from './DungeonGenerator.js';
+import { difficultyScaleForFloor, enemyCountForFloor } from '../config/balance.js';
 
 // 10 biomes × 10 floors each = 100 total floors. Matches biome-tiles.jsx.
 const FLOORS_PER_BIOME = 10;
@@ -115,6 +116,7 @@ export class Dungeon {
         out.push({
           ...override,
           index: i,
+          depthScale: override.depthScale ?? difficultyScaleForFloor(i, this.balance.difficultyCurve),
           biomeId: override.biomeId || biome?.id || 'forgotten_crypts',
           isFinalFloor: i === TOTAL_FLOORS - 1
         });
@@ -135,7 +137,7 @@ export class Dungeon {
       // Special floor types: forge sanctuary (7, 17, 27...) + vault (10s).
       // Floor 100 stays the boss arena, so we don't override the last floor.
       let type = null;
-      let enemyCount = Math.min(16, 3 + Math.floor(i * 0.24) + (i >= 40 ? 2 : 0));
+      let enemyCount = enemyCountForFloor(i, this.balance.difficultyCurve);
       let itemCount  = Math.min(8,  5 + Math.floor(i * 0.04));
       let vaultDepthBoost = 0;
       const isLast = i === TOTAL_FLOORS - 1;
@@ -162,9 +164,7 @@ export class Dungeon {
         enemyPool: biome?.enemyPool || ['goblin_scout'],
         enemyCount, itemCount,
         torchRadius: biome?.torchRadius || 5,
-        // Gentle opening curve; the first biome should teach positioning
-        // before the deep-floor scaling starts to bite.
-        depthScale: 1 + i * 0.08 + (i > 30 ? (i - 30) * 0.02 : 0),
+        depthScale: difficultyScaleForFloor(i, this.balance.difficultyCurve),
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
         type,

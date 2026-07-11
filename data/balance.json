@@ -62,8 +62,23 @@
     "perfectFloorBonus": 100
   },
   "enemyScaling": {
-    "hp": 1,
-    "atk": 0.9
+    "hp": 1.05,
+    "atk": 1.05
+  },
+  "difficultyCurve": {
+    "openingScale": 0.95,
+    "openingStep": 0.13,
+    "baseAfterOpening": 1.22,
+    "perFloor": 0.04,
+    "midFrom": 20,
+    "midBonus": 0.012,
+    "deepFrom": 50,
+    "deepBonus": 0.010,
+    "enemyCountStart": 3,
+    "enemyCountGrowth": 0.2,
+    "enemyCountMilestoneEvery": 10,
+    "enemyCountMilestoneBonus": 1,
+    "enemyCountMax": 12
   },
   "unlocks": [
     { "id": "worn_dagger",    "threshold": 500,  "effect": "startWeapon" },

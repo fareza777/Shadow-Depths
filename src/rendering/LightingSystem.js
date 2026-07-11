@@ -37,6 +37,9 @@ export class LightingSystem {
    */
   compute(floor, from, radius) {
     const r = radius ?? this.radiusForFloor(floor.index);
+    const key = `${from.x},${from.y},${r},${floor.renderRevision || 0}`;
+    if (floor._visibilityKey === key) return;
+
     floor.clearVisibility();
 
     // Origin tile is always visible.
@@ -58,6 +61,8 @@ export class LightingSystem {
         }
       }
     }
+    floor._visibilityKey = key;
+    floor.touchVisibility?.();
   }
 
   /**

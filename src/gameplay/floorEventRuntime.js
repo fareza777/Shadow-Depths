@@ -244,12 +244,17 @@ export function revealRandomRoom(floor) {
   const rooms = floor.rooms || [];
   if (!rooms.length) return;
   const room = rooms[Math.floor(Math.random() * rooms.length)];
+  let changed = false;
   for (let y = room.y; y < room.y + room.h; y++) {
     for (let x = room.x; x < room.x + room.w; x++) {
       const t = floor.tileAt(x, y);
-      if (t) t.explored = true;
+      if (t && !t.explored) {
+        t.explored = true;
+        changed = true;
+      }
     }
   }
+  if (changed) floor.touchRender?.();
 }
 
 export function markInteractUsed(floor, x, y) {

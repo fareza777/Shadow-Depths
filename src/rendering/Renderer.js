@@ -70,6 +70,7 @@ export class Renderer {
     this._lastTime = 0;
     /** @type {WeakMap<object, number>} entity → flash end timestamp (ms) */
     this._hitFlashes = new WeakMap();
+    this._statusFlashes = new WeakMap();
     this._attackFlashes = [];
     this._leanCombatFx = prefersLeanCombatFx();
     this._tileBaseCache = null;
@@ -109,6 +110,10 @@ export class Renderer {
       });
       const cap = this._leanCombatFx ? 6 : 16;
       if (this._attackFlashes.length > cap) this._attackFlashes.shift();
+    });
+    this.bus.on('entity:status', ({ entity, status }) => {
+      if (!entity || !status) return;
+      this._statusFlashes.set(entity, { status, until: performance.now() + 520 });
     });
   }
 
@@ -345,7 +350,7 @@ export class Renderer {
         ? { x: player.x, y: player.y, renderX: player.x, renderY: player.y, torchRadius: player.torchRadius }
         : null;
       const key = [
-        floor.seed, floor.index, floor.renderRevision || 0,
+        floor.seed, floor.index, floor.renderRevision || 0, floor.visibilityRevision || 0,
         x0, y0, x1, y1,
         paintPlayer?.x ?? '', paintPlayer?.y ?? '', paintPlayer?.torchRadius ?? '',
         def.biomeId || '', def.type || ''
@@ -408,7 +413,7 @@ export class Renderer {
     if (!opts.skipHazards) this._drawHazards(ctx, floor, x0, y0, x1, y1);
     this._drawRoomDecor(ctx, floor, x0, y0, x1, y1);
     this._drawFloorInteracts(ctx, floor, x0, y0, x1, y1);
-    this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
+    if (!this._leanCombatFx) this._drawAmbientZones(ctx, floor, x0, y0, x1, y1);
 
     // Special floor centerpiece (REST campfire / VAULT chest motif).
     this._drawSpecialFloorMotif(ctx, floor);
@@ -436,7 +441,7 @@ export class Renderer {
     const height = (y1 - y0 + 1) * TILE_SIZE;
     const def = floor.definition || {};
     const key = [
-      floor.seed, floor.index, floor.renderRevision || 0,
+      floor.seed, floor.index, floor.renderRevision || 0, floor.visibilityRevision || 0,
       x0, y0, x1, y1,
       def.biomeId || '', (def.wallPalette || []).join(','),
       (def.floorPalette || []).join(',')
@@ -529,7 +534,7 @@ export class Renderer {
             break;
           default: break;
         }
-        if (dim) Renderer._applyFog(ctx, tx, ty);
+        if (dim) Renderer._applyFog(ctx, tx, ty, this._leanCombatFx);
       }
     }
 
@@ -551,7 +556,7 @@ export class Renderer {
         const ty = toPx(y);
         if (useBiome) drawBiomeWallCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
         else this.sprites.draw('tile_wall', ctx, tx, ty, opts);
-        if (dim) Renderer._applyFog(ctx, tx, ty);
+        if (dim) Renderer._applyFog(ctx, tx, ty, this._leanCombatFx);
       }
     }
   }
@@ -564,7 +569,7 @@ export class Renderer {
     if (!t?.explored) return;
     this._drawStairsDownFixture(ctx, down.x * TILE_SIZE + TILE_SIZE / 2,
       down.y * TILE_SIZE + TILE_SIZE / 2, TILE_SIZE, this._timeSec || 0, def);
-    if (!t.visible) Renderer._applyFog(ctx, down.x * TILE_SIZE, down.y * TILE_SIZE);
+    if (!t.visible) Renderer._applyFog(ctx, down.x * TILE_SIZE, down.y * TILE_SIZE, this._leanCombatFx);
   }
 
   /**
@@ -684,6 +689,32 @@ export class Renderer {
     const top = y0 * TILE_SIZE;
     const w = (x1 - x0 + 1) * TILE_SIZE;
     const h = (y1 - y0 + 1) * TILE_SIZE;
+
+    // Lean: one flat warm wash — no flicker, no dual gradients, no arc.
+    if (this._leanCombatFx) {
+      const R = radius * 1.05;
+      const fx = Math.max(left, px - R);
+      const fy = Math.max(top, py - R);
+      const fw = Math.min(left + w, px + R) - fx;
+      const fh = Math.min(top + h, py + R) - fy;
+      if (fw <= 0 || fh <= 0) return;
+      const key = `${Math.round(px)},${Math.round(py)},${Math.round(radius)}`;
+      if (key !== this._glowKey) {
+        const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.4, px, py, radius);
+        g.addColorStop(0, 'rgba(245, 214, 150, 0.18)');
+        g.addColorStop(0.55, 'rgba(190, 136, 74, 0.08)');
+        g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        this._glowGrad = g;
+        this._glowKey = key;
+      }
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = this._glowGrad;
+      ctx.fillRect(fx, fy, fw, fh);
+      ctx.restore();
+      return;
+    }
+
     const flicker = 0.88 + Math.sin((this._timeSec || 0) * 5.2) * 0.08
       + Math.sin((this._timeSec || 0) * 11.7) * 0.04;
     // The two gradients depend only on (center, radius) — flicker just scales
@@ -840,7 +871,9 @@ export class Renderer {
     ctx.translate(cam.x, cam.y);
 
     const list = this._sortedEntities(floor);
-    perfMeter.measure('attackFx', () => this._drawAttackFlashes(ctx, cam));
+    if (!this._leanCombatFx) {
+      perfMeter.measure('attackFx', () => this._drawAttackFlashes(ctx, cam));
+    }
     perfMeter.measure('entities', () => {
     for (const e of list) {
       if (e.isDead) continue;
@@ -852,10 +885,16 @@ export class Renderer {
         || (e.kind === 'player' && typeof e.displaySpriteKey === 'function'
           ? e.displaySpriteKey()
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
-      this._drawEntityGrounding(ctx, e, px, py);
-      this._drawThreatAura(ctx, e, px, py);
-      if (e.elite) this._drawEliteMarker(ctx, e, px, py);
+      if (!this._leanCombatFx) {
+        this._drawEntityGrounding(ctx, e, px, py);
+        this._drawThreatAura(ctx, e, px, py);
+        if (e.elite) this._drawEliteMarker(ctx, e, px, py);
+      } else if (e.elite || e.defId?.startsWith('boss_') || e.defId?.startsWith('subboss_')) {
+        fillRect(ctx, px + 2, py + TILE_SIZE - 3, TILE_SIZE - 4, 2,
+          e.defId?.startsWith('boss_') ? '#d4be7a' : '#c080ff');
+      }
       this.sprites.draw(key, ctx, px, py, { entity: e, time: this._timeSec || 0 });
+      if (!this._leanCombatFx) this._drawStatusEffects(ctx, e, px, py);
       this._drawEntityHitFlash(ctx, e, px, py);
       this._drawStatusFx(ctx, e, px, py);
 
@@ -873,7 +912,7 @@ export class Renderer {
           fillRect(ctx, px + 3, barY, w, 1, '#ffffff33');
         }
       }
-      if (e.kind === 'enemy' && t?.visible && player) {
+      if (!this._leanCombatFx && e.kind === 'enemy' && t?.visible && player) {
         const intent = e.intent || Renderer._inferThreatIntent(e, player);
         if (intent) this._drawIntentIcon(ctx, intent, px, py);
       }
@@ -942,6 +981,57 @@ export class Renderer {
     ctx.globalAlpha = Math.min(0.55, 0.15 + t * 0.4);
     ctx.fillStyle = entity.kind === 'player' ? '#ff8080' : '#ffffff';
     ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+    ctx.restore();
+  }
+
+  _drawStatusEffects(ctx, entity, px, py) {
+    const effects = entity.statusEffects || [];
+    const flash = this._statusFlashes.get(entity);
+    const now = performance.now();
+    if ((!effects.length && (!flash || now > flash.until))) return;
+
+    if (flash && now <= flash.until) {
+      const meta = getStatusMeta(flash.status);
+      const t = Math.max(0, Math.min(1, (flash.until - now) / 520));
+      ctx.save();
+      ctx.globalAlpha = 0.16 + t * 0.26;
+      ctx.strokeStyle = meta?.color || '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(
+        px + TILE_SIZE / 2,
+        py + TILE_SIZE * 0.82,
+        TILE_SIZE * (0.32 + (1 - t) * 0.18),
+        TILE_SIZE * (0.11 + (1 - t) * 0.06),
+        0, 0, Math.PI * 2
+      );
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (!effects.length) return;
+    const max = Math.min(3, effects.length);
+    const size = entity.kind === 'player' ? 7 : 6;
+    const gap = 2;
+    const totalW = max * size + (max - 1) * gap;
+    const y = py + TILE_SIZE - size - 2;
+    const x0 = px + TILE_SIZE / 2 - totalW / 2;
+    ctx.save();
+    for (let i = 0; i < max; i++) {
+      const eff = effects[i];
+      const meta = getStatusMeta(eff.id);
+      const x = x0 + i * (size + gap);
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = '#07050a';
+      ctx.fillRect(x - 1, y - 1, size + 2, size + 2);
+      ctx.fillStyle = meta?.color || '#d6d6da';
+      ctx.fillRect(x, y, size, size);
+      if ((eff.duration || 0) <= 1) {
+        ctx.globalAlpha = 0.5 + Math.sin((this._timeSec || 0) * 10) * 0.25;
+        ctx.strokeStyle = '#ffffff';
+        ctx.strokeRect(x + 0.5, y + 0.5, size - 1, size - 1);
+      }
+    }
     ctx.restore();
   }
 
@@ -1154,7 +1244,8 @@ export class Renderer {
 
   _drawRoomDecor(ctx, floor, x0, y0, x1, y1) {
     let drawn = 0;
-    const maxLeanDecor = 14;
+    const visibleTiles = (x1 - x0 + 1) * (y1 - y0 + 1);
+    const maxLeanDecor = visibleTiles > 120 ? 4 : 7;
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const tile = floor.tiles[y][x];
@@ -1162,6 +1253,7 @@ export class Renderer {
         if (!decor || !tile.explored || decor.kind === 'gargoyle') continue;
         if (REMOVED_ROOM_DECOR.has(decor.kind)) continue;
         if (this._leanCombatFx && !tile.visible) continue;
+        if (this._leanCombatFx && !decor.wall && visibleTiles > 120) continue;
         if (this._leanCombatFx && drawn >= maxLeanDecor) return;
         ctx.save();
         ctx.globalAlpha = tile.visible ? 0.95 : 0.38;
@@ -1861,7 +1953,12 @@ export class Renderer {
   }
 
   /** Warm fog-of-war tint on explored-but-not-visible tiles. */
-  static _applyFog(ctx, tx, ty) {
+  static _applyFog(ctx, tx, ty, lean = false) {
+    if (lean) {
+      ctx.fillStyle = 'rgba(8, 6, 14, 0.5)';
+      ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
+      return;
+    }
     ctx.save();
     // Tile-local origin so the haze gradient can be built once and reused
     // for every dim tile (it was previously rebuilt per tile per frame —

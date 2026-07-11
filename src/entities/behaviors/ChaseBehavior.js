@@ -13,6 +13,8 @@ export class ChaseBehavior {
   /** @param {object} [_params] reserved for tuning per-enemy. */
   constructor(_params) {
     this.params = _params || {};
+    // A* beyond this range is wasted on open rooms; greedy step is enough.
+    this.pathfindDistance = this.params.pathfindDistance ?? 6;
   }
 
   /**
@@ -22,9 +24,17 @@ export class ChaseBehavior {
   decideAction(enemy, ctx) {
     const { floor, player, pathfinding } = ctx;
 
+    const dist = manhattan(enemy, player);
+
     // Adjacent? Attack.
-    if (manhattan(enemy, player) === 1) {
+    if (dist === 1) {
       return { type: 'attack', target: { x: player.x, y: player.y } };
+    }
+
+    // In large open rooms many enemies can be awake at once. Use a cheap
+    // greedy step at long distance and reserve A* for the tactical approach.
+    if (dist > this.pathfindDistance) {
+      return greedyStep(enemy, player, floor) || { type: 'wait' };
     }
 
     // Try A*.
