@@ -64,11 +64,18 @@ cd android
    - Create `full_descent_unlock` (one-time / non-consumable)
    - Activate for Internal testing track before production
 9. **Store listing assets:**
-   - App icon: 512×512 PNG
-   - Feature graphic: 1024×500 PNG
-   - Phone screenshots: min 2, portrait gameplay
+   - App icon: 512×512 PNG → `store-assets/app-icon-512.png` (also `release/play-store/`)
+   - Feature graphic: 1024×500 PNG → `store-assets/feature-graphic-1024x500.png`
+   - Phone screenshots: min 2, portrait gameplay (capture from device / emulator)
    - Short description (80 chars)
    - Full description (4000 chars) — mention free 10 floors + one-time unlock
+
+Upload these two files on **Store listings → Graphics**:
+```
+store-assets/app-icon-512.png
+store-assets/feature-graphic-1024x500.png
+```
+
 
 ### Suggested short description
 
