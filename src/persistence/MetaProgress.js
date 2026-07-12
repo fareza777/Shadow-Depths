@@ -34,7 +34,10 @@ const DEFAULT_META = Object.freeze({
     vibration: true,
     ambient: true,
     showTutorial: true,
-    orientation: 'portrait'
+    orientation: 'portrait',
+    locale: 'en',
+    analyticsOptIn: false,
+    seenIntro: false
   },
   // Play Store one-time unlock (Full Descent).
   premiumUnlocked: false,

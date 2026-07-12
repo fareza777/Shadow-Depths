@@ -12,11 +12,13 @@
  *   - Each event: { t (ms), kind, ...payload }
  *   - Buffer lives in state.meta.events; persisted via saveMeta on the
  *     normal save cadence.
- *   - Nothing leaves the device. Add a flush(endpoint) call later when
- *     a server is available.
+ *   - flush({ endpoint, optIn }) POSTs recent events when the player
+ *     has opted in (meta.settings.analyticsOptIn) and an endpoint is set.
+ *     Opt-in is toggled from TitleScreen Settings (LANGUAGE / ANALYTICS).
  */
 
 const MAX_EVENTS = 500;
+const FLUSH_BATCH = 50;
 
 export class Analytics {
   /**
@@ -53,6 +55,31 @@ export class Analytics {
       });
     });
     this.bus.on('run:victory', () => this.log('victory', {}));
+    this.bus.on('run:over', (summary) => {
+      this.log('run_over', {
+        score: summary?.score,
+        floorsCleared: summary?.floorsCleared,
+        mode: summary?.mode
+      });
+      this._maybeFlush();
+    });
+    this.bus.on('paywall:shown', (payload) => {
+      this.log('paywall_shown', { reason: payload?.reason || 'unknown' });
+    });
+    this.bus.on('billing:unlocked', (payload) => {
+      this.log('billing_unlocked', {
+        source: payload?.source || payload?.reason || 'unknown'
+      });
+    });
+    this.bus.on('app:background', () => this._maybeFlush());
+  }
+
+  /** Fire-and-forget flush when opt-in + VITE_ANALYTICS_ENDPOINT are set. */
+  _maybeFlush() {
+    const endpoint = (typeof import.meta !== 'undefined'
+      && import.meta.env?.VITE_ANALYTICS_ENDPOINT) || null;
+    if (!endpoint) return;
+    this.flush({ endpoint }).catch(() => {});
   }
 
   log(kind, payload = {}) {
@@ -79,5 +106,38 @@ export class Analytics {
     const out = {};
     for (const e of evts) out[e.kind] = (out[e.kind] || 0) + 1;
     return out;
+  }
+
+  /**
+   * POST recent events to an analytics endpoint when opted in.
+   * No-op unless both `optIn` (or meta.settings.analyticsOptIn) and
+   * `endpoint` are truthy. Safe to call from idle / run-end hooks.
+   *
+   * Settings toggle: TitleScreen → Settings → ANALYTICS row writes
+   * meta.settings.analyticsOptIn via MetaProgress.setSetting.
+   *
+   * @param {{ endpoint?:string, optIn?:boolean, limit?:number }} [opts]
+   * @returns {Promise<boolean>} true if a request was attempted
+   */
+  async flush({ endpoint, optIn, limit = FLUSH_BATCH } = {}) {
+    const settings = this.state?.state?.meta?.settings || {};
+    const allowed = optIn ?? !!settings.analyticsOptIn;
+    if (!allowed || !endpoint) return false;
+    const events = this.recent(null, limit);
+    if (!events.length) return false;
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          t: Date.now(),
+          events
+        }),
+        keepalive: true
+      });
+      return !!res?.ok;
+    } catch {
+      return false;
+    }
   }
 }

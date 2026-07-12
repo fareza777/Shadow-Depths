@@ -48,6 +48,7 @@ export class GameLoop {
   start() {
     if (this._running) return;
     this._running = true;
+    this._paused = false;
     this._lastTs = performance.now();
     this._lastWorkTs = 0;
     this._rafId = requestAnimationFrame(this._loop);
@@ -57,12 +58,38 @@ export class GameLoop {
   stop() {
     if (!this._running) return;
     this._running = false;
+    this._paused = false;
     cancelAnimationFrame(this._rafId);
+    this._rafId = 0;
     console.log(LOG.CORE, 'GameLoop stopped');
   }
 
+  /**
+   * Pause rendering/tick without tearing down the loop subscription state.
+   * Used when the Android WebView backgrounds so we stop burning battery.
+   */
+  pauseRendering() {
+    if (!this._running || this._paused) return;
+    this._paused = true;
+    cancelAnimationFrame(this._rafId);
+    this._rafId = 0;
+    this._bus.emit('loop:paused', {});
+    console.log(LOG.CORE, 'GameLoop paused');
+  }
+
+  /** Resume after pauseRendering(). No-op if not paused. */
+  resumeRendering() {
+    if (!this._running || !this._paused) return;
+    this._paused = false;
+    this._lastTs = performance.now();
+    this._lastWorkTs = 0;
+    this._rafId = requestAnimationFrame(this._loop);
+    this._bus.emit('loop:resumed', {});
+    console.log(LOG.CORE, 'GameLoop resumed');
+  }
+
   _loop(ts) {
-    if (!this._running) return;
+    if (!this._running || this._paused) return;
 
     // Skip this rAF if we're ahead of the target interval (~1.5ms slack).
     const since = this._lastWorkTs ? ts - this._lastWorkTs : this._targetMs;

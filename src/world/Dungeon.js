@@ -118,6 +118,7 @@ export class Dungeon {
           index: i,
           depthScale: override.depthScale ?? difficultyScaleForFloor(i, this.balance.difficultyCurve),
           biomeId: override.biomeId || biome?.id || 'forgotten_crypts',
+          mechanic: override.mechanic || biome?.mechanic || null,
           isFinalFloor: i === TOTAL_FLOORS - 1
         });
         continue;
@@ -167,6 +168,7 @@ export class Dungeon {
         depthScale: difficultyScaleForFloor(i, this.balance.difficultyCurve),
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
+        mechanic: biome?.mechanic || null,
         type,
         vaultDepthBoost,
         isFinalFloor: isFinal
@@ -184,6 +186,7 @@ export class Dungeon {
       wallPalette: biome.wallPalette || ['#3a3340', '#1a1820'],
       floorPalette: biome.floorPalette || ['#2a2630', '#15131a'],
       biomeId: biome.id || 'forgotten_crypts',
+      mechanic: biome.mechanic || null,
       torchRadius: Math.max(7, biome.torchRadius || 7),
       depthScale: 1,
       tutorial: true,

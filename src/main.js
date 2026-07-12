@@ -8,12 +8,18 @@
  * registered before Game.boot() switches to the title scene.
  */
 import { LOG } from './config/constants.js';
+import { Capacitor } from '@capacitor/core';
 
-// Boot splash (defined in index.html) is shown from first paint. We keep it up
-// for at least MIN_SPLASH_MS so the reveal animation isn't cut short on fast
-// loads, then fade it out and remove the node.
+// Boot splash: keep briefly so the reveal isn't jarring. Native builds use a
+// shorter hold — mobile players should reach the title in ~2s, not 5+.
 const _splashStart = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-const MIN_SPLASH_MS = 5400;
+const MIN_SPLASH_MS = (() => {
+  try {
+    return Capacitor.isNativePlatform() ? 1600 : 2200;
+  } catch {
+    return 2200;
+  }
+})();
 
 function hideBootSplash({ immediate = false } = {}) {
   const splash = typeof document !== 'undefined' && document.getElementById('boot-splash');
@@ -27,7 +33,6 @@ function hideBootSplash({ immediate = false } = {}) {
   setTimeout(remove, Math.max(0, MIN_SPLASH_MS - elapsed));
 }
 
-import { Capacitor } from '@capacitor/core';
 import { EventBus } from './core/EventBus.js';
 import { StateStore } from './core/StateStore.js';
 import { SceneManager } from './core/SceneManager.js';
@@ -291,12 +296,64 @@ async function bootstrap() {
     document.documentElement.classList.add('capacitor-native');
   }
 
+  // Android hardware back + background pause (Play Store hygiene).
+  await wireNativeLifecycle({ bus, gameLoop, sceneManager, audio, paywallOverlay });
+
   await game.boot();
   console.log(LOG.CORE, 'Shadow Depths bootstrap complete');
 
   // Title scene is live behind the splash — fade the boot splash away
   // (kept up at least MIN_SPLASH_MS so the reveal animation finishes).
   hideBootSplash();
+}
+
+/**
+ * Capacitor App plugin: pause rAF when backgrounded; route hardware back
+ * through open modals → pause → title → (minimize left to OS).
+ */
+async function wireNativeLifecycle({ bus, gameLoop, sceneManager, audio, paywallOverlay }) {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    const { App } = await import('@capacitor/app');
+    App.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) {
+        gameLoop.resumeRendering?.();
+        try { audio?.resume?.(); } catch { /* optional */ }
+        bus.emit('app:foreground', {});
+      } else {
+        gameLoop.pauseRendering?.();
+        try { audio?.suspend?.(); } catch { /* optional */ }
+        bus.emit('app:background', {});
+      }
+    });
+    App.addListener('backButton', async ({ canGoBack }) => {
+      void canGoBack;
+      const scene = sceneManager.current;
+      if (paywallOverlay?.open) {
+        paywallOverlay.hide();
+        return;
+      }
+      // Close in-scene overlays first (pause / inventory / settings).
+      if (scene?.pause?.open || scene?.inventoryUI?.open || scene?.settingsOpen
+          || scene?.modal || scene?.skillPicker?.open || scene?.craftUI?.open) {
+        scene.handleInput?.({ type: 'escape' });
+        return;
+      }
+      const name = sceneManager.currentName;
+      if (name === 'game' || name === 'opening' || scene?.player) {
+        bus.emit('request:quitToTitle', {});
+        return;
+      }
+      if (name === 'gameover' || name === 'victory') {
+        bus.emit('request:quitToTitle', {});
+        return;
+      }
+      // Title: minimize instead of exiting abruptly.
+      try { await App.minimizeApp(); } catch { /* web / unsupported */ }
+    });
+  } catch (err) {
+    console.warn(LOG.CORE, 'native lifecycle wire failed:', err);
+  }
 }
 
 // Catch unhandled errors AFTER boot too — without this, a black-screen

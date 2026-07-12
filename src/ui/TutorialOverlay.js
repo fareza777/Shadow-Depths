@@ -5,6 +5,7 @@
 import { COLOR, FONT_DISPLAY, FONT_BODY, uiSize } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
 import { getViewportBottomY } from './controlBandLayout.js';
+import { t } from '../content/i18n.js';
 
 const STEPS = [
   {
@@ -95,7 +96,9 @@ export class TutorialOverlay {
     r.drawRect(x, y, panelW, 3, COLOR.gold);
 
     // Eyebrow (left) + step counter (right) on the same header line.
-    const eyebrow = this._variant === 'keeper' ? 'GUIDED TUTORIAL' : 'FIRST RUN';
+    const eyebrow = this._variant === 'keeper'
+      ? t('tutorial.eyebrow_keeper')
+      : t('tutorial.eyebrow');
     const headY = y + (compact ? 15 : 22);
     r.drawText(eyebrow, x + 12, headY,
       { size: uiSize(compact ? 9 : 11), align: 'left', color: COLOR.textMuted, family: FONT_BODY });
@@ -115,14 +118,14 @@ export class TutorialOverlay {
 
     // Always-visible call to action so the player knows how to proceed.
     const last = this._step >= steps.length - 1;
-    const hint = last ? 'Tap or move to begin' : 'Tap or move to continue';
+    const hint = last ? t('tutorial.begin') : t('tutorial.continue');
     if (compact) {
       r.drawText(hint, Layout.canvasW / 2, y + panelH - 12,
         { size: uiSize(10), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
     } else {
       r.drawText(hint, Layout.canvasW / 2, y + panelH - 20,
         { size: uiSize(12), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
-      r.drawText('SKIP', Layout.canvasW / 2, y + panelH + 14,
+      r.drawText(t('tutorial.skip'), Layout.canvasW / 2, y + panelH + 14,
         { size: uiSize(11), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
     }
   }

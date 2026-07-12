@@ -24,4 +24,16 @@ export class HeavyBehavior {
     this._counter = 0;
     return this._inner.decideAction(enemy, ctx);
   }
+
+  /**
+   * Peek next intent without advancing the wind-up counter.
+   */
+  previewIntent(enemy, ctx) {
+    const next = this._counter + 1;
+    if (next < this.actEveryNTurns) {
+      return { type: 'wait', meta: { winding: true } };
+    }
+    return this._inner.previewIntent?.(enemy, ctx)
+      || this._inner.decideAction(enemy, ctx);
+  }
 }

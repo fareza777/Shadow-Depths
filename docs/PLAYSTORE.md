@@ -20,6 +20,10 @@ App ID: `com.shadowdepths.game` · Display name: **Shadow Depths** · Version: *
 # 1. Generate launcher/splash sources (once, or after art change)
 node scripts/generate-android-assets.mjs
 # Optional: npx @capacitor/assets generate --android
+# Feature graphic (1024×500) + phone screenshots are still uploaded manually
+# in Play Console → Store listing.
+
+# Fonts are self-hosted under public/fonts/ (no Google CDN at runtime).
 
 # 2. First-time signing setup
 Copy-Item android\keystore.properties.example android\keystore.properties

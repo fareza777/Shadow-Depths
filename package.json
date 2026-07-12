@@ -23,6 +23,7 @@
     "playstore:prep": "npm run build && cap sync android"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
     "@capacitor/core": "^8.3.4",
     "@capgo/native-purchases": "^8.6.4"
   },

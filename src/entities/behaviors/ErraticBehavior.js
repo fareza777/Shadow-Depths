@@ -36,6 +36,22 @@ export class ErraticBehavior {
     }
     return greedyStep(enemy, player, floor) || { type: 'wait' };
   }
+
+  /**
+   * Deterministic telegraph — no RNG consumption. Adjacent → attack icon;
+   * otherwise greedy chase (ignores the random-flutter branch).
+   */
+  previewIntent(enemy, ctx) {
+    const { floor, player } = ctx;
+    if (manhattan(enemy, player) === 1) {
+      return {
+        type: 'attack',
+        target: { x: player.x, y: player.y },
+        meta: { missChance: this.missChance }
+      };
+    }
+    return greedyStep(enemy, player, floor) || { type: 'wait' };
+  }
 }
 
 function manhattan(a, b) {

@@ -48,6 +48,7 @@ function heroStatOverrides(kind) {
 import { Enemy } from '../entities/Enemy.js';
 import { rollEliteAffixes, forcedEliteAffixes, makeElite } from '../gameplay/eliteAffixes.js';
 import { HAZARDS, hazardDamage } from '../gameplay/hazards.js';
+import { applyBiomeTurnTick } from '../gameplay/biomeMechanics.js';
 import { computeSynergyMods, skillsById } from '../gameplay/skillSynergy.js';
 import { StatusEffects } from '../combat/StatusEffects.js';
 import { Inventory } from '../items/Inventory.js';
@@ -61,6 +62,7 @@ import { CombatSystem } from '../combat/CombatSystem.js';
 import { SpellSystem } from '../combat/SpellSystem.js';
 import { tickTriggerCooldowns } from '../combat/TriggerSystem.js';
 import { RNG } from './RNG.js';
+import { runEnemyTurns } from './EnemyTurnRunner.js';
 import { MobileControls } from '../ui/MobileControls.js';
 import { QuickUseBar } from '../ui/QuickUseBar.js';
 import { perfMeter } from '../debug/PerfMeter.js';
@@ -1399,6 +1401,8 @@ export class GameScene {
     if (typeof this.player.passiveTurnTick === 'function') this.player.passiveTurnTick();
     this.combat.tickEntity(this.player);
     if (this.player.isDead) { this._endRun(false); return; }
+    applyBiomeTurnTick(this.player, this.floor, this.bus);
+    if (this.player.isDead) { this._endRun(false); return; }
     perfMeter.measure('enemyTurn', () => this._runEnemyTurns());
     // CRITICAL: enemy turns can kill the player. Without this check the
     // GameOver scene never triggered and the player was stuck on a dead
@@ -1425,6 +1429,23 @@ export class GameScene {
   }
 
   _peekEnemyIntent(enemy) {
+    const ctx = {
+      floor: this.floor,
+      player: this.player,
+      rng: this.combat.rng,
+      pathfinding: this.pathfinding,
+      turn: this.player.runStats.turnsUsed
+    };
+    // Prefer behavior.previewIntent — never call enemy.decide here (mutates
+    // HeavyBehavior counters / Erratic RNG / intent slot).
+    if (typeof enemy.behavior?.previewIntent === 'function') {
+      try {
+        return enemy.behavior.previewIntent(enemy, ctx) || { type: 'wait' };
+      } catch (err) {
+        console.warn(LOG.CORE, 'previewIntent failed:', err);
+      }
+    }
+    // Legacy heuristic fallback for behaviors without previewIntent.
     const d = Math.abs(enemy.x - this.player.x) + Math.abs(enemy.y - this.player.y);
     if (d === 1) return { type: 'attack', target: { x: this.player.x, y: this.player.y } };
     const beh = enemy.behavior;
@@ -1442,42 +1463,16 @@ export class GameScene {
   }
 
   _runEnemyTurns() {
-    const enemies = this.floor.enemies()
-      .map((e) => ({ e, d: Math.abs(e.x - this.player.x) + Math.abs(e.y - this.player.y) }))
-      .sort((a, b) => a.d - b.d)
-      .map((wrap) => wrap.e);
-
-    const ctx = {
+    runEnemyTurns({
       floor: this.floor,
       player: this.player,
-      rng: this.combat.rng,
+      combat: this.combat,
       pathfinding: this.pathfinding,
-      turn: this.player.runStats.turnsUsed
-    };
-
-    let acted = 0;
-    for (const enemy of enemies) {
-      if (enemy.isDead) continue;
-      const dist = Math.abs(enemy.x - this.player.x) + Math.abs(enemy.y - this.player.y);
-      if (dist > ACTIVE_ENEMY_DISTANCE && !this.floor.tileAt(enemy.x, enemy.y)?.visible) {
-        enemy.intent = { type: 'wait' };
-        continue;
-      }
-      if (acted >= MAX_ACTING_ENEMIES) {
-        enemy.intent = { type: 'wait' };
-        continue;
-      }
-      acted += 1;
-      try {
-        tickTriggerCooldowns(enemy);
-        const action = enemy.decide(ctx);
-        this.combat.execute(action, enemy, ctx);
-        this.combat.tickEntity(enemy);
-      } catch (err) {
-        console.error(LOG.CORE, `enemy turn failed (${enemy.defId}):`, err);
-      }
-      if (this.player.isDead) break;
-    }
+      rng: this.combat.rng,
+      bus: this.bus,
+      activeDistance: ACTIVE_ENEMY_DISTANCE,
+      maxActing: MAX_ACTING_ENEMIES
+    });
   }
 
   // --- spawning -------------------------------------------------------
@@ -1625,14 +1620,43 @@ export class GameScene {
     this._runEnded = true;
     this._cancelPendingRunSave();
     this.save?.clearRun?.();
+    const p = this.player;
+    const skillPool = (this.content?.skills?.skills) || [];
+    const skillNames = (p.skills || []).map((id) => {
+      const def = skillPool.find((s) => s.id === id);
+      return def?.name || id;
+    });
+    const gear = [
+      p.weapon?.name, p.armor?.name, p.helm?.name,
+      p.legs?.name, p.necklace?.name, p.ring?.name
+    ].filter(Boolean);
     const summary = {
-      ...this.player.runStats,
+      ...p.runStats,
       died: !victory,
       mode: this.mode,
-      seed: this.seed
+      seed: this.seed,
+      heroKind: p.heroKind || this.heroKind || 'vigil',
+      level: p.stats?.level || 1,
+      skills: skillNames,
+      gear,
+      deathHint: victory ? null : this._deathHint(p)
     };
     if (victory) this.bus.emit('run:victory', summary);
     else this.bus.emit('run:over', summary);
+  }
+
+  /** Short coaching line for the game-over recap. */
+  _deathHint(player) {
+    const floor = (player.runStats?.floorsCleared || 0) + 1;
+    const killedBy = player.runStats?.killedBy || '';
+    if (/boss/i.test(killedBy) || /lord|wraith|abyss/i.test(killedBy)) {
+      return 'hint_boss';
+    }
+    if (!player.armor && floor >= 3) return 'hint_armor';
+    if ((player.runStats?.itemsUsed || 0) < 2 && floor >= 4) return 'hint_consumables';
+    if ((player.skills || []).length === 0 && floor >= 5) return 'hint_skills';
+    if (floor <= 3) return 'hint_early';
+    return 'hint_torch';
   }
 
   // --- commands from UI ----------------------------------------------

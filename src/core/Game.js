@@ -96,7 +96,10 @@ export class Game {
       return;
     }
     const mode = opts.mode || 'normal';
-    if (!opts.skipIntro && mode !== 'tutorial' && this._sceneFactories.opening) {
+    const seenIntro = !!this.meta?.state?.settings?.seenIntro;
+    // First run only: play the short cinematic. Returning players and
+    // explicit skipIntro (post-cinematic / tutorial) jump straight in.
+    if (!opts.skipIntro && !seenIntro && mode !== 'tutorial' && this._sceneFactories.opening) {
       const scene = this._sceneFactories.opening({
         bus: this.bus,
         state: this.state,
@@ -107,6 +110,10 @@ export class Game {
       this.state.setScene('opening');
       this.scenes.switch('opening', scene, { runOptions: opts });
       return;
+    }
+    // Mark intro complete once the player leaves the cinematic path.
+    if (opts.skipIntro && !seenIntro && this.meta?.setSetting) {
+      this.meta.setSetting('seenIntro', true);
     }
     this.save.clearRun?.();
     const scene = this._sceneFactories.game({

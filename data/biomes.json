@@ -30,7 +30,8 @@
         "tomb_lantern",
         "oathless_squire"
       ],
-      "torchRadius": 7
+      "torchRadius": 7,
+      "mechanic": "torch_drain"
     },
     {
       "id": "bone_garden",
@@ -63,7 +64,8 @@
         "marrow_jailer",
         "carrion_censer"
       ],
-      "torchRadius": 7
+      "torchRadius": 7,
+      "mechanic": "bleed_tiles"
     },
     {
       "id": "frozen_halls",
@@ -95,7 +97,8 @@
         "rime_sentinel",
         "frost_abbot"
       ],
-      "torchRadius": 6
+      "torchRadius": 6,
+      "mechanic": "slow_tiles"
     },
     {
       "id": "sunken_forest",
@@ -127,7 +130,8 @@
         "root_mimic",
         "sap_witch"
       ],
-      "torchRadius": 6
+      "torchRadius": 6,
+      "mechanic": "root_snare"
     },
     {
       "id": "iron_stronghold",
@@ -160,7 +164,8 @@
         "furnace_jailer",
         "rivet_colossus"
       ],
-      "torchRadius": 6
+      "torchRadius": 6,
+      "mechanic": "armor_break"
     },
     {
       "id": "sun_cursed_sands",
@@ -192,7 +197,8 @@
         "dune_pilgrim",
         "sunscar_javelin"
       ],
-      "torchRadius": 7
+      "torchRadius": 7,
+      "mechanic": "heat_fatigue"
     },
     {
       "id": "mirror_vaults",
@@ -225,7 +231,8 @@
         "silver_masque",
         "prism_archer"
       ],
-      "torchRadius": 6
+      "torchRadius": 6,
+      "mechanic": "echo_clone"
     },
     {
       "id": "magma_foundry",
@@ -257,7 +264,8 @@
         "slag_impaler",
         "kiln_mother"
       ],
-      "torchRadius": 6
+      "torchRadius": 6,
+      "mechanic": "lava_pressure"
     },
     {
       "id": "drowned_catacombs",
@@ -290,7 +298,8 @@
         "drowned_bellman",
         "kelp_revenant"
       ],
-      "torchRadius": 6
+      "torchRadius": 6,
+      "mechanic": "flood_slow"
     },
     {
       "id": "void_sanctum",
@@ -323,6 +332,7 @@
         "throne_without_king"
       ],
       "torchRadius": 5,
+      "mechanic": "void_vision",
       "isFinalBiome": true
     }
   ]

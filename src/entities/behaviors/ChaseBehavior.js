@@ -54,6 +54,11 @@ export class ChaseBehavior {
     // Greedy fallback.
     return greedyStep(enemy, player, floor) || { type: 'wait' };
   }
+
+  /** Telegraph helper — same shape as decideAction, no mutable side effects. */
+  previewIntent(enemy, ctx) {
+    return this.decideAction(enemy, ctx);
+  }
 }
 
 function manhattan(a, b) {

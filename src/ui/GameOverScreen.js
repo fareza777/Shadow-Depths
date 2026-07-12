@@ -5,12 +5,13 @@
  * into a new run with 1 input. Friction here kills retention.
  */
 import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE } from '../config/constants.js';
+import { t } from '../content/i18n.js';
 
 const LAYOUT = IS_LANDSCAPE
-  ? { titleY: 30, titleSize: 28, killedY: 60, statsY: 90, lineGap: 18, statSize: 11,
-      btnW: 160, btnH: 44, btnY: CANVAS_HEIGHT - 60 }
-  : { titleY: 80, titleSize: 36, killedY: 130, statsY: 180, lineGap: 24, statSize: 12,
-      btnW: 180, btnH: 48, btnY: CANVAS_HEIGHT - 260 };
+  ? { titleY: 24, titleSize: 26, killedY: 50, statsY: 72, lineGap: 15, statSize: 10,
+      btnW: 160, btnH: 44, btnY: CANVAS_HEIGHT - 56 }
+  : { titleY: 56, titleSize: 34, killedY: 100, statsY: 132, lineGap: 20, statSize: 12,
+      btnW: 180, btnH: 48, btnY: CANVAS_HEIGHT - 240 };
 
 export class GameOverScreen {
   /**
@@ -26,28 +27,30 @@ export class GameOverScreen {
 
   render(r) {
     r.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, '#06060a');
-    r.drawText('YOU DIED', CANVAS_WIDTH / 2, LAYOUT.titleY,
+    r.drawText(t('gameover.title'), CANVAS_WIDTH / 2, LAYOUT.titleY,
       { size: LAYOUT.titleSize, bold: true, align: 'center', color: COLOR.textCrit });
-    const killedBy = this.summary.killedBy ? `Killed by ${this.summary.killedBy}` : 'Killed by the dark.';
+    const killedBy = this.summary.killedBy
+      ? `${t('gameover.killed_by')} ${this.summary.killedBy}`
+      : t('gameover.killed_dark');
     r.drawText(killedBy, CANVAS_WIDTH / 2, LAYOUT.killedY,
       { size: IS_LANDSCAPE ? 11 : 14, align: 'center', color: COLOR.textMuted });
 
     const s = this.summary;
     const lines = [
-      ['Floor reached', `${(s.floorsCleared || 0) + 1}`],
-      ['Enemies defeated', s.enemiesDefeated || 0],
-      ['Items used', s.itemsUsed || 0],
-      ['XP gained', s.xpGained || 0],
-      ['Gold collected', s.goldCollected || 0],
-      ['Turns played', s.turnsUsed || 0],
+      [t('gameover.floor'), `${(s.floorsCleared || 0) + 1}`],
+      [t('gameover.enemies'), s.enemiesDefeated || 0],
+      [t('gameover.items'), s.itemsUsed || 0],
+      [t('gameover.xp'), s.xpGained || 0],
+      [t('gameover.gold'), s.goldCollected || 0],
+      [t('gameover.turns'), s.turnsUsed || 0],
       ['', ''],
-      ['SCORE', s.score ?? 0]
+      [t('gameover.score'), s.score ?? 0]
     ];
     const startY = LAYOUT.statsY;
     const gap = LAYOUT.lineGap;
     for (let i = 0; i < lines.length; i++) {
       const [label, value] = lines[i];
-      const big = label === 'SCORE';
+      const big = label === t('gameover.score');
       r.drawText(String(label), CANVAS_WIDTH / 2 - 70, startY + i * gap,
         { size: big ? LAYOUT.statSize + 2 : LAYOUT.statSize, bold: big, align: 'right',
           color: big ? '#d6c87a' : COLOR.textPrimary });
@@ -56,23 +59,48 @@ export class GameOverScreen {
           color: big ? '#d6c87a' : COLOR.textPrimary });
     }
 
-    const footY = startY + lines.length * gap + 4;
+    let footY = startY + lines.length * gap + 6;
+    const skills = Array.isArray(s.skills) ? s.skills.filter(Boolean) : [];
+    const gear = Array.isArray(s.gear) ? s.gear.filter(Boolean) : [];
+    if (skills.length) {
+      const build = skills.slice(0, 4).join(' · ');
+      r.drawText(`${t('gameover.build')}: ${build}`, CANVAS_WIDTH / 2, footY,
+        { size: IS_LANDSCAPE ? 9 : 10, align: 'center', color: '#a89cb0' });
+      footY += IS_LANDSCAPE ? 14 : 16;
+    }
+    if (gear.length) {
+      const gearLine = gear.slice(0, 3).join(' · ');
+      r.drawText(`${t('gameover.gear')}: ${gearLine}`, CANVAS_WIDTH / 2, footY,
+        { size: IS_LANDSCAPE ? 9 : 10, align: 'center', color: '#a89cb0' });
+      footY += IS_LANDSCAPE ? 14 : 16;
+    }
+    if (s.deathHint) {
+      const hintKey = `gameover.${s.deathHint}`;
+      const hintText = t(hintKey);
+      if (hintText && hintText !== hintKey) {
+        r.drawText(`${t('gameover.hint')}: ${hintText}`, CANVAS_WIDTH / 2, footY,
+          { size: IS_LANDSCAPE ? 9 : 11, align: 'center', color: COLOR.textHeal });
+        footY += IS_LANDSCAPE ? 16 : 18;
+      }
+    }
     if (s.isNewHighScore) {
-      r.drawText('★ NEW HIGH SCORE ★', CANVAS_WIDTH / 2, footY,
+      r.drawText(t('gameover.highscore'), CANVAS_WIDTH / 2, footY,
         { size: 13, bold: true, align: 'center', color: COLOR.textXP });
+      footY += 18;
     }
     if (s.coinsEarned > 0) {
-      r.drawText(`+${s.coinsEarned} ◈ coins (spend in shop)`,
-        CANVAS_WIDTH / 2, footY + 18,
+      r.drawText(`+${s.coinsEarned} ◈ ${t('gameover.coins')}`,
+        CANVAS_WIDTH / 2, footY,
         { size: 11, bold: true, align: 'center', color: '#d6c87a' });
+      footY += 16;
     }
     if (Array.isArray(s.unlocked) && s.unlocked.length > 0) {
-      r.drawText(`Unlocked: ${s.unlocked.join(', ')}`,
-        CANVAS_WIDTH / 2, footY + 36,
+      r.drawText(`${t('gameover.unlocked')}: ${s.unlocked.join(', ')}`,
+        CANVAS_WIDTH / 2, footY,
         { size: 10, align: 'center', color: COLOR.textHeal });
     }
 
-    const buttons = ['RESTART', 'TITLE'];
+    const buttons = [t('gameover.restart'), t('gameover.title_btn')];
     const w = LAYOUT.btnW, h = LAYOUT.btnH;
     const by = LAYOUT.btnY;
     const gapBtn = 16;

@@ -5,6 +5,7 @@ import {
   COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
 import { drawIronPanel, drawIronActionButton, IRON_PALETTE } from './ironPanel.js';
+import { t } from '../content/i18n.js';
 
 export class PaywallOverlay {
   /**
@@ -25,6 +26,7 @@ export class PaywallOverlay {
     this._reason = reason;
     this._status = '';
     this._busy = false;
+    this.bus?.emit('paywall:shown', { reason });
   }
 
   hide() {
@@ -157,11 +159,11 @@ export class PaywallOverlay {
     drawIronPanel(ctx, g.modalX, g.modalY, g.modalW, g.modalH);
 
     const cx = CANVAS_WIDTH / 2;
-    r.drawText('FULL DESCENT', cx, g.modalY + 28, {
+    r.drawText(t('paywall.title'), cx, g.modalY + 28, {
       size: uiSize(22), bold: true, align: 'center',
       family: FONT_DISPLAY, color: IRON_PALETTE.brass
     });
-    r.drawText('one purchase · unlock forever', cx, g.modalY + 52, {
+    r.drawText(t('paywall.subtitle'), cx, g.modalY + 52, {
       size: uiSize(12), italic: true, align: 'center',
       family: FONT_BODY, color: IRON_PALETTE.boneDim
     });
@@ -189,19 +191,19 @@ export class PaywallOverlay {
       y += 20;
     }
 
-    r.drawText('NO ADS  ·  NO SUBSCRIPTION', cx, y + 12, {
+    r.drawText(t('paywall.no_ads'), cx, y + 12, {
       size: uiSize(11), bold: true, align: 'center',
       family: FONT_MONO, color: COLOR.goldHi
     });
 
     drawIronActionButton(r, g.unlock.x, g.unlock.y, g.unlock.w, g.unlock.h,
-      this._busy ? 'PLEASE WAIT…' : `UNLOCK  ·  ${price}`,
+      this._busy ? t('paywall.wait') : `${t('paywall.unlock')}  ·  ${price}`,
       { accent: IRON_PALETTE.brass, fontSize: uiSize(14) });
     drawIronActionButton(r, g.restore.x, g.restore.y, g.restore.w, g.restore.h,
-      'RESTORE PURCHASES',
+      t('paywall.restore'),
       { accent: '#8a8098', fontSize: uiSize(12) });
     drawIronActionButton(r, g.close.x, g.close.y, g.close.w, g.close.h,
-      'NOT NOW',
+      t('paywall.not_now'),
       { accent: IRON_PALETTE.boneDim, fontSize: uiSize(12) });
 
     if (this._status && performance.now() < this._statusUntil) {

@@ -21,21 +21,34 @@ import {
   drawIronPanel, drawIronPlate, drawIronActionButton,
   drawInsetCard, IRON_PALETTE
 } from './ironPanel.js';
+import { t, setLocale, currentLocale } from '../content/i18n.js';
 
 const BRASS_DARK = '#7a5c2c';
 const BRASS = '#d4ac6c';
 const BRASS_HI = '#f1d49a';
 const BRASS_WHITE = '#fff5d0';
 
+const MENU_LABEL_KEYS = {
+  continue: 'title.continue',
+  newRun: 'title.newrun',
+  tutorial: 'title.tutorial',
+  daily: 'title.daily',
+  unlock: 'title.unlock',
+  shop: 'title.shop',
+  codex: 'title.codex',
+  meta: 'title.meta',
+  settings: 'title.settings'
+};
+
 const MENU = [
-  { id: 'newRun',   icon: '+', label: 'NEW DESCENT',  sub: 'Permadeath' },
-  { id: 'tutorial', icon: '?', label: 'TUTORIAL',      sub: '2 floors' },
-  { id: 'daily',    icon: '☼', label: 'DAILY SEED',   sub: '' },
-  { id: 'unlock',   icon: '◆', label: 'FULL DESCENT', sub: '' },
-  { id: 'shop',     icon: '◈', label: 'EMPORIUM',     sub: '' },
-  { id: 'codex',    icon: '✦', label: 'CODEX',        sub: '' },
-  { id: 'meta',     icon: '★', label: 'META-PROGRESS',sub: '' },
-  { id: 'settings', icon: '⚙', label: 'SETTINGS',     sub: '' }
+  { id: 'newRun',   icon: '+', labelKey: 'title.newrun',  sub: 'Permadeath' },
+  { id: 'tutorial', icon: '?', labelKey: 'title.tutorial', sub: '2 floors' },
+  { id: 'daily',    icon: '☼', labelKey: 'title.daily',   sub: '' },
+  { id: 'unlock',   icon: '◆', labelKey: 'title.unlock',  sub: '' },
+  { id: 'shop',     icon: '◈', labelKey: 'title.shop',    sub: '' },
+  { id: 'codex',    icon: '✦', labelKey: 'title.codex',   sub: '' },
+  { id: 'meta',     icon: '★', labelKey: 'title.meta',    sub: '' },
+  { id: 'settings', icon: '⚙', labelKey: 'title.settings', sub: '' }
 ];
 
 const LAYOUT = IS_LANDSCAPE
@@ -165,14 +178,13 @@ export class TitleScreen {
     const run = this.state.state.run;
     if (!run?.canContinue) return MENU;
     return [
-      { id: 'continue', icon: '▶', label: 'CONTINUE', sub: '' },
+      { id: 'continue', icon: '▶', labelKey: 'title.continue', sub: '' },
       ...MENU
     ];
   }
 
   _renderMenuRows(r, menuItems = this._menuItems()) {
     const ctx = r.ctx;
-    const t = this._t;
     const rowH = LAYOUT.rowH;
     const rowW = LAYOUT.rowW;
     const x = (CANVAS_WIDTH - rowW) / 2;
@@ -250,7 +262,7 @@ export class TitleScreen {
           { size: uiSize(20), bold: true, align: 'center', baseline: 'middle',
             family: FONT_DISPLAY, color: IRON.boneDim });
       }
-      r.drawText(item.label, x + 62, y + rowH / 2,
+      r.drawText(t(item.labelKey || MENU_LABEL_KEYS[item.id] || item.id), x + 62, y + rowH / 2,
         { size: uiSize(16), bold: true, align: 'left', baseline: 'middle',
           family: FONT_DISPLAY, color: selected ? BRASS_HI : IRON.bone });
       const sub = this._statusFor(item);
@@ -381,6 +393,21 @@ export class TitleScreen {
             }
             this._shopFeedbackUntil = performance.now() + 2000;
           })();
+          return;
+        }
+        if (this.modal === 'settings' && (idx === 304 || idx === 305)) {
+          const locale = idx === 304 ? 'en' : 'id';
+          if (this.meta) {
+            this.meta.setSetting('locale', locale);
+            setLocale(locale);
+          }
+          return;
+        }
+        if (this.modal === 'settings' && idx === 306) {
+          if (this.meta) {
+            const cur = !!this.meta.state.settings?.analyticsOptIn;
+            this.meta.setSetting('analyticsOptIn', !cur);
+          }
           return;
         }
         // Codex tab change (400 + i) and pagination (410=prev, 411=next).
@@ -633,12 +660,16 @@ export class TitleScreen {
     const soundCardH = 34;
     const orientLabelY = soundCardY + soundCardH + 18;
     const orientBtnY = orientLabelY + 14;
-    const restoreY = orientBtnY + btnH + 16;
+    const localeLabelY = orientBtnY + btnH + 16;
+    const localeBtnY = localeLabelY + 14;
+    const analyticsY = localeBtnY + btnH + 14;
+    const analyticsH = btnH;
+    const restoreY = analyticsY + analyticsH + 14;
     const restoreH = btnH;
     const hintY = restoreY + restoreH + 10;
     const closeY = hintY + 24;
     const modalH = closeY + closeH + 14;
-    const modalY = Math.max(16, (CANVAS_HEIGHT - modalH) / 2 - (IS_LANDSCAPE ? 12 : 40));
+    const modalY = Math.max(8, (CANVAS_HEIGHT - modalH) / 2 - (IS_LANDSCAPE ? 8 : 24));
 
     const y0 = modalY;
     return {
@@ -651,6 +682,12 @@ export class TitleScreen {
       soundCardW: modalW - 40,
       orientLabelY: y0 + orientLabelY,
       orientBtnY: y0 + orientBtnY,
+      localeLabelY: y0 + localeLabelY,
+      localeBtnY: y0 + localeBtnY,
+      analyticsY: y0 + analyticsY,
+      analyticsH,
+      analyticsX: modalX + 20,
+      analyticsW: modalW - 40,
       restoreY: y0 + restoreY,
       restoreH,
       restoreX: modalX + 20,
@@ -665,8 +702,10 @@ export class TitleScreen {
     const settings = this.state.state.meta.settings || {};
     const vol = Math.round((settings.volume ?? 0.6) * 100);
     const orient = settings.orientation || 'portrait';
+    const locale = settings.locale || currentLocale() || 'en';
+    const analyticsOn = !!settings.analyticsOptIn;
     const g = this._settingsLayout();
-    this._renderIronModalChrome(r, g, 'SETTINGS', 'iron-clad preferences');
+    this._renderIronModalChrome(r, g, t('title.settings'), 'iron-clad preferences');
 
     r.drawText('SOUND', CANVAS_WIDTH / 2, g.soundLabelY, {
       size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
@@ -690,6 +729,20 @@ export class TitleScreen {
       const bx = g.baseX + i * (g.btnW + g.btnGap);
       this._renderIronPill(r, bx, g.orientBtnY, g.btnW, g.btnH, label, orient === key);
     }
+
+    r.drawText(t('settings.language'), CANVAS_WIDTH / 2, g.localeLabelY, {
+      size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
+    for (let i = 0; i < 2; i++) {
+      const key = i === 0 ? 'en' : 'id';
+      const label = i === 0 ? 'EN' : 'ID';
+      const bx = g.baseX + i * (g.btnW + g.btnGap);
+      this._renderIronPill(r, bx, g.localeBtnY, g.btnW, g.btnH, label, locale === key);
+    }
+
+    drawIronActionButton(r, g.analyticsX, g.analyticsY, g.analyticsW, g.analyticsH,
+      analyticsOn ? t('settings.analytics_on') : t('settings.analytics_off'),
+      { accent: analyticsOn ? IRON_PALETTE.brass : '#8a8098', fontSize: uiSize(11) });
 
     const premium = this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked;
     drawIronActionButton(r, g.restoreX, g.restoreY, g.restoreW, g.restoreH,
@@ -717,6 +770,18 @@ export class TitleScreen {
       const bx = g.baseX + i * (g.btnW + g.btnGap);
       if (x >= bx && x <= bx + g.btnW && y >= g.orientBtnY && y <= g.orientBtnY + g.btnH) {
         return i === 0 ? 'portrait' : 'landscape';
+      }
+    }
+    return null;
+  }
+
+  _settingsLocaleHitTest(x, y) {
+    if (this.modal !== 'settings') return null;
+    const g = this._settingsLayout();
+    for (let i = 0; i < 2; i++) {
+      const bx = g.baseX + i * (g.btnW + g.btnGap);
+      if (x >= bx && x <= bx + g.btnW && y >= g.localeBtnY && y <= g.localeBtnY + g.btnH) {
+        return i === 0 ? 'en' : 'id';
       }
     }
     return null;
@@ -1207,7 +1272,11 @@ export class TitleScreen {
       if (this._settingsVolumeHitTest(x, y)) return 302;
       const orient = this._settingsOrientationHitTest(x, y);
       if (orient) return orient === 'portrait' ? 300 : 301;
+      const locale = this._settingsLocaleHitTest(x, y);
+      if (locale) return locale === 'en' ? 304 : 305;
       const g = this._settingsGeometry();
+      if (x >= g.analyticsX && x <= g.analyticsX + g.analyticsW
+          && y >= g.analyticsY && y <= g.analyticsY + g.analyticsH) return 306;
       if (x >= g.restoreX && x <= g.restoreX + g.restoreW
           && y >= g.restoreY && y <= g.restoreY + g.restoreH) return 303;
       const closeRect = this._modalCloseRect(g.closeY);

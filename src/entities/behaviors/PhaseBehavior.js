@@ -38,6 +38,10 @@ export class PhaseBehavior {
     }
     return greedyStep(enemy, player, floor) || { type: 'wait' };
   }
+
+  previewIntent(enemy, ctx) {
+    return this.decideAction(enemy, ctx);
+  }
 }
 
 function manhattan(a, b) {

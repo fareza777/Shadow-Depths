@@ -156,4 +156,20 @@ export class AudioManager {
       return false;
     }
   }
+
+  /** Pause Web Audio when the app backgrounds (battery / Play Store hygiene). */
+  suspend() {
+    if (!this._ctx) return;
+    try {
+      if (this._ctx.state === 'running') this._ctx.suspend();
+    } catch { /* ignore */ }
+  }
+
+  /** Resume Web Audio after foreground. */
+  resume() {
+    if (!this._ctx) return;
+    try {
+      if (this._ctx.state === 'suspended') this._ctx.resume();
+    } catch { /* ignore */ }
+  }
 }

@@ -35,6 +35,11 @@ export class RangedBehavior {
     // Close in.
     return greedyStep(enemy, player, floor) || { type: 'wait' };
   }
+
+  /** Telegraph helper — pure; decideAction has no mutable state. */
+  previewIntent(enemy, ctx) {
+    return this.decideAction(enemy, ctx);
+  }
 }
 
 function manhattan(a, b) {

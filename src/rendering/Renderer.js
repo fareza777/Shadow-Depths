@@ -816,6 +816,8 @@ export class Renderer {
   }
 
   static _inferThreatIntent(enemy, player) {
+    // Lightweight fallback when GameScene has not stamped e.intent yet.
+    // Full telegraph uses behavior.previewIntent via GameScene._peekEnemyIntent.
     const d = Math.abs(enemy.x - player.x) + Math.abs(enemy.y - player.y);
     if (d === 1) return { type: 'attack' };
     return null;
