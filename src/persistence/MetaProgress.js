@@ -36,6 +36,10 @@ const DEFAULT_META = Object.freeze({
     showTutorial: true,
     orientation: 'portrait'
   },
+  // Play Store one-time unlock (Full Descent).
+  premiumUnlocked: false,
+  premiumUnlockedAt: null,
+  premiumSource: null,
   runHistory: []
 });
 
@@ -213,6 +217,32 @@ export class MetaProgress {
     this._state.settings[key] = value;
     this.save.saveMeta(this._state);
     this.bus?.emit('settings:changed', { key, value });
+  }
+
+  /** True when the one-time Full Descent unlock is owned. */
+  isPremium() {
+    return !!this._state.premiumUnlocked;
+  }
+
+  /**
+   * Persist premium entitlement after a successful Play purchase / restore.
+   * @param {{ source?:string }} [opts]
+   */
+  unlockPremium(opts = {}) {
+    if (this._state.premiumUnlocked) return false;
+    this._state.premiumUnlocked = true;
+    this._state.premiumUnlockedAt = Date.now();
+    this._state.premiumSource = opts.source || 'purchase';
+    this.save.saveMeta(this._state);
+    this.bus?.emit('meta:premiumUnlocked', {
+      source: this._state.premiumSource,
+      at: this._state.premiumUnlockedAt
+    });
+    return true;
+  }
+
+  freeFloorCap() {
+    return this.balance?.monetization?.freeFloorCap ?? 10;
   }
 
   // --- unlocks --------------------------------------------------------

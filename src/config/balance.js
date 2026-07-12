@@ -130,6 +130,14 @@ export const DEFAULT_BALANCE = Object.freeze({
     enemyCountMilestoneEvery: 10,
     enemyCountMilestoneBonus: 1,
     enemyCountMax: 12
+  },
+
+  // Freemium: first N floors free; one-time IAP unlocks the rest forever.
+  monetization: {
+    freeFloorCap: 10,
+    productId: 'full_descent_unlock',
+    // Display-only fallback; live price comes from Play Billing.
+    fallbackPriceLabel: 'Rp 29.000'
   }
 });
 

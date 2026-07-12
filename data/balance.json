@@ -80,6 +80,11 @@
     "enemyCountMilestoneBonus": 1,
     "enemyCountMax": 12
   },
+  "monetization": {
+    "freeFloorCap": 10,
+    "productId": "full_descent_unlock",
+    "fallbackPriceLabel": "Rp 29.000"
+  },
   "unlocks": [
     { "id": "worn_dagger",    "threshold": 500,  "effect": "startWeapon" },
     { "id": "veterans_vigor", "threshold": 1500, "effect": "plus10HP" },

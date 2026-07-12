@@ -1,7 +1,18 @@
 # Google Play Store — release checklist
 
 Shadow Depths ships as a **Capacitor Android App Bundle (`.aab`)**.  
-App ID: `com.shadowdepths.game` · Display name: **Shadow Depths**
+App ID: `com.shadowdepths.game` · Display name: **Shadow Depths** · Version: **0.2.0**
+
+## Monetization model (v0.2)
+
+| Tier | Access |
+|------|--------|
+| **Free** | Floors **1–10** (first biome + floor-10 boss) + tutorial + meta shop |
+| **Full Descent** | One-time IAP unlocks **all 100 floors** forever (no ads, no subscription) |
+
+- **Play Console product ID:** `full_descent_unlock` (managed / non-consumable)
+- **Suggested price (ID):** Rp 29.000 (set live price in Play Console)
+- In-app: title menu **FULL DESCENT**, paywall on descend past floor 10, Settings → Restore purchases
 
 ## Quick commands (Windows)
 
@@ -27,47 +38,51 @@ npm run android:sync
 cd android
 .\gradlew.bat assembleDebug
 # android\app\build\outputs\apk\debug\app-debug.apk
+# also copied to: release\Shadow-Depths-debug.apk
 ```
 
 ## Play Console setup (one-time)
 
 1. [Google Play Console](https://play.google.com/console) → **Create app**
-2. **App access:** full access (no login) unless you add accounts later
-3. **Ads:** declare no ads (unless you add them)
-4. **Content rating:** complete IARC questionnaire (fantasy violence)
-5. **Target audience:** 13+ recommended for dark fantasy combat
-6. **Data safety:**  
-   - Data collected: **No** (offline local saves only)  
-   - Data shared: **No**  
-   - Encryption in transit: N/A for offline play
+2. **App access:** full access (no login)
+3. **Ads:** declare **no ads**
+4. **Content rating:** IARC questionnaire (fantasy violence)
+5. **Target audience:** 13+ recommended
+6. **Data safety:**
+   - Data collected: **No** personal data (local saves only)
+   - Purchases: processed by Google Play (declare in-app purchases)
+   - Data shared: **No**
 7. **Privacy policy URL:**  
-   `https://shadow-depths.vercel.app/privacy.html`  
-   (deploy after pushing `public/privacy.html`)
-8. **Store listing assets:**
-   - App icon: 512×512 PNG (export from `resources/icon.png`)
+   `https://shadow-depths.vercel.app/privacy.html`
+8. **Monetize → Products → In-app products:**
+   - Create `full_descent_unlock` (one-time / non-consumable)
+   - Activate for Internal testing track before production
+9. **Store listing assets:**
+   - App icon: 512×512 PNG
    - Feature graphic: 1024×500 PNG
-   - Phone screenshots: min 2, 16:9 or 9:16 (portrait gameplay recommended)
+   - Phone screenshots: min 2, portrait gameplay
    - Short description (80 chars)
-   - Full description (4000 chars)
+   - Full description (4000 chars) — mention free 10 floors + one-time unlock
 
 ### Suggested short description
 
 ```
-Descend the crypts. Turn-based roguelike. Every floor remembers your failures.
+Descend the crypts. Turn-based roguelike. Free 10 floors — unlock the full 100.
 ```
 
 ## Versioning
 
-- `versionName` comes from `package.json` (`0.1.0`)
-- `versionCode` is computed: `major*10000 + minor*100 + patch` → `0.1.0` = **100**
+- `versionName` comes from `package.json` (`0.2.0`)
+- `versionCode` is computed: `major*10000 + minor*100 + patch` → `0.2.0` = **200**
 - Bump `package.json` version before each Play upload
 
 ## Testing before production
 
 1. Install debug APK on a physical phone (USB debugging)
-2. Verify portrait + landscape in Settings → reload
-3. Play 10+ minutes: save/load, forge floor, death, audio
-4. Upload **Internal testing** track first → invite testers → then Production
+2. Play free floors 1–10; confirm paywall on descend to 11
+3. On licensed tester account: purchase / restore Full Descent
+4. Verify Continue blocked for deep saves until unlock
+5. Upload **Internal testing** AAB → invite testers → then Production
 
 ## Files you must NOT commit
 
@@ -85,5 +100,6 @@ Descend the crypts. Turn-based roguelike. Every floor remembers your failures.
 | Gradle SDK not found | Set `ANDROID_HOME`, open once in Android Studio |
 | White screen on launch | `npm run android:sync` after `npm run build` |
 | Signing failed | Check `keystore.properties` paths are relative to `android/` |
+| IAP “item unavailable” | Product ID must be `full_descent_unlock` and **Active** in Play Console; app must be installed from Play (internal track) |
 
 See also: [ANDROID.md](./ANDROID.md)

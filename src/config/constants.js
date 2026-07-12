@@ -208,7 +208,7 @@ export const TIMING = Object.freeze({
 
 // --- Storage ------------------------------------------------------------
 export const STORAGE_PREFIX = 'shadowdepths_';
-export const SAVE_SCHEMA_VERSION = 1;
+export const SAVE_SCHEMA_VERSION = 2;
 
 // --- Logging tags (use as first arg in console.log/warn) ---------------
 export const LOG = Object.freeze({

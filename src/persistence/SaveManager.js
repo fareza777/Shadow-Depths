@@ -51,8 +51,14 @@ function signPayload(payload) {
  * Signature: (data) => migratedData
  */
 const MIGRATIONS = {
-  // 1: (data) => { data.unlocks ||= []; return data; }
-  // 2: (data) => { ... }
+  // v1 → v2: add Play Store premium entitlement fields.
+  1: (data) => {
+    if (!data || typeof data !== 'object') return data;
+    if (data.premiumUnlocked === undefined) data.premiumUnlocked = false;
+    if (data.premiumUnlockedAt === undefined) data.premiumUnlockedAt = null;
+    if (data.premiumSource === undefined) data.premiumSource = null;
+    return data;
+  }
 };
 
 export class SaveManager {

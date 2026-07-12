@@ -71,6 +71,9 @@ import { LoreDatabase } from './narrative/LoreDatabase.js';
 import { DialogueSystem } from './narrative/DialogueSystem.js';
 
 import { DEFAULT_BALANCE, mergeBalance } from './config/balance.js';
+import { BillingService } from './monetization/BillingService.js';
+import { FALLBACK_PRICE_LABEL } from './monetization/products.js';
+import { PaywallOverlay } from './ui/PaywallOverlay.js';
 
 // Content imports are STATIC so Vite bundles them at build time. This means:
 //   - Production builds (Vercel, Capacitor APK) work without runtime fetch.
@@ -99,7 +102,7 @@ import { AchievementToast } from './ui/AchievementToast.js';
 import { repairItemDefStats } from './items/canonicalStats.js';
 
 async function bootstrap() {
-  console.log(LOG.CORE, 'Shadow Depths v0.1.0 — bootstrap');
+  console.log(LOG.CORE, 'Shadow Depths v0.2.0 — bootstrap');
 
   // --- core plumbing -------------------------------------------------
   const bus = new EventBus();
@@ -150,6 +153,20 @@ async function bootstrap() {
   // Expose meta to UI modules that need read-only access without coupling
   // (e.g. InventoryUI tooltip checking identification state).
   globalThis.__shadowDepthsMeta = state.state.meta;
+
+  // --- monetization (Play one-time unlock) ---------------------------
+  const billingService = new BillingService({ metaProgress, eventBus: bus, balance });
+  if (balance.monetization?.fallbackPriceLabel) {
+    billingService._priceLabel = balance.monetization.fallbackPriceLabel;
+  } else {
+    billingService._priceLabel = FALLBACK_PRICE_LABEL;
+  }
+  const paywallOverlay = new PaywallOverlay({ bus, billing: billingService });
+  bus.on('billing:unlocked', () => {
+    Object.assign(state.state.meta, metaProgress.state);
+  });
+  // Fire-and-forget store init (restore + price fetch on native).
+  billingService.init().catch((err) => console.warn(LOG.CORE, 'billing init:', err));
 
   // Locale from saved meta (default 'en' if absent / unsupported).
   setLocale(state.state.meta.settings?.locale || 'en');
@@ -230,12 +247,15 @@ async function bootstrap() {
 
   // --- scene factories ----------------------------------------------
   const sceneFactories = {
-    title: (deps) => new TitleScreen({ ...deps, metaProgress, characterSelect }),
+    title: (deps) => new TitleScreen({
+      ...deps, metaProgress, characterSelect, billingService, paywallOverlay
+    }),
     opening: (deps) => new OpeningCinematic(deps),
     game: (deps) => new GameScene({
       ...deps, hud, minimap, inventoryUI, skillPicker, skillsModal, vigilScreen,
       lighting, renderer, mobileControls, quickUseBar, pauseOverlay,
-      craftingPanel, floorEventPanel, tutorial
+      craftingPanel, floorEventPanel, tutorial,
+      metaProgress, billingService, paywallOverlay
     }),
     gameover: (deps) => new GameOverScreen(deps),
     victory: (deps) => new VictoryScreen(deps)
@@ -254,6 +274,8 @@ async function bootstrap() {
     gameLoop,
     saveManager,
     metaProgress,
+    billingService,
+    paywallOverlay,
     sceneFactories,
     content,
     balance

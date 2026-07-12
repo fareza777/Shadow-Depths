@@ -41,6 +41,8 @@ export class Game {
     this.loop = deps.gameLoop;
     this.save = deps.saveManager;
     this.meta = deps.metaProgress;
+    this.billing = deps.billingService || null;
+    this.paywall = deps.paywallOverlay || null;
     this._sceneFactories = deps.sceneFactories;
 
     /** @type {object} provided by composition root (main.js) */
@@ -55,6 +57,9 @@ export class Game {
     this.bus.on('request:quitToTitle', () => this.quitToTitle());
     this.bus.on('run:over', (summary) => this._onRunOver(summary));
     this.bus.on('run:victory', (summary) => this._onRunVictory(summary));
+    this.bus.on('billing:unlocked', () => {
+      if (this.meta?.state) Object.assign(this.state.state.meta, this.meta.state);
+    });
   }
 
   /** Boot sequence. Must be called exactly once. Content + balance are
@@ -123,6 +128,16 @@ export class Game {
     if (!this._sceneFactories.game) return;
     const snapshot = this._loadRunSnapshot();
     if (!snapshot) return;
+
+    // Freemium: block resume into paid floors until unlock.
+    const floorIndex = snapshot.floorIndex || 0;
+    const mode = snapshot.mode || 'normal';
+    if (this.billing && !this.billing.canAccessFloorIndex(floorIndex, mode)) {
+      this.paywall?.show('continue');
+      this.bus.once('paywall:unlocked', () => this.continueRun());
+      return;
+    }
+
     const scene = this._sceneFactories.game({
       bus: this.bus,
       state: this.state,

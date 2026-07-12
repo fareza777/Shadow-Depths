@@ -101,14 +101,17 @@ export class GameScene {
     this.minimap = deps.minimap;
     this.inventoryUI = deps.inventoryUI;
     this.skillPicker = deps.skillPicker || null;
-    this.vigil = deps.vigilScreen || null;
     this.skillsModal = deps.skillsModal || null;
+    this.vigil = deps.vigilScreen || null;
     this.controls = deps.mobileControls || new MobileControls({ bus: this.bus });
     this.quickUse = deps.quickUseBar || new QuickUseBar({ bus: this.bus });
     this.pause = deps.pauseOverlay || null;
     this.crafting = deps.craftingPanel || null;
     this.floorEvents = deps.floorEventPanel || null;
     this.tutorial = deps.tutorial || null;
+    this.meta = deps.metaProgress || null;
+    this.billing = deps.billingService || null;
+    this.paywall = deps.paywallOverlay || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
     this.save = deps.saveManager || null;
@@ -250,6 +253,7 @@ export class GameScene {
     this.inventoryUI?.hide();
     this.vigil?.hide();
     this.floorEvents?.hide();
+    this.paywall?.hide();
   }
 
   _emitFloorEntered(index, floor) {
@@ -431,6 +435,7 @@ export class GameScene {
       if (this.crafting) this.crafting.render(renderer);
       if (this.floorEvents) this.floorEvents.render(renderer);
       if (this.tutorial?.open) this.tutorial.render(renderer);
+      if (this.paywall?.open) this.paywall.render(renderer);
     });
   }
 
@@ -654,6 +659,14 @@ export class GameScene {
   // --- input ----------------------------------------------------------
   handleInput(action) {
     if (!action || this.player.isDead) return;
+
+    if (this.paywall?.open) {
+      if (action.type === 'pointer') {
+        this.paywall.handleTap(action.x, action.y);
+        return;
+      }
+      if (this.paywall.handleInput(action)) return;
+    }
 
     if (this.tutorial?.open) {
       const consumed = this.tutorial.handleInput(action);
@@ -1209,6 +1222,17 @@ export class GameScene {
   _playerDescend() {
     const t = this.floor.tileAt(this.player.x, this.player.y);
     if (!t || t.type !== TILE.STAIRS_DOWN) return;
+
+    // Freemium gate: free players stop after clearing the free floor cap.
+    if (this.billing?.needsUnlockToDescend?.(this.dungeon.currentIndex, this.mode)) {
+      this.paywall?.show('descend');
+      this.bus.emit('log:message', {
+        text: `Floor ${(this.billing.freeFloorCap || 10) + 1}+ requires Full Descent unlock.`,
+        kind: 'warn'
+      });
+      return;
+    }
+
     // Floor cleared bookkeeping.
     this.player.runStats.floorsCleared += 1;
     if (this.floor.clearedWithoutDamage) this.player.runStats.perfectFloors += 1;

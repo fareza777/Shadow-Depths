@@ -31,6 +31,7 @@ const MENU = [
   { id: 'newRun',   icon: '+', label: 'NEW DESCENT',  sub: 'Permadeath' },
   { id: 'tutorial', icon: '?', label: 'TUTORIAL',      sub: '2 floors' },
   { id: 'daily',    icon: '☼', label: 'DAILY SEED',   sub: '' },
+  { id: 'unlock',   icon: '◆', label: 'FULL DESCENT', sub: '' },
   { id: 'shop',     icon: '◈', label: 'EMPORIUM',     sub: '' },
   { id: 'codex',    icon: '✦', label: 'CODEX',        sub: '' },
   { id: 'meta',     icon: '★', label: 'META-PROGRESS',sub: '' },
@@ -53,7 +54,7 @@ const LAYOUT = IS_LANDSCAPE
 
 export class TitleScreen {
   /** @param {{ bus:object, state:object, content:object, metaProgress:object }} deps */
-  constructor({ bus, state, content, metaProgress, characterSelect }) {
+  constructor({ bus, state, content, metaProgress, characterSelect, billingService, paywallOverlay }) {
     this.characterSelect = characterSelect || null;
     if (bus && this.characterSelect) {
       bus.on('request:openCharacterSelect', (opts) => {
@@ -65,6 +66,8 @@ export class TitleScreen {
     this.state = state;
     this.content = content || {};
     this.meta = metaProgress;
+    this.billing = billingService || null;
+    this.paywall = paywallOverlay || null;
     this.selected = 0;
     this.modal = null; // 'controls' | 'settings' | 'shop' | 'meta' | 'codex' | null
     this._particles = TitleScreen._seedParticles();
@@ -154,6 +157,8 @@ export class TitleScreen {
     else if (this.modal === 'shop') this._renderShop(renderer);
     else if (this.modal === 'meta') this._renderMeta(renderer);
     else if (this.modal === 'codex') this._renderCodex(renderer);
+
+    if (this.paywall?.open) this.paywall.render(renderer);
   }
 
   _menuItems() {
@@ -296,6 +301,11 @@ export class TitleScreen {
       const best = ds[key];
       return best ? `best ${best}` : 'fresh';
     }
+    if (item.id === 'unlock') {
+      if (this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked) return 'OWNED';
+      const cap = this.billing?.freeFloorCap ?? this.meta?.freeFloorCap?.() ?? 10;
+      return this.billing?.priceLabel || `free 1–${cap}`;
+    }
     if (item.id === 'settings') {
       const orient = this.state.state.meta.settings?.orientation || 'portrait';
       return orient;
@@ -305,6 +315,13 @@ export class TitleScreen {
 
   // --- input ---------------------------------------------------------
   handleInput(action) {
+    if (this.paywall?.open) {
+      if (action.type === 'pointer') {
+        this.paywall.handleTap(action.x, action.y);
+        return;
+      }
+      if (this.paywall.handleInput(action)) return;
+    }
     // Character picker steals input first when open.
     if (this.characterSelect?.open) {
       if (action.type === 'pointer') {
@@ -343,6 +360,27 @@ export class TitleScreen {
             this.meta.setSetting('orientation', mode);
             setTimeout(() => location.reload(), 200);
           }
+          return;
+        }
+        if (this.modal === 'settings' && idx === 303) {
+          if (this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked) {
+            this._shopFeedback = 'Full Descent already unlocked';
+            this._shopFeedbackUntil = performance.now() + 1800;
+            return;
+          }
+          (async () => {
+            const result = await this.billing?.restore?.();
+            if (result?.ok) {
+              this._shopFeedback = 'Purchases restored!';
+              Object.assign(this.state.state.meta, this.meta.state);
+            } else if (result?.reason === 'none') {
+              this.modal = null;
+              this.paywall?.show('menu');
+            } else {
+              this._shopFeedback = 'Restore failed — try Full Descent';
+            }
+            this._shopFeedbackUntil = performance.now() + 2000;
+          })();
           return;
         }
         // Codex tab change (400 + i) and pagination (410=prev, 411=next).
@@ -416,6 +454,14 @@ export class TitleScreen {
       const seed = TitleScreen.dailySeed();
       // Same picker, but the daily seed is attached when the player chooses.
       this.bus.emit('request:openCharacterSelect', { mode: 'daily', seed });
+    }
+    else if (id === 'unlock') {
+      if (this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked) {
+        this._shopFeedback = 'Full Descent already unlocked';
+        this._shopFeedbackUntil = performance.now() + 1800;
+        return;
+      }
+      this.paywall?.show('menu');
     }
     else if (id === 'shop') { this.modal = 'shop'; this._shopScroll = 0; }
     else if (id === 'codex') {
@@ -587,7 +633,9 @@ export class TitleScreen {
     const soundCardH = 34;
     const orientLabelY = soundCardY + soundCardH + 18;
     const orientBtnY = orientLabelY + 14;
-    const hintY = orientBtnY + btnH + 10;
+    const restoreY = orientBtnY + btnH + 16;
+    const restoreH = btnH;
+    const hintY = restoreY + restoreH + 10;
     const closeY = hintY + 24;
     const modalH = closeY + closeH + 14;
     const modalY = Math.max(16, (CANVAS_HEIGHT - modalH) / 2 - (IS_LANDSCAPE ? 12 : 40));
@@ -603,6 +651,10 @@ export class TitleScreen {
       soundCardW: modalW - 40,
       orientLabelY: y0 + orientLabelY,
       orientBtnY: y0 + orientBtnY,
+      restoreY: y0 + restoreY,
+      restoreH,
+      restoreX: modalX + 20,
+      restoreW: modalW - 40,
       hintY: y0 + hintY
     };
   }
@@ -638,6 +690,12 @@ export class TitleScreen {
       const bx = g.baseX + i * (g.btnW + g.btnGap);
       this._renderIronPill(r, bx, g.orientBtnY, g.btnW, g.btnH, label, orient === key);
     }
+
+    const premium = this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked;
+    drawIronActionButton(r, g.restoreX, g.restoreY, g.restoreW, g.restoreH,
+      premium ? 'FULL DESCENT · OWNED' : 'RESTORE PURCHASES',
+      { accent: premium ? IRON_PALETTE.brass : '#8a8098', fontSize: uiSize(12) });
+
     r.drawText('orientation reloads the game',
       CANVAS_WIDTH / 2, g.hintY,
       { size: uiSize(10), italic: true, align: 'center',
@@ -1150,6 +1208,8 @@ export class TitleScreen {
       const orient = this._settingsOrientationHitTest(x, y);
       if (orient) return orient === 'portrait' ? 300 : 301;
       const g = this._settingsGeometry();
+      if (x >= g.restoreX && x <= g.restoreX + g.restoreW
+          && y >= g.restoreY && y <= g.restoreY + g.restoreH) return 303;
       const closeRect = this._modalCloseRect(g.closeY);
       if (TitleScreen._inside(x, y, closeRect)) return 99;
       return -1;
