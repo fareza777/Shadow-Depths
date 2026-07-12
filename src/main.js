@@ -7,8 +7,9 @@
  * any time — the only real constraint is that scene factories MUST be
  * registered before Game.boot() switches to the title scene.
  */
-import { LOG } from './config/constants.js';
+import { LOG, setPlayerUiScale } from './config/constants.js';
 import { Capacitor } from '@capacitor/core';
+import { setReduceMotion } from './config/layoutMetrics.js';
 
 // Boot splash: keep briefly so the reveal isn't jarring. Native builds use a
 // shorter hold — mobile players should reach the title in ~2s, not 5+.
@@ -175,6 +176,9 @@ async function bootstrap() {
 
   // Locale from saved meta (default 'en' if absent / unsupported).
   setLocale(state.state.meta.settings?.locale || 'en');
+  // Accessibility prefs from meta (affect layout FX + UI scale immediately).
+  setPlayerUiScale(state.state.meta.settings?.textScale || 1);
+  setReduceMotion(!!state.state.meta.settings?.reduceMotion);
 
   // Analytics — passive event capture, persisted via saveMeta.
   // Hold a reference so it isn't garbage collected.
@@ -253,7 +257,7 @@ async function bootstrap() {
   // --- scene factories ----------------------------------------------
   const sceneFactories = {
     title: (deps) => new TitleScreen({
-      ...deps, metaProgress, characterSelect, billingService, paywallOverlay
+      ...deps, metaProgress, characterSelect, billingService, paywallOverlay, lore
     }),
     opening: (deps) => new OpeningCinematic(deps),
     game: (deps) => new GameScene({
@@ -323,6 +327,16 @@ async function wireNativeLifecycle({ bus, gameLoop, sceneManager, audio, paywall
       } else {
         gameLoop.pauseRendering?.();
         try { audio?.suspend?.(); } catch { /* optional */ }
+        // Flush in-progress run immediately — debounced save can lose Continue
+        // if the OS kills the WebView before idle callback fires.
+        try {
+          const scene = sceneManager.current;
+          if (scene && typeof scene.flushRunSave === 'function') {
+            scene.flushRunSave();
+          } else if (typeof scene?._flushRunSave === 'function') {
+            scene._flushRunSave();
+          }
+        } catch { /* ignore save errors on background */ }
         bus.emit('app:background', {});
       }
     });

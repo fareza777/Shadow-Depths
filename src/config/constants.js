@@ -81,8 +81,15 @@ export const SIDE_CONTROL_WIDTH = IS_LANDSCAPE ? 136 : 0;
 
 /** Global UI text scale — bump labels on mobile without retuning every screen. */
 export const UI_SCALE = 1.35;
+/** Player preference multiplier (Settings → text size). 1 = normal, 1.15 = large. */
+let _playerUiScale = 1;
+export function setPlayerUiScale(mult) {
+  const n = Number(mult);
+  _playerUiScale = Number.isFinite(n) ? Math.max(0.9, Math.min(1.35, n)) : 1;
+}
+export function playerUiScale() { return _playerUiScale; }
 export function uiSize(n) {
-  return Math.max(8, Math.round(n * UI_SCALE));
+  return Math.max(8, Math.round(n * UI_SCALE * _playerUiScale));
 }
 
 /** @deprecated In-game layout uses layoutMetrics.js (physical screen orientation). */

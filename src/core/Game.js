@@ -228,8 +228,19 @@ export class Game {
   _loadRunSnapshot() {
     const raw = this.save.loadRun?.();
     if (!raw || raw.dead || raw.victory) return null;
+    // Refuse tampered signed saves — can otherwise resume past the free-floor gate.
+    if (raw._tampered) {
+      console.warn(LOG.CORE, 'refusing tampered run snapshot');
+      this.save.clearRun?.();
+      return null;
+    }
     const migrated = this.save.migrate ? this.save.migrate(raw).data : raw;
     if (!migrated || typeof migrated.seed !== 'number') return null;
+    if (migrated._tampered) {
+      console.warn(LOG.CORE, 'refusing tampered migrated run snapshot');
+      this.save.clearRun?.();
+      return null;
+    }
     return migrated;
   }
 

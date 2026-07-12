@@ -22,6 +22,8 @@ import {
   drawInsetCard, IRON_PALETTE
 } from './ironPanel.js';
 import { t, setLocale, currentLocale } from '../content/i18n.js';
+import { setPlayerUiScale } from '../config/constants.js';
+import { setReduceMotion } from '../config/layoutMetrics.js';
 
 const BRASS_DARK = '#7a5c2c';
 const BRASS = '#d4ac6c';
@@ -67,7 +69,7 @@ const LAYOUT = IS_LANDSCAPE
 
 export class TitleScreen {
   /** @param {{ bus:object, state:object, content:object, metaProgress:object }} deps */
-  constructor({ bus, state, content, metaProgress, characterSelect, billingService, paywallOverlay }) {
+  constructor({ bus, state, content, metaProgress, characterSelect, billingService, paywallOverlay, lore }) {
     this.characterSelect = characterSelect || null;
     if (bus && this.characterSelect) {
       bus.on('request:openCharacterSelect', (opts) => {
@@ -81,6 +83,7 @@ export class TitleScreen {
     this.meta = metaProgress;
     this.billing = billingService || null;
     this.paywall = paywallOverlay || null;
+    this.lore = lore || null;
     this.selected = 0;
     this.modal = null; // 'controls' | 'settings' | 'shop' | 'meta' | 'codex' | null
     this._particles = TitleScreen._seedParticles();
@@ -311,7 +314,7 @@ export class TitleScreen {
       const key = TitleScreen.dailyKey();
       const ds = this.state.state.meta.dailyScores || {};
       const best = ds[key];
-      return best ? `best ${best}` : 'fresh';
+      return best != null ? `${key.slice(5)} · best ${best}` : `${key.slice(5)} · play`;
     }
     if (item.id === 'unlock') {
       if (this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked) return 'OWNED';
@@ -407,6 +410,29 @@ export class TitleScreen {
           if (this.meta) {
             const cur = !!this.meta.state.settings?.analyticsOptIn;
             this.meta.setSetting('analyticsOptIn', !cur);
+          }
+          return;
+        }
+        if (this.modal === 'settings' && idx === 307) {
+          if (this.meta) {
+            const cur = !!this.meta.state.settings?.reduceMotion;
+            this.meta.setSetting('reduceMotion', !cur);
+            setReduceMotion(!cur);
+          }
+          return;
+        }
+        if (this.modal === 'settings' && idx === 308) {
+          if (this.meta) {
+            const cur = !!this.meta.state.settings?.highContrastThreats;
+            this.meta.setSetting('highContrastThreats', !cur);
+          }
+          return;
+        }
+        if (this.modal === 'settings' && idx === 309) {
+          if (this.meta) {
+            const next = (this.meta.state.settings?.textScale || 1) > 1 ? 1 : 1.15;
+            this.meta.setSetting('textScale', next);
+            setPlayerUiScale(next);
           }
           return;
         }
@@ -664,12 +690,18 @@ export class TitleScreen {
     const localeBtnY = localeLabelY + 14;
     const analyticsY = localeBtnY + btnH + 14;
     const analyticsH = btnH;
-    const restoreY = analyticsY + analyticsH + 14;
+    const motionY = analyticsY + analyticsH + 10;
+    const motionH = btnH;
+    const contrastY = motionY + motionH + 10;
+    const contrastH = btnH;
+    const textY = contrastY + contrastH + 10;
+    const textH = btnH;
+    const restoreY = textY + textH + 14;
     const restoreH = btnH;
     const hintY = restoreY + restoreH + 10;
     const closeY = hintY + 24;
     const modalH = closeY + closeH + 14;
-    const modalY = Math.max(8, (CANVAS_HEIGHT - modalH) / 2 - (IS_LANDSCAPE ? 8 : 24));
+    const modalY = Math.max(4, (CANVAS_HEIGHT - modalH) / 2 - (IS_LANDSCAPE ? 4 : 12));
 
     const y0 = modalY;
     return {
@@ -688,6 +720,18 @@ export class TitleScreen {
       analyticsH,
       analyticsX: modalX + 20,
       analyticsW: modalW - 40,
+      motionY: y0 + motionY,
+      motionH,
+      motionX: modalX + 20,
+      motionW: modalW - 40,
+      contrastY: y0 + contrastY,
+      contrastH,
+      contrastX: modalX + 20,
+      contrastW: modalW - 40,
+      textY: y0 + textY,
+      textH,
+      textX: modalX + 20,
+      textW: modalW - 40,
       restoreY: y0 + restoreY,
       restoreH,
       restoreX: modalX + 20,
@@ -704,6 +748,9 @@ export class TitleScreen {
     const orient = settings.orientation || 'portrait';
     const locale = settings.locale || currentLocale() || 'en';
     const analyticsOn = !!settings.analyticsOptIn;
+    const reduceMotion = !!settings.reduceMotion;
+    const hiContrast = !!settings.highContrastThreats;
+    const textLarge = (settings.textScale || 1) > 1;
     const g = this._settingsLayout();
     this._renderIronModalChrome(r, g, t('title.settings'), 'iron-clad preferences');
 
@@ -743,6 +790,15 @@ export class TitleScreen {
     drawIronActionButton(r, g.analyticsX, g.analyticsY, g.analyticsW, g.analyticsH,
       analyticsOn ? t('settings.analytics_on') : t('settings.analytics_off'),
       { accent: analyticsOn ? IRON_PALETTE.brass : '#8a8098', fontSize: uiSize(11) });
+    drawIronActionButton(r, g.motionX, g.motionY, g.motionW, g.motionH,
+      reduceMotion ? t('settings.reduce_motion_on') : t('settings.reduce_motion_off'),
+      { accent: reduceMotion ? IRON_PALETTE.brass : '#8a8098', fontSize: uiSize(11) });
+    drawIronActionButton(r, g.contrastX, g.contrastY, g.contrastW, g.contrastH,
+      hiContrast ? t('settings.contrast_on') : t('settings.contrast_off'),
+      { accent: hiContrast ? IRON_PALETTE.brass : '#8a8098', fontSize: uiSize(11) });
+    drawIronActionButton(r, g.textX, g.textY, g.textW, g.textH,
+      textLarge ? t('settings.text_large') : t('settings.text_normal'),
+      { accent: textLarge ? IRON_PALETTE.brass : '#8a8098', fontSize: uiSize(11) });
 
     const premium = this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked;
     drawIronActionButton(r, g.restoreX, g.restoreY, g.restoreW, g.restoreH,
@@ -916,14 +972,16 @@ export class TitleScreen {
       const seen = new Set(m.discoveredEnemies || []);
       entries = Object.values(defs).map((d) => ({
         id: d.id, name: d.name, rarity: 'common',
-        lore: '', spriteKey: d.spriteKey, seen: seen.has(d.id)
+        lore: (this.lore?.enemy?.(d.id) || d.lore || ''),
+        spriteKey: d.spriteKey, seen: seen.has(d.id)
       }));
     } else if (tab === 'biomes') {
       const defs = this.content.biomes?.biomes || [];
       const seen = new Set(m.discoveredBiomes || []);
       entries = defs.map((d) => ({
         id: d.id, name: d.name, rarity: 'rare',
-        lore: d.atmosphere, spriteKey: null, seen: seen.has(d.id)
+        lore: d.atmosphere || (this.lore?.floor?.(d.name) || ''),
+        spriteKey: null, seen: seen.has(d.id)
       }));
     } else if (tab === 'achieve') {
       const defs = this.content.achievements?.achievements || [];
@@ -1277,6 +1335,12 @@ export class TitleScreen {
       const g = this._settingsGeometry();
       if (x >= g.analyticsX && x <= g.analyticsX + g.analyticsW
           && y >= g.analyticsY && y <= g.analyticsY + g.analyticsH) return 306;
+      if (x >= g.motionX && x <= g.motionX + g.motionW
+          && y >= g.motionY && y <= g.motionY + g.motionH) return 307;
+      if (x >= g.contrastX && x <= g.contrastX + g.contrastW
+          && y >= g.contrastY && y <= g.contrastY + g.contrastH) return 308;
+      if (x >= g.textX && x <= g.textX + g.textW
+          && y >= g.textY && y <= g.textY + g.textH) return 309;
       if (x >= g.restoreX && x <= g.restoreX + g.restoreW
           && y >= g.restoreY && y <= g.restoreY + g.restoreH) return 303;
       const closeRect = this._modalCloseRect(g.closeY);

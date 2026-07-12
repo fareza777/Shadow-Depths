@@ -8,45 +8,18 @@ import { getViewportBottomY } from './controlBandLayout.js';
 import { t } from '../content/i18n.js';
 
 const STEPS = [
-  {
-    title: 'MOVE',
-    body: 'Use the D-pad (bottom-left) or tap a floor tile to walk one step per turn.'
-  },
-  {
-    title: 'ATTACK',
-    body: 'Walk into an enemy, tap them when adjacent, or tap your hero while a foe is next to you.'
-  },
-  {
-    title: 'LOOT & DESCEND',
-    body: 'Use the QUICK row: PICK, BAG, HERO. DOWN (right) uses stairs to the next floor.'
-  },
-  {
-    title: 'FORGE & DEPTH',
-    body: 'Materials go to a pouch. Open BAG → POUCH to review them. On forge sanctuary floors, PICK calls the smith.'
-  }
+  { titleKey: 'tutorial.step_move_t', bodyKey: 'tutorial.step_move_b' },
+  { titleKey: 'tutorial.step_attack_t', bodyKey: 'tutorial.step_attack_b' },
+  { titleKey: 'tutorial.step_loot_t', bodyKey: 'tutorial.step_loot_b' },
+  { titleKey: 'tutorial.step_forge_t', bodyKey: 'tutorial.step_forge_b' }
 ];
 
 const KEEPER_STEPS = [
-  {
-    title: 'THE KEEPER',
-    body: 'Welcome to a two-floor lesson. Move one tile at a time, keep the lantern circle around you, and use PICK beside glowing objects.'
-  },
-  {
-    title: 'READ THE ROOM',
-    body: 'Gold glows mark people or pedestals. Blue cracks, bones, banners, and torches are landmarks that help you remember each room.'
-  },
-  {
-    title: 'FIRST FIGHT',
-    body: 'Step next to an enemy and tap it, or walk into it, to attack. Back away when low HP and use your quick row for consumables.'
-  },
-  {
-    title: 'LOOT & EQUIP',
-    body: 'Stand on loot and press PICK. Open BAG to equip better gear; your hero silhouette changes as armor and weapons improve.'
-  },
-  {
-    title: 'DESCEND',
-    body: 'Find the stair sigil, stand on it, then press DOWN. The second tutorial floor ends the lesson and returns you ready for a real descent.'
-  }
+  { titleKey: 'tutorial.keeper_welcome_t', bodyKey: 'tutorial.keeper_welcome_b' },
+  { titleKey: 'tutorial.keeper_room_t', bodyKey: 'tutorial.keeper_room_b' },
+  { titleKey: 'tutorial.keeper_fight_t', bodyKey: 'tutorial.keeper_fight_b' },
+  { titleKey: 'tutorial.keeper_loot_t', bodyKey: 'tutorial.keeper_loot_b' },
+  { titleKey: 'tutorial.keeper_down_t', bodyKey: 'tutorial.keeper_down_b' }
 ];
 
 export class TutorialOverlay {
@@ -81,7 +54,11 @@ export class TutorialOverlay {
   render(renderer) {
     if (!this.open) return;
     const steps = this._variant === 'keeper' ? KEEPER_STEPS : STEPS;
-    const step = steps[this._step] || steps[steps.length - 1];
+    const raw = steps[this._step] || steps[steps.length - 1];
+    const step = {
+      title: t(raw.titleKey),
+      body: t(raw.bodyKey)
+    };
     const r = renderer;
     const compact = this._variant === 'keeper';
     const panelW = Layout.canvasW - (compact ? 20 : 32);

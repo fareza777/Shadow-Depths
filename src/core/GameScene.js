@@ -30,14 +30,12 @@ import {
   tickHeroPassivesEndOfTurn
 } from '../gameplay/heroPassives.js';
 import {
-  resetFloorModifiers, EVENT_LABELS, INTERACT_EVENT_KINDS, isGuaranteedMerchantFloor,
-  syncFloorMicroEventLegacy
+  resetFloorModifiers, EVENT_LABELS, INTERACT_EVENT_KINDS, isGuaranteedMerchantFloor
 } from '../gameplay/floorEvents.js';
 import {
   findInteractTarget, findInteractAt, findAdjacentInteract,
   buildEventPanelConfig, applyRestAlcove, applyMysteryChest,
-  tryTriggerAmbush, tickAmbientHazard, revealRandomRoom, markInteractUsed,
-  serializeEventTiles, restoreEventTiles
+  tryTriggerAmbush, tickAmbientHazard, revealRandomRoom, markInteractUsed
 } from '../gameplay/floorEventRuntime.js';
 
 /** Per-hero stat overrides (atk/def/dex/torchRadius) for new Player(). */
@@ -48,8 +46,7 @@ function heroStatOverrides(kind) {
 import { Enemy } from '../entities/Enemy.js';
 import { rollEliteAffixes, forcedEliteAffixes, makeElite } from '../gameplay/eliteAffixes.js';
 import { HAZARDS, hazardDamage } from '../gameplay/hazards.js';
-import { applyBiomeTurnTick } from '../gameplay/biomeMechanics.js';
-import { computeSynergyMods, skillsById } from '../gameplay/skillSynergy.js';
+import { applyBiomeTurnTick, describeBiomeMechanic, getBiomeMechanic } from '../gameplay/biomeMechanics.js';
 import { StatusEffects } from '../combat/StatusEffects.js';
 import { Inventory } from '../items/Inventory.js';
 import { ItemFactory } from '../items/ItemFactory.js';
@@ -63,6 +60,7 @@ import { SpellSystem } from '../combat/SpellSystem.js';
 import { tickTriggerCooldowns } from '../combat/TriggerSystem.js';
 import { RNG } from './RNG.js';
 import { runEnemyTurns } from './EnemyTurnRunner.js';
+import { RunPersistence } from './RunPersistence.js';
 import { MobileControls } from '../ui/MobileControls.js';
 import { QuickUseBar } from '../ui/QuickUseBar.js';
 import { perfMeter } from '../debug/PerfMeter.js';
@@ -148,11 +146,9 @@ export class GameScene {
     this._forgeOffers = {};
     this._forgeUsed = {};
     this._processingTurn = false;
-    this._runSaveTimer = 0;
-    this._runSaveIdle = 0;
-    this._runSaveQueued = false;
     this._runEnded = false;
     this._busHandlers = [];
+    this.runPersistence = new RunPersistence(this);
     this._wireCommands();
     this._wireDeathCleanup();
     this._wirePresentationEvents();
@@ -362,7 +358,10 @@ export class GameScene {
     renderer.setCameraFor(this.player.renderX, this.player.renderY);
     perfMeter.measure('worldFloor', () => renderer.drawFloor(this.floor, this.player));
     perfMeter.measure('groundItems', () => renderer.drawGroundItems(this.floor));
-    perfMeter.measure('telegraphs', () => renderer.drawTelegraphs(this.floor, this.player));
+    perfMeter.measure('telegraphs', () => {
+      const hi = !!this.state?.state?.meta?.settings?.highContrastThreats;
+      renderer.drawTelegraphs(this.floor, this.player, { highContrast: hi });
+    });
     const now = performance.now();
     const dt = this._lastRenderTime ? (now - this._lastRenderTime) / 1000 : 0;
     this._lastRenderTime = now;
@@ -477,21 +476,29 @@ export class GameScene {
     const special = specialId ? this.content.enemies?.[specialId] : null;
     const isBoss = specialId?.startsWith('boss_');
     const isSubboss = specialId?.startsWith('subboss_');
+    const mechanic = def.mechanic
+      || getBiomeMechanic(def.biomeId, this.content.biomes);
+    const mechanicBlurb = describeBiomeMechanic(mechanic);
+    let subtitle = def.type === 'forge' ? 'A hidden forge answers. Choose one bargain.'
+      : isBoss ? 'The dungeon seals behind you. Defeat the ruler below.'
+      : isSubboss ? 'An elite guardian is awake. The path narrows.'
+      : (def.atmosphere || `Depth ${index + 1} of ${this.dungeon.totalFloors}`);
+    if (mechanicBlurb && def.type !== 'forge' && !isBoss && !isSubboss) {
+      subtitle = mechanicBlurb;
+    }
     return {
       startedAt: performance.now(),
-      duration: isBoss ? 5200 : isSubboss ? 4400 : 3600,
+      duration: isBoss ? 5200 : isSubboss ? 4400 : mechanicBlurb ? 4200 : 3600,
       title: def.type === 'forge' ? 'THE VEILED SMITH'
         : isBoss ? 'BOSS FLOOR'
         : isSubboss ? 'SUBBOSS FLOOR'
         : `FLOOR ${index + 1}`,
       name: isBoss || isSubboss ? (special?.name || def.name) : def.name,
-      subtitle: def.type === 'forge' ? 'A hidden forge answers. Choose one bargain.'
-        : isBoss ? 'The dungeon seals behind you. Defeat the ruler below.'
-        : isSubboss ? 'An elite guardian is awake. The path narrows.'
-        : (def.atmosphere || `Depth ${index + 1} of ${this.dungeon.totalFloors}`),
+      subtitle,
       accent: isBoss ? '#d4be7a' : isSubboss ? '#c080ff' : COLOR.goldDim,
       boss: isBoss,
-      subboss: isSubboss
+      subboss: isSubboss,
+      mechanic: mechanic || null
     };
   }
 
@@ -1741,244 +1748,38 @@ export class GameScene {
   }
 
   _saveRun({ immediate = false } = {}) {
-    if (!this.save || !this.player || !this.floor || this.player.isDead) return;
-    const savedAt = Date.now();
-    this.state.setRun({
-      seed: this.seed,
-      mode: this.mode,
-      floorIndex: this.dungeon.currentIndex,
-      canContinue: true,
-      level: this.player.level,
-      hp: this.player.stats.hp,
-      savedAt
-    });
-    if (immediate) {
-      this._flushRunSave(savedAt);
-      return;
-    }
-    this._scheduleRunSave();
+    this.runPersistence.saveRun({ immediate });
   }
 
   _scheduleRunSave() {
-    if (this._runSaveQueued) return;
-    this._runSaveQueued = true;
-    const scheduleIdle = () => {
-      this._runSaveTimer = 0;
-      if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
-        this._runSaveIdle = window.requestIdleCallback(() => {
-          this._runSaveIdle = 0;
-          this._flushRunSave();
-        }, { timeout: 900 });
-      } else {
-        this._runSaveTimer = setTimeout(() => {
-          this._runSaveTimer = 0;
-          this._flushRunSave();
-        }, 120);
-      }
-    };
-    this._runSaveTimer = setTimeout(scheduleIdle, 260);
+    this.runPersistence.scheduleRunSave();
   }
 
   _cancelPendingRunSave() {
-    if (this._runSaveTimer) {
-      clearTimeout(this._runSaveTimer);
-      this._runSaveTimer = 0;
-    }
-    if (this._runSaveIdle && typeof window !== 'undefined' && typeof window.cancelIdleCallback === 'function') {
-      window.cancelIdleCallback(this._runSaveIdle);
-      this._runSaveIdle = 0;
-    }
-    this._runSaveQueued = false;
+    this.runPersistence.cancelPendingRunSave();
   }
 
   _flushRunSave(savedAt = Date.now()) {
-    this._cancelPendingRunSave();
-    if (!this.save || !this.player || !this.floor || this.player.isDead || this._runEnded) return;
-    const snapshot = {
-      version: 1,
-      savedAt,
-      seed: this.seed,
-      mode: this.mode,
-      heroKind: this.heroKind,
-      floorIndex: this.dungeon.currentIndex,
-      player: this._playerSnapshot(),
-      floor: this._floorSnapshot(this.floor)
-    };
-    perfMeter.measure('save', () => this.save.saveRun(snapshot));
+    this.runPersistence.flushRunSave(savedAt);
+  }
+
+  flushRunSave(savedAt = Date.now()) {
+    this.runPersistence.flushRunSave(savedAt);
   }
 
   _playerSnapshot() {
-    const itemSnap = (item) => {
-      if (!item) return null;
-      const s = { id: item.id, count: item.count || 1 };
-      if (item.def?.affixes) s.affixes = item.def.affixes;
-      return s;
-    };
-    return {
-      pos: { x: this.player.x, y: this.player.y },
-      stats: { ...this.player.stats },
-      gold: this.player.gold,
-      xp: this.player.xp,
-      level: this.player.level,
-      inventorySize: this.player.inventory.size,
-      inventory: this.player.inventory.toSnapshot(),
-      equipment: {
-        weapon: itemSnap(this.player.weapon),
-        armor: itemSnap(this.player.armor),
-        helm: itemSnap(this.player.helm),
-        legs: itemSnap(this.player.legs),
-        necklace: itemSnap(this.player.necklace),
-        ring: itemSnap(this.player.ring)
-      },
-      runStats: { ...this.player.runStats },
-      reviveCharges: this.player.reviveCharges,
-      skills: [...this.player.skills],
-      xpMultiplier: this.player.xpMultiplier,
-      skillLifesteal: this.player.skillLifesteal,
-      damageReduction: this.player.damageReduction,
-      skillRangeBonus: this.player.skillRangeBonus,
-      regenEveryNTurns: this.player.regenEveryNTurns,
-      regenAmount: this.player.regenAmount,
-      turnsSinceRegen: this.player._turnsSinceRegen,
-      magicPower: this.player.magicPower,
-      spellCooldown: this.player.spellCooldown,
-      spellCooldownReduction: this.player.spellCooldownReduction,
-      spellLifesteal: this.player.spellLifesteal,
-      critSkillBonus: this.player.critSkillBonus,
-      triggerCooldowns: { ...(this.player._triggerCooldowns || {}) },
-      materials: { ...(this.player.materials || {}) },
-      rangedFocus: this.player.rangedFocus,
-      rangedFocusMax: this.player.rangedFocusMax,
-      floorModifiers: this.player.floorModifiers
-        ? { ...this.player.floorModifiers } : null,
-      statusEffects: this.player.statusEffects.map((e) => ({ ...e }))
-    };
+    return this.runPersistence.playerSnapshot();
   }
 
   _floorSnapshot(floor) {
-    const items = [];
-    for (const [key, stack] of floor.items.entries()) {
-      const [x, y] = key.split(',').map(Number);
-      items.push({
-        x, y,
-        stack: stack.map((item) => {
-          const snap = { id: item.id, count: item.count || 1 };
-          if (item.def?.affixes) snap.affixes = item.def.affixes;
-          return snap;
-        })
-      });
-    }
-    const enemies = floor.enemies().map((e) => ({
-      defId: e.defId,
-      x: e.x,
-      y: e.y,
-      stats: { ...e.stats },
-      statusEffects: e.statusEffects.map((s) => ({ ...s })),
-      rolledGold: e._rolledGold || 0,
-      behaviorState: e.behavior?._counter !== undefined ? { counter: e.behavior._counter } : null
-    }));
-    const explored = [];
-    for (let y = 0; y < floor.height; y++) {
-      for (let x = 0; x < floor.width; x++) {
-        if (floor.tiles[y][x].explored) explored.push([x, y]);
-      }
-    }
-    return {
-      index: floor.index,
-      clearedWithoutDamage: floor.clearedWithoutDamage,
-      items,
-      enemies,
-      explored,
-      forgeOffers: this._forgeOffers[floor.index] || null,
-      forgeUsed: !!this._forgeUsed[floor.index],
-      microEvent: floor.microEvent ? { ...floor.microEvent } : null,
-      microEvents: (floor.microEvents || []).map((e) => ({ ...e })),
-      eventTiles: serializeEventTiles(floor)
-    };
+    return this.runPersistence.floorSnapshot(floor);
   }
 
   _restorePlayerSnapshot(player, snap) {
-    player.x = snap.pos?.x ?? player.x;
-    player.y = snap.pos?.y ?? player.y;
-    player.stats = { ...player.stats, ...(snap.stats || {}) };
-    player.gold = snap.gold || 0;
-    player.xp = snap.xp || 0;
-    player.level = snap.level || 1;
-    player.runStats = { ...player.runStats, ...(snap.runStats || {}) };
-    player.reviveCharges = snap.reviveCharges || 0;
-    player.skills = Array.isArray(snap.skills) ? [...snap.skills] : [];
-    // Rebuild emergent skill-tag synergies from the restored skill set.
-    if (typeof player.setSynergyMods === 'function') {
-      const pool = (this.content?.skills?.skills) || [];
-      player.setSynergyMods(computeSynergyMods(player.skills, skillsById(pool)).mods);
-    }
-    player.xpMultiplier = snap.xpMultiplier ?? 1;
-    player.skillLifesteal = snap.skillLifesteal || 0;
-    player.damageReduction = snap.damageReduction || 0;
-    player.skillRangeBonus = snap.skillRangeBonus || 0;
-    player.regenEveryNTurns = snap.regenEveryNTurns || 0;
-    player.regenAmount = snap.regenAmount || 0;
-    player._turnsSinceRegen = snap.turnsSinceRegen || 0;
-    player.magicPower = snap.magicPower || 0;
-    player.spellCooldown = snap.spellCooldown || 0;
-    player.spellCooldownReduction = snap.spellCooldownReduction || 0;
-    player.spellLifesteal = snap.spellLifesteal || 0;
-    player.critSkillBonus = snap.critSkillBonus || 0;
-    player._triggerCooldowns = { ...(snap.triggerCooldowns || {}) };
-    player.materials = { ...(snap.materials || {}) };
-    player.rangedFocusMax = snap.rangedFocusMax || player.rangedFocusMax || 3;
-    player.rangedFocus = snap.rangedFocus ?? player.rangedFocusMax;
-    player.floorModifiers = snap.floorModifiers
-      ? { ...snap.floorModifiers }
-      : { atkPct: 0, defPenalty: 0, torchBonus: 0, critBonus: 0 };
-    player.statusEffects = Array.isArray(snap.statusEffects) ? snap.statusEffects.map((e) => ({ ...e })) : [];
-    const make = (s) => (s?.id ? this.itemFactory.fromSnapshot(s) : null);
-    const eq = snap.equipment || {};
-    player.weapon = make(eq.weapon);
-    player.armor = make(eq.armor);
-    player.helm = make(eq.helm);
-    player.legs = make(eq.legs);
-    player.necklace = make(eq.necklace);
-    player.ring = make(eq.ring);
+    this.runPersistence.restorePlayerSnapshot(player, snap);
   }
 
   _restoreFloorSnapshot(floor, snap = {}) {
-    floor.items = new Map();
-    floor.clearedWithoutDamage = snap.clearedWithoutDamage !== false;
-    floor.clearVisibility();
-    if (snap.forgeOffers) this._forgeOffers[floor.index] = snap.forgeOffers;
-    if (snap.forgeUsed) this._forgeUsed[floor.index] = true;
-    if (snap.microEvents?.length) {
-      floor.microEvents = snap.microEvents.map((e) => ({ ...e }));
-    } else if (snap.microEvent) {
-      floor.microEvents = [{ ...snap.microEvent }];
-    }
-    syncFloorMicroEventLegacy(floor);
-    restoreEventTiles(floor, snap.eventTiles || []);
-    for (const pair of snap.explored || []) {
-      const [x, y] = pair;
-      const t = floor.tileAt(x, y);
-      if (t) t.explored = true;
-    }
-    for (const it of snap.items || []) {
-      for (const itemSnap of it.stack || []) {
-        const item = this.itemFactory.fromSnapshot(itemSnap);
-        if (item) floor.addItem(it.x, it.y, item);
-      }
-    }
-    for (const enemySnap of snap.enemies || []) {
-      const enemy = this._createEnemy(enemySnap.defId, { x: enemySnap.x, y: enemySnap.y }, floor);
-      if (!enemy) continue;
-      enemy.stats = { ...enemy.stats, ...(enemySnap.stats || {}) };
-      enemy.statusEffects = Array.isArray(enemySnap.statusEffects)
-        ? enemySnap.statusEffects.map((e) => ({ ...e }))
-        : [];
-      enemy._rolledGold = enemySnap.rolledGold || 0;
-      if (enemy.behavior && enemySnap.behaviorState?.counter !== undefined) {
-        enemy.behavior._counter = enemySnap.behaviorState.counter;
-      }
-      enemy.isDead = enemy.stats.hp <= 0;
-      if (!enemy.isDead) floor.addEntity(enemy);
-    }
+    this.runPersistence.restoreFloorSnapshot(floor, snap);
   }
 }

@@ -53,9 +53,11 @@ cd android
 4. **Content rating:** IARC questionnaire (fantasy violence)
 5. **Target audience:** 13+ recommended
 6. **Data safety:**
-   - Data collected: **No** personal data (local saves only)
+   - Data collected: **No** personal data by default (local saves only)
+   - Optional: if player opts in to anonymous analytics in Settings, declare
+     **App activity** / analytics as collected + optional (not required to play)
    - Purchases: processed by Google Play (declare in-app purchases)
-   - Data shared: **No**
+   - Data shared: **No** (unless you later send analytics to a third-party endpoint — update this form then)
 7. **Privacy policy URL:**  
    `https://shadow-depths.vercel.app/privacy.html`
 8. **Monetize → Products → In-app products:**

@@ -15,7 +15,11 @@ export const Layout = {
   // Backing-store scale factor (HiDPI). Logical geometry above stays in CSS
   // px; the canvas bitmap is `logical * dpr` so text/sprites/tiles render
   // crisp on retina/phone panels. Capped at 2 to bound fill-rate.
-  dpr: 1
+  dpr: 1,
+  safeTop: 0,
+  safeBottom: 0,
+  safeLeft: 0,
+  safeRight: 0
 };
 
 /**
@@ -49,12 +53,29 @@ export function isLowEndDevice() {
   return (mem && mem <= 4) || (cores && cores <= 4);
 }
 
+/** Player-forced reduce motion (Settings). When true, lean FX always on. */
+let _reduceMotion = false;
+export function setReduceMotion(on) { _reduceMotion = !!on; }
+export function reduceMotionEnabled() { return _reduceMotion; }
+
 /**
  * Lean FX path: fewer particles, cached floor layer, no auras/shadows.
  * Enabled for every phone/tablet — Play Store smoothness > visual flourish.
+ * Also forced when the player opts into Reduce Motion.
  */
 export function prefersLeanCombatFx() {
-  return isAndroidDevice() || isMobileDevice();
+  return _reduceMotion || isAndroidDevice() || isMobileDevice();
+}
+
+function readSafeInset(varName) {
+  if (typeof window === 'undefined' || typeof getComputedStyle !== 'function') return 0;
+  try {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+    const n = parseFloat(raw);
+    return Number.isFinite(n) ? n : 0;
+  } catch {
+    return 0;
+  }
 }
 
 export function syncLayoutFromWindow(canvas) {
@@ -62,19 +83,28 @@ export function syncLayoutFromWindow(canvas) {
   const vh = window.visualViewport?.height || window.innerHeight || 800;
   const portrait = vh >= vw;
 
+  const safeTop = readSafeInset('--sat');
+  const safeBottom = readSafeInset('--sab');
+  const safeLeft = readSafeInset('--sal');
+  const safeRight = readSafeInset('--sar');
+  Layout.safeTop = safeTop;
+  Layout.safeBottom = safeBottom;
+  Layout.safeLeft = safeLeft;
+  Layout.safeRight = safeRight;
+
   if (portrait) {
     Layout.canvasW = 480;
     Layout.canvasH = Math.max(760, Math.min(1100, Math.round(vh * (480 / vw))));
-    Layout.hud = 128;
-    Layout.control = Math.max(270, Math.round(Layout.canvasH * 0.29));
+    Layout.hud = 128 + Math.round(safeTop);
+    Layout.control = Math.max(270, Math.round(Layout.canvasH * 0.29)) + Math.round(safeBottom);
     Layout.sideW = 0;
     Layout.portrait = true;
   } else {
     Layout.canvasW = 800;
     Layout.canvasH = 480;
-    Layout.hud = 114;
+    Layout.hud = 114 + Math.round(safeTop);
     Layout.control = 0;
-    Layout.sideW = 136;
+    Layout.sideW = 136 + Math.round(Math.max(safeLeft, safeRight));
     Layout.portrait = false;
   }
 

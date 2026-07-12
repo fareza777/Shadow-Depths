@@ -25,6 +25,7 @@ import {
   drawIronPanel, drawIronPlate, drawIronActionButton,
   drawBrassRivet, drawSpacedText, drawFittedSpacedText, IRON_PALETTE
 } from './ironPanel.js';
+import { t } from '../content/i18n.js';
 
 export class CharacterSelect {
   /** @param {{ bus: object, metaProgress?: object }} deps */
@@ -175,7 +176,7 @@ export class CharacterSelect {
     ctx.fillStyle = IRON_PALETTE.brass;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    drawFittedSpacedText(ctx, 'CHOOSE YOUR VIGIL', CANVAS_WIDTH / 2, 37,
+    drawFittedSpacedText(ctx, t('char.choose'), CANVAS_WIDTH / 2, 37,
       CANVAS_WIDTH - 132, 3);
     ctx.restore();
 
@@ -365,7 +366,7 @@ export class CharacterSelect {
     drawIronActionButton(r, b.prev.x, b.prev.y, b.prev.w, b.prev.h, '◀', {
       accent: IRON_PALETTE.brass, fontSize: 18, rivets: false
     });
-    drawIronActionButton(r, b.choose.x, b.choose.y, b.choose.w, b.choose.h, 'CHOOSE', {
+    drawIronActionButton(r, b.choose.x, b.choose.y, b.choose.w, b.choose.h, t('char.choose_btn'), {
       accent: IRON_PALETTE.brass, fontSize: 14
     });
     drawIronActionButton(r, b.next.x, b.next.y, b.next.w, b.next.h, '▶', {

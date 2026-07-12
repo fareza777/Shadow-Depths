@@ -1,14 +1,15 @@
 /**
- * VictoryScreen — shown after clearing the final floor. Same scene contract
- * as GameOverScreen. Foreshadows v0.3 expansion per Section 9.5 of the brief.
+ * VictoryScreen — shown after clearing the final floor.
+ * Mirrors GameOverScreen polish: i18n, build/gear recap, coins/high-score.
  */
 import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, IS_LANDSCAPE } from '../config/constants.js';
+import { t } from '../content/i18n.js';
 
 const LAYOUT = IS_LANDSCAPE
-  ? { titleY: 30, titleSize: 28, subY: 60, statsY: 90, lineGap: 18, statSize: 11,
-      btnW: 160, btnH: 44, btnY: CANVAS_HEIGHT - 60 }
-  : { titleY: 90, titleSize: 36, subY: 134, statsY: 190, lineGap: 24, statSize: 12,
-      btnW: 180, btnH: 48, btnY: CANVAS_HEIGHT - 260 };
+  ? { titleY: 24, titleSize: 26, subY: 50, statsY: 72, lineGap: 15, statSize: 10,
+      btnW: 160, btnH: 44, btnY: CANVAS_HEIGHT - 56 }
+  : { titleY: 56, titleSize: 34, subY: 100, statsY: 132, lineGap: 20, statSize: 12,
+      btnW: 180, btnH: 48, btnY: CANVAS_HEIGHT - 240 };
 
 export class VictoryScreen {
   /**
@@ -24,26 +25,26 @@ export class VictoryScreen {
 
   render(r) {
     r.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, '#06060a');
-    r.drawText('YOU ESCAPED', CANVAS_WIDTH / 2, LAYOUT.titleY,
+    r.drawText(t('victory.title'), CANVAS_WIDTH / 2, LAYOUT.titleY,
       { size: LAYOUT.titleSize, bold: true, align: 'center', color: '#d6c87a' });
-    r.drawText('the Depths… for now.', CANVAS_WIDTH / 2, LAYOUT.subY,
+    r.drawText(t('victory.subtitle'), CANVAS_WIDTH / 2, LAYOUT.subY,
       { size: IS_LANDSCAPE ? 11 : 14, align: 'center', color: COLOR.textMuted });
 
     const s = this.summary;
     const lines = [
-      ['Floors cleared', s.floorsCleared || 0],
-      ['Enemies defeated', s.enemiesDefeated || 0],
-      ['Perfect floors', s.perfectFloors || 0],
-      ['Turns played', s.turnsUsed || 0],
-      ['Gold', s.goldCollected || 0],
+      [t('victory.floors'), s.floorsCleared || 0],
+      [t('victory.enemies'), s.enemiesDefeated || 0],
+      [t('victory.perfect'), s.perfectFloors || 0],
+      [t('victory.turns'), s.turnsUsed || 0],
+      [t('victory.gold'), s.goldCollected || 0],
       ['', ''],
-      ['SCORE', s.score ?? 0]
+      [t('victory.score'), s.score ?? 0]
     ];
     const startY = LAYOUT.statsY;
     const gap = LAYOUT.lineGap;
     for (let i = 0; i < lines.length; i++) {
       const [label, value] = lines[i];
-      const big = label === 'SCORE';
+      const big = label === t('victory.score');
       r.drawText(String(label), CANVAS_WIDTH / 2 - 70, startY + i * gap,
         { size: big ? LAYOUT.statSize + 2 : LAYOUT.statSize, bold: big, align: 'right',
           color: big ? '#d6c87a' : COLOR.textPrimary });
@@ -52,18 +53,43 @@ export class VictoryScreen {
           color: big ? '#d6c87a' : COLOR.textPrimary });
     }
 
-    const footY = startY + lines.length * gap + 4;
+    let footY = startY + lines.length * gap + 6;
+    const skills = Array.isArray(s.skills) ? s.skills.filter(Boolean) : [];
+    const gear = Array.isArray(s.gear) ? s.gear.filter(Boolean) : [];
+    if (skills.length) {
+      r.drawText(`${t('gameover.build')}: ${skills.slice(0, 4).join(' · ')}`,
+        CANVAS_WIDTH / 2, footY,
+        { size: IS_LANDSCAPE ? 9 : 10, align: 'center', color: '#a89cb0' });
+      footY += IS_LANDSCAPE ? 14 : 16;
+    }
+    if (gear.length) {
+      r.drawText(`${t('gameover.gear')}: ${gear.slice(0, 3).join(' · ')}`,
+        CANVAS_WIDTH / 2, footY,
+        { size: IS_LANDSCAPE ? 9 : 10, align: 'center', color: '#a89cb0' });
+      footY += IS_LANDSCAPE ? 14 : 16;
+    }
+    r.drawText(t('victory.foreshadow'), CANVAS_WIDTH / 2, footY,
+      { size: IS_LANDSCAPE ? 9 : 11, align: 'center', color: COLOR.textHeal });
+    footY += IS_LANDSCAPE ? 16 : 18;
+
     if (s.isNewHighScore) {
-      r.drawText('★ NEW HIGH SCORE ★', CANVAS_WIDTH / 2, footY,
+      r.drawText(t('gameover.highscore'), CANVAS_WIDTH / 2, footY,
         { size: 13, bold: true, align: 'center', color: COLOR.textXP });
+      footY += 18;
     }
     if (s.coinsEarned > 0) {
-      r.drawText(`+${s.coinsEarned} ◈ coins`,
-        CANVAS_WIDTH / 2, footY + 18,
+      r.drawText(`+${s.coinsEarned} ◈ ${t('gameover.coins')}`,
+        CANVAS_WIDTH / 2, footY,
         { size: 11, bold: true, align: 'center', color: '#d6c87a' });
+      footY += 16;
+    }
+    if (Array.isArray(s.unlocked) && s.unlocked.length > 0) {
+      r.drawText(`${t('gameover.unlocked')}: ${s.unlocked.join(', ')}`,
+        CANVAS_WIDTH / 2, footY,
+        { size: 10, align: 'center', color: COLOR.textHeal });
     }
 
-    const buttons = ['NEW RUN', 'TITLE'];
+    const buttons = [t('victory.newrun'), t('victory.title_btn')];
     const w = LAYOUT.btnW, h = LAYOUT.btnH;
     const by = LAYOUT.btnY;
     const gapBtn = 16;

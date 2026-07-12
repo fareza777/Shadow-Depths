@@ -37,6 +37,7 @@ import { drawVectorChest } from './dungeonChestsVector.jsx';
 import { drawVectorStairsDown } from './dungeonStairsVector.jsx';
 import { drawVectorDecorX } from './dungeonDecorExtVector.jsx';
 import { perfMeter } from '../debug/PerfMeter.js';
+import * as ThreatOverlay from './ThreatOverlay.js';
 
 const REMOVED_ROOM_DECOR = new Set(['weapon_rack', 'alcove_urn', 'hanging_cage']);
 
@@ -792,59 +793,20 @@ export class Renderer {
     ctx.restore();
   }
 
-  drawTelegraphs(floor, player) {
-    if (!floor || !player) return;
-    const ctx = this.ctx;
-    const cam = this._camera;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
-    ctx.clip();
-    ctx.translate(cam.x, cam.y);
-
-    for (const e of floor.enemies()) {
-      if (e.isDead) continue;
-      const tile = floor.tileAt(e.x, e.y);
-      if (!tile || !tile.visible) continue;
-      const intent = e.intent || Renderer._inferThreatIntent(e, player);
-      if (!intent) continue;
-      if (intent.type === 'ranged') {
-        this._drawThreatLine(ctx, e.x, e.y, intent.target?.x ?? player.x, intent.target?.y ?? player.y);
-      }
-    }
-    ctx.restore();
+  drawTelegraphs(floor, player, opts = {}) {
+    ThreatOverlay.drawTelegraphs(this.ctx, floor, player, this._camera, opts);
   }
 
   static _inferThreatIntent(enemy, player) {
-    // Lightweight fallback when GameScene has not stamped e.intent yet.
-    // Full telegraph uses behavior.previewIntent via GameScene._peekEnemyIntent.
-    const d = Math.abs(enemy.x - player.x) + Math.abs(enemy.y - player.y);
-    if (d === 1) return { type: 'attack' };
-    return null;
+    return ThreatOverlay._inferThreatIntent(enemy, player);
   }
 
   _drawThreatTile(ctx, tx, ty, color, alpha) {
-    const x = tx * TILE_SIZE;
-    const y = ty * TILE_SIZE;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    fillRect(ctx, x + 8, y + 8, TILE_SIZE - 16, TILE_SIZE - 16, color);
-    ctx.restore();
+    ThreatOverlay._drawThreatTile(ctx, tx, ty, color, alpha);
   }
 
-  _drawThreatLine(ctx, x0, y0, x1, y1) {
-    ctx.save();
-    ctx.globalAlpha = 0.62;
-    ctx.strokeStyle = '#80b0e0';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 5]);
-    ctx.beginPath();
-    ctx.moveTo((x0 + 0.5) * TILE_SIZE, (y0 + 0.5) * TILE_SIZE);
-    ctx.lineTo((x1 + 0.5) * TILE_SIZE, (y1 + 0.5) * TILE_SIZE);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    this._drawThreatTile(ctx, x1, y1, '#80b0e0', 0.18);
-    ctx.restore();
+  _drawThreatLine(ctx, x0, y0, x1, y1, opts = {}) {
+    ThreatOverlay._drawThreatLine(ctx, x0, y0, x1, y1, opts);
   }
 
   /**
@@ -960,19 +922,8 @@ export class Renderer {
     }
   }
 
-  _drawIntentIcon(ctx, intent, px, py) {
-    let glyph = '';
-    let color = '#d6d6da';
-    if (intent.type === 'attack') { glyph = '!'; color = '#ff6060'; }
-    else if (intent.type === 'ranged') { glyph = '>'; color = '#80b0e0'; }
-    else if (intent.type === 'move')   { glyph = '.'; color = '#a0a0aa'; }
-    else if (intent.type === 'wait')   { glyph = intent.meta?.winding ? '!!' : '...'; color = '#c0a060'; }
-    if (!glyph) return;
-    ctx.font = 'bold 12px "Courier New", monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
-    ctx.fillStyle = color;
-    ctx.fillText(glyph, px + TILE_SIZE / 2, py - 8);
+  _drawIntentIcon(ctx, intent, px, py, opts = {}) {
+    ThreatOverlay._drawIntentIcon(ctx, intent, px, py, opts);
   }
 
   _drawEntityHitFlash(ctx, entity, px, py) {
