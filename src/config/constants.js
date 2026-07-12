@@ -107,19 +107,19 @@ export const TILE = Object.freeze({
 // to match the Shadow Depths mock: charcoal-with-purple backgrounds, aged
 // gold accents, cream text, parchment-like highlights.
 export const COLOR = Object.freeze({
-  bg: '#1a1620',              // primary canvas background (warm dark)
-  bgPanel: '#241e2a',          // panel / strip background
-  bgPanelAlt: '#1d1824',       // alternating row tint
-  bgCard: '#2a232e',           // raised card surface
-  bgCardHi: '#352c3a',         // selected card
+  bg: '#24202c',              // primary canvas background (warm dark)
+  bgPanel: '#2e2836',          // panel / strip background
+  bgPanelAlt: '#26202e',       // alternating row tint
+  bgCard: '#363040',           // raised card surface
+  bgCardHi: '#42384a',         // selected card
 
-  void: '#080610',
-  wallLit: '#3e3548',
-  wallDim: '#1c1822',
-  floorLit: '#2e2734',
-  floorDim: '#181420',
-  stairs: '#d4be7a',
-  door: '#7a5436',
+  void: '#12101a',
+  wallLit: '#564c60',
+  wallDim: '#2a2432',
+  floorLit: '#443a48',
+  floorDim: '#26202c',
+  stairs: '#e0cc8a',
+  door: '#9a6a42',
 
   player: '#e8e0d0',
   enemy: '#b85052',

@@ -11,20 +11,20 @@
  */
 
 const FALLBACK = {
-  top: '#08060e', mid: '#030208', haze: '#1a1220', mote: '#d4be7a44'
+  top: '#18141f', mid: '#0c0a14', haze: '#2a2232', mote: '#d4be7a55'
 };
 
 const ABYSS = {
-  forgotten_crypts:  { top: '#13101a', mid: '#070512', haze: '#1c1820', mote: '#7a6e8048' },
-  bone_garden:       { top: '#1a0e08', mid: '#0a0402', haze: '#3a1a10', mote: '#9a7e5a55' },
-  frozen_halls:      { top: '#08101c', mid: '#020610', haze: '#1a3050', mote: '#bfd6ff55' },
-  sunken_forest:     { top: '#08120a', mid: '#020a05', haze: '#1a2c10', mote: '#88c65644' },
-  iron_stronghold:   { top: '#100c14', mid: '#06040a', haze: '#2a1a20', mote: '#9a8e9a40' },
-  sun_cursed_sands:  { top: '#1c1408', mid: '#0a0703', haze: '#3a2810', mote: '#d4ac6c55' },
-  mirror_vaults:     { top: '#08060e', mid: '#030208', haze: '#241848', mote: '#d4ac6c40' },
-  magma_foundry:     { top: '#180404', mid: '#080101', haze: '#5a1808', mote: '#ff553055' },
-  drowned_catacombs: { top: '#061418', mid: '#020a0c', haze: '#1a3a3a', mote: '#6acaba40' },
-  void_sanctum:      { top: '#020110', mid: '#000004', haze: '#280c48', mote: '#c08aff55' }
+  forgotten_crypts:  { top: '#1e1a28', mid: '#100e18', haze: '#2e2834', mote: '#9a8ea058' },
+  bone_garden:       { top: '#261810', mid: '#120806', haze: '#4a2818', mote: '#b8986a60' },
+  frozen_halls:      { top: '#101828', mid: '#080e1a', haze: '#284060', mote: '#d0e4ff60' },
+  sunken_forest:     { top: '#102018', mid: '#06140a', haze: '#2a3c1c', mote: '#a0d87055' },
+  iron_stronghold:   { top: '#1a1420', mid: '#0c0814', haze: '#3a2830', mote: '#aea2ae50' },
+  sun_cursed_sands:  { top: '#2a1e10', mid: '#140e06', haze: '#4a3820', mote: '#e0bc7c60' },
+  mirror_vaults:     { top: '#14101c', mid: '#080614', haze: '#342458', mote: '#e0bc7c50' },
+  magma_foundry:     { top: '#280808', mid: '#120202', haze: '#6a2810', mote: '#ff664060' },
+  drowned_catacombs: { top: '#0c2024', mid: '#061418', haze: '#2a4a4a', mote: '#7ad0ca50' },
+  void_sanctum:      { top: '#08041a', mid: '#04010c', haze: '#381858', mote: '#d0a0ff60' }
 };
 
 export function getAbyssPalette(biomeId) {

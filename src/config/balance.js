@@ -60,9 +60,9 @@ export const DEFAULT_BALANCE = Object.freeze({
   },
 
   vision: {
-    torchRadius: 5,
+    torchRadius: 7,
     // Per-floor override (index = floorIndex). Falls back to torchRadius.
-    perFloor: [5, 5, 4]
+    perFloor: [7, 7, 6]
   },
 
   dungeon: {

@@ -6,21 +6,21 @@
       "subtitle": "Where the kings forgot themselves.",
       "atmosphere": "Where the kings forgot themselves.",
       "palette": {
-        "bg": "#1a161e",
+        "bg": "#2e2a30",
         "ambient": "#4a7eb8",
         "torchTint": "#b8935a",
-        "wallCap": "#9a8c98",
+        "wallCap": "#ac9ea8",
         "wallCapOpacity": 0.55,
         "grain": "#08070c",
         "dust": "#7a6e80"
       },
       "wallPalette": [
-        "#403a48",
-        "#1a161e"
+        "#645e68",
+        "#302c32"
       ],
       "floorPalette": [
-        "#221e26",
-        "#15131a"
+        "#4a464a",
+        "#2d2b30"
       ],
       "enemyPool": [
         "goblin_scout",
@@ -30,7 +30,7 @@
         "tomb_lantern",
         "oathless_squire"
       ],
-      "torchRadius": 5
+      "torchRadius": 7
     },
     {
       "id": "bone_garden",
@@ -38,21 +38,21 @@
       "subtitle": "Sown by the worst harvest.",
       "atmosphere": "Sown by the worst harvest.",
       "palette": {
-        "bg": "#1a1410",
+        "bg": "#2e2822",
         "ambient": "#c4503a",
         "torchTint": "#d4ac6c",
-        "wallCap": "#9a7e5a",
+        "wallCap": "#ac906a",
         "wallCapOpacity": 0.55,
         "grain": "#1a0808",
         "dust": "#7a5a3a"
       },
       "wallPalette": [
-        "#5a4838",
-        "#1a1410"
+        "#7e6c58",
+        "#302a24"
       ],
       "floorPalette": [
-        "#241c14",
-        "#181410"
+        "#4c4438",
+        "#302c26"
       ],
       "enemyPool": [
         "skeleton_archer",
@@ -63,7 +63,7 @@
         "marrow_jailer",
         "carrion_censer"
       ],
-      "torchRadius": 5
+      "torchRadius": 7
     },
     {
       "id": "frozen_halls",
@@ -71,21 +71,21 @@
       "subtitle": "It is not cold here. It is patient.",
       "atmosphere": "It is not cold here. It is patient.",
       "palette": {
-        "bg": "#0c1018",
+        "bg": "#20242a",
         "ambient": "#7faafa",
         "torchTint": "#bfd6ff",
-        "wallCap": "#bfd6ff",
+        "wallCap": "#d1e8ff",
         "wallCapOpacity": 0.55,
         "grain": "#0a0e16",
         "dust": "#7faafa"
       },
       "wallPalette": [
-        "#2a3a4a",
-        "#0c1018"
+        "#4e5e6a",
+        "#22262c"
       ],
       "floorPalette": [
-        "#22324a",
-        "#1a2638"
+        "#4a5a6e",
+        "#323e4e"
       ],
       "enemyPool": [
         "ice_revenant",
@@ -95,7 +95,7 @@
         "rime_sentinel",
         "frost_abbot"
       ],
-      "torchRadius": 4
+      "torchRadius": 6
     },
     {
       "id": "sunken_forest",
@@ -103,21 +103,21 @@
       "subtitle": "The trees grew here. Then the ceiling came.",
       "atmosphere": "The trees grew here. Then the ceiling came.",
       "palette": {
-        "bg": "#0c1408",
+        "bg": "#20281a",
         "ambient": "#88c656",
         "torchTint": "#c4ff7f",
-        "wallCap": "#88c656",
+        "wallCap": "#9ad866",
         "wallCapOpacity": 0.55,
         "grain": "#08100a",
         "dust": "#88c656"
       },
       "wallPalette": [
-        "#3a4828",
-        "#0c1408"
+        "#5e6c48",
+        "#222a1c"
       ],
       "floorPalette": [
-        "#1f2614",
-        "#1a2010"
+        "#474e38",
+        "#323826"
       ],
       "enemyPool": [
         "cave_bat",
@@ -127,7 +127,7 @@
         "root_mimic",
         "sap_witch"
       ],
-      "torchRadius": 4
+      "torchRadius": 6
     },
     {
       "id": "iron_stronghold",
@@ -135,21 +135,21 @@
       "subtitle": "Built by hands that forgot soft things.",
       "atmosphere": "Built by hands that forgot soft things.",
       "palette": {
-        "bg": "#1a1620",
+        "bg": "#2e2a32",
         "ambient": "#ff8844",
         "torchTint": "#ffd4a8",
-        "wallCap": "#9a8e9a",
+        "wallCap": "#aca0aa",
         "wallCapOpacity": 0.55,
         "grain": "#08060c",
         "dust": "#6a5e6a"
       },
       "wallPalette": [
-        "#4a3c44",
-        "#1a1218"
+        "#6e6064",
+        "#30282c"
       ],
       "floorPalette": [
-        "#221c26",
-        "#181420"
+        "#4a444a",
+        "#302c36"
       ],
       "enemyPool": [
         "iron_sentinel",
@@ -160,7 +160,7 @@
         "furnace_jailer",
         "rivet_colossus"
       ],
-      "torchRadius": 4
+      "torchRadius": 6
     },
     {
       "id": "sun_cursed_sands",
@@ -168,21 +168,21 @@
       "subtitle": "Even the dunes are tombs.",
       "atmosphere": "Even the dunes are tombs.",
       "palette": {
-        "bg": "#1c140a",
+        "bg": "#30281c",
         "ambient": "#ffaa44",
         "torchTint": "#ffe488",
-        "wallCap": "#d4ac6c",
+        "wallCap": "#e6be7c",
         "wallCapOpacity": 0.55,
         "grain": "#1a0e04",
         "dust": "#a07840"
       },
       "wallPalette": [
-        "#7a5828",
-        "#1c140a"
+        "#9e7c48",
+        "#322a1e"
       ],
       "floorPalette": [
-        "#42301a",
-        "#3a2a14"
+        "#6a583e",
+        "#52422a"
       ],
       "enemyPool": [
         "cinder_imp",
@@ -192,7 +192,7 @@
         "dune_pilgrim",
         "sunscar_javelin"
       ],
-      "torchRadius": 5
+      "torchRadius": 7
     },
     {
       "id": "mirror_vaults",
@@ -200,21 +200,21 @@
       "subtitle": "You watch yourself unmaking.",
       "atmosphere": "You watch yourself unmaking.",
       "palette": {
-        "bg": "#08060c",
+        "bg": "#1c1a1e",
         "ambient": "#d4ac6c",
         "torchTint": "#fff2c0",
-        "wallCap": "#d4ac6c",
+        "wallCap": "#e6be7c",
         "wallCapOpacity": 0.55,
         "grain": "#08070c",
         "dust": "#d4ac6c"
       },
       "wallPalette": [
-        "#2a2236",
-        "#15101e"
+        "#4e4656",
+        "#2b2632"
       ],
       "floorPalette": [
-        "#120e18",
-        "#0a0810"
+        "#3a363c",
+        "#222026"
       ],
       "enemyPool": [
         "mirror_thrall",
@@ -225,7 +225,7 @@
         "silver_masque",
         "prism_archer"
       ],
-      "torchRadius": 4
+      "torchRadius": 6
     },
     {
       "id": "magma_foundry",
@@ -233,21 +233,21 @@
       "subtitle": "Something is being forged. It is not weapons.",
       "atmosphere": "Something is being forged. It is not weapons.",
       "palette": {
-        "bg": "#1a0808",
+        "bg": "#2e1c1a",
         "ambient": "#ff5530",
         "torchTint": "#ffa040",
-        "wallCap": "#c4503a",
+        "wallCap": "#d6624a",
         "wallCapOpacity": 0.55,
         "grain": "#000000",
         "dust": "#ff5530"
       },
       "wallPalette": [
-        "#2e1818",
-        "#1a0808"
+        "#523c38",
+        "#301e1c"
       ],
       "floorPalette": [
-        "#1f120c",
-        "#170c08"
+        "#473a30",
+        "#2f241e"
       ],
       "enemyPool": [
         "cinder_imp",
@@ -257,7 +257,7 @@
         "slag_impaler",
         "kiln_mother"
       ],
-      "torchRadius": 4
+      "torchRadius": 6
     },
     {
       "id": "drowned_catacombs",
@@ -265,21 +265,21 @@
       "subtitle": "The dead were buried wet.",
       "atmosphere": "The dead were buried wet.",
       "palette": {
-        "bg": "#0a1620",
+        "bg": "#1e2a32",
         "ambient": "#6acaba",
         "torchTint": "#a8e0d4",
-        "wallCap": "#a8e0d4",
+        "wallCap": "#baf2e4",
         "wallCapOpacity": 0.55,
         "grain": "#040a0e",
         "dust": "#a8e0d4"
       },
       "wallPalette": [
-        "#324848",
-        "#0a1620"
+        "#566c68",
+        "#202c34"
       ],
       "floorPalette": [
-        "#10202a",
-        "#0c1820"
+        "#38484e",
+        "#243036"
       ],
       "enemyPool": [
         "deep_lurker",
@@ -290,7 +290,7 @@
         "drowned_bellman",
         "kelp_revenant"
       ],
-      "torchRadius": 4
+      "torchRadius": 6
     },
     {
       "id": "void_sanctum",
@@ -298,21 +298,21 @@
       "subtitle": "You are very small here. The void is patient.",
       "atmosphere": "You are very small here. The void is patient.",
       "palette": {
-        "bg": "#04020a",
+        "bg": "#18161c",
         "ambient": "#9a40e8",
         "torchTint": "#c08aff",
-        "wallCap": "#c08aff",
+        "wallCap": "#d29cff",
         "wallCapOpacity": 0.6,
         "grain": "#04020a",
         "dust": "#c08aff"
       },
       "wallPalette": [
-        "#1a1024",
-        "#04020a"
+        "#3e3444",
+        "#1a181e"
       ],
       "floorPalette": [
-        "#0c0612",
-        "#040208"
+        "#342e36",
+        "#1c1a1e"
       ],
       "enemyPool": [
         "the_called",
@@ -322,7 +322,7 @@
         "null_cantor",
         "throne_without_king"
       ],
-      "torchRadius": 3,
+      "torchRadius": 5,
       "isFinalBiome": true
     }
   ]

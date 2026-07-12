@@ -490,7 +490,7 @@ export class Renderer {
     const useBiome = !!biomeId && hasBiome(biomeId);
 
     fillRect(ctx, x0 * TILE_SIZE, y0 * TILE_SIZE,
-      (x1 - x0 + 1) * TILE_SIZE, (y1 - y0 + 1) * TILE_SIZE, '#05040a');
+      (x1 - x0 + 1) * TILE_SIZE, (y1 - y0 + 1) * TILE_SIZE, '#12101a');
 
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
@@ -692,7 +692,7 @@ export class Renderer {
 
     // Lean: one flat warm wash — no flicker, no dual gradients, no arc.
     if (this._leanCombatFx) {
-      const R = radius * 1.05;
+      const R = radius * 1.12;
       const fx = Math.max(left, px - R);
       const fy = Math.max(top, py - R);
       const fw = Math.min(left + w, px + R) - fx;
@@ -700,9 +700,9 @@ export class Renderer {
       if (fw <= 0 || fh <= 0) return;
       const key = `${Math.round(px)},${Math.round(py)},${Math.round(radius)}`;
       if (key !== this._glowKey) {
-        const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.4, px, py, radius);
-        g.addColorStop(0, 'rgba(245, 214, 150, 0.18)');
-        g.addColorStop(0.55, 'rgba(190, 136, 74, 0.08)');
+        const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.35, px, py, radius);
+        g.addColorStop(0, 'rgba(255, 230, 170, 0.34)');
+        g.addColorStop(0.45, 'rgba(220, 170, 90, 0.16)');
         g.addColorStop(1, 'rgba(0, 0, 0, 0)');
         this._glowGrad = g;
         this._glowKey = key;
@@ -715,8 +715,8 @@ export class Renderer {
       return;
     }
 
-    const flicker = 0.88 + Math.sin((this._timeSec || 0) * 5.2) * 0.08
-      + Math.sin((this._timeSec || 0) * 11.7) * 0.04;
+    const flicker = 0.92 + Math.sin((this._timeSec || 0) * 5.2) * 0.06
+      + Math.sin((this._timeSec || 0) * 11.7) * 0.03;
     // The two gradients depend only on (center, radius) — flicker just scales
     // their alpha, which we apply via globalAlpha. Rebuild them only when the
     // center/radius actually changes (i.e. while walking), not every frame, to
@@ -724,15 +724,15 @@ export class Renderer {
     // causes micro-stutter.
     const key = `${Math.round(px)},${Math.round(py)},${Math.round(radius)}`;
     if (key !== this._glowKey) {
-      const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.3, px, py, radius);
-      g.addColorStop(0, 'rgba(245, 214, 150, 0.28)');
-      g.addColorStop(0.34, 'rgba(190, 136, 74, 0.14)');
-      g.addColorStop(0.72, 'rgba(92, 62, 92, 0.05)');
+      const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.25, px, py, radius);
+      g.addColorStop(0, 'rgba(255, 230, 170, 0.42)');
+      g.addColorStop(0.34, 'rgba(220, 160, 90, 0.22)');
+      g.addColorStop(0.72, 'rgba(120, 80, 110, 0.08)');
       g.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      const halo = ctx.createRadialGradient(px, py, radius * 0.48, px, py, radius * 1.24);
+      const halo = ctx.createRadialGradient(px, py, radius * 0.5, px, py, radius * 1.28);
       halo.addColorStop(0, 'rgba(0, 0, 0, 0)');
-      halo.addColorStop(0.82, 'rgba(6, 4, 12, 0.08)');
-      halo.addColorStop(1, 'rgba(0, 0, 0, 0.18)');
+      halo.addColorStop(0.82, 'rgba(6, 4, 12, 0.04)');
+      halo.addColorStop(1, 'rgba(0, 0, 0, 0.10)');
       this._glowGrad = g;
       this._glowHalo = halo;
       this._glowKey = key;
@@ -1955,7 +1955,7 @@ export class Renderer {
   /** Warm fog-of-war tint on explored-but-not-visible tiles. */
   static _applyFog(ctx, tx, ty, lean = false) {
     if (lean) {
-      ctx.fillStyle = 'rgba(8, 6, 14, 0.5)';
+      ctx.fillStyle = 'rgba(12, 10, 18, 0.28)';
       ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
       return;
     }
@@ -1964,7 +1964,7 @@ export class Renderer {
     // for every dim tile (it was previously rebuilt per tile per frame —
     // 100+ gradient allocations a frame).
     ctx.translate(tx, ty);
-    ctx.fillStyle = 'rgba(8, 6, 14, 0.42)';
+    ctx.fillStyle = 'rgba(12, 10, 18, 0.22)';
     ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
     ctx.globalCompositeOperation = 'screen';
     if (!Renderer._fogHaze) {
@@ -1972,15 +1972,15 @@ export class Renderer {
         TILE_SIZE * 0.5, TILE_SIZE * 0.38, 1,
         TILE_SIZE * 0.5, TILE_SIZE * 0.38, TILE_SIZE * 0.78
       );
-      haze.addColorStop(0, 'rgba(120, 86, 120, 0.10)');
-      haze.addColorStop(0.7, 'rgba(80, 60, 92, 0.04)');
+      haze.addColorStop(0, 'rgba(160, 120, 150, 0.12)');
+      haze.addColorStop(0.7, 'rgba(100, 80, 110, 0.05)');
       haze.addColorStop(1, 'rgba(0, 0, 0, 0)');
       Renderer._fogHaze = haze;
     }
     ctx.fillStyle = Renderer._fogHaze;
     ctx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
     ctx.globalCompositeOperation = 'source-over';
-    ctx.globalAlpha = 0.16;
+    ctx.globalAlpha = 0.08;
     fillRect(ctx, 2, TILE_SIZE - 3, TILE_SIZE - 4, 1, '#000000');
     ctx.restore();
   }

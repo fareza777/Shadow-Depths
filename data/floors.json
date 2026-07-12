@@ -5,36 +5,70 @@
       "name": "The Forgotten Crypts",
       "subtitle": "Floor 1",
       "atmosphere": "Abandoned catacombs, dust, bone, and the last rites of a forgotten burial order.",
-      "enemyPool": ["goblin_scout", "cave_bat", "reliquary_rat"],
+      "enemyPool": [
+        "goblin_scout",
+        "cave_bat",
+        "reliquary_rat"
+      ],
       "enemyCount": 2,
       "itemCount": 5,
-      "torchRadius": 5,
-      "wallPalette": ["#3a3340", "#1a1820"],
-      "floorPalette": ["#2a2630", "#15131a"]
+      "torchRadius": 7,
+      "wallPalette": [
+        "#5e5760",
+        "#302e34"
+      ],
+      "floorPalette": [
+        "#524e54",
+        "#2d2b30"
+      ]
     },
     {
       "index": 1,
       "name": "Halls of Echoes",
       "subtitle": "Floor 2",
       "atmosphere": "Broken halls return every footstep as a warning.",
-      "enemyPool": ["goblin_scout", "cave_bat", "reliquary_rat", "skeleton_archer", "tomb_lantern"],
+      "enemyPool": [
+        "goblin_scout",
+        "cave_bat",
+        "reliquary_rat",
+        "skeleton_archer",
+        "tomb_lantern"
+      ],
       "enemyCount": 4,
       "itemCount": 5,
-      "torchRadius": 5,
-      "wallPalette": ["#3a3548", "#1a1828"],
-      "floorPalette": ["#2c2838", "#16141e"]
+      "torchRadius": 7,
+      "wallPalette": [
+        "#5e5968",
+        "#302e3c"
+      ],
+      "floorPalette": [
+        "#54505c",
+        "#2e2c34"
+      ]
     },
     {
       "index": 2,
       "name": "The Bone Garden",
       "subtitle": "Floor 3",
       "atmosphere": "Something grows between the bones. It is not a plant.",
-      "enemyPool": ["goblin_scout", "skeleton_archer", "cave_bat", "tomb_lantern", "oathless_squire"],
+      "enemyPool": [
+        "goblin_scout",
+        "skeleton_archer",
+        "cave_bat",
+        "tomb_lantern",
+        "oathless_squire"
+      ],
       "enemyCount": 5,
       "itemCount": 6,
-      "torchRadius": 4,
-      "wallPalette": ["#3a3340", "#181420"],
-      "floorPalette": ["#2a2538", "#14101a"],
+      "torchRadius": 6,
+      "wallPalette": [
+        "#5e5760",
+        "#2e2a34"
+      ],
+      "floorPalette": [
+        "#524d5c",
+        "#2c2830"
+      ],
       "isFinalFloor": true
     }
   ]

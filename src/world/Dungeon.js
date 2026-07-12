@@ -163,7 +163,7 @@ export class Dungeon {
         floorPalette: biome?.floorPalette || ['#2a2630', '#15131a'],
         enemyPool: biome?.enemyPool || ['goblin_scout'],
         enemyCount, itemCount,
-        torchRadius: biome?.torchRadius || 5,
+        torchRadius: biome?.torchRadius || 7,
         depthScale: difficultyScaleForFloor(i, this.balance.difficultyCurve),
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
@@ -184,7 +184,7 @@ export class Dungeon {
       wallPalette: biome.wallPalette || ['#3a3340', '#1a1820'],
       floorPalette: biome.floorPalette || ['#2a2630', '#15131a'],
       biomeId: biome.id || 'forgotten_crypts',
-      torchRadius: Math.max(6, biome.torchRadius || 5),
+      torchRadius: Math.max(7, biome.torchRadius || 7),
       depthScale: 1,
       tutorial: true,
       vaultDepthBoost: 0

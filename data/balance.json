@@ -36,8 +36,8 @@
     "flankMult": 1.15
   },
   "vision": {
-    "torchRadius": 5,
-    "perFloor": [5, 5, 4]
+    "torchRadius": 7,
+    "perFloor": [7, 7, 6]
   },
   "dungeon": {
     "roomMinSize": 4,
