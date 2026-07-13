@@ -78,6 +78,16 @@ store-assets/feature-graphic-1024x500.png
 store-assets/play-screenshots/play-shot-01.png   # … through play-shot-08.png
 ```
 
+**Promotional video (YouTube URL in Play Console):**
+```
+store-assets/promo/shadow-depths-trailer.mp4           # 1920×1080 ~25s — upload to YouTube
+store-assets/promo/shadow-depths-trailer-portrait.mp4  # 1080×1920 — Shorts / Reels / social
+```
+- Regenerate: `python scripts/compose-promo-video.py`
+- Play Console → Store listing → **Promotional video** → paste the YouTube link (not the MP4 file)
+- Suggested YouTube title: `Shadow Depths — Official Trailer`
+- Visibility: Public or Unlisted both work for Play Store
+
 **Screenshot captions (EN listing):**
 1. Begin your melancholic descent (title)
 2. Choose a vigil — eight dark heroes

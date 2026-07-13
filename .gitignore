@@ -43,5 +43,5 @@ release/
 *.apk
 *.aab
 
-# Test coverage
-coverage
+# Promo video intermediates (keep final MP4s)
+store-assets/promo/_work/
