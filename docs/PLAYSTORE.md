@@ -66,15 +66,27 @@ cd android
 9. **Store listing assets:**
    - App icon: 512×512 PNG → `store-assets/app-icon-512.png` (also `release/play-store/`)
    - Feature graphic: 1024×500 PNG → `store-assets/feature-graphic-1024x500.png`
-   - Phone screenshots: min 2, portrait gameplay (capture from device / emulator)
+   - Phone screenshots (8 captioned, 1080×1920): `store-assets/play-screenshots/play-shot-01.png` … `play-shot-08.png` (JPG copies also available)
+   - Regenerate captions/frames: `python scripts/compose-play-screenshots.py`
    - Short description (80 chars)
    - Full description (4000 chars) — mention free 10 floors + one-time unlock
 
-Upload these two files on **Store listings → Graphics**:
+Upload on **Store listings → Graphics**:
 ```
 store-assets/app-icon-512.png
 store-assets/feature-graphic-1024x500.png
+store-assets/play-screenshots/play-shot-01.png   # … through play-shot-08.png
 ```
+
+**Screenshot captions (EN listing):**
+1. Begin your melancholic descent (title)
+2. Choose a vigil — eight dark heroes
+3. Fight turn by turn in torchlight
+4. Loot rare tomes from forgotten crypts
+5. Equip gear and grow stronger
+6. Fill your satchel with relics
+7. Spend coins on permanent upgrades
+8. Learn the depths with a guided tutorial
 
 
 ### Suggested short description
