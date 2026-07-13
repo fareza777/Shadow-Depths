@@ -854,8 +854,19 @@ export class Renderer {
         this._drawThreatAura(ctx, e, px, py);
         if (e.elite) this._drawEliteMarker(ctx, e, px, py);
       } else if (e.elite || e.defId?.startsWith('boss_') || e.defId?.startsWith('subboss_')) {
-        fillRect(ctx, px + 2, py + TILE_SIZE - 3, TILE_SIZE - 4, 2,
-          e.defId?.startsWith('boss_') ? '#d4be7a' : '#c080ff');
+        // Static (non-pulsing) threat underlay — lean-safe, no gradients.
+        const col = e.defId?.startsWith('boss_') ? '#d4be7a'
+          : e.defId?.startsWith('subboss_') ? '#c080ff'
+          : (e.elite?.color || '#ffaa44');
+        fillRect(ctx, px + 2, py + TILE_SIZE - 3, TILE_SIZE - 4, 2, col);
+        ctx.save();
+        ctx.strokeStyle = col;
+        ctx.globalAlpha = 0.45;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE - 4, TILE_SIZE * 0.38, 3.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
       }
       this.sprites.draw(key, ctx, px, py, { entity: e, time: this._timeSec || 0 });
       if (!this._leanCombatFx) this._drawStatusEffects(ctx, e, px, py);
@@ -1134,6 +1145,11 @@ export class Renderer {
     ctx.font = `${style}${weight}${opts.size || 14}px ${family}`;
     ctx.textAlign = opts.align || 'left';
     ctx.textBaseline = opts.baseline || 'top';
+    // Cheap engraved look: 1px ink offset (no shadowBlur — mobile-safe).
+    if (opts.engraved) {
+      ctx.fillStyle = opts.engraveColor || 'rgba(0,0,0,0.65)';
+      ctx.fillText(text, x + 1, y + 1);
+    }
     ctx.fillStyle = opts.color || COLOR.textPrimary;
     ctx.fillText(text, x, y);
   }
@@ -1189,6 +1205,14 @@ export class Renderer {
       cctx.translate(-vx, -vy);
       this._drawViewportAbyss(cctx, def);
       this._drawBiomeBackdropDetails(cctx, def);
+      // Cached edge vignette (baked into the 250ms backdrop cache — not per frame).
+      cctx.setTransform(1, 0, 0, 1, 0, 0);
+      const band = Math.max(28, Math.floor(Math.min(vw, vh) * 0.08));
+      cctx.fillStyle = 'rgba(0,0,0,0.38)';
+      cctx.fillRect(0, 0, vw, band);
+      cctx.fillRect(0, vh - band, vw, band);
+      cctx.fillRect(0, 0, band, vh);
+      cctx.fillRect(vw - band, 0, band, vh);
       cache = { key, canvas };
       this._backdropCache = cache;
     }
@@ -1908,7 +1932,8 @@ export class Renderer {
   /** Warm fog-of-war tint on explored-but-not-visible tiles. */
   static _applyFog(ctx, tx, ty, lean = false) {
     if (lean) {
-      ctx.fillStyle = 'rgba(12, 10, 18, 0.28)';
+      // Warm torch-ash fog — still a single fillRect (no extra gradients).
+      ctx.fillStyle = 'rgba(22, 14, 20, 0.32)';
       ctx.fillRect(tx, ty, TILE_SIZE, TILE_SIZE);
       return;
     }

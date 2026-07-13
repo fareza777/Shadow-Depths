@@ -7,7 +7,7 @@
 import { COLOR, TILE, FONT_DISPLAY, uiSize } from '../config/constants.js';
 import { INTERACT_EVENT_KINDS } from '../gameplay/floorEvents.js';
 import { MobileControls } from './MobileControls.js';
-import { IRON, drawIronPlate, drawIronRivet } from './ironHud.js';
+import { IRON, drawIronPlate, drawBrassRivet } from './ironHud.js';
 
 export class Minimap {
   constructor() {
@@ -215,6 +215,10 @@ export class Minimap {
     ctx.strokeRect(slot.x + 4.5, slot.y + 4.5, slot.w - 9, slot.h - 9);
     ctx.strokeStyle = 'rgba(106,94,106,0.7)';
     ctx.strokeRect(slot.x + 8.5, slot.y + 8.5, slot.w - 17, slot.h - 17);
+    // Soft inner shadow on the map well (cached with terrain).
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(slot.x + 10, slot.y + 10, slot.w - 20, 3);
+    ctx.fillRect(slot.x + 10, slot.y + 10, 3, slot.h - 20);
 
     const headerY = slot.y + 11;
     const headerH = uiSize(22);
@@ -224,13 +228,13 @@ export class Minimap {
     ctx.strokeRect(slot.x + 11.5, headerY + 0.5, slot.w - 23, headerH - 1);
     r.drawText('DEPTH MAP', slot.x + slot.w / 2, headerY + headerH / 2 + 1, {
       size: uiSize(10), bold: true, align: 'center', baseline: 'middle',
-      family: FONT_DISPLAY, color: COLOR.gold
+      family: FONT_DISPLAY, color: COLOR.gold, engraved: true
     });
 
-    drawIronRivet(ctx, slot.x + 7, slot.y + 7, 2.4);
-    drawIronRivet(ctx, slot.x + slot.w - 7, slot.y + 7, 2.4);
-    drawIronRivet(ctx, slot.x + 7, slot.y + slot.h - 7, 2.4);
-    drawIronRivet(ctx, slot.x + slot.w - 7, slot.y + slot.h - 7, 2.4);
+    drawBrassRivet(ctx, slot.x + 7, slot.y + 7, 2.6);
+    drawBrassRivet(ctx, slot.x + slot.w - 7, slot.y + 7, 2.6);
+    drawBrassRivet(ctx, slot.x + 7, slot.y + slot.h - 7, 2.6);
+    drawBrassRivet(ctx, slot.x + slot.w - 7, slot.y + slot.h - 7, 2.6);
     ctx.restore();
   }
 }

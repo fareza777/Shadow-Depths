@@ -210,6 +210,9 @@ export class HUD {
 
   _drawFramedBar(r, x, y, w, h, value, max, fill, bg, label) {
     r.drawRect(x - 2, y - 2, w + 4, h + 4, '#08050a');
+    // Brass end-caps (2 fillRects — lives inside top-strip cache).
+    r.drawRect(x - 2, y - 1, 2, h + 2, BRASS_DARK);
+    r.drawRect(x + w, y - 1, 2, h + 2, BRASS_DARK);
     r.drawBar(x, y, w, h, value, max, fill, bg);
     r.drawRect(x + 2, y + 2, w - 4, 2, '#ffffff28');
     if (label) {
@@ -408,16 +411,26 @@ export class HUD {
     // after the action that produced it — never permanently blocks view.
     const baseY = Layout.hud + 4;
     const ctx = r.ctx;
+    const bandH = lines.length * 18 + 8;
     const maxAlpha = Math.max(...lines.map((l) => l.alpha));
     ctx.save();
-    ctx.globalAlpha = 0.72 * maxAlpha;
-    r.drawRect(0, baseY, Layout.canvasW, lines.length * 18 + 8, '#06060a');
+    ctx.globalAlpha = 0.78 * maxAlpha;
+    r.drawRect(0, baseY, Layout.canvasW, bandH, '#08060c');
+    // Brass left accent + top/bottom hairlines (cheap rects only).
+    r.drawRect(0, baseY, 3, bandH, BRASS_DARK);
+    r.drawRect(0, baseY, Layout.canvasW, 1, 'rgba(212,172,108,0.28)');
+    r.drawRect(0, baseY + bandH - 1, Layout.canvasW, 1, 'rgba(212,172,108,0.18)');
     ctx.restore();
     for (let i = 0; i < lines.length; i++) {
       ctx.save();
       ctx.globalAlpha = lines[i].alpha;
-      r.drawText(lines[i].text, 8, baseY + 4 + i * 18,
-        { size: uiSize(13), color: lines[i].color, family: FONT_BODY });
+      const isCombat = /hits|crit|damage|defeat|slain|miss/i.test(lines[i].text);
+      r.drawText(lines[i].text, 10, baseY + 4 + i * 18, {
+        size: uiSize(13),
+        color: lines[i].color,
+        family: isCombat ? FONT_MONO : FONT_BODY,
+        engraved: true
+      });
       ctx.restore();
     }
   }
