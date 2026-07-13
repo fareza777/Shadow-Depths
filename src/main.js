@@ -10,6 +10,13 @@
 import { LOG, setPlayerUiScale } from './config/constants.js';
 import { Capacitor } from '@capacitor/core';
 import { setReduceMotion } from './config/layoutMetrics.js';
+import { perfMeter } from './debug/PerfMeter.js';
+
+// Native Play builds must never show the perf overlay (Capacitor hostname
+// is localhost, which used to auto-enable it).
+try {
+  if (Capacitor.isNativePlatform()) perfMeter.setEnabled(false);
+} catch { /* ignore */ }
 
 // Boot splash: keep briefly so the reveal isn't jarring. Native builds use a
 // shorter hold — mobile players should reach the title in ~2s, not 5+.

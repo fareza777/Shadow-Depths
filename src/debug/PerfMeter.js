@@ -8,17 +8,24 @@ function initialEnabled() {
     const params = new URLSearchParams(window.location.search || '');
     const q = params.get('perf');
     if (q === '1' || q === 'true') {
+      try { localStorage.setItem('shadowdepths_perf', '1'); } catch { /* ignore */ }
       return true;
     }
     if (q === '0' || q === 'false') {
-      localStorage.removeItem('shadowdepths_perf');
+      try { localStorage.removeItem('shadowdepths_perf'); } catch { /* ignore */ }
       return false;
     }
-    if (!/^(127\.0\.0\.1|localhost)$/i.test(window.location.hostname || '')) return false;
-    const stored = localStorage.getItem('shadowdepths_perf');
-    if (stored === '1') return true;
-    if (stored === '0') return false;
-    return true;
+    // Capacitor Android uses https://localhost. Never show the overlay on
+    // shipping builds — clear any leftover flag from older APKs that
+    // auto-enabled on localhost.
+    try {
+      if (window.Capacitor?.isNativePlatform?.()) {
+        try { localStorage.removeItem('shadowdepths_perf'); } catch { /* ignore */ }
+        return false;
+      }
+    } catch { /* Capacitor not ready */ }
+    // Web: opt-in only (stored '1' or ?perf=1). Never default-on.
+    return localStorage.getItem('shadowdepths_perf') === '1';
   } catch {
     return false;
   }
