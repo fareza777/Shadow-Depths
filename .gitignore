@@ -45,3 +45,6 @@ release/
 
 # Promo video intermediates (keep final MP4s)
 store-assets/promo/_work/
+
+# Local isolated feature worktrees
+.worktrees/
