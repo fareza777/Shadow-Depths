@@ -4,6 +4,7 @@ import { t, setLocale } from '../src/content/i18n.js';
 import { RUN_SNAPSHOT_KEYS } from './runSnapshot.test.js';
 import biomesData from '../data/biomes.json';
 import { RunPersistence } from '../src/core/RunPersistence.js';
+import { readFileSync } from 'node:fs';
 
 describe('workflow: biome mechanics', () => {
   it('maps every biome mechanic to a non-empty description', () => {
@@ -104,5 +105,20 @@ describe('workflow: RunPersistence module', () => {
     expect(typeof rp.flushRunSave).toBe('function');
     expect(typeof rp.saveRun).toBe('function');
     expect(() => rp.flushRunSave()).not.toThrow();
+  });
+});
+
+describe('workflow: About and rating surface', () => {
+  it('connects the title menu, modal, Play Store launcher, and touch actions', () => {
+    const source = readFileSync(new URL('../src/ui/TitleScreen.js', import.meta.url), 'utf8');
+
+    expect(source).toContain("id: 'about'");
+    expect(source).toContain("this.modal === 'about'");
+    expect(source).toContain("this.modal = 'about'");
+    expect(source).toContain('openPlayStore');
+    expect(source).toContain("t('about.description')");
+    expect(source).toContain("t('about.rate')");
+    expect(source).toContain('return 500');
+    expect(source).toContain('return 99');
   });
 });

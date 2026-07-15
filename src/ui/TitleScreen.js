@@ -24,6 +24,8 @@ import {
 import { t, setLocale, currentLocale } from '../content/i18n.js';
 import { setPlayerUiScale } from '../config/constants.js';
 import { setReduceMotion } from '../config/layoutMetrics.js';
+import { APP_NAME, APP_VERSION } from '../config/appInfo.js';
+import { openPlayStore } from '../platform/playStore.js';
 
 const BRASS_DARK = '#7a5c2c';
 const BRASS = '#d4ac6c';
@@ -39,7 +41,8 @@ const MENU_LABEL_KEYS = {
   shop: 'title.shop',
   codex: 'title.codex',
   meta: 'title.meta',
-  settings: 'title.settings'
+  settings: 'title.settings',
+  about: 'title.about'
 };
 
 const MENU = [
@@ -50,14 +53,15 @@ const MENU = [
   { id: 'shop',     icon: '◈', labelKey: 'title.shop',    sub: '' },
   { id: 'codex',    icon: '✦', labelKey: 'title.codex',   sub: '' },
   { id: 'meta',     icon: '★', labelKey: 'title.meta',    sub: '' },
-  { id: 'settings', icon: '⚙', labelKey: 'title.settings', sub: '' }
+  { id: 'settings', icon: '⚙', labelKey: 'title.settings', sub: '' },
+  { id: 'about',    icon: 'i', labelKey: 'title.about',    sub: '' }
 ];
 
 const LAYOUT = IS_LANDSCAPE
   ? {
       logoY: 28, logoSize: 30, ornY: 56, tagY: 70, tagSize: 11,
       hsY: 92, coinY: 108,
-      baseY: 122, rowH: 36, rowGap: 5, rowW: 360,
+      baseY: 122, rowH: 29, rowGap: 4, rowW: 360,
       footerY: CANVAS_HEIGHT - 14
     }
   : {
@@ -85,13 +89,15 @@ export class TitleScreen {
     this.paywall = paywallOverlay || null;
     this.lore = lore || null;
     this.selected = 0;
-    this.modal = null; // 'controls' | 'settings' | 'shop' | 'meta' | 'codex' | null
+    this.modal = null; // 'controls' | 'settings' | 'shop' | 'meta' | 'codex' | 'about' | null
     this._particles = TitleScreen._seedParticles();
     this._t = 0;
     this._shopFeedback = '';
     this._shopFeedbackUntil = 0;
     this._shopScroll = 0;
     this._codexDetail = null;
+    this._aboutFeedback = '';
+    this._aboutFeedbackUntil = 0;
   }
 
   enter() { this.selected = 0; this.modal = null; this._shopScroll = 0; }
@@ -173,6 +179,7 @@ export class TitleScreen {
     else if (this.modal === 'shop') this._renderShop(renderer);
     else if (this.modal === 'meta') this._renderMeta(renderer);
     else if (this.modal === 'codex') this._renderCodex(renderer);
+    else if (this.modal === 'about') this._renderAbout(renderer);
 
     if (this.paywall?.open) this.paywall.render(renderer);
   }
@@ -325,6 +332,7 @@ export class TitleScreen {
       const orient = this.state.state.meta.settings?.orientation || 'portrait';
       return orient;
     }
+    if (item.id === 'about') return `v${APP_VERSION}`;
     return item.sub || '';
   }
 
@@ -353,6 +361,10 @@ export class TitleScreen {
       if (action.type === 'tap') {
         const idx = action.buttonIndex;
         if (idx === 99) { this.modal = null; return; }
+        if (this.modal === 'about' && idx === 500) {
+          this._openRatingPage();
+          return;
+        }
         if (this.modal === 'shop' && typeof idx === 'number' && idx >= 200 && idx < 300) {
           const upgrades = this.content.shop?.upgrades || [];
           const u = upgrades[idx - 200];
@@ -526,6 +538,7 @@ export class TitleScreen {
     else if (id === 'meta') this.modal = 'meta';
     else if (id === 'controls') this.modal = 'controls';
     else if (id === 'settings') this.modal = 'settings';
+    else if (id === 'about') this.modal = 'about';
   }
 
   /** Daily seed derived from today's YYYY-MM-DD. */
@@ -841,6 +854,145 @@ export class TitleScreen {
       }
     }
     return null;
+  }
+
+  // --- About modal -------------------------------------------------
+  _aboutLayout() {
+    if (IS_LANDSCAPE) {
+      const modalX = 72;
+      const modalY = 14;
+      const modalW = CANVAS_WIDTH - modalX * 2;
+      const modalH = CANVAS_HEIGHT - modalY * 2;
+      return {
+        modalX, modalY, modalW, modalH,
+        brandY: modalY + 72,
+        versionY: modalY + 94,
+        descriptionX: modalX + 28,
+        descriptionY: modalY + 112,
+        descriptionW: modalW - 56,
+        descriptionH: 58,
+        badgesY: modalY + 184,
+        badgesH: 38,
+        ratingX: modalX + 104,
+        ratingY: modalY + 236,
+        ratingW: modalW - 208,
+        ratingH: 88,
+        rateX: modalX + 152,
+        rateY: modalY + 336,
+        rateW: modalW - 304,
+        rateH: 42,
+        closeY: modalY + modalH - 54
+      };
+    }
+
+    const modalX = 34;
+    const modalH = 670;
+    const modalY = (CANVAS_HEIGHT - modalH) / 2;
+    const modalW = CANVAS_WIDTH - modalX * 2;
+    return {
+      modalX, modalY, modalW, modalH,
+      brandY: modalY + 92,
+      versionY: modalY + 120,
+      descriptionX: modalX + 22,
+      descriptionY: modalY + 148,
+      descriptionW: modalW - 44,
+      descriptionH: 104,
+      badgesY: modalY + 276,
+      badgesH: 48,
+      ratingX: modalX + 22,
+      ratingY: modalY + 350,
+      ratingW: modalW - 44,
+      ratingH: 140,
+      rateX: modalX + 44,
+      rateY: modalY + 512,
+      rateW: modalW - 88,
+      rateH: 52,
+      closeY: modalY + modalH - 66
+    };
+  }
+
+  _renderAbout(r) {
+    const g = this._aboutLayout();
+    const cx = CANVAS_WIDTH / 2;
+    this._renderIronModalChrome(r, g, t('title.about'), t('about.subtitle'));
+
+    r.drawText(APP_NAME.toUpperCase(), cx, g.brandY, {
+      size: uiSize(IS_LANDSCAPE ? 24 : 30), bold: true, align: 'center',
+      family: FONT_DISPLAY, color: IRON_PALETTE.brassHi
+    });
+    r.drawText(`${t('about.version')}  ${APP_VERSION}`, cx, g.versionY, {
+      size: uiSize(10), align: 'center', family: FONT_MONO,
+      color: IRON_PALETTE.boneDim
+    });
+
+    drawInsetCard(r.ctx, g.descriptionX, g.descriptionY, g.descriptionW, g.descriptionH, {
+      borderColor: IRON_PALETTE.brassDark
+    });
+    TitleScreen._drawWrapped(
+      r,
+      t('about.description'),
+      cx,
+      g.descriptionY + (IS_LANDSCAPE ? 14 : 24),
+      g.descriptionW - 36,
+      g.descriptionH - 24,
+      {
+        size: uiSize(IS_LANDSCAPE ? 12 : 15), italic: true, align: 'center',
+        family: FONT_BODY, color: IRON_PALETTE.bone
+      }
+    );
+
+    const badges = [t('about.turn_based'), t('about.offline'), t('about.no_ads')];
+    const badgeGap = IS_LANDSCAPE ? 14 : 8;
+    const badgeAreaW = g.modalW - (IS_LANDSCAPE ? 112 : 44);
+    const badgeW = (badgeAreaW - badgeGap * 2) / 3;
+    const badgeX = g.modalX + (g.modalW - badgeAreaW) / 2;
+    for (let i = 0; i < badges.length; i++) {
+      const x = badgeX + i * (badgeW + badgeGap);
+      drawInsetCard(r.ctx, x, g.badgesY, badgeW, g.badgesH, {
+        borderColor: IRON_PALETTE.plate2
+      });
+      r.drawText(badges[i], x + badgeW / 2, g.badgesY + g.badgesH / 2, {
+        size: uiSize(IS_LANDSCAPE ? 9 : 10), bold: true, align: 'center', baseline: 'middle',
+        family: FONT_DISPLAY, color: IRON_PALETTE.brass
+      });
+    }
+
+    r.ctx.save();
+    r.ctx.shadowColor = IRON_PALETTE.brass;
+    r.ctx.shadowBlur = 8 + Math.sin(this._t * 2.2) * 3;
+    drawInsetCard(r.ctx, g.ratingX, g.ratingY, g.ratingW, g.ratingH, {
+      borderColor: IRON_PALETTE.brass
+    });
+    r.ctx.restore();
+    r.drawText('★  ★  ★  ★  ★', cx, g.ratingY + (IS_LANDSCAPE ? 18 : 30), {
+      size: uiSize(IS_LANDSCAPE ? 20 : 26), bold: true, align: 'center',
+      family: FONT_DISPLAY, color: BRASS_HI
+    });
+    const feedback = this._aboutFeedback && this._t < this._aboutFeedbackUntil
+      ? this._aboutFeedback
+      : t('about.rate_prompt');
+    r.drawText(feedback, cx, g.ratingY + (IS_LANDSCAPE ? 58 : 92), {
+      size: uiSize(IS_LANDSCAPE ? 11 : 13), italic: true, align: 'center',
+      family: FONT_BODY,
+      color: this._aboutFeedback && this._t < this._aboutFeedbackUntil
+        ? IRON_PALETTE.ember : IRON_PALETTE.boneDim
+    });
+
+    drawIronActionButton(r, g.rateX, g.rateY, g.rateW, g.rateH, t('about.rate'), {
+      accent: IRON_PALETTE.brass,
+      fontSize: uiSize(IS_LANDSCAPE ? 11 : 12)
+    });
+    this._renderModalCloseButton(r, g.closeY);
+  }
+
+  async _openRatingPage() {
+    try {
+      await openPlayStore();
+      this._aboutFeedback = '';
+    } catch {
+      this._aboutFeedback = t('about.rate_failed');
+      this._aboutFeedbackUntil = this._t + 2.5;
+    }
   }
 
   // --- Meta-progress modal ------------------------------------------
@@ -1343,6 +1495,14 @@ export class TitleScreen {
           && y >= g.textY && y <= g.textY + g.textH) return 309;
       if (x >= g.restoreX && x <= g.restoreX + g.restoreW
           && y >= g.restoreY && y <= g.restoreY + g.restoreH) return 303;
+      const closeRect = this._modalCloseRect(g.closeY);
+      if (TitleScreen._inside(x, y, closeRect)) return 99;
+      return -1;
+    }
+    if (this.modal === 'about') {
+      const g = this._aboutLayout();
+      const rateRect = { x: g.rateX, y: g.rateY, w: g.rateW, h: g.rateH };
+      if (TitleScreen._inside(x, y, rateRect)) return 500;
       const closeRect = this._modalCloseRect(g.closeY);
       if (TitleScreen._inside(x, y, closeRect)) return 99;
       return -1;
