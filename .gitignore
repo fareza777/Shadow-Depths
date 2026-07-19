@@ -48,3 +48,8 @@ store-assets/promo/_work/
 
 # Local isolated feature worktrees
 .worktrees/
+
+# Python
+**/__pycache__/
+*.py[cod]
+
