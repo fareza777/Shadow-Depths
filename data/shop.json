@@ -75,6 +75,20 @@
       "description": "Start each run at Level 2.",
       "cost": 120,
       "maxLevel": 1
+    },
+    {
+      "id": "depth_foresight",
+      "name": "Depth Foresight",
+      "description": "After each run, preview the next biome's name and atmosphere on the title ledger.",
+      "cost": 45,
+      "maxLevel": 1
+    },
+    {
+      "id": "skill_reroll_plus",
+      "name": "Second Sight",
+      "description": "+1 free skill reroll per level-up (stacks with the free first reroll).",
+      "cost": 80,
+      "maxLevel": 1
     }
   ]
 }

@@ -46,7 +46,8 @@ function heroStatOverrides(kind) {
 import { Enemy } from '../entities/Enemy.js';
 import { rollEliteAffixes, forcedEliteAffixes, makeElite } from '../gameplay/eliteAffixes.js';
 import { HAZARDS, hazardDamage } from '../gameplay/hazards.js';
-import { applyBiomeTurnTick, describeBiomeMechanic, getBiomeMechanic } from '../gameplay/biomeMechanics.js';
+import { applyBiomeTurnTick, describeBiomeMechanic, getBiomeMechanic, applyBiomePressureStep } from '../gameplay/biomeMechanics.js';
+import { gateDescend, applyDescendTransition } from './DescendFlow.js';
 import { StatusEffects } from '../combat/StatusEffects.js';
 import { Inventory } from '../items/Inventory.js';
 import { ItemFactory } from '../items/ItemFactory.js';
@@ -69,14 +70,15 @@ import { ChaseBehavior } from '../entities/behaviors/ChaseBehavior.js';
 import { RangedBehavior, hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
 import { ErraticBehavior } from '../entities/behaviors/ErraticBehavior.js';
 import { HeavyBehavior } from '../entities/behaviors/HeavyBehavior.js';
-import { PhaseBehavior } from '../entities/behaviors/PhaseBehavior.js';
+import { BossPatternBehavior } from '../entities/behaviors/BossPatternBehavior.js';
 
 const BEHAVIORS = {
   chase: ChaseBehavior,
   ranged: RangedBehavior,
   erratic: ErraticBehavior,
   heavy: HeavyBehavior,
-  phase: PhaseBehavior
+  phase: PhaseBehavior,
+  boss_pattern: BossPatternBehavior
 };
 
 /** Enemies farther than this (and not visible) skip AI for the turn. */
@@ -851,6 +853,10 @@ export class GameScene {
 
   _springHazard(entity, x, y) {
     const t = this.floor?.tileAt(x, y);
+    // Biome pressure tiles (soft, re-usable) — players only.
+    if (entity?.kind === 'player' && t?.pressure) {
+      applyBiomePressureStep(entity, t, this.bus);
+    }
     const hz = t?.hazard;
     if (!hz || !hz.armed || entity.isDead) return;
     hz.armed = false;
@@ -1232,15 +1238,12 @@ export class GameScene {
     const t = this.floor.tileAt(this.player.x, this.player.y);
     if (!t || t.type !== TILE.STAIRS_DOWN) return;
 
-    // Freemium gate: free players stop after clearing the free floor cap.
-    if (this.billing?.needsUnlockToDescend?.(this.dungeon.currentIndex, this.mode)) {
-      this.paywall?.show('descend');
-      this.bus.emit('log:message', {
-        text: `Floor ${(this.billing.freeFloorCap || 10) + 1}+ requires Full Descent unlock.`,
-        kind: 'warn'
-      });
-      return;
-    }
+    const gate = gateDescend(
+      { billing: this.billing, paywall: this.paywall, bus: this.bus },
+      this.dungeon.currentIndex,
+      this.mode
+    );
+    if (gate.blocked) return;
 
     // Floor cleared bookkeeping.
     this.player.runStats.floorsCleared += 1;
@@ -1248,22 +1251,12 @@ export class GameScene {
 
     onHeroDescend(this.player);
     const next = this.dungeon.descend();
-    if (!next) {
-      this._endRun(true);
-      return;
-    }
-    // Move the player to the new floor.
-    this.floor.removeEntity(this.player);
-    const { floor, spawns } = next;
-    this.player.x = spawns.player.x; this.player.y = spawns.player.y;
-    this.player.snapRender();
-    floor.addEntity(this.player);
-    this._spawnFloorEntities(floor, spawns);
-    this.floor = floor;
-    this.pathfinding.invalidate();
+    const result = applyDescendTransition(this, next);
+    if (result !== 'ok') return;
+
     this.lighting.compute(this.floor, this.player, effectiveTorchRadius(this.player));
     this.state.patch('run.floorIndex', this.dungeon.currentIndex);
-    this._emitFloorEntered(this.dungeon.currentIndex, floor);
+    this._emitFloorEntered(this.dungeon.currentIndex, this.floor);
     this._saveRun();
   }
 
@@ -1646,7 +1639,11 @@ export class GameScene {
       level: p.stats?.level || 1,
       skills: skillNames,
       gear,
-      deathHint: victory ? null : this._deathHint(p)
+      deathHint: victory ? null : this._deathHint(p),
+      floorName: this.floor?.definition?.name || '',
+      biomeId: this.floor?.definition?.biomeId || '',
+      biomeTeaser: this._biomeTeaser(p),
+      teachLine: victory ? null : this._teachLine(p)
     };
     if (victory) this.bus.emit('run:victory', summary);
     else this.bus.emit('run:over', summary);
@@ -1656,7 +1653,7 @@ export class GameScene {
   _deathHint(player) {
     const floor = (player.runStats?.floorsCleared || 0) + 1;
     const killedBy = player.runStats?.killedBy || '';
-    if (/boss/i.test(killedBy) || /lord|wraith|abyss/i.test(killedBy)) {
+    if (/boss|regent|titan|oracle|below|knight|stalker|prior|seraph/i.test(killedBy)) {
       return 'hint_boss';
     }
     if (!player.armor && floor >= 3) return 'hint_armor';
@@ -1664,6 +1661,26 @@ export class GameScene {
     if ((player.skills || []).length === 0 && floor >= 5) return 'hint_skills';
     if (floor <= 3) return 'hint_early';
     return 'hint_torch';
+  }
+
+  /** Extra teaching blurb for death recap. */
+  _teachLine(player) {
+    const floor = (player.runStats?.floorsCleared || 0) + 1;
+    const enemies = player.runStats?.enemiesDefeated || 0;
+    if (floor === 10 || floor === 11) return 'teach_paywall';
+    if (enemies < floor) return 'teach_clear';
+    if ((player.skills || []).length < 2 && floor >= 6) return 'teach_skills';
+    return 'teach_default';
+  }
+
+  /** Tease the next biome after free-cap deaths (Full Descent funnel). */
+  _biomeTeaser(player) {
+    const floor = (player.runStats?.floorsCleared || 0) + 1;
+    if (floor < 8 || floor > 12) return null;
+    const biomes = this.content?.biomes?.biomes || [];
+    const next = biomes[1] || biomes.find((b) => b.id === 'bone_garden');
+    if (!next) return null;
+    return { id: next.id, name: next.name, atmosphere: next.atmosphere || next.subtitle || '' };
   }
 
   // --- commands from UI ----------------------------------------------

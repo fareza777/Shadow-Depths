@@ -50,6 +50,12 @@ export function drawTelegraphs(ctx, floor, player, camera, opts = {}) {
         opts
       );
     }
+    // Boss slam telegraph tiles (lean-safe flat fills).
+    if (intent.meta?.slam && Array.isArray(intent.meta.tiles)) {
+      for (const tile of intent.meta.tiles) {
+        _drawThreatTile(ctx, tile.x, tile.y, threatColor('wait', opts), opts.highContrast ? 0.28 : 0.2);
+      }
+    }
   }
   ctx.restore();
 }
@@ -93,7 +99,10 @@ export function _drawIntentIcon(ctx, intent, px, py, opts = {}) {
   if (intent.type === 'attack') { glyph = '!'; color = threatColor('attack', opts); }
   else if (intent.type === 'ranged') { glyph = '>'; color = threatColor('ranged', opts); }
   else if (intent.type === 'move') { glyph = '.'; color = threatColor('move', opts); }
-  else if (intent.type === 'wait') { glyph = intent.meta?.winding ? '!!' : '...'; color = threatColor('wait', opts); }
+  else if (intent.type === 'wait') {
+    glyph = intent.meta?.slam ? '!!' : (intent.meta?.winding ? '!!' : '...');
+    color = threatColor('wait', opts);
+  }
   if (!glyph) return;
   ctx.font = 'bold 12px "Courier New", monospace';
   ctx.textAlign = 'center';

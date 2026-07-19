@@ -19,6 +19,7 @@ import {
 import { Floor } from './Floor.js';
 import { rollItemAffixes } from '../items/itemGenerator.js';
 import { trapCountForDepth, pickHazardType } from '../gameplay/hazards.js';
+import { pressureTileCount } from '../gameplay/biomeMechanics.js';
 import { FloorEventPlacer } from './FloorEventPlacer.js';
 
 const MAX_DEPTH = 4; // 2^4 = up to 16 leaf rooms
@@ -120,6 +121,7 @@ export class DungeonGenerator {
     // 7. Scatter hidden traps (avoid spawn room, stairs, doors, occupied tiles).
     if (!floorDef.tutorial) {
       this._placeHazards(floor, rooms, spawnRoom, floorIndex, spawns);
+      this._placeBiomePressure(floor, rooms, spawnRoom, floorIndex, floorDef, spawns);
     }
 
     // 8. Micro-events per floor (2–3 on normal floors).
@@ -467,6 +469,37 @@ export class DungeonGenerator {
     const picks = this.rng.shuffle(candidates).slice(0, count);
     for (const t of picks) {
       t.hazard = { type: pickHazardType(this.rng, floorIndex), armed: true, revealed: false };
+    }
+  }
+
+  /**
+   * Stamp soft biome pressure tiles (always revealed tint) based on mechanic.
+   */
+  _placeBiomePressure(floor, rooms, spawnRoom, floorIndex, floorDef, spawns) {
+    const mechanic = floorDef?.mechanic;
+    const count = pressureTileCount(mechanic, floorIndex, { depthRemix: !!floorDef?.depthRemix });
+    if (count <= 0) return;
+
+    const occupied = new Set();
+    for (const e of spawns.enemies || []) occupied.add(`${e.x},${e.y}`);
+    for (const it of spawns.items || []) occupied.add(`${it.x},${it.y}`);
+    const inSpawnRoom = (x, y) => spawnRoom
+      && x >= spawnRoom.x - 1 && x < spawnRoom.x + spawnRoom.w + 1
+      && y >= spawnRoom.y - 1 && y < spawnRoom.y + spawnRoom.h + 1;
+
+    const candidates = [];
+    for (let y = 0; y < floor.height; y++) {
+      for (let x = 0; x < floor.width; x++) {
+        const t = floor.tiles[y][x];
+        if (t.type !== TILE.FLOOR || t.hazard || t.pressure) continue;
+        if (inSpawnRoom(x, y)) continue;
+        if (occupied.has(`${x},${y}`)) continue;
+        candidates.push(t);
+      }
+    }
+    const picks = this.rng.shuffle(candidates).slice(0, count);
+    for (const t of picks) {
+      t.pressure = { mechanic, revealed: true };
     }
   }
 

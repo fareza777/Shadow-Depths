@@ -1,5 +1,6 @@
 /**
- * biomeMechanics — light per-turn pressure keyed by biome.mechanic.
+ * biomeMechanics — light per-turn pressure keyed by biome.mechanic,
+ * plus optional spatial pressure tiles stamped at generation.
  *
  * Effects stay gentle: occasional chip damage, brief statuses, torch
  * flicker, and flavor log lines. Heavy combat threat still comes from
@@ -19,6 +20,45 @@ const DESCRIPTIONS = {
   void_vision:   'The void thins what your eyes can trust.'
 };
 
+/** Soft step-on effects for spatial biome pressure tiles. */
+export const PRESSURE_STEP = {
+  torch_drain:   { kind: 'torch', delta: -1, log: 'Damp stone drinks your torchlight.' },
+  bleed_tiles:   { kind: 'damage', amount: 1, minHp: 4, log: 'Bone shards nick your soles.' },
+  slow_tiles:    { kind: 'status', status: { id: 'slow', value: 1, duration: 1 }, log: 'Frost grips your boots.' },
+  lava_pressure: { kind: 'damage', amount: 1, minHp: 5, log: 'Vent-heat scorches your path.' },
+  root_snare:    { kind: 'status', status: { id: 'slow', value: 1, duration: 1 }, log: 'Roots tangle for a step.' },
+  armor_break:   { kind: 'def', delta: 1, log: 'Grit works under your greaves.' },
+  heat_fatigue:  { kind: 'damage', amount: 1, minHp: 5, log: 'Heat rises through the flagstones.' },
+  echo_clone:    { kind: 'log', log: 'Your echo steps a half-beat late.' },
+  flood_slow:    { kind: 'status', status: { id: 'slow', value: 1, duration: 1 }, log: 'Water sucks at your stride.' },
+  void_vision:   { kind: 'torch', delta: -1, log: 'The void drinks a little more light.' }
+};
+
+export const PRESSURE_TINT = {
+  torch_drain:   'rgba(70, 90, 120, 0.22)',
+  bleed_tiles:   'rgba(140, 60, 50, 0.20)',
+  slow_tiles:    'rgba(120, 160, 220, 0.20)',
+  lava_pressure: 'rgba(200, 90, 40, 0.22)',
+  root_snare:    'rgba(70, 110, 60, 0.20)',
+  armor_break:   'rgba(120, 110, 90, 0.18)',
+  heat_fatigue:  'rgba(180, 120, 50, 0.20)',
+  echo_clone:    'rgba(140, 120, 180, 0.18)',
+  flood_slow:    'rgba(60, 100, 140, 0.20)',
+  void_vision:   'rgba(40, 20, 60, 0.24)'
+};
+
+/**
+ * How many pressure tiles to stamp for a floor mechanic.
+ * @param {string} mechanic
+ * @param {number} floorIndex
+ * @param {{ depthRemix?:boolean }} [opts]
+ */
+export function pressureTileCount(mechanic, floorIndex, opts = {}) {
+  if (!mechanic || !PRESSURE_STEP[mechanic]) return 0;
+  const base = 3 + Math.floor(Math.max(0, floorIndex) / 20);
+  return opts.depthRemix ? base + 2 : base;
+}
+
 /**
  * @param {string} biomeId
  * @param {object|object[]} biomesData — biomes.json root `{ biomes: [...] }` or array
@@ -37,6 +77,58 @@ export function getBiomeMechanic(biomeId, biomesData) {
 export function describeBiomeMechanic(mechanic) {
   if (!mechanic) return '';
   return DESCRIPTIONS[mechanic] || '';
+}
+
+/**
+ * Soft effect when the player steps onto a biome pressure tile.
+ * Cooldown: once every 3 turns globally so it stays readable.
+ */
+export function applyBiomePressureStep(player, tile, bus) {
+  if (!player || player.isDead || !tile?.pressure?.mechanic) return false;
+  const mechanic = tile.pressure.mechanic;
+  const fx = PRESSURE_STEP[mechanic];
+  if (!fx) return false;
+
+  const turn = player.runStats?.turnsUsed || 0;
+  if (player._lastPressureTurn != null && turn - player._lastPressureTurn < 3) {
+    return false;
+  }
+  player._lastPressureTurn = turn;
+
+  switch (fx.kind) {
+    case 'damage':
+      if (player.stats.hp > (fx.minHp || 3)) {
+        player.takeDamage(fx.amount || 1);
+        log(bus, fx.log);
+      }
+      break;
+    case 'status':
+      if (fx.status) {
+        player.applyStatus(fx.status);
+        log(bus, fx.log);
+      }
+      break;
+    case 'torch':
+      ensureFloorMods(player);
+      player.floorModifiers.torchBonus = Math.max(
+        -2,
+        (player.floorModifiers.torchBonus || 0) + (fx.delta || -1)
+      );
+      log(bus, fx.log);
+      break;
+    case 'def':
+      ensureFloorMods(player);
+      player.floorModifiers.defPenalty = Math.min(
+        2,
+        (player.floorModifiers.defPenalty || 0) + (fx.delta || 1)
+      );
+      log(bus, fx.log);
+      break;
+    default:
+      if (fx.log) log(bus, fx.log);
+      break;
+  }
+  return true;
 }
 
 /**

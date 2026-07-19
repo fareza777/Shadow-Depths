@@ -29,6 +29,7 @@ import { fillRect, strokeRect } from './SpriteRegistry.js';
 import { drawBiomeWallCached, drawBiomeFloorCached, hasBiome, beginTileFrame } from './biomeTiles.js';
 import { getAbyssPalette, drawBiomeDecorations } from './biomeBackdrop.js';
 import { HAZARDS } from '../gameplay/hazards.js';
+import { PRESSURE_TINT } from '../gameplay/biomeMechanics.js';
 import { getStatusMeta } from '../combat/StatusEffects.js';
 import { drawVectorNPC } from './npcArtVector.jsx';
 import { drawVectorDecor, drawVectorFixture } from './furnishingArtVector.jsx';
@@ -869,7 +870,8 @@ export class Renderer {
         ctx.restore();
       }
       this.sprites.draw(key, ctx, px, py, { entity: e, time: this._timeSec || 0 });
-      if (!this._leanCombatFx) this._drawStatusEffects(ctx, e, px, py);
+      // Status pips stay on lean (flat fills only) — readability > juice.
+      this._drawStatusEffects(ctx, e, px, py);
       this._drawEntityHitFlash(ctx, e, px, py);
       this._drawStatusFx(ctx, e, px, py);
 
@@ -887,7 +889,8 @@ export class Renderer {
           fillRect(ctx, px + 3, barY, w, 1, '#ffffff33');
         }
       }
-      if (!this._leanCombatFx && e.kind === 'enemy' && t?.visible && player) {
+      // Intent icons are NEVER lean-gated — Play Store players need telegraphs.
+      if (e.kind === 'enemy' && t?.visible && player) {
         const intent = e.intent || Renderer._inferThreatIntent(e, player);
         if (intent) this._drawIntentIcon(ctx, intent, px, py);
       }
@@ -1724,6 +1727,17 @@ export class Renderer {
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
         const t = floor.tiles[y][x];
+        // Soft biome pressure tint (always visible once explored).
+        if (t.pressure?.mechanic && t.explored) {
+          const tint = PRESSURE_TINT[t.pressure.mechanic];
+          if (tint) {
+            ctx.save();
+            ctx.globalAlpha = t.visible ? 1 : 0.35;
+            ctx.fillStyle = tint;
+            ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            ctx.restore();
+          }
+        }
         const hz = t.hazard;
         if (!hz || !hz.revealed || !t.explored) continue;
         const col = (HAZARDS[hz.type]?.color || '#cdd5dd');

@@ -168,6 +168,17 @@ export class TitleScreen {
     const enemies = (this.state.state.meta.runHistory || [])
       .reduce((sum, r) => sum + (r.floorsCleared || 0) * 5, 0);
     const relics = Object.keys(this.content.items || {}).length;
+    if (this.meta?.upgradeLevel?.('depth_foresight')) {
+      const biomes = this.content.biomes?.biomes || [];
+      const next = biomes[1] || biomes[0];
+      if (next) {
+        renderer.drawText(
+          `foresight · ${next.name}`,
+          CANVAS_WIDTH / 2, LAYOUT.footerY - uiSize(16),
+          { size: uiSize(11), italic: true, align: 'center', family: FONT_BODY, color: IRON_PALETTE.brass }
+        );
+      }
+    }
     renderer.drawText(
       `the depths remember you  ·  ${runs} runs  ·  ${enemies}+ foes  ·  ${relics} relics`,
       CANVAS_WIDTH / 2, LAYOUT.footerY,

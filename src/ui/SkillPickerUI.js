@@ -18,12 +18,13 @@ const FIRST_CARD_Y = 200;
 
 export class SkillPickerUI {
   /**
-   * @param {{ bus: object, content: object, rng: object }} deps
+   * @param {{ bus: object, content: object, rng: object, metaProgress?: object }} deps
    *   content.skills.skills = the pool. rng = RunRNG fork.
    */
-  constructor({ bus, content, rng }) {
+  constructor({ bus, content, rng, metaProgress }) {
     this.bus = bus;
     this.content = content;
+    this.meta = metaProgress || null;
     // Skill draws don't need to be reproducible per-seed — fresh entropy
     // each session is fine. A non-seeded RNG keeps draws varied between
     // identical-seed runs (otherwise every "seed 12345" run picks the same
@@ -36,6 +37,8 @@ export class SkillPickerUI {
     this.pending = 0;
     /** The 3 skills currently on offer. */
     this.choices = [];
+    /** Free skill rerolls remaining for the current pick (1 per level-up). */
+    this.rerollsLeft = 0;
 
     bus.on('entity:leveledUp', ({ entity, levels }) => {
       if (entity?.kind !== 'player') return;
@@ -53,11 +56,28 @@ export class SkillPickerUI {
     this.open = false;
     this.choices = [];
     this.pending = 0;
+    this.rerollsLeft = 0;
+  }
+
+  _rerollRect() {
+    const w = 160;
+    const h = 36;
+    return {
+      x: (CANVAS_WIDTH - w) / 2,
+      y: FIRST_CARD_Y + 3 * (CARD_H + CARD_GAP) + 8,
+      w, h
+    };
   }
 
   /** Touch / mouse tap — tap anywhere picks (card hit = that card). */
   handleCanvasTap(x, y) {
     if (!this.open) return false;
+    const rr = this._rerollRect();
+    if (this.rerollsLeft > 0
+      && x >= rr.x && x <= rr.x + rr.w && y >= rr.y && y <= rr.y + rr.h) {
+      this._reroll();
+      return true;
+    }
     for (let i = 0; i < this.choices.length; i++) {
       const cy = FIRST_CARD_Y + i * (CARD_H + CARD_GAP);
       const cx = (CANVAS_WIDTH - CARD_W) / 2;
@@ -82,8 +102,15 @@ export class SkillPickerUI {
           this._pickFirstOrHide();
         }
         return true;
-      case 'move':
       case 'wait':
+        // Wait key = free reroll once
+        if (this.rerollsLeft > 0) {
+          this._reroll();
+          return true;
+        }
+        this._pickFirstOrHide();
+        return true;
+      case 'move':
       case 'confirm':
       case 'pickup':
       case 'menu':
@@ -124,7 +151,22 @@ export class SkillPickerUI {
     }
     // Draw 3 distinct, weighted by rarity so rare/epic boons feel earned.
     this.choices = this._weightedDraw(available, 3);
+    const bonus = this.meta?.upgradeLevel?.('skill_reroll_plus') || 0;
+    this.rerollsLeft = 1 + bonus;
     this.open = true;
+  }
+
+  /** One free redraw of the current 3 cards without spending a pending pick. */
+  _reroll() {
+    if (this.rerollsLeft <= 0 || !this.player) return;
+    const pool = (this.content.skills && this.content.skills.skills) || [];
+    const owned = new Set(this.player.skills || []);
+    const available = pool.filter((s) =>
+      !owned.has(s.id) && (!s.hero || s.hero === this.player.heroKind));
+    if (available.length === 0) return;
+    this.choices = this._weightedDraw(available, 3);
+    this.rerollsLeft -= 1;
+    this.bus.emit('skill:rerolled', { remaining: this.rerollsLeft });
   }
 
   /** Pick `n` distinct skills weighted by rarity (rarer → less frequent). */
@@ -215,6 +257,14 @@ export class SkillPickerUI {
       // Tap hint
       renderer.drawText(`tap to choose  ·  hotkey ${i + 1}`, tx, cy + 56,
         { size: 10, color: COLOR.textMuted });
+    }
+    if (this.rerollsLeft > 0) {
+      const rr = this._rerollRect();
+      renderer.drawRect(rr.x, rr.y, rr.w, rr.h, '#1a1620');
+      renderer.drawStrokedRect(rr.x, rr.y, rr.w, rr.h, '#d4ac6c', 1);
+      renderer.drawText('REROLL (free · 1)', rr.x + rr.w / 2, rr.y + rr.h / 2, {
+        size: 12, bold: true, align: 'center', baseline: 'middle', color: '#d4ac6c'
+      });
     }
   }
 }

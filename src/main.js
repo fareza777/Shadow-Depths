@@ -229,7 +229,7 @@ async function bootstrap() {
   const hud = new HUD({ messageLog });
   const minimap = new Minimap();
   const inventoryUI = new InventoryUI({ bus, materialDefs: materialsData.materials || {} });
-  const skillPicker = new SkillPickerUI({ bus, content });
+  const skillPicker = new SkillPickerUI({ bus, content, metaProgress });
   const skillsModal = new SkillsModal({ content });
   const vigilScreen = new VigilScreen({ bus });
   const characterSelect = new CharacterSelect({ bus, metaProgress });

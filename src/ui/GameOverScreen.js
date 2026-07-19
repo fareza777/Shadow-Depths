@@ -179,6 +179,31 @@ export class GameOverScreen {
         footY += IS_LANDSCAPE ? 14 : 16;
       }
     }
+    if (s.teachLine) {
+      const teachKey = `gameover.${s.teachLine}`;
+      const teachText = t(teachKey);
+      if (teachText && teachText !== teachKey) {
+        r.drawText(teachText, CANVAS_WIDTH / 2, footY, {
+          size: uiSize(IS_LANDSCAPE ? 9 : 10), align: 'center',
+          family: FONT_BODY, color: IRON_PALETTE.boneDim
+        });
+        footY += IS_LANDSCAPE ? 13 : 15;
+      }
+    }
+    if (s.biomeTeaser?.name) {
+      r.drawText(`${t('gameover.teaser')}: ${s.biomeTeaser.name}`, CANVAS_WIDTH / 2, footY, {
+        size: uiSize(IS_LANDSCAPE ? 9 : 10), align: 'center',
+        family: FONT_DISPLAY, color: IRON_PALETTE.brass
+      });
+      footY += IS_LANDSCAPE ? 12 : 14;
+      if (s.biomeTeaser.atmosphere) {
+        r.drawText(s.biomeTeaser.atmosphere, CANVAS_WIDTH / 2, footY, {
+          size: uiSize(8), italic: true, align: 'center',
+          family: FONT_BODY, color: IRON_PALETTE.boneDim
+        });
+        footY += IS_LANDSCAPE ? 12 : 14;
+      }
+    }
     if (s.isNewHighScore) {
       r.drawText(t('gameover.highscore'), CANVAS_WIDTH / 2, footY, {
         size: uiSize(12), bold: true, align: 'center',

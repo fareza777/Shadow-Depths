@@ -446,9 +446,10 @@
       "atk": 8,
       "def": 4
     },
-    "behavior": "heavy",
+    "behavior": "boss_pattern",
     "behaviorParams": {
-      "actEveryNTurns": 2
+      "actEveryNTurns": 2,
+      "slamDamageBonus": 1
     },
     "xp": 70,
     "goldDrop": [
@@ -537,9 +538,10 @@
       "atk": 11,
       "def": 6
     },
-    "behavior": "heavy",
+    "behavior": "boss_pattern",
     "behaviorParams": {
-      "actEveryNTurns": 2
+      "actEveryNTurns": 2,
+      "slamDamageBonus": 2
     },
     "xp": 180,
     "goldDrop": [

@@ -6,17 +6,9 @@
  * deterministic regardless of which floors the player has explored.
  *
  * Floor definitions are *generated* at runtime by cycling through biomes
- * (data/biomes.json). Each biome covers 5 floors, so:
- *
- *   floors 0..4    → biome 0  (Forgotten Crypts I..V)
- *   floors 5..9    → biome 1  (Halls of Echoes I..V)
- *   ...
- *   floors 95..99  → biome 19 (The Below I..V)
- *
- * The result is 100 floors with 20 distinct biomes. Floors.json is still
- * read as an *override* (used to ship a hand-tuned tutorial for the first
- * few floors if we ever add one); without overrides we fall back to the
- * procedural biome curve.
+ * (data/biomes.json). Each biome covers 10 floors (10 biomes × 10 = 100).
+ * Floors 51–100 apply a depth remix (enemy pool mix + mechanic pressure)
+ * so late runs are not a pure palette reprise.
  */
 import { LOG } from '../config/constants.js';
 import { DungeonGenerator } from './DungeonGenerator.js';
@@ -155,20 +147,23 @@ export class Dungeon {
         }
       }
 
+      const remixed = this._depthRemix(i, biome, biomeIdx);
+
       out.push({
         index: i,
-        name: biome ? `${biome.name} ${roman}` : `Floor ${i + 1}`,
-        subtitle: `Floor ${i + 1}`,
-        atmosphere: biome?.atmosphere || '',
-        wallPalette: biome?.wallPalette || ['#3a3340', '#1a1820'],
-        floorPalette: biome?.floorPalette || ['#2a2630', '#15131a'],
-        enemyPool: biome?.enemyPool || ['goblin_scout'],
+        name: remixed.name || (biome ? `${biome.name} ${roman}` : `Floor ${i + 1}`),
+        subtitle: remixed.subtitle || `Floor ${i + 1}`,
+        atmosphere: remixed.atmosphere || biome?.atmosphere || '',
+        wallPalette: remixed.wallPalette || biome?.wallPalette || ['#3a3340', '#1a1820'],
+        floorPalette: remixed.floorPalette || biome?.floorPalette || ['#2a2630', '#15131a'],
+        enemyPool: remixed.enemyPool || biome?.enemyPool || ['goblin_scout'],
         enemyCount, itemCount,
-        torchRadius: biome?.torchRadius || 7,
+        torchRadius: remixed.torchRadius || biome?.torchRadius || 7,
         depthScale: difficultyScaleForFloor(i, this.balance.difficultyCurve),
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
-        mechanic: biome?.mechanic || null,
+        mechanic: remixed.mechanic || biome?.mechanic || null,
+        depthRemix: remixed.active,
         type,
         vaultDepthBoost,
         isFinalFloor: isFinal
@@ -238,5 +233,31 @@ export class Dungeon {
     }
     if (floorN % 5 === 0) return SUBBOSS_IDS[tier];
     return null;
+  }
+
+  /**
+   * Floors 51–100: mix in a later biome's enemies + harden atmosphere so
+   * the second half of the descent is not a pure palette loop.
+   */
+  _depthRemix(index, biome, biomeIdx) {
+    if (index < 50 || !biome) return { active: false };
+    const biomeCount = this.biomes.length || 1;
+    const donorIdx = Math.min(biomeCount - 1, biomeIdx + 3 + Math.floor((index - 50) / 20));
+    const donor = this.biomes[donorIdx] || biome;
+    const basePool = biome.enemyPool || [];
+    const donorPool = donor.enemyPool || [];
+    const mixed = [...new Set([...basePool.slice(0, 4), ...donorPool.slice(0, 4)])];
+    const band = index < 75 ? 'Deep' : 'Abyssal';
+    return {
+      active: true,
+      name: `${band} ${biome.name}`,
+      subtitle: `Floor ${index + 1} · remixed`,
+      atmosphere: donor.atmosphere || biome.atmosphere || '',
+      enemyPool: mixed.length ? mixed : basePool,
+      mechanic: biome.mechanic || donor.mechanic || null,
+      torchRadius: Math.max(5, (biome.torchRadius || 7) - 1),
+      wallPalette: biome.wallPalette,
+      floorPalette: donor.floorPalette || biome.floorPalette
+    };
   }
 }

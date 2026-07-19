@@ -64,8 +64,9 @@ export class CombatSystem {
   }
 
   _attackStat(e) {
-    if (e.kind === 'player' && typeof e.totalAtk === 'function') return e.totalAtk();
-    return e.stats.atk + e.modifierAtk();
+    const bonus = e._tempAtkBonus || 0;
+    if (e.kind === 'player' && typeof e.totalAtk === 'function') return e.totalAtk() + bonus;
+    return e.stats.atk + e.modifierAtk() + bonus;
   }
   _defenseStat(e) {
     if (e.kind === 'player' && typeof e.totalDef === 'function') return e.totalDef();
@@ -139,7 +140,13 @@ export class CombatSystem {
       return true;
     }
 
-    this._resolveHit(actor, target, 'melee', ctx);
+    const bonus = meta?.atkBonus || 0;
+    if (bonus) actor._tempAtkBonus = (actor._tempAtkBonus || 0) + bonus;
+    try {
+      this._resolveHit(actor, target, 'melee', ctx);
+    } finally {
+      if (bonus) actor._tempAtkBonus = Math.max(0, (actor._tempAtkBonus || 0) - bonus);
+    }
     return true;
   }
 
