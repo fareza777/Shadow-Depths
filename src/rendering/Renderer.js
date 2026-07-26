@@ -348,13 +348,10 @@ export class Renderer {
       const sy = y0 * TILE_SIZE;
       const width = (x1 - x0 + 1) * TILE_SIZE;
       const height = (y1 - y0 + 1) * TILE_SIZE;
-      const paintPlayer = player
-        ? { x: player.x, y: player.y, renderX: player.x, renderY: player.y, torchRadius: player.torchRadius }
-        : null;
+      // Cache excludes player/torch — torch painted live like hazards.
       const key = [
         floor.seed, floor.index, floor.renderRevision || 0, floor.visibilityRevision || 0,
         x0, y0, x1, y1,
-        paintPlayer?.x ?? '', paintPlayer?.y ?? '', paintPlayer?.torchRadius ?? '',
         def.biomeId || '', def.type || ''
       ].join('|');
       let cache = this._floorLayerCache;
@@ -369,7 +366,10 @@ export class Renderer {
         cctx.imageSmoothingEnabled = true;
         cctx.translate(-sx, -sy);
         perfMeter.measure('floorLayer', () => {
-          this._paintFloorWorldLayer(cctx, floor, paintPlayer, x0, y0, x1, y1, { skipHazards: true });
+          this._paintFloorWorldLayer(cctx, floor, null, x0, y0, x1, y1, {
+            skipHazards: true,
+            skipTorch: true
+          });
         });
         cache = { floor, key, canvas, sx, sy };
         this._floorLayerCache = cache;
@@ -383,6 +383,7 @@ export class Renderer {
       ctx.drawImage(cache.canvas, cache.sx, cache.sy);
       ctx.restore();
       this._drawHazardsLive(ctx, floor, x0, y0, x1, y1);
+      if (player) this._drawTorchGlowLive(ctx, floor, player, x0, y0, x1, y1);
       return;
     }
 
@@ -420,9 +421,21 @@ export class Renderer {
     // Special floor centerpiece (REST campfire / VAULT chest motif).
     this._drawSpecialFloorMotif(ctx, floor);
 
-    if (player) {
+    if (player && !opts.skipTorch) {
       this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
     }
+  }
+
+  /** Lean path: torch after cached floor so walking does not bust the layer. */
+  _drawTorchGlowLive(ctx, floor, player, x0, y0, x1, y1) {
+    const cam = this._camera;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
+    ctx.clip();
+    ctx.translate(cam.x, cam.y);
+    this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
+    ctx.restore();
   }
 
   _drawHazardsLive(ctx, floor, x0, y0, x1, y1) {
@@ -692,9 +705,9 @@ export class Renderer {
     const w = (x1 - x0 + 1) * TILE_SIZE;
     const h = (y1 - y0 + 1) * TILE_SIZE;
 
-    // Lean: one flat warm wash — no flicker, no dual gradients, no arc.
+    // Lean: warm core + soft wash (no flicker/blur) — torch identity on mobile.
     if (this._leanCombatFx) {
-      const R = radius * 1.12;
+      const R = radius * 1.18;
       const fx = Math.max(left, px - R);
       const fy = Math.max(top, py - R);
       const fw = Math.min(left + w, px + R) - fx;
@@ -702,9 +715,10 @@ export class Renderer {
       if (fw <= 0 || fh <= 0) return;
       const key = `${Math.round(px)},${Math.round(py)},${Math.round(radius)}`;
       if (key !== this._glowKey) {
-        const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.35, px, py, radius);
-        g.addColorStop(0, 'rgba(255, 230, 170, 0.34)');
-        g.addColorStop(0.45, 'rgba(220, 170, 90, 0.16)');
+        const g = ctx.createRadialGradient(px, py, TILE_SIZE * 0.2, px, py, radius);
+        g.addColorStop(0, 'rgba(255, 236, 180, 0.42)');
+        g.addColorStop(0.28, 'rgba(255, 200, 110, 0.22)');
+        g.addColorStop(0.55, 'rgba(200, 140, 70, 0.10)');
         g.addColorStop(1, 'rgba(0, 0, 0, 0)');
         this._glowGrad = g;
         this._glowKey = key;
@@ -713,6 +727,12 @@ export class Renderer {
       ctx.globalCompositeOperation = 'screen';
       ctx.fillStyle = this._glowGrad;
       ctx.fillRect(fx, fy, fw, fh);
+      // Cheap static core disc — no second gradient allocation.
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = 'rgba(255, 220, 150, 1)';
+      ctx.beginPath();
+      ctx.arc(px, py, TILE_SIZE * 0.55, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
       return;
     }

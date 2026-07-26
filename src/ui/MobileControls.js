@@ -24,7 +24,7 @@ import {
 
 // Stacked action buttons on the right column.
 //   AIM  — auto-target nearest visible enemy (ranged weapons primarily)
-//   CAST — magic spell (no system yet — renders disabled "no spell")
+//   CAST — magic spell (disabled sublabel "—" when none equipped)
 //   MENU — pause overlay
 //   DOWN — descend stairs (only enabled on stair tiles)
 const ACTION_LABELS = [
@@ -529,7 +529,7 @@ export class MobileControls {
       glyph: '✷'
     });
     const labelCol = ready ? IRON.bone : IRON.boneDim;
-    let sub = 'no spell';
+    let sub = '—';
     if (spell) {
       sub = spell.cooldown > 0
         ? `cd ${spell.cooldown}`

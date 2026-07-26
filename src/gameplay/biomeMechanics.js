@@ -29,7 +29,7 @@ export const PRESSURE_STEP = {
   root_snare:    { kind: 'status', status: { id: 'slow', value: 1, duration: 1 }, log: 'Roots tangle for a step.' },
   armor_break:   { kind: 'def', delta: 1, log: 'Grit works under your greaves.' },
   heat_fatigue:  { kind: 'damage', amount: 1, minHp: 5, log: 'Heat rises through the flagstones.' },
-  echo_clone:    { kind: 'log', log: 'Your echo steps a half-beat late.' },
+  echo_clone:    { kind: 'echo', amount: 1, minHp: 4, status: { id: 'slow', value: 1, duration: 1 }, log: 'Your echo strikes a half-beat late.' },
   flood_slow:    { kind: 'status', status: { id: 'slow', value: 1, duration: 1 }, log: 'Water sucks at your stride.' },
   void_vision:   { kind: 'torch', delta: -1, log: 'The void drinks a little more light.' }
 };
@@ -124,6 +124,14 @@ export function applyBiomePressureStep(player, tile, bus) {
       );
       log(bus, fx.log);
       break;
+    case 'echo':
+      if (player.stats.hp > (fx.minHp || 3)) {
+        player.takeDamage(fx.amount || 1);
+      }
+      if (fx.status) player.applyStatus(fx.status);
+      log(bus, fx.log);
+      bus?.emit?.('biome:echo', { mechanic: 'echo_clone' });
+      break;
     default:
       if (fx.log) log(bus, fx.log);
       break;
@@ -146,87 +154,87 @@ export function applyBiomeTurnTick(player, floor, bus) {
   const turn = player.runStats?.turnsUsed || 0;
   // Most effects pulse every few turns so pressure stays readable, not lethal.
   const pulse = turn > 0 && turn % 5 === 0;
+  applyMechanicPulse(player, mechanic, pulse, bus);
 
+  // Depth remix act 2: secondary donor mechanic on a staggered pulse.
+  const secondary = floor.definition?.secondaryMechanic;
+  if (secondary && secondary !== mechanic) {
+    const pulse2 = turn > 0 && turn % 7 === 0;
+    applyMechanicPulse(player, secondary, pulse2, bus);
+  }
+}
+
+function applyMechanicPulse(player, mechanic, pulse, bus) {
+  if (!mechanic || !pulse) return;
   switch (mechanic) {
     case 'torch_drain':
-      if (pulse) {
-        ensureFloorMods(player);
-        player.floorModifiers.torchBonus = Math.max(
-          -1,
-          (player.floorModifiers.torchBonus || 0) - 1
-        );
-        log(bus, 'Your torch sputters in the crypt air.');
-      }
+      ensureFloorMods(player);
+      player.floorModifiers.torchBonus = Math.max(
+        -1,
+        (player.floorModifiers.torchBonus || 0) - 1
+      );
+      log(bus, 'Your torch sputters in the crypt air.');
       break;
 
     case 'bleed_tiles':
-      if (pulse && player.stats.hp > 3) {
+      if (player.stats.hp > 3) {
         player.takeDamage(1);
         log(bus, 'Bone dust draws a thin line of blood.');
       }
       break;
 
     case 'slow_tiles':
-      if (pulse) {
-        player.applyStatus({ id: 'slow', value: 1, duration: 1 });
-        log(bus, 'Frost bites your stride.');
-      }
+      player.applyStatus({ id: 'slow', value: 1, duration: 1 });
+      log(bus, 'Frost bites your stride.');
       break;
 
     case 'lava_pressure':
-      if (pulse && player.stats.hp > 4) {
+      if (player.stats.hp > 4) {
         player.takeDamage(1);
         log(bus, 'Foundry heat sears your lungs.');
       }
       break;
 
     case 'root_snare':
-      if (pulse) {
-        player.applyStatus({ id: 'slow', value: 1, duration: 1 });
-        log(bus, 'A root catches your heel — then slips away.');
-      }
+      player.applyStatus({ id: 'slow', value: 1, duration: 1 });
+      log(bus, 'A root catches your heel — then slips away.');
       break;
 
     case 'armor_break':
-      if (pulse) {
-        ensureFloorMods(player);
-        player.floorModifiers.defPenalty = Math.min(
-          1,
-          (player.floorModifiers.defPenalty || 0) + 1
-        );
-        log(bus, 'Grit works into the seams of your armor.');
-      }
+      ensureFloorMods(player);
+      player.floorModifiers.defPenalty = Math.min(
+        1,
+        (player.floorModifiers.defPenalty || 0) + 1
+      );
+      log(bus, 'Grit works into the seams of your armor.');
       break;
 
     case 'heat_fatigue':
-      if (pulse && player.stats.hp > 4) {
+      if (player.stats.hp > 4) {
         player.takeDamage(1);
         log(bus, 'Heat-fatigue settles into your bones.');
       }
       break;
 
     case 'echo_clone':
-      if (pulse) {
-        log(bus, 'An echo of yourself moves a half-step late.');
-      }
+      if (player.stats.hp > 4) player.takeDamage(1);
+      player.applyStatus({ id: 'slow', value: 1, duration: 1 });
+      log(bus, 'An echo of yourself answers — and strikes.');
+      bus?.emit?.('biome:echo', { mechanic: 'echo_clone', pulse: true });
       break;
 
     case 'flood_slow':
-      if (pulse) {
-        player.applyStatus({ id: 'slow', value: 1, duration: 1 });
-        log(bus, 'Cold water pulls at your steps.');
-      }
+      player.applyStatus({ id: 'slow', value: 1, duration: 1 });
+      log(bus, 'Cold water pulls at your steps.');
       break;
 
     case 'void_vision':
-      if (pulse) {
-        ensureFloorMods(player);
-        player.floorModifiers.torchBonus = Math.max(
-          -2,
-          (player.floorModifiers.torchBonus || 0) - 1
-        );
-        log(bus, 'The void narrows what you can see.');
-      }
+      ensureFloorMods(player);
+      player.floorModifiers.torchBonus = Math.max(
+        -2,
+        (player.floorModifiers.torchBonus || 0) - 1
+      );
+      log(bus, 'The void narrows what you can see.');
       break;
 
     default:

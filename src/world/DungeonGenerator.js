@@ -571,7 +571,9 @@ export class DungeonGenerator {
 
   _augmentArena(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, enemyDefs, itemDefs) {
     if (floorDef.type === 'forge' || floorDef.isFinalFloor || rooms.length < 3) return;
-    if (!this.rng.chance(this.balance.dungeon.arenaChance ?? 0.35)) return;
+    const arenaChance = (this.balance.dungeon.arenaChance ?? 0.35)
+      * (floorDef.remixArenaBoost ? 1.45 : 1);
+    if (!this.rng.chance(Math.min(0.7, arenaChance))) return;
 
     const candidates = rooms.filter((r) => r !== spawnRoom);
     if (!candidates.length) return;

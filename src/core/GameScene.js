@@ -43,8 +43,6 @@ function heroStatOverrides(kind) {
   const def = heroDef(kind);
   return def ? { ...def.stats } : null;
 }
-import { Enemy } from '../entities/Enemy.js';
-import { rollEliteAffixes, forcedEliteAffixes, makeElite } from '../gameplay/eliteAffixes.js';
 import { HAZARDS, hazardDamage } from '../gameplay/hazards.js';
 import { applyBiomeTurnTick, describeBiomeMechanic, getBiomeMechanic, applyBiomePressureStep } from '../gameplay/biomeMechanics.js';
 import { gateDescend, applyDescendTransition } from './DescendFlow.js';
@@ -70,7 +68,9 @@ import { ChaseBehavior } from '../entities/behaviors/ChaseBehavior.js';
 import { RangedBehavior, hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
 import { ErraticBehavior } from '../entities/behaviors/ErraticBehavior.js';
 import { HeavyBehavior } from '../entities/behaviors/HeavyBehavior.js';
+import { PhaseBehavior } from '../entities/behaviors/PhaseBehavior.js';
 import { BossPatternBehavior } from '../entities/behaviors/BossPatternBehavior.js';
+import { createEnemy, spawnFloorEntities } from './EnemyFactory.js';
 
 const BEHAVIORS = {
   chase: ChaseBehavior,
@@ -1477,53 +1477,21 @@ export class GameScene {
 
   // --- spawning -------------------------------------------------------
   _spawnFloorEntities(floor, spawns) {
-    // depthScale comes from the procedurally-built floor definition;
-    // makes deeper floors actually threatening (HP & damage scale).
-    const depthScale = floor.definition?.depthScale || 1;
-    const diff = this._enemyScale();
-    const depthIdx = floor.definition?.index ?? 0;
-    // Champion/elite roll — deterministic per floor, never on (sub)bosses.
-    const eliteRng = this.rng.fork(`elite:${depthIdx}`);
-    for (const s of spawns.enemies) {
-      try {
-        const def = this.content.enemies[s.defId];
-        if (!def) { console.warn(LOG.ENTITY, `no enemy def "${s.defId}"`); continue; }
-        const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
-        const behavior = new BehaviorCls(def.behaviorParams);
-        const enemy = new Enemy(def, behavior, { x: s.x, y: s.y }, depthScale, diff);
-        if (!s.defId.startsWith('boss_') && !s.defId.startsWith('subboss_')) {
-          let affixes = rollEliteAffixes(eliteRng, depthIdx);
-          if (!affixes.length && s.forceElite) affixes = forcedEliteAffixes(eliteRng, depthIdx);
-          if (affixes.length) makeElite(enemy, affixes, depthIdx);
-        }
-        enemy.snapRender();
-        floor.addEntity(enemy);
-      } catch (err) {
-        console.warn(LOG.ENTITY, `spawn failed for "${s.defId}":`, err);
-      }
-    }
-    for (const s of spawns.items) {
-      try {
-        const stack = s.count ?? 1;
-        const item = s.affixes
-          ? this.itemFactory.createWithAffix(s.defId, s.affixes, stack)
-          : this.itemFactory.create(s.defId, stack);
-        if (item) floor.addItem(s.x, s.y, item);
-      } catch (err) {
-        console.warn(LOG.ITEM, `item spawn failed for "${s.defId}":`, err);
-      }
-    }
+    spawnFloorEntities(floor, spawns, {
+      content: this.content,
+      itemFactory: this.itemFactory,
+      rng: this.rng,
+      enemyScale: () => this._enemyScale(),
+      behaviors: BEHAVIORS
+    });
   }
 
   _createEnemy(defId, pos, floor) {
-    const def = this.content.enemies[defId];
-    if (!def) return null;
-    const BehaviorCls = BEHAVIORS[def.behavior] || ChaseBehavior;
-    const behavior = new BehaviorCls(def.behaviorParams);
-    const enemy = new Enemy(def, behavior, pos,
-      floor.definition?.depthScale || 1, this._enemyScale());
-    enemy.snapRender();
-    return enemy;
+    return createEnemy(defId, pos, floor, {
+      content: this.content,
+      enemyScale: () => this._enemyScale(),
+      behaviors: BEHAVIORS
+    });
   }
 
   /** Global enemy HP/ATK scale from balance (no player-selectable difficulty). */
@@ -1630,6 +1598,8 @@ export class GameScene {
       p.weapon?.name, p.armor?.name, p.helm?.name,
       p.legs?.name, p.necklace?.name, p.ring?.name
     ].filter(Boolean);
+    const floorReached = (p.runStats?.floorsCleared || 0) + 1;
+    const premiumUnlocked = !!this.billing?.isPremium?.();
     const summary = {
       ...p.runStats,
       died: !victory,
@@ -1643,7 +1613,10 @@ export class GameScene {
       floorName: this.floor?.definition?.name || '',
       biomeId: this.floor?.definition?.biomeId || '',
       biomeTeaser: this._biomeTeaser(p),
-      teachLine: victory ? null : this._teachLine(p)
+      teachLine: victory ? null : this._teachLine(p),
+      floorReached,
+      premiumUnlocked,
+      showUnlockCta: !victory && !premiumUnlocked && floorReached < 100
     };
     if (victory) this.bus.emit('run:victory', summary);
     else this.bus.emit('run:over', summary);

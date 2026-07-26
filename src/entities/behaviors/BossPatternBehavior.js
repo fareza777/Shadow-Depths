@@ -1,13 +1,16 @@
 /**
  * BossPatternBehavior — scripted boss phases with telegraphed slam.
  *
- * Phase 1 (HP > 60%): wind-up every N turns, then chase/melee.
- * Phase 2 (HP ≤ 60%): shorter wind-up; slam telegraph on adjacent tiles.
- * Phase 3 (HP ≤ 30%): faster slam + chase.
+ * Patterns:
+ *   slam (default) — wind-up + adjacent slam (Crypt Regent, Ash Titan, Iron Prior)
+ *   oracle — ranged kite + periodic slam when closed
+ *   phase_slam — phase pathing between slams (The Below, Veil Stalker, Void Seraph)
  *
- * Used by Crypt Regent and Cairn Knight. Keeps previewIntent pure.
+ * Keeps previewIntent pure (no counter mutation).
  */
 import { ChaseBehavior } from './ChaseBehavior.js';
+import { RangedBehavior } from './RangedBehavior.js';
+import { PhaseBehavior } from './PhaseBehavior.js';
 
 const DIRS = [
   { dx: 1, dy: 0 }, { dx: -1, dy: 0 },
@@ -16,14 +19,29 @@ const DIRS = [
 
 export class BossPatternBehavior {
   /**
-   * @param {{ actEveryNTurns?:number, slamDamageBonus?:number }} [params]
+   * @param {{
+   *   actEveryNTurns?:number,
+   *   slamDamageBonus?:number,
+   *   pattern?:'slam'|'oracle'|'phase_slam',
+   *   preferredDistance?:number,
+   *   range?:number
+   * }} [params]
    */
   constructor(params = {}) {
     this.baseEvery = Math.max(1, params.actEveryNTurns ?? 2);
     this.slamBonus = params.slamDamageBonus ?? 2;
+    this.pattern = params.pattern || 'slam';
     this._counter = 0;
     this._pendingSlam = false;
-    this._inner = new ChaseBehavior();
+    this._inner = this.pattern === 'oracle'
+      ? new RangedBehavior({
+        preferredDistance: params.preferredDistance ?? 5,
+        minDistance: params.minDistance ?? 3,
+        range: params.range ?? 7
+      })
+      : this.pattern === 'phase_slam'
+        ? new PhaseBehavior({ pathfindDistance: params.pathfindDistance ?? 7 })
+        : new ChaseBehavior();
   }
 
   _phase(enemy) {
@@ -48,12 +66,11 @@ export class BossPatternBehavior {
     if (this._pendingSlam) {
       this._pendingSlam = false;
       this._counter = 0;
-      return this._slamOrChase(enemy, ctx, phase);
+      return this._slamOrFallback(enemy, ctx, phase);
     }
 
     this._counter += 1;
     if (this._counter < every) {
-      // Telegraph slam in phase 2+ when adjacent; otherwise wind-up wait.
       if (phase >= 2 && this._isAdjacent(enemy, ctx.player)) {
         this._pendingSlam = true;
         return {
@@ -70,7 +87,7 @@ export class BossPatternBehavior {
 
     this._counter = 0;
     if (phase >= 2 && this._isAdjacent(enemy, ctx.player)) {
-      return this._slamOrChase(enemy, ctx, phase);
+      return this._slamOrFallback(enemy, ctx, phase);
     }
     return this._inner.decideAction(enemy, ctx);
   }
@@ -113,7 +130,7 @@ export class BossPatternBehavior {
       || this._inner.decideAction(enemy, ctx);
   }
 
-  _slamOrChase(enemy, ctx, phase) {
+  _slamOrFallback(enemy, ctx, phase) {
     if (this._isAdjacent(enemy, ctx.player)) {
       return {
         type: 'attack',

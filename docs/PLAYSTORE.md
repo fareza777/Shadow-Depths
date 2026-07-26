@@ -1,7 +1,7 @@
 # Google Play Store — release checklist
 
 Shadow Depths ships as a **Capacitor Android App Bundle (`.aab`)**.  
-App ID: `com.shadowdepths.game` · Display name: **Shadow Depths** · Version: **0.2.0**
+App ID: `com.shadowdepths.game` · Display name: **Shadow Depths** · Version: **0.2.3**
 
 ## Monetization model (v0.2)
 

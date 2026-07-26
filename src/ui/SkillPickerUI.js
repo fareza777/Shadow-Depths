@@ -6,14 +6,20 @@
  * once. Each level pushes one "pending pick" — the modal stays open and
  * cycles through them until the queue empties.
  */
-import { COLOR, CANVAS_WIDTH, CANVAS_HEIGHT } from '../config/constants.js';
+import {
+  CANVAS_WIDTH, CANVAS_HEIGHT, FONT_DISPLAY, FONT_BODY, uiSize
+} from '../config/constants.js';
 import { RNG } from '../core/RNG.js';
 import { computeSynergyMods, skillsById } from '../gameplay/skillSynergy.js';
+import {
+  drawIronPanel, drawIronActionButton, drawIronPlate, IRON_PALETTE
+} from './ironPanel.js';
+import { t } from '../content/i18n.js';
 
 const CARD_W = 360;
 const CARD_H = 76;
 const CARD_GAP = 12;
-const MODAL_TITLE_Y = 80;
+const MODAL_TITLE_Y = 92;
 const FIRST_CARD_Y = 200;
 
 export class SkillPickerUI {
@@ -208,15 +214,31 @@ export class SkillPickerUI {
       this.hide();
       return;
     }
-    renderer.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 'rgba(0,0,0,0.92)');
+    const r = renderer;
+    const ctx = r.ctx;
+    r.drawRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT, 'rgba(4, 2, 8, 0.88)');
 
-    renderer.drawText('LEVEL UP', CANVAS_WIDTH / 2, 50,
-      { size: 26, bold: true, align: 'center', color: '#d6c87a' });
+    const panelW = Math.min(400, CANVAS_WIDTH - 28);
+    const panelX = (CANVAS_WIDTH - panelW) / 2;
+    const panelY = 36;
+    const cardsBottom = FIRST_CARD_Y + 3 * (CARD_H + CARD_GAP);
+    const panelH = Math.min(
+      cardsBottom - panelY + (this.rerollsLeft > 0 ? 56 : 24),
+      CANVAS_HEIGHT - panelY - 12
+    );
+    drawIronPanel(ctx, panelX, panelY, panelW, panelH);
+
+    r.drawText(t('skills.level_up'), CANVAS_WIDTH / 2, panelY + 28, {
+      size: uiSize(24), bold: true, align: 'center',
+      family: FONT_DISPLAY, color: IRON_PALETTE.brass
+    });
     const qLabel = this.pending > 1
-      ? `Choose a skill  (${this.pending} picks remaining)`
-      : 'Choose a skill';
-    renderer.drawText(qLabel, CANVAS_WIDTH / 2, MODAL_TITLE_Y,
-      { size: 13, align: 'center', color: COLOR.textMuted });
+      ? t('skills.choose_n', { n: this.pending })
+      : t('skills.choose');
+    r.drawText(qLabel, CANVAS_WIDTH / 2, MODAL_TITLE_Y, {
+      size: uiSize(13), align: 'center',
+      family: FONT_BODY, color: IRON_PALETTE.boneDim
+    });
 
     const cx = (CANVAS_WIDTH - CARD_W) / 2;
     // Count synergy tags the player already owns, so each card can show how
@@ -230,17 +252,24 @@ export class SkillPickerUI {
       const skill = this.choices[i];
       const cy = FIRST_CARD_Y + i * (CARD_H + CARD_GAP);
       const accent = rarityColor(skill.rarity);
-      renderer.drawRect(cx, cy, CARD_W, CARD_H, '#16141c');
-      renderer.drawStrokedRect(cx, cy, CARD_W, CARD_H, accent, 2);
+      drawIronPlate(ctx, cx, cy, CARD_W, CARD_H, { rivets: false });
+      ctx.save();
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cx + 1, cy + 1, CARD_W - 2, CARD_H - 2);
+      ctx.restore();
       // Rarity-tinted icon plate on the left, then text shifted past it.
-      drawSkillIcon(renderer, cx + 12, cy + 18, 40, skill, accent);
+      drawSkillIcon(r, cx + 12, cy + 18, 40, skill, accent);
       const tx = cx + 64;
-      renderer.drawText(skill.name, tx, cy + 14,
-        { size: 16, bold: true, color: accent });
-      renderer.drawText(skill.description, tx, cy + 38,
-        { size: 12, color: COLOR.textPrimary });
-      renderer.drawText(skill.rarity, cx + CARD_W - 14, cy + 14,
-        { size: 10, align: 'right', color: COLOR.textMuted });
+      r.drawText(skill.name, tx, cy + 14, {
+        size: uiSize(16), bold: true, color: accent, family: FONT_DISPLAY
+      });
+      r.drawText(skill.description, tx, cy + 38, {
+        size: uiSize(12), color: IRON_PALETTE.bone, family: FONT_BODY
+      });
+      r.drawText(skill.rarity, cx + CARD_W - 14, cy + 14, {
+        size: uiSize(10), align: 'right', color: IRON_PALETTE.boneDim, family: FONT_BODY
+      });
       // Synergy progress chips (right side): TAG owned→next, ★ when this pick
       // reaches a synergy tier (2 or 4 of a tag).
       const tags = (skill.tags || []).filter((tg) => TAG_LABELS[tg]);
@@ -249,21 +278,24 @@ export class SkillPickerUI {
         const n = owned[tg] || 0;
         const next = n + 1;
         const tier = next === 2 || next === 4;
-        renderer.drawText(`${TAG_LABELS[tg]} ${n}→${next}${tier ? ' ★' : ''}`,
-          cx + CARD_W - 14, chipY,
-          { size: 9, align: 'right', color: tier ? TAG_COLORS[tg] : '#8a8494' });
+        r.drawText(`${TAG_LABELS[tg]} ${n}→${next}${tier ? ' ★' : ''}`,
+          cx + CARD_W - 14, chipY, {
+            size: uiSize(9), align: 'right',
+            color: tier ? TAG_COLORS[tg] : IRON_PALETTE.boneDim, family: FONT_BODY
+          });
         chipY += 13;
       }
-      // Tap hint
-      renderer.drawText(`tap to choose  ·  hotkey ${i + 1}`, tx, cy + 56,
-        { size: 10, color: COLOR.textMuted });
+      r.drawText(t('skills.tap_hint'), tx, cy + 56, {
+        size: uiSize(10), color: IRON_PALETTE.boneDim, family: FONT_BODY
+      });
     }
     if (this.rerollsLeft > 0) {
       const rr = this._rerollRect();
-      renderer.drawRect(rr.x, rr.y, rr.w, rr.h, '#1a1620');
-      renderer.drawStrokedRect(rr.x, rr.y, rr.w, rr.h, '#d4ac6c', 1);
-      renderer.drawText('REROLL (free · 1)', rr.x + rr.w / 2, rr.y + rr.h / 2, {
-        size: 12, bold: true, align: 'center', baseline: 'middle', color: '#d4ac6c'
+      const label = this.rerollsLeft > 1
+        ? `${t('skills.reroll')}  ·  ${this.rerollsLeft}`
+        : t('skills.reroll');
+      drawIronActionButton(r, rr.x, rr.y, rr.w, rr.h, label, {
+        accent: IRON_PALETTE.brass, fontSize: uiSize(12)
       });
     }
   }

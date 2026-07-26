@@ -31,7 +31,7 @@ SHOTS = [
     ("Screenshot_2026-07-13-07-12-13-594_com.shadowdepths.game.jpg",
      "Choose a vigil — eight dark heroes"),
     ("Screenshot_2026-07-13-07-12-55-209_com.shadowdepths.game.jpg",
-     "Fight turn by turn in torchlight"),
+     "Fight turn by turn — read enemy intents"),
     ("Screenshot_2026-07-13-07-13-08-235_com.shadowdepths.game.jpg",
      "Loot rare tomes from forgotten crypts"),
     ("Screenshot_2026-07-13-07-13-14-737_com.shadowdepths.game.jpg",
@@ -39,9 +39,9 @@ SHOTS = [
     ("Screenshot_2026-07-13-07-13-20-379_com.shadowdepths.game.jpg",
      "Fill your satchel with relics"),
     ("Screenshot_2026-07-13-07-13-54-402_com.shadowdepths.game.jpg",
-     "Spend coins on permanent upgrades"),
+     "Free 10 floors — unlock all 100 forever"),
     ("Screenshot_2026-07-13-07-14-12-929_com.shadowdepths.game.jpg",
-     "Learn the depths with a guided tutorial"),
+     "Vault bosses telegraph their slam"),
 ]
 
 

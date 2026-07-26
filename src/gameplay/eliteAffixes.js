@@ -25,10 +25,13 @@ export const ELITE_AFFIXES = {
 const AFFIX_IDS = Object.keys(ELITE_AFFIXES);
 
 /** Spawn-time elite chance, ramping gently with depth (capped). Softer on F1–3. */
-export function eliteChanceForDepth(depth) {
+export function eliteChanceForDepth(depth, opts = {}) {
   const d = Math.max(0, depth);
-  if (d < 3) return Math.min(0.12, 0.025 + d * 0.01);
-  return Math.min(0.22, 0.04 + d * 0.004);
+  const mul = opts.chanceMul ?? 1;
+  let base;
+  if (d < 3) base = Math.min(0.12, 0.025 + d * 0.01);
+  else base = Math.min(0.22, 0.04 + d * 0.004);
+  return Math.min(0.35, base * mul);
 }
 
 /** Affix pool — venomous elites only after the player has left the entry floors. */
@@ -42,8 +45,8 @@ export function affixPoolForDepth(depth) {
  * @param {{ chance:Function, randInt:Function }} rng
  * @param {number} depth floor index (0-based)
  */
-export function rollEliteAffixes(rng, depth) {
-  if (!rng.chance(eliteChanceForDepth(depth))) return [];
+export function rollEliteAffixes(rng, depth, opts = {}) {
+  if (!rng.chance(eliteChanceForDepth(depth, opts))) return [];
   return forcedEliteAffixes(rng, depth);
 }
 

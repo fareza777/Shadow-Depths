@@ -32,11 +32,23 @@ describe('Dungeon floor curve', () => {
     expect(d.floorDefs[99].specialEnemyId).toBeTruthy();
   });
 
-  it('applies depth remix on floors 51+', () => {
+  it('applies depth remix on floors 51+ with dual pressure fields', () => {
     const d = makeDungeon();
     expect(d.floorDefs[49].depthRemix).toBeFalsy();
     expect(d.floorDefs[50].depthRemix).toBe(true);
     expect(String(d.floorDefs[50].name)).toMatch(/Deep|Abyssal/);
+    expect(d.floorDefs[50].eliteChanceMul).toBeGreaterThan(1);
+    expect(d.floorDefs[75].eliteChanceMul).toBeGreaterThan(d.floorDefs[50].eliteChanceMul);
+  });
+
+  it('marks vault bosses with boss_pattern behavior in content', async () => {
+    const enemies = (await import('../data/enemies.json')).default;
+    for (const id of [
+      'boss_crypt_regent', 'boss_ash_titan', 'boss_sunless_oracle', 'boss_the_below',
+      'subboss_cairn_knight', 'subboss_veil_stalker', 'subboss_iron_prior', 'subboss_void_seraph'
+    ]) {
+      expect(enemies[id].behavior).toBe('boss_pattern');
+    }
   });
 });
 

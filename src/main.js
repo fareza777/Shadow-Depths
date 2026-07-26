@@ -115,7 +115,7 @@ import { AchievementToast } from './ui/AchievementToast.js';
 import { repairItemDefStats } from './items/canonicalStats.js';
 
 async function bootstrap() {
-  console.log(LOG.CORE, 'Shadow Depths v0.2.0 — bootstrap');
+  console.log(LOG.CORE, 'Shadow Depths v0.2.3 — bootstrap');
 
   // --- core plumbing -------------------------------------------------
   const bus = new EventBus();

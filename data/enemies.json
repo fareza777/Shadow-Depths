@@ -469,7 +469,13 @@
       "atk": 10,
       "def": 3
     },
-    "behavior": "phase",
+    "behavior": "boss_pattern",
+    "behaviorParams": {
+      "pattern": "phase_slam",
+      "actEveryNTurns": 2,
+      "slamDamageBonus": 2,
+      "pathfindDistance": 7
+    },
     "onHitPlayer": [
       {
         "type": "drainXP",
@@ -494,7 +500,12 @@
       "atk": 13,
       "def": 6
     },
-    "behavior": "chase",
+    "behavior": "boss_pattern",
+    "behaviorParams": {
+      "pattern": "slam",
+      "actEveryNTurns": 2,
+      "slamDamageBonus": 2
+    },
     "xp": 130,
     "goldDrop": [
       28,
@@ -513,7 +524,13 @@
       "atk": 16,
       "def": 7
     },
-    "behavior": "phase",
+    "behavior": "boss_pattern",
+    "behaviorParams": {
+      "pattern": "phase_slam",
+      "actEveryNTurns": 1,
+      "slamDamageBonus": 3,
+      "pathfindDistance": 8
+    },
     "onHitPlayer": [
       {
         "type": "drainXP",
@@ -561,9 +578,11 @@
       "atk": 15,
       "def": 8
     },
-    "behavior": "heavy",
+    "behavior": "boss_pattern",
     "behaviorParams": {
-      "actEveryNTurns": 2
+      "pattern": "slam",
+      "actEveryNTurns": 2,
+      "slamDamageBonus": 3
     },
     "xp": 260,
     "goldDrop": [
@@ -583,8 +602,11 @@
       "atk": 17,
       "def": 5
     },
-    "behavior": "ranged",
+    "behavior": "boss_pattern",
     "behaviorParams": {
+      "pattern": "oracle",
+      "actEveryNTurns": 2,
+      "slamDamageBonus": 2,
       "preferredDistance": 5,
       "minDistance": 3,
       "range": 7
@@ -613,7 +635,13 @@
       "atk": 21,
       "def": 9
     },
-    "behavior": "phase",
+    "behavior": "boss_pattern",
+    "behaviorParams": {
+      "pattern": "phase_slam",
+      "actEveryNTurns": 1,
+      "slamDamageBonus": 4,
+      "pathfindDistance": 9
+    },
     "onHitPlayer": [
       {
         "type": "drainXP",

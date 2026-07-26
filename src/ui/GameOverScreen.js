@@ -228,6 +228,15 @@ export class GameOverScreen {
     }
 
     const btns = this._buttonRects();
+    const showUnlockCta = s.showUnlockCta
+      || (!s.premiumUnlocked && (s.floorReached ?? ((s.floorsCleared || 0) + 1)) < 100);
+    if (showUnlockCta) {
+      r.drawText(t('gameover.unlock_cta'), CANVAS_WIDTH / 2, btns[0].y - (IS_LANDSCAPE ? 14 : 18), {
+        size: uiSize(IS_LANDSCAPE ? 9 : 11), align: 'center',
+        family: FONT_BODY, color: IRON_PALETTE.brass
+      });
+    }
+
     drawIronActionButton(r, btns[0].x, btns[0].y, btns[0].w, btns[0].h,
       t('gameover.restart'), {
         accent: IRON_PALETTE.brass,

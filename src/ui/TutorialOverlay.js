@@ -5,6 +5,7 @@
 import { COLOR, FONT_DISPLAY, FONT_BODY, uiSize } from '../config/constants.js';
 import { Layout } from '../config/layoutMetrics.js';
 import { getViewportBottomY } from './controlBandLayout.js';
+import { drawIronPanel, IRON_PALETTE } from './ironPanel.js';
 import { t } from '../content/i18n.js';
 
 const STEPS = [
@@ -68,9 +69,7 @@ export class TutorialOverlay {
       : Math.floor((Layout.canvasH - panelH) / 2) - 40;
 
     if (!compact) r.drawRect(0, 0, Layout.canvasW, getViewportBottomY(), 'rgba(0,0,0,0.55)');
-    r.drawRect(x, y, panelW, panelH, compact ? '#1c1822' : COLOR.bgPanel);
-    r.drawStrokedRect(x, y, panelW, panelH, COLOR.gold, compact ? 1 : 2);
-    r.drawRect(x, y, panelW, 3, COLOR.gold);
+    drawIronPanel(r.ctx, x, y, panelW, panelH);
 
     // Eyebrow (left) + step counter (right) on the same header line.
     const eyebrow = this._variant === 'keeper'
@@ -78,12 +77,12 @@ export class TutorialOverlay {
       : t('tutorial.eyebrow');
     const headY = y + (compact ? 15 : 22);
     r.drawText(eyebrow, x + 12, headY,
-      { size: uiSize(compact ? 9 : 11), align: 'left', color: COLOR.textMuted, family: FONT_BODY });
+      { size: uiSize(compact ? 9 : 11), align: 'left', color: IRON_PALETTE.boneDim, family: FONT_BODY });
     r.drawText(`STEP ${this._step + 1} / ${steps.length}`, x + panelW - 12, headY,
-      { size: uiSize(compact ? 9 : 11), align: 'right', color: COLOR.gold, family: FONT_BODY });
+      { size: uiSize(compact ? 9 : 11), align: 'right', color: IRON_PALETTE.brass, family: FONT_BODY });
 
     r.drawText(step.title, Layout.canvasW / 2, y + (compact ? 33 : 50),
-      { size: uiSize(compact ? 15 : 20), bold: true, align: 'center', color: COLOR.gold, family: FONT_DISPLAY });
+      { size: uiSize(compact ? 15 : 20), bold: true, align: 'center', color: IRON_PALETTE.brass, family: FONT_DISPLAY });
 
     const lines = wrapText(step.body, compact ? 50 : 36).slice(0, compact ? 3 : 5);
     let ly = y + (compact ? 49 : 82);
@@ -98,12 +97,12 @@ export class TutorialOverlay {
     const hint = last ? t('tutorial.begin') : t('tutorial.continue');
     if (compact) {
       r.drawText(hint, Layout.canvasW / 2, y + panelH - 12,
-        { size: uiSize(10), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
+        { size: uiSize(10), align: 'center', color: IRON_PALETTE.brassDark, family: FONT_BODY });
     } else {
       r.drawText(hint, Layout.canvasW / 2, y + panelH - 20,
-        { size: uiSize(12), align: 'center', color: COLOR.textMuted, family: FONT_BODY });
+        { size: uiSize(12), align: 'center', color: IRON_PALETTE.boneDim, family: FONT_BODY });
       r.drawText(t('tutorial.skip'), Layout.canvasW / 2, y + panelH + 14,
-        { size: uiSize(11), align: 'center', color: COLOR.goldDim, family: FONT_BODY });
+        { size: uiSize(11), align: 'center', color: IRON_PALETTE.brassDark, family: FONT_BODY });
     }
   }
 

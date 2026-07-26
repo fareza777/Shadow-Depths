@@ -163,6 +163,9 @@ export class Dungeon {
         specialEnemyId,
         biomeId: biome?.id || 'unknown',
         mechanic: remixed.mechanic || biome?.mechanic || null,
+        secondaryMechanic: remixed.secondaryMechanic || null,
+        eliteChanceMul: remixed.eliteChanceMul || 1,
+        remixArenaBoost: !!remixed.remixArenaBoost,
         depthRemix: remixed.active,
         type,
         vaultDepthBoost,
@@ -248,14 +251,21 @@ export class Dungeon {
     const donorPool = donor.enemyPool || [];
     const mixed = [...new Set([...basePool.slice(0, 4), ...donorPool.slice(0, 4)])];
     const band = index < 75 ? 'Deep' : 'Abyssal';
+    const primary = biome.mechanic || null;
+    const secondary = donor.mechanic && donor.mechanic !== primary ? donor.mechanic : null;
     return {
       active: true,
       name: `${band} ${biome.name}`,
-      subtitle: `Floor ${index + 1} · remixed`,
+      subtitle: secondary
+        ? `Floor ${index + 1} · dual pressure`
+        : `Floor ${index + 1} · remixed`,
       atmosphere: donor.atmosphere || biome.atmosphere || '',
       enemyPool: mixed.length ? mixed : basePool,
-      mechanic: biome.mechanic || donor.mechanic || null,
-      torchRadius: Math.max(5, (biome.torchRadius || 7) - 1),
+      mechanic: primary || secondary,
+      secondaryMechanic: secondary,
+      eliteChanceMul: index < 75 ? 1.35 : 1.55,
+      remixArenaBoost: true,
+      torchRadius: Math.max(4, (biome.torchRadius || 7) - (index < 75 ? 1 : 2)),
       wallPalette: biome.wallPalette,
       floorPalette: donor.floorPalette || biome.floorPalette
     };

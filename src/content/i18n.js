@@ -96,6 +96,7 @@ const EN = {
   'gameover.teach_skills':    'Take skills early — synergies carry deep floors.',
   'gameover.teach_default':   'Watch enemy intent icons — !! means wind-up, then punish.',
   'gameover.teaser':          'Beyond the free depths',
+  'gameover.unlock_cta':      'Unlock Full Descent — 100 floors, forever.',
   // Paywall
   'paywall.title':            'FULL DESCENT',
   'paywall.subtitle':         'one purchase · unlock forever',
@@ -104,6 +105,30 @@ const EN = {
   'paywall.restore':          'RESTORE PURCHASES',
   'paywall.not_now':          'NOT NOW',
   'paywall.wait':             'PLEASE WAIT…',
+  'paywall.benefit_floors':   '100 floors of descent',
+  'paywall.benefit_biomes':   'Biomes, bosses & vaults',
+  'paywall.benefit_forever':  'Forever unlock — one purchase',
+  'paywall.benefit_noads':    'No ads, ever',
+  'paywall.cleared_free':     'You cleared the free depths (floors 1–{cap}).',
+  'paywall.beyond':           'Beyond lies the rest of the 100-floor descent.',
+  'paywall.continue_deep':    'Your saved run is deeper than the free trial.',
+  'paywall.continue_cap':     'Free players may explore floors 1–{cap}.',
+  'paywall.continue_unlock':  'Unlock Full Descent to continue this run forever.',
+  'paywall.flash_opening':    'Opening Play Store…',
+  'paywall.flash_unlocked':   'Full Descent unlocked!',
+  'paywall.flash_cancelled':  'Purchase cancelled',
+  'paywall.flash_dev':        'Unlocked (dev)',
+  'paywall.flash_failed':     'Purchase failed — try Restore',
+  'paywall.flash_restoring':  'Restoring…',
+  'paywall.flash_restored':   'Purchases restored!',
+  'paywall.flash_none':       'No purchase found',
+  'paywall.flash_restore_fail':'Restore failed',
+  // Skills
+  'skills.level_up':          'LEVEL UP',
+  'skills.choose':            'Choose a boon',
+  'skills.choose_n':          'Choose a boon  ({n} remaining)',
+  'skills.reroll':            'REROLL',
+  'skills.tap_hint':          'Tap a boon',
   // Tutorial
   'tutorial.skip':            'SKIP',
   'tutorial.continue':        'Tap or move to continue',
@@ -225,6 +250,7 @@ const ID = {
   'gameover.teach_skills':    'Ambil skill lebih awal — sinergi membawa ke lantai dalam.',
   'gameover.teach_default':   'Pantau ikon intent musuh — !! berarti wind-up, lalu serang.',
   'gameover.teaser':          'Di balik kedalaman gratis',
+  'gameover.unlock_cta':      'Buka Full Descent — 100 lantai, selamanya.',
   'paywall.title':            'FULL DESCENT',
   'paywall.subtitle':         'sekali beli · terbuka selamanya',
   'paywall.no_ads':           'TANPA IKLAN  ·  TANPA LANGGANAN',
@@ -232,6 +258,29 @@ const ID = {
   'paywall.restore':          'PULIHKAN PEMBELIAN',
   'paywall.not_now':          'NANTI SAJA',
   'paywall.wait':             'MOHON TUNGGU…',
+  'paywall.benefit_floors':   '100 lantai kedalaman',
+  'paywall.benefit_biomes':   'Biome, boss & ruang harta',
+  'paywall.benefit_forever':  'Terbuka selamanya — sekali beli',
+  'paywall.benefit_noads':    'Tanpa iklan, selamanya',
+  'paywall.cleared_free':     'Kau menyelesaikan kedalaman gratis (lantai 1–{cap}).',
+  'paywall.beyond':           'Di baliknya sisa 100 lantai descent.',
+  'paywall.continue_deep':    'Run tersimpanmu lebih dalam dari uji coba gratis.',
+  'paywall.continue_cap':     'Pemain gratis boleh menjelajah lantai 1–{cap}.',
+  'paywall.continue_unlock':  'Buka Full Descent untuk lanjutkan run ini selamanya.',
+  'paywall.flash_opening':    'Membuka Play Store…',
+  'paywall.flash_unlocked':   'Full Descent terbuka!',
+  'paywall.flash_cancelled':  'Pembelian dibatalkan',
+  'paywall.flash_dev':        'Terbuka (dev)',
+  'paywall.flash_failed':     'Pembelian gagal — coba Pulihkan',
+  'paywall.flash_restoring':  'Memulihkan…',
+  'paywall.flash_restored':   'Pembelian dipulihkan!',
+  'paywall.flash_none':       'Pembelian tidak ditemukan',
+  'paywall.flash_restore_fail':'Pemulihan gagal',
+  'skills.level_up':          'NAIK LEVEL',
+  'skills.choose':            'Pilih anugerah',
+  'skills.choose_n':          'Pilih anugerah  ({n} tersisa)',
+  'skills.reroll':            'ACAK ULANG',
+  'skills.tap_hint':          'Ketuk anugerah',
   'tutorial.skip':            'LEWATI',
   'tutorial.continue':        'Ketuk atau gerak untuk lanjut',
   'tutorial.begin':           'Ketuk atau gerak untuk mulai',
@@ -291,13 +340,19 @@ export function setLocale(locale) {
 
 export function currentLocale() { return CURRENT_LOCALE; }
 
-/** Translate a key. Falls back to English, then to the key itself. */
-export function t(key) {
+/** Translate a key. Falls back to English, then to the key itself.
+ *  Optional `params` replaces `{name}` tokens in the string. */
+export function t(key, params) {
   const localTable = REGISTRY.get(CURRENT_LOCALE);
-  if (localTable && key in localTable) return localTable[key];
-  const en = REGISTRY.get('en');
-  if (en && key in en) return en[key];
-  return key;
+  let s = (localTable && key in localTable) ? localTable[key]
+    : (REGISTRY.get('en') && key in REGISTRY.get('en')) ? REGISTRY.get('en')[key]
+    : key;
+  if (params && typeof s === 'string') {
+    for (const [k, v] of Object.entries(params)) {
+      s = s.split(`{${k}}`).join(String(v));
+    }
+  }
+  return s;
 }
 
 export function supportedLocales() {

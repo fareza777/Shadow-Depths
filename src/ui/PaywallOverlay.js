@@ -7,6 +7,13 @@ import {
 import { drawIronPanel, drawIronActionButton, IRON_PALETTE } from './ironPanel.js';
 import { t } from '../content/i18n.js';
 
+const BENEFIT_KEYS = [
+  'paywall.benefit_floors',
+  'paywall.benefit_biomes',
+  'paywall.benefit_forever',
+  'paywall.benefit_noads'
+];
+
 export class PaywallOverlay {
   /**
    * @param {{ bus:object, billing:object }} deps
@@ -74,38 +81,38 @@ export class PaywallOverlay {
   async _buy() {
     if (this._busy || !this.billing) return;
     this._busy = true;
-    this._flash('Opening Play Store…');
+    this._flash(t('paywall.flash_opening'));
     const result = await this.billing.purchase();
     this._busy = false;
     if (result.ok) {
-      this._flash('Full Descent unlocked!');
+      this._flash(t('paywall.flash_unlocked'));
       this.bus?.emit('paywall:unlocked', { reason: this._reason });
       setTimeout(() => this.hide(), 450);
     } else if (result.reason === 'cancelled') {
-      this._flash('Purchase cancelled');
+      this._flash(t('paywall.flash_cancelled'));
     } else if (result.reason === 'web_mock') {
-      this._flash('Unlocked (dev)');
+      this._flash(t('paywall.flash_dev'));
       this.bus?.emit('paywall:unlocked', { reason: this._reason });
       setTimeout(() => this.hide(), 450);
     } else {
-      this._flash('Purchase failed — try Restore');
+      this._flash(t('paywall.flash_failed'));
     }
   }
 
   async _restore() {
     if (this._busy || !this.billing) return;
     this._busy = true;
-    this._flash('Restoring…');
+    this._flash(t('paywall.flash_restoring'));
     const result = await this.billing.restore();
     this._busy = false;
     if (result.ok) {
-      this._flash('Purchases restored!');
+      this._flash(t('paywall.flash_restored'));
       this.bus?.emit('paywall:unlocked', { reason: this._reason });
       setTimeout(() => this.hide(), 450);
     } else if (result.reason === 'none') {
-      this._flash('No purchase found');
+      this._flash(t('paywall.flash_none'));
     } else {
-      this._flash('Restore failed');
+      this._flash(t('paywall.flash_restore_fail'));
     }
   }
 
@@ -115,10 +122,10 @@ export class PaywallOverlay {
   }
 
   _layout() {
-    const modalW = Math.min(400, CANVAS_WIDTH - 40);
-    const modalH = Math.min(420, CANVAS_HEIGHT - 60);
+    const modalW = Math.min(420, CANVAS_WIDTH - 36);
+    const modalH = Math.min(468, CANVAS_HEIGHT - 48);
     const modalX = (CANVAS_WIDTH - modalW) / 2;
-    const modalY = Math.max(24, (CANVAS_HEIGHT - modalH) / 2 - 20);
+    const modalY = Math.max(16, (CANVAS_HEIGHT - modalH) / 2 - 12);
     const btnW = modalW - 48;
     const btnH = 46;
     const unlock = {
@@ -149,7 +156,6 @@ export class PaywallOverlay {
     const g = this._layout();
     const cap = this.billing?.freeFloorCap ?? 10;
     const price = this.billing?.priceLabel || '—';
-    const copy = this.billing?.productCopy?.() || {};
 
     ctx.save();
     ctx.fillStyle = 'rgba(4, 2, 8, 0.72)';
@@ -159,39 +165,44 @@ export class PaywallOverlay {
     drawIronPanel(ctx, g.modalX, g.modalY, g.modalW, g.modalH);
 
     const cx = CANVAS_WIDTH / 2;
-    r.drawText(t('paywall.title'), cx, g.modalY + 28, {
+    this._drawBrassDiamond(ctx, cx, g.modalY + 22, 7);
+
+    r.drawText(t('paywall.title'), cx, g.modalY + 42, {
       size: uiSize(22), bold: true, align: 'center',
       family: FONT_DISPLAY, color: IRON_PALETTE.brass
     });
-    r.drawText(t('paywall.subtitle'), cx, g.modalY + 52, {
+    r.drawText(t('paywall.subtitle'), cx, g.modalY + 64, {
       size: uiSize(12), italic: true, align: 'center',
       family: FONT_BODY, color: IRON_PALETTE.boneDim
     });
 
     const lines = this._reason === 'continue'
       ? [
-        'Your saved run is deeper than the free trial.',
-        `Free players may explore floors 1–${cap}.`,
-        'Unlock Full Descent to continue this run',
-        'and every floor beyond — forever.'
+        t('paywall.continue_deep'),
+        t('paywall.continue_cap', { cap }),
+        t('paywall.continue_unlock')
       ]
       : [
-        `You cleared the free depths (floors 1–${cap}).`,
-        'Beyond lies the rest of the 100-floor descent:',
-        'bosses, biomes, vaults, and the final seal.',
-        copy.blurb || 'One purchase unlocks unlimited floors.'
+        t('paywall.cleared_free', { cap }),
+        t('paywall.beyond')
       ];
 
-    let y = g.modalY + 84;
+    let y = g.modalY + 92;
     for (const line of lines) {
       r.drawText(line, cx, y, {
         size: uiSize(13), align: 'center',
         family: FONT_BODY, color: IRON_PALETTE.bone
       });
+      y += 18;
+    }
+
+    y += 10;
+    for (const key of BENEFIT_KEYS) {
+      this._drawBenefitRow(r, ctx, cx, y, t(key), g.modalW);
       y += 20;
     }
 
-    r.drawText(t('paywall.no_ads'), cx, y + 12, {
+    r.drawText(t('paywall.no_ads'), cx, Math.min(y + 8, g.unlock.y - 14), {
       size: uiSize(11), bold: true, align: 'center',
       family: FONT_MONO, color: COLOR.goldHi
     });
@@ -212,6 +223,42 @@ export class PaywallOverlay {
         family: FONT_MONO, color: COLOR.goldHi
       });
     }
+  }
+
+  _drawBenefitRow(r, ctx, cx, y, label, modalW) {
+    const textW = Math.min(280, modalW - 72);
+    const left = cx - textW / 2;
+    // Brass bullet
+    ctx.save();
+    ctx.fillStyle = IRON_PALETTE.brass;
+    ctx.beginPath();
+    ctx.arc(left - 4, y + 1, 2.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    r.drawText(label, left + 8, y, {
+      size: uiSize(12), align: 'left',
+      family: FONT_BODY, color: IRON_PALETTE.bone
+    });
+  }
+
+  _drawBrassDiamond(ctx, cx, cy, half) {
+    ctx.save();
+    const g = ctx.createLinearGradient(cx, cy - half, cx, cy + half);
+    g.addColorStop(0, IRON_PALETTE.brassHi);
+    g.addColorStop(0.45, IRON_PALETTE.brass);
+    g.addColorStop(1, IRON_PALETTE.brassDark);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - half);
+    ctx.lineTo(cx + half, cy);
+    ctx.lineTo(cx, cy + half);
+    ctx.lineTo(cx - half, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = IRON_PALETTE.ink;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.restore();
   }
 
   _inside(x, y, rect) {
