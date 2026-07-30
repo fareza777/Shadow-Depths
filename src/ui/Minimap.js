@@ -32,8 +32,11 @@ export class Minimap {
       floor.seed, floor.index, floor.renderRevision || 0, floor.visibilityRevision || 0
     ].join('|');
 
-    if (typeof renderer.drawCachedScreenLayer === 'function') {
-      renderer.drawCachedScreenLayer(terrainKey, () => {
+    // Region cache, not a full-canvas one: the minimap owns a small slot in
+    // the control band, so a whole-screen blit per frame is wasted fill-rate.
+    if (typeof renderer.drawCachedScreenRegion === 'function') {
+      const rect = { x: slot.x - 3, y: slot.y - 3, w: slot.w + 6, h: slot.h + 6 };
+      renderer.drawCachedScreenRegion(terrainKey, rect, () => {
         this._renderTerrain(renderer, renderCtx, slot);
       });
       this._renderActors(renderer, renderCtx, slot);

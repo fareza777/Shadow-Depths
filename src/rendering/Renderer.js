@@ -727,12 +727,9 @@ export class Renderer {
       ctx.globalCompositeOperation = 'screen';
       ctx.fillStyle = this._glowGrad;
       ctx.fillRect(fx, fy, fw, fh);
-      // Cheap static core disc — no second gradient allocation.
-      ctx.globalAlpha = 0.28;
-      ctx.fillStyle = 'rgba(255, 220, 150, 1)';
-      ctx.beginPath();
-      ctx.arc(px, py, TILE_SIZE * 0.55, 0, Math.PI * 2);
-      ctx.fill();
+      // No core disc here: a flat arc under the hero reads as a hard-edged
+      // ring drawn on the character. The gradient's inner stop already
+      // carries the warm torch core.
       ctx.restore();
       return;
     }
@@ -1211,24 +1208,30 @@ export class Renderer {
     const vy = viewportY();
     const vw = viewportW();
     const vh = viewportH();
-    const timeBucket = Math.floor((this._timeSec || 0) * 4);
+    // No time term in the key: a 250ms bucket re-baked the whole viewport
+    // backdrop four times a second — a fresh ~1MB canvas plus a full repaint
+    // each time, which reads as periodic stutter. Lean already drops flicker
+    // and particles, so the drifting motes hold still here too.
     const key = [
       def.biomeId || '', vx, vy, vw, vh,
-      timeBucket,
       getAbyssPalette(def.biomeId || '').top
     ].join('|');
     let cache = this._backdropCache;
     if (!cache || cache.key !== key || cache.canvas.width !== vw || cache.canvas.height !== vh) {
-      const canvas = (typeof document !== 'undefined')
-        ? document.createElement('canvas')
-        : new OffscreenCanvas(vw, vh);
+      // Reuse the existing bitmap when only the key changed (biome swap) so a
+      // descent doesn't orphan a megabyte of canvas for the GC.
+      const canvas = (cache && cache.canvas.width === vw && cache.canvas.height === vh)
+        ? cache.canvas
+        : (typeof document !== 'undefined')
+          ? document.createElement('canvas')
+          : new OffscreenCanvas(vw, vh);
       canvas.width = vw;
       canvas.height = vh;
       const cctx = canvas.getContext('2d', { alpha: true });
       cctx.translate(-vx, -vy);
       this._drawViewportAbyss(cctx, def);
       this._drawBiomeBackdropDetails(cctx, def);
-      // Cached edge vignette (baked into the 250ms backdrop cache — not per frame).
+      // Cached edge vignette (baked into the backdrop bitmap — not per frame).
       cctx.setTransform(1, 0, 0, 1, 0, 0);
       const band = Math.max(28, Math.floor(Math.min(vw, vh) * 0.08));
       cctx.fillStyle = 'rgba(0,0,0,0.38)';

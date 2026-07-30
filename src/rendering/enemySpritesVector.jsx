@@ -21,6 +21,8 @@
 //  id matches enemies.json keys 1:1.
 // ═══════════════════════════════════════════════════════════════════════
 
+import { bakedRaster, bakePx } from './spriteRaster.js';
+
 // ── tiny hyperscript: JSX → SVG markup string (no React) ───────────────
 // esbuild is configured (vite/vitest) with jsxFactory:'h', jsxFragment:'Fragment'.
 const Fragment = Symbol('Fragment');
@@ -693,6 +695,9 @@ export function drawVectorEnemy(ctx, x, y, size, id) {
   const rec = _getEnemyImage(id);
   if (!rec.ready || !rec.img) return false;
   const o = size * ENEMY_OVERSCAN;
-  ctx.drawImage(rec.img, x - o, y - o, size + 2 * o, size + 2 * o);
+  const dest = size + 2 * o;
+  // Blit a baked bitmap, never the SVG-backed Image — see spriteRaster.js.
+  const baked = bakedRaster(rec.img, 'enemy:' + id, bakePx(dest));
+  ctx.drawImage(baked || rec.img, x - o, y - o, dest, dest);
   return true;
 }

@@ -162,8 +162,13 @@ export class MobileControls {
       Layout.canvasW, Layout.canvasH, Layout.hud, Layout.control,
       LAYOUT.portrait ? 1 : 0
     ].join('|');
-    if (typeof renderer.drawCachedScreenLayer === 'function') {
-      renderer.drawCachedScreenLayer(key, () => this._renderPanel(renderer, LAYOUT));
+    // Cache the band region only — a full-canvas cache costs a whole-screen
+    // alpha blit every frame for chrome that occupies a third of it.
+    const rect = LAYOUT.band
+      ? { x: LAYOUT.band.x, y: LAYOUT.band.y, w: LAYOUT.band.w, h: LAYOUT.band.h }
+      : { x: 0, y: Layout.hud, w: Layout.canvasW, h: Layout.canvasH - Layout.hud };
+    if (typeof renderer.drawCachedScreenRegion === 'function') {
+      renderer.drawCachedScreenRegion(key, rect, () => this._renderPanel(renderer, LAYOUT));
       return;
     }
     this._renderPanel(renderer, LAYOUT);
@@ -344,7 +349,9 @@ export class MobileControls {
       // Iron lattice behind buttons.
       drawIronLattice(bctx, LAYOUT.dpadX, LAYOUT.dpadY, LAYOUT.dpadSize);
     };
-    if (typeof r.drawCachedScreenLayer === 'function') r.drawCachedScreenLayer(key, paintBase);
+    // +2px pad covers the 3px-wide inset stroke on the backplate edge.
+    const baseRect = { x: padX - 2, y: padY - 2, w: padS + 4, h: padS + 4 };
+    if (typeof r.drawCachedScreenRegion === 'function') r.drawCachedScreenRegion(key, baseRect, paintBase);
     else paintBase();
 
     // Buttons.
