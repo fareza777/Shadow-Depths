@@ -853,9 +853,11 @@ export class Renderer {
     ctx.translate(cam.x, cam.y);
 
     const list = this._sortedEntities(floor);
-    if (!this._leanCombatFx) {
-      perfMeter.measure('attackFx', () => this._drawAttackFlashes(ctx, cam));
-    }
+    // Impact arcs run on lean too. `entity:attacked` already collects them
+    // (capped at 6) and _drawAttackFlashes has its own lean branch that keeps
+    // one stroke for normal hits — gating the call meant mobile players got a
+    // capped, filtered, never-drawn list and combat landed with no feedback.
+    perfMeter.measure('attackFx', () => this._drawAttackFlashes(ctx, cam));
     perfMeter.measure('entities', () => {
     for (const e of list) {
       if (e.isDead) continue;
@@ -867,8 +869,10 @@ export class Renderer {
         || (e.kind === 'player' && typeof e.displaySpriteKey === 'function'
           ? e.displaySpriteKey()
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
+      // Contact shadow on every path: one ellipse fill, and without it sprites
+      // read as pasted onto the floor rather than standing on it.
+      this._drawEntityGrounding(ctx, e, px, py);
       if (!this._leanCombatFx) {
-        this._drawEntityGrounding(ctx, e, px, py);
         this._drawThreatAura(ctx, e, px, py);
         if (e.elite) this._drawEliteMarker(ctx, e, px, py);
       } else if (e.elite || e.defId?.startsWith('boss_') || e.defId?.startsWith('subboss_')) {

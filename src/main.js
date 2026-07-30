@@ -8,6 +8,7 @@
  * registered before Game.boot() switches to the title scene.
  */
 import { LOG, setPlayerUiScale } from './config/constants.js';
+import { APP_VERSION } from './config/appInfo.js';
 import { Capacitor } from '@capacitor/core';
 import { setReduceMotion } from './config/layoutMetrics.js';
 import { perfMeter } from './debug/PerfMeter.js';
@@ -115,7 +116,7 @@ import { AchievementToast } from './ui/AchievementToast.js';
 import { repairItemDefStats } from './items/canonicalStats.js';
 
 async function bootstrap() {
-  console.log(LOG.CORE, 'Shadow Depths v0.2.4 — bootstrap');
+  console.log(LOG.CORE, `Shadow Depths v${APP_VERSION} — bootstrap`);
 
   // --- core plumbing -------------------------------------------------
   const bus = new EventBus();
