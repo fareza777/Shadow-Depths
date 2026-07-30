@@ -33,7 +33,6 @@ import { PRESSURE_TINT } from '../gameplay/biomeMechanics.js';
 import { getStatusMeta } from '../combat/StatusEffects.js';
 import { drawVectorNPC } from './npcArtVector.jsx';
 import { drawVectorDecor, drawVectorFixture } from './furnishingArtVector.jsx';
-import { drawVectorTrap } from './dungeonTrapsVector.jsx';
 import { drawVectorChest } from './dungeonChestsVector.jsx';
 import { drawVectorStairsDown } from './dungeonStairsVector.jsx';
 import { drawVectorDecorX } from './dungeonDecorExtVector.jsx';
@@ -367,7 +366,6 @@ export class Renderer {
         cctx.translate(-sx, -sy);
         perfMeter.measure('floorLayer', () => {
           this._paintFloorWorldLayer(cctx, floor, null, x0, y0, x1, y1, {
-            skipHazards: true,
             skipTorch: true
           });
         });
@@ -382,7 +380,6 @@ export class Renderer {
       ctx.translate(cam.x, cam.y);
       ctx.drawImage(cache.canvas, cache.sx, cache.sy);
       ctx.restore();
-      this._drawHazardsLive(ctx, floor, x0, y0, x1, y1);
       if (player) this._drawTorchGlowLive(ctx, floor, player, x0, y0, x1, y1);
       return;
     }
@@ -869,26 +866,18 @@ export class Renderer {
         || (e.kind === 'player' && typeof e.displaySpriteKey === 'function'
           ? e.displaySpriteKey()
           : e.kind === 'player' ? 'player_sword' : 'enemy_goblin');
-      // Contact shadow on every path: one ellipse fill, and without it sprites
-      // read as pasted onto the floor rather than standing on it.
-      this._drawEntityGrounding(ctx, e, px, py);
+      // Contact shadow for enemies only — a filled ellipse under the hero
+      // reads as a weird hard ring stuck to the character.
+      if (e.kind !== 'player') this._drawEntityGrounding(ctx, e, px, py);
       if (!this._leanCombatFx) {
         this._drawThreatAura(ctx, e, px, py);
         if (e.elite) this._drawEliteMarker(ctx, e, px, py);
       } else if (e.elite || e.defId?.startsWith('boss_') || e.defId?.startsWith('subboss_')) {
-        // Static (non-pulsing) threat underlay — lean-safe, no gradients.
+        // Flat bar only on lean — no ellipse stroke (looks like a ring).
         const col = e.defId?.startsWith('boss_') ? '#d4be7a'
           : e.defId?.startsWith('subboss_') ? '#c080ff'
           : (e.elite?.color || '#ffaa44');
         fillRect(ctx, px + 2, py + TILE_SIZE - 3, TILE_SIZE - 4, 2, col);
-        ctx.save();
-        ctx.strokeStyle = col;
-        ctx.globalAlpha = 0.45;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE - 4, TILE_SIZE * 0.38, 3.5, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
       }
       this.sprites.draw(key, ctx, px, py, { entity: e, time: this._timeSec || 0 });
       // Status pips stay on lean (flat fills only) — readability > juice.
@@ -1060,25 +1049,28 @@ export class Renderer {
     const list = e.statusEffects;
     if (!list || list.length === 0) return;
     const t = this._timeSec || 0;
-    const pulse = 0.6 + Math.sin(t * 4.5 + (e.x + e.y)) * 0.4;
+    const pulse = this._leanCombatFx
+      ? 0.75
+      : (0.6 + Math.sin(t * 4.5 + (e.x + e.y)) * 0.4);
 
     const dom = getStatusMeta(list[0].id);
     if (dom) {
-      // Tint the body.
+      // Tint the body (flat — no foot glow ring; that looked like a circle on the hero).
       ctx.save();
-      ctx.globalAlpha = 0.16 * pulse + 0.06;
+      ctx.globalAlpha = 0.14 * pulse + 0.05;
       ctx.fillStyle = dom.color;
       ctx.fillRect(px + 3, py + 2, TILE_SIZE - 6, TILE_SIZE - 4);
       ctx.restore();
-      // Soft glow at the feet (reuses the cached aura gradient).
-      ctx.save();
-      ctx.globalAlpha = 0.22 * pulse;
-      ctx.translate(px + TILE_SIZE / 2, py + TILE_SIZE * 0.72);
-      ctx.fillStyle = this._auraGrad(ctx, dom.color, TILE_SIZE * 0.42);
-      ctx.beginPath();
-      ctx.arc(0, 0, TILE_SIZE * 0.42, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      if (!this._leanCombatFx && e.kind !== 'player') {
+        ctx.save();
+        ctx.globalAlpha = 0.22 * pulse;
+        ctx.translate(px + TILE_SIZE / 2, py + TILE_SIZE * 0.72);
+        ctx.fillStyle = this._auraGrad(ctx, dom.color, TILE_SIZE * 0.42);
+        ctx.beginPath();
+        ctx.arc(0, 0, TILE_SIZE * 0.42, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
     }
 
     // One pip per active status, centred above the head (clear of the HP bar).
@@ -1749,7 +1741,7 @@ export class Renderer {
     }
   }
 
-  /** Draw revealed traps: armed = bright glyph, spent = faint scorch. */
+  /** Draw revealed traps: simple glyphs only (no heavy SVG/shadowBlur). */
   _drawHazards(ctx, floor, x0, y0, x1, y1) {
     for (let y = y0; y <= y1; y++) {
       for (let x = x0; x <= x1; x++) {
@@ -1775,14 +1767,6 @@ export class Renderer {
         const r = TILE_SIZE * 0.26;
         ctx.save();
         ctx.globalAlpha = hz.armed ? (t.visible ? 0.9 : 0.4) : 0.3;
-        if (drawVectorTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed ? 'armed' : 'sprung')) {
-          ctx.restore();
-          continue;
-        }
-        if (this._drawCanvasTrap(ctx, tx, ty, TILE_SIZE, hz.type, hz.armed)) {
-          ctx.restore();
-          continue;
-        }
         ctx.fillStyle = '#16121a';
         ctx.strokeStyle = '#5b5161';
         ctx.lineWidth = 1;

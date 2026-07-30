@@ -861,6 +861,7 @@ export class GameScene {
     if (!hz || !hz.armed || entity.isDead) return;
     hz.armed = false;
     hz.revealed = true;
+    this.floor.touchRender?.();
     const meta = HAZARDS[hz.type] || HAZARDS.spike;
     const depth = this.floor.definition?.index ?? 0;
     const base = this.balance.dungeon?.hazardBaseDamage ?? 4;
