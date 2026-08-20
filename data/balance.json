@@ -102,7 +102,20 @@
       "remove_ads",
       "full_descent_unlock"
     ],
-    "fallbackPriceLabel": "Rp 29.000"
+    "fallbackPriceLabel": "Rp 29.000",
+    "ads": {
+      "enabled": true,
+      "testMode": false,
+      "bannerHeightDp": 50,
+      "interstitialEveryNFloors": 3,
+      "interstitialMinFloorIndex": 3,
+      "rewardedRevivePerRun": 1,
+      "unitIds": {
+        "banner": "",
+        "interstitial": "",
+        "rewarded": ""
+      }
+    }
   },
   "unlocks": [
     {

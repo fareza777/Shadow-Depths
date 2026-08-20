@@ -114,6 +114,7 @@ export class GameScene {
     this.meta = deps.metaProgress || null;
     this.billing = deps.billingService || null;
     this.paywall = deps.paywallOverlay || null;
+    this.ads = deps.adService || null;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
     this.save = deps.saveManager || null;
@@ -1290,6 +1291,10 @@ export class GameScene {
     this.state.patch('run.floorIndex', this.dungeon.currentIndex);
     this._emitFloorEntered(this.dungeon.currentIndex, this.floor);
     this._saveRun();
+    // Interstitial goes last: the run is saved and the new floor is fully
+    // built, so a player who kills the app during the ad loses nothing.
+    // Fire-and-forget — a failed ad must never stall the descent.
+    this.ads?.onDescend?.(this.dungeon.currentIndex);
   }
 
   /** Use quick bar slot 0–2 (first consumables / throwables in bag order). */

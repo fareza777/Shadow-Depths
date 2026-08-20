@@ -86,6 +86,7 @@ import { DialogueSystem } from './narrative/DialogueSystem.js';
 
 import { DEFAULT_BALANCE, mergeBalance } from './config/balance.js';
 import { BillingService } from './monetization/BillingService.js';
+import { AdService } from './monetization/AdService.js';
 import { FALLBACK_PRICE_LABEL } from './monetization/products.js';
 import { PaywallOverlay } from './ui/PaywallOverlay.js';
 
@@ -179,8 +180,17 @@ async function bootstrap() {
   bus.on('billing:unlocked', () => {
     Object.assign(state.state.meta, metaProgress.state);
   });
-  // Fire-and-forget store init (restore + price fetch on native).
-  billingService.init().catch((err) => console.warn(LOG.CORE, 'billing init:', err));
+  // Fire-and-forget store init (restore + price fetch on native). This also
+  // restores a prior purchase, so it must settle before ads start: an owner
+  // reinstalling should never see a banner flash before the entitlement lands.
+  const adService = new AdService({ billing: billingService, eventBus: bus, balance });
+  billingService.init()
+    .catch((err) => console.warn(LOG.CORE, 'billing init:', err))
+    .finally(() => {
+      adService.init()
+        .then(() => adService.showBanner())
+        .catch((err) => console.warn(LOG.CORE, 'ads init:', err));
+    });
 
   // Locale from saved meta (default 'en' if absent / unsupported).
   setLocale(state.state.meta.settings?.locale || 'en');
@@ -272,7 +282,7 @@ async function bootstrap() {
       ...deps, hud, minimap, inventoryUI, skillPicker, skillsModal, vigilScreen,
       lighting, renderer, mobileControls, quickUseBar, pauseOverlay,
       craftingPanel, floorEventPanel, tutorial,
-      metaProgress, billingService, paywallOverlay
+      metaProgress, billingService, paywallOverlay, adService
     }),
     gameover: (deps) => new GameOverScreen(deps),
     victory: (deps) => new VictoryScreen(deps)
