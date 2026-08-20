@@ -256,6 +256,12 @@ export class MobileControls {
     return true;
   }
 
+  /** True while any control is showing its ~120ms press flash. GameScene
+   *  uses this to keep the UI layer uncached during the flash window. */
+  hasActivePress() {
+    return !!(this._pressedKey && performance.now() / 1000 < this._pressedClearedAt);
+  }
+
   // --- panel chrome ----------------------------------------------------
   _renderPanel(r, LAYOUT) {
     const ctx = r.ctx;

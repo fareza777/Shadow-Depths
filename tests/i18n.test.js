@@ -11,17 +11,13 @@ describe('i18n', () => {
 
   it('returns translation in current locale', () => {
     expect(t('pause.resume')).toBe('RESUME');
-    setLocale('id');
-    expect(t('pause.resume')).toBe('LANJUT');
   });
 
-  it('falls back to English when key missing in locale', () => {
+  it('ignores legacy id locale from old saves (English-only build)', () => {
     setLocale('id');
-    // 'hud.of' exists in both; use a real key for cross-check
-    expect(t('hud.of')).toBe('DARI');
-    // Pick a key only in EN if any... use a clearly-EN key from registry
-    // (none currently exclusive — test the API contract via the third tier)
-    expect(t('zzz.unknown_key')).toBe('zzz.unknown_key');
+    expect(currentLocale()).toBe('en');
+    expect(t('pause.resume')).toBe('RESUME');
+    expect(t('hud.of')).toBe('OF');
   });
 
   it('falls back to the key itself when missing everywhere', () => {
@@ -33,8 +29,8 @@ describe('i18n', () => {
     expect(currentLocale()).toBe('en');   // unchanged
   });
 
-  it('supportedLocales returns en + id', () => {
-    expect(supportedLocales()).toEqual(['en', 'id']);
+  it('supportedLocales returns en only', () => {
+    expect(supportedLocales()).toEqual(['en']);
   });
 
   it('exposes release metadata used by the About panel', () => {
@@ -43,7 +39,7 @@ describe('i18n', () => {
     expect(APP_VERSION).toMatch(/^\d+\.\d+\.\d+/);
   });
 
-  it.each(['en', 'id'])('has complete About copy for %s', (locale) => {
+  it.each(['en'])('has complete About copy for %s', (locale) => {
     const keys = [
       'title.about',
       'about.subtitle',

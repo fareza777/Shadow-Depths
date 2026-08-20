@@ -280,6 +280,50 @@ export class Renderer {
     this.ctx.drawImage(cache.canvas, 0, 0);
   }
 
+  /**
+   * Single-slot full-screen layer cache. Unlike drawCachedScreenLayer (which
+   * keeps one canvas PER key in a FIFO map), this reuses ONE canvas per slot
+   * and repaints it whenever `key` changes — so a turn-based UI that changes
+   * once per player action never allocates a fresh ~2MB canvas per turn.
+   * Idle frames with an unchanged key are a single 1:1 drawImage blit.
+   */
+  drawCachedScreenLayerOnce(slot, key, paint) {
+    if (!this._leanCombatFx || typeof paint !== 'function') {
+      paint();
+      return;
+    }
+    const w = Layout.canvasW;
+    const h = Layout.canvasH;
+    if (!this._singleLayerCaches) this._singleLayerCaches = new Map();
+    let entry = this._singleLayerCaches.get(slot);
+    if (!entry) {
+      const canvas = (typeof document !== 'undefined')
+        ? document.createElement('canvas')
+        : new OffscreenCanvas(w, h);
+      entry = { canvas, key: null };
+      this._singleLayerCaches.set(slot, entry);
+    }
+    if (entry.canvas.width !== w || entry.canvas.height !== h) {
+      entry.canvas.width = w;
+      entry.canvas.height = h;
+      entry.key = null;
+    }
+    if (entry.key !== key) {
+      const cctx = entry.canvas.getContext('2d', { alpha: true });
+      cctx.setTransform(1, 0, 0, 1, 0, 0);
+      cctx.clearRect(0, 0, w, h);
+      const mainCtx = this.ctx;
+      this.ctx = cctx;
+      try {
+        paint();
+      } finally {
+        this.ctx = mainCtx;
+      }
+      entry.key = key;
+    }
+    this.ctx.drawImage(entry.canvas, 0, 0);
+  }
+
   drawCachedScreenRegion(key, rect, paint) {
     if (!this._leanCombatFx || typeof paint !== 'function' || !rect) {
       paint();
@@ -432,17 +476,6 @@ export class Renderer {
     ctx.clip();
     ctx.translate(cam.x, cam.y);
     this._drawTorchGlow(ctx, floor, player, x0, y0, x1, y1);
-    ctx.restore();
-  }
-
-  _drawHazardsLive(ctx, floor, x0, y0, x1, y1) {
-    const cam = this._camera;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(viewportX(), viewportY(), viewportW(), viewportH());
-    ctx.clip();
-    ctx.translate(cam.x, cam.y);
-    this._drawHazards(ctx, floor, x0, y0, x1, y1);
     ctx.restore();
   }
 

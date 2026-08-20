@@ -132,10 +132,12 @@ export const DEFAULT_BALANCE = Object.freeze({
     enemyCountMax: 12
   },
 
-  // Freemium: first N floors free; one-time IAP unlocks the rest forever.
+  // Free-to-play with ads. The only purchase removes ads forever.
+  // entitlementIds keeps pre-0.3.0 `full_descent_unlock` buyers ad-free.
   monetization: {
-    freeFloorCap: 10,
-    productId: 'full_descent_unlock',
+    model: 'free_with_ads',
+    productId: 'remove_ads',
+    entitlementIds: ['remove_ads', 'full_descent_unlock'],
     // Display-only fallback; live price comes from Play Billing.
     fallbackPriceLabel: 'Rp 29.000'
   }

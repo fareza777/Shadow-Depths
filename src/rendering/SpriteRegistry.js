@@ -25,7 +25,6 @@ import { drawVectorEnemy, preloadVectorEnemies } from './enemySpritesVector.jsx'
 import { drawDetailedItemSprite } from './itemSpritesDetailed.js';
 import { drawVectorItem, preloadItemArt, hasItemArt } from './itemArtVector.jsx';
 import { drawVectorHero, preloadHeroArt } from './heroArtVector.jsx';
-import { preloadTrapArt } from './dungeonTrapsVector.jsx';
 import { preloadChestArt } from './dungeonChestsVector.jsx';
 import { preloadDecorXArt } from './dungeonDecorExtVector.jsx';
 import { preloadFurnishingArt } from './furnishingArtVector.jsx';
@@ -311,7 +310,6 @@ export class SpriteRegistry {
     preloadVectorEnemies();
     preloadItemArt();
     preloadHeroArt();
-    preloadTrapArt();
     preloadChestArt();
     preloadDecorXArt();
     preloadFurnishingArt();

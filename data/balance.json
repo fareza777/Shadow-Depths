@@ -14,7 +14,7 @@
     "hpPerLevel": 5,
     "atkPerLevel": 1,
     "defPerLevel": 1,
-    "healPctPerLevel": 0.30,
+    "healPctPerLevel": 0.3,
     "dexEveryNLevels": 3,
     "dexPerTier": 1
   },
@@ -37,7 +37,11 @@
   },
   "vision": {
     "torchRadius": 7,
-    "perFloor": [7, 7, 6]
+    "perFloor": [
+      7,
+      7,
+      6
+    ]
   },
   "dungeon": {
     "roomMinSize": 4,
@@ -45,12 +49,23 @@
     "minRoomsPerFloor": 6,
     "maxRoomsPerFloor": 10,
     "minStairsDistance": 12,
-    "enemySpawnsPerFloor": [2, 4, 7],
-    "itemSpawnsPerFloor": [5, 5, 6],
+    "enemySpawnsPerFloor": [
+      2,
+      4,
+      7
+    ],
+    "itemSpawnsPerFloor": [
+      5,
+      5,
+      6
+    ],
     "largeRoomChance": 0.45,
     "arenaChance": 0.6,
     "secretCacheChance": 0.4,
-    "trapsPerFloor": { "min": 1, "max": 4 },
+    "trapsPerFloor": {
+      "min": 1,
+      "max": 4
+    },
     "hazardBaseDamage": 4
   },
   "scoring": {
@@ -73,7 +88,7 @@
     "midFrom": 20,
     "midBonus": 0.012,
     "deepFrom": 50,
-    "deepBonus": 0.010,
+    "deepBonus": 0.01,
     "enemyCountStart": 3,
     "enemyCountGrowth": 0.2,
     "enemyCountMilestoneEvery": 10,
@@ -81,15 +96,40 @@
     "enemyCountMax": 12
   },
   "monetization": {
-    "freeFloorCap": 10,
-    "productId": "full_descent_unlock",
+    "model": "free_with_ads",
+    "productId": "remove_ads",
+    "entitlementIds": [
+      "remove_ads",
+      "full_descent_unlock"
+    ],
     "fallbackPriceLabel": "Rp 29.000"
   },
   "unlocks": [
-    { "id": "worn_dagger",    "threshold": 500,  "effect": "startWeapon" },
-    { "id": "veterans_vigor", "threshold": 1500, "effect": "plus10HP" },
-    { "id": "lucky_charm",    "threshold": 3000, "effect": "startRevive" },
-    { "id": "map_sense",      "threshold": 5000, "effect": "revealFloor1" },
-    { "id": "crimson_cloak",  "threshold": 0,    "effect": "cosmetic", "requireFloorCleared": 3 }
+    {
+      "id": "worn_dagger",
+      "threshold": 500,
+      "effect": "startWeapon"
+    },
+    {
+      "id": "veterans_vigor",
+      "threshold": 1500,
+      "effect": "plus10HP"
+    },
+    {
+      "id": "lucky_charm",
+      "threshold": 3000,
+      "effect": "startRevive"
+    },
+    {
+      "id": "map_sense",
+      "threshold": 5000,
+      "effect": "revealFloor1"
+    },
+    {
+      "id": "crimson_cloak",
+      "threshold": 0,
+      "effect": "cosmetic",
+      "requireFloorCleared": 3
+    }
   ]
 }

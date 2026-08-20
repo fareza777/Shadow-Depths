@@ -1,13 +1,21 @@
 /**
- * BillingService — one-time Play Store unlock with a web/dev fallback.
+ * BillingService — one-time "Remove Ads" purchase with a web/dev fallback.
+ *
+ * The game itself is free: every floor is open to every player. The only
+ * entitlement this service manages is ad removal.
+ *
+ * Players who bought the retired `full_descent_unlock` product keep their
+ * entitlement — restore() matches every id in LEGACY_ENTITLEMENT_IDS, so an
+ * existing owner is silently upgraded to ad-free on the next launch.
  *
  * Native (Capacitor Android): @capgo/native-purchases + Google Play Billing.
- * Web / debug: mock unlock so freemium UX can be tested in the browser.
+ * Web / debug: mock unlock so the offer UX can be tested in the browser.
  */
 import { Capacitor } from '@capacitor/core';
 import { LOG } from '../config/constants.js';
 import {
-  PRODUCT_FULL_DESCENT, PRODUCTS, FALLBACK_PRICE_LABEL
+  PRODUCT_REMOVE_ADS, PRODUCT_FULL_DESCENT, PRODUCTS,
+  LEGACY_ENTITLEMENT_IDS, FALLBACK_PRICE_LABEL
 } from './products.js';
 
 export class BillingService {
@@ -26,12 +34,21 @@ export class BillingService {
     this._lastError = '';
   }
 
+  /** The product actually offered for sale. */
   get productId() {
-    return this.balance?.monetization?.productId || PRODUCT_FULL_DESCENT;
+    return this.balance?.monetization?.productId || PRODUCT_REMOVE_ADS;
   }
 
-  get freeFloorCap() {
-    return this.balance?.monetization?.freeFloorCap ?? 10;
+  /**
+   * Every id that grants ad-free, newest first. Owning ANY of them is enough,
+   * which is what keeps pre-0.3.0 `full_descent_unlock` buyers whole.
+   */
+  get entitlementIds() {
+    const configured = this.balance?.monetization?.entitlementIds;
+    const ids = Array.isArray(configured) && configured.length
+      ? configured
+      : LEGACY_ENTITLEMENT_IDS;
+    return ids.includes(this.productId) ? ids : [this.productId, ...ids];
   }
 
   get priceLabel() {
@@ -46,25 +63,31 @@ export class BillingService {
     }
   }
 
+  /**
+   * True when the player owns the ad-free entitlement. The persisted flag is
+   * still called `premiumUnlocked` so existing saves keep their purchase; its
+   * meaning changed from "floors unlocked" to "ads removed".
+   */
   isPremium() {
     return !!this.meta?.isPremium?.() || !!this.meta?.state?.premiumUnlocked;
   }
 
-  /**
-   * Floors are 0-indexed. Cap 10 → indices 0..9 free; index 10+ needs premium.
-   * Tutorial mode is always free.
-   */
-  canAccessFloorIndex(floorIndex, mode = 'normal') {
-    if (mode === 'tutorial') return true;
-    if (this.isPremium()) return true;
-    return (floorIndex || 0) < this.freeFloorCap;
+  /** Ads are shown to everyone who has not bought the removal. */
+  adsRemoved() {
+    return this.isPremium();
   }
 
-  /** True when standing on the last free floor and about to descend deeper. */
-  needsUnlockToDescend(currentIndex, mode = 'normal') {
-    if (mode === 'tutorial') return false;
-    if (this.isPremium()) return false;
-    return (currentIndex || 0) + 1 >= this.freeFloorCap;
+  /**
+   * Every floor is free now. Kept so older call sites and saved runs keep
+   * working without a migration; it simply never blocks.
+   */
+  canAccessFloorIndex(_floorIndex, _mode = 'normal') {
+    return true;
+  }
+
+  /** Descending is never gated. */
+  needsUnlockToDescend(_currentIndex, _mode = 'normal') {
+    return false;
   }
 
   async init() {
@@ -167,22 +190,21 @@ export class BillingService {
       if (!this._native) await this.init();
       if (!this._native) return { ok: false, reason: 'unavailable' };
 
+      const entitled = new Set(this.entitlementIds);
+      const ownsAny = (list) => Array.isArray(list) && list.some((p) => {
+        const id = p?.productIdentifier || p?.productId || p?.sku;
+        return !!id && entitled.has(id);
+      });
+
       const result = await this._native.restorePurchases();
-      const purchases = result?.purchases || result?.transactions || [];
-      const owned = Array.isArray(purchases)
-        ? purchases.some((p) => {
-          const id = p.productIdentifier || p.productId || p.sku;
-          return id === this.productId;
-        })
-        : false;
+      const owned = ownsAny(result?.purchases || result?.transactions || []);
 
       // Some plugin versions only sync entitlements into getPurchases().
       if (!owned && typeof this._native.getPurchases === 'function') {
         try {
           const gp = await this._native.getPurchases();
-          const list = gp?.purchases || [];
-          if (list.some((p) => (p.productIdentifier || p.productId) === this.productId)) {
-            this._grantPremium('restore');
+          if (ownsAny(gp?.purchases || [])) {
+            this._grantPremium('restore_legacy');
             return { ok: true, reason: 'restore' };
           }
         } catch { /* ignore */ }
@@ -217,6 +239,8 @@ export class BillingService {
   }
 
   productCopy() {
-    return PRODUCTS[this.productId] || PRODUCTS[PRODUCT_FULL_DESCENT];
+    return PRODUCTS[this.productId]
+      || PRODUCTS[PRODUCT_REMOVE_ADS]
+      || PRODUCTS[PRODUCT_FULL_DESCENT];
   }
 }

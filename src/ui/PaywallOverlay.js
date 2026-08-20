@@ -1,5 +1,8 @@
 /**
- * PaywallOverlay — one-time unlock modal for Full Descent.
+ * PaywallOverlay — one-time "Remove Ads" offer.
+ *
+ * Nothing in the game is locked behind it: this is a support/convenience
+ * purchase, so the modal is always dismissible.
  */
 import {
   COLOR, CANVAS_WIDTH, CANVAS_HEIGHT, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
@@ -154,7 +157,6 @@ export class PaywallOverlay {
     const r = renderer;
     const ctx = r.ctx;
     const g = this._layout();
-    const cap = this.billing?.freeFloorCap ?? 10;
     const price = this.billing?.priceLabel || '—';
 
     ctx.save();
@@ -179,11 +181,11 @@ export class PaywallOverlay {
     const lines = this._reason === 'continue'
       ? [
         t('paywall.continue_deep'),
-        t('paywall.continue_cap', { cap }),
+        t('paywall.continue_cap'),
         t('paywall.continue_unlock')
       ]
       : [
-        t('paywall.cleared_free', { cap }),
+        t('paywall.cleared_free'),
         t('paywall.beyond')
       ];
 

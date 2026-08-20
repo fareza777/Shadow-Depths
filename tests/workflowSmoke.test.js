@@ -38,9 +38,14 @@ describe('workflow smoke: descent pipeline', () => {
     expect(floor.stairsDown).toBeTruthy();
   });
 
-  it('documents free-floor paywall product contract', () => {
+  it('documents the free-with-ads product contract', () => {
+    // The retired id must keep its exact value: existing buyers are matched
+    // against it on restore, so renaming it would silently strip their
+    // ad-free entitlement.
     expect(PRODUCT_FULL_DESCENT).toBe('full_descent_unlock');
-    expect(balanceData.monetization?.freeFloorCap ?? 10).toBe(10);
+    expect(balanceData.monetization?.model).toBe('free_with_ads');
+    expect(balanceData.monetization?.entitlementIds).toContain('full_descent_unlock');
+    expect(balanceData.monetization?.freeFloorCap).toBeUndefined();
     expect(FALLBACK_PRICE_LABEL).toMatch(/Rp/);
   });
 

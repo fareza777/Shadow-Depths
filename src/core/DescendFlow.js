@@ -1,28 +1,22 @@
 /**
- * DescendFlow — freemium gate + floor transition after stairs.
+ * DescendFlow — floor transition after stairs.
  * Extracted from GameScene so descend logic stays testable and thin.
  */
 
 /**
+ * Descend is no longer gated: the game is free and every floor is open. The
+ * hook stays so GameScene and saved runs keep one call shape, and so a future
+ * gate (event floors, seasonal locks) has an obvious home.
+ *
  * @param {object} deps
  * @param {object} deps.billing
- * @param {object} deps.paywall
- * @param {object} deps.bus
- * @param {number} currentIndex
- * @param {string} mode
  * @returns {{ blocked:boolean, reason?:string }}
  */
-export function gateDescend({ billing, paywall, bus }, currentIndex, mode) {
-  if (!billing?.needsUnlockToDescend?.(currentIndex, mode)) {
-    return { blocked: false };
+export function gateDescend({ billing } = {}, currentIndex, mode) {
+  if (billing?.needsUnlockToDescend?.(currentIndex, mode)) {
+    return { blocked: true, reason: 'gated' };
   }
-  paywall?.show?.('descend');
-  const cap = billing.freeFloorCap || 10;
-  bus?.emit?.('log:message', {
-    text: `Floor ${cap + 1}+ requires Full Descent unlock.`,
-    kind: 'warn'
-  });
-  return { blocked: true, reason: 'paywall' };
+  return { blocked: false };
 }
 
 /**

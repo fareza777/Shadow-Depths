@@ -52,32 +52,37 @@ describe('Dungeon floor curve', () => {
   });
 });
 
-describe('Freemium descend gate', () => {
-  it('blocks descend past free cap and opens paywall', () => {
+describe('Descend gate (free-to-play)', () => {
+  it('never blocks a non-paying player at the old free cap', () => {
     const shown = [];
-    const logs = [];
     const billing = new BillingService({
       metaProgress: { isPremium: () => false, state: {} },
       eventBus: { emit() {} },
-      balance: { monetization: { freeFloorCap: 10 } }
+      balance: { monetization: {} }
     });
     const result = gateDescend({
       billing,
       paywall: { show: (r) => shown.push(r) },
-      bus: { emit: (_e, p) => logs.push(p) }
+      bus: { emit() {} }
     }, 9, 'normal');
-    expect(result.blocked).toBe(true);
-    expect(shown).toEqual(['descend']);
+    expect(result.blocked).toBe(false);
+    expect(shown).toEqual([]);
   });
 
-  it('allows tutorial and premium', () => {
-    const billing = new BillingService({
+  it('never blocks deep floors, tutorial, or ad-free owners', () => {
+    const free = new BillingService({
+      metaProgress: { isPremium: () => false, state: {} },
+      eventBus: { emit() {} },
+      balance: { monetization: {} }
+    });
+    const owner = new BillingService({
       metaProgress: { isPremium: () => true, state: { premiumUnlocked: true } },
       eventBus: { emit() {} },
-      balance: { monetization: { freeFloorCap: 10 } }
+      balance: { monetization: {} }
     });
-    expect(gateDescend({ billing, paywall: {}, bus: {} }, 9, 'normal').blocked).toBe(false);
-    expect(gateDescend({ billing, paywall: {}, bus: {} }, 9, 'tutorial').blocked).toBe(false);
+    expect(gateDescend({ billing: free }, 98, 'normal').blocked).toBe(false);
+    expect(gateDescend({ billing: free }, 9, 'tutorial').blocked).toBe(false);
+    expect(gateDescend({ billing: owner }, 99, 'normal').blocked).toBe(false);
   });
 });
 

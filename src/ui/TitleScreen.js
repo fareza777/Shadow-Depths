@@ -21,7 +21,7 @@ import {
   drawIronPanel, drawIronPlate, drawIronActionButton,
   drawInsetCard, IRON_PALETTE
 } from './ironPanel.js';
-import { t, setLocale, currentLocale } from '../content/i18n.js';
+import { t } from '../content/i18n.js';
 import { setPlayerUiScale } from '../config/constants.js';
 import { setReduceMotion } from '../config/layoutMetrics.js';
 import { APP_NAME, APP_VERSION } from '../config/appInfo.js';
@@ -335,9 +335,8 @@ export class TitleScreen {
       return best != null ? `${key.slice(5)} · best ${best}` : `${key.slice(5)} · play`;
     }
     if (item.id === 'unlock') {
-      if (this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked) return 'OWNED';
-      const cap = this.billing?.freeFloorCap ?? this.meta?.freeFloorCap?.() ?? 10;
-      return this.billing?.priceLabel || `free 1–${cap}`;
+      if (this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked) return 'AD-FREE';
+      return this.billing?.priceLabel || 'remove ads';
     }
     if (item.id === 'settings') {
       const orient = this.state.state.meta.settings?.orientation || 'portrait';
@@ -402,7 +401,7 @@ export class TitleScreen {
         }
         if (this.modal === 'settings' && idx === 303) {
           if (this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked) {
-            this._shopFeedback = 'Full Descent already unlocked';
+            this._shopFeedback = 'Ads already removed';
             this._shopFeedbackUntil = performance.now() + 1800;
             return;
           }
@@ -415,18 +414,10 @@ export class TitleScreen {
               this.modal = null;
               this.paywall?.show('menu');
             } else {
-              this._shopFeedback = 'Restore failed — try Full Descent';
+              this._shopFeedback = 'Restore failed — try Remove Ads';
             }
             this._shopFeedbackUntil = performance.now() + 2000;
           })();
-          return;
-        }
-        if (this.modal === 'settings' && (idx === 304 || idx === 305)) {
-          const locale = idx === 304 ? 'en' : 'id';
-          if (this.meta) {
-            this.meta.setSetting('locale', locale);
-            setLocale(locale);
-          }
           return;
         }
         if (this.modal === 'settings' && idx === 306) {
@@ -533,7 +524,7 @@ export class TitleScreen {
     }
     else if (id === 'unlock') {
       if (this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked) {
-        this._shopFeedback = 'Full Descent already unlocked';
+        this._shopFeedback = 'Ads already removed';
         this._shopFeedbackUntil = performance.now() + 1800;
         return;
       }
@@ -581,7 +572,7 @@ export class TitleScreen {
   _renderModalCloseButton(r, explicitY) {
     const rect = this._modalCloseRect(explicitY);
     drawIronActionButton(r, rect.x, rect.y, rect.w, rect.h, 'CLOSE',
-      { accent: IRON_PALETTE.brass, fontSize: uiSize(14) });
+      { accent: IRON_PALETTE.brass, fontSize: uiSize(14), glyph: '✕' });
   }
 
   _renderIronModalChrome(r, g, title, subtitle = null) {
@@ -696,23 +687,77 @@ export class TitleScreen {
 
   // --- Settings modal -----------------------------------------------
   _settingsLayout() {
+    // Real canvas height — CANVAS_HEIGHT is a fixed constant (1040) while
+    // Layout.canvasH tracks the device (as low as 760). Centering on the
+    // constant pushed the bottom rows off-screen.
+    const canvasH = Layout.canvasH || CANVAS_HEIGHT;
     const modalX = IS_LANDSCAPE ? 60 : 40;
     const modalW = CANVAS_WIDTH - modalX * 2;
     const btnW = IS_LANDSCAPE ? 130 : 140;
-    const btnH = IS_LANDSCAPE ? 40 : 44;
+    const btnH = IS_LANDSCAPE ? 36 : 44;
     const btnGap = 14;
     const totalW = btnW * 2 + btnGap;
     const baseX = (CANVAS_WIDTH - totalW) / 2;
     const closeH = IS_LANDSCAPE ? 40 : 48;
+
+    if (IS_LANDSCAPE) {
+      // Compact two-column layout — the single-column stack is ~630px tall
+      // and overflows the 480px landscape canvas (CLOSE ended up cut off).
+      const colW = (modalW - 40 - 16) / 2;
+      const col1X = modalX + 20;
+      const col2X = col1X + colW + 16;
+      const bodyTop = 62;
+      const soundLabelY = bodyTop;
+      const soundCardY = soundLabelY + 14;
+      const soundCardH = 30;
+      const pillsLabelY = soundCardY + soundCardH + 12;
+      const pillsY = pillsLabelY + 12;
+      const pillsH = btnH;
+      const row1Y = pillsY + pillsH + 10;
+      const row2Y = row1Y + btnH + 8;
+      const restoreY = row2Y + btnH + 10;
+      const hintY = restoreY + btnH + 6;
+      const closeY = hintY + 16;
+      const modalH = closeY + closeH + 10;
+      const modalY = Math.max(4, (canvasH - modalH) / 2);
+      const y0 = modalY;
+      return {
+        modalX, modalY, modalW, modalH,
+        btnW, btnH, btnGap, baseX, closeH,
+        closeY: y0 + closeY,
+        soundLabelY: y0 + soundLabelY,
+        soundCardY: y0 + soundCardY,
+        soundCardH,
+        soundCardX: modalX + 20,
+        soundCardW: modalW - 40,
+        soundHintY: 0,
+        orientLabelY: y0 + pillsLabelY,
+        orientLabelX: CANVAS_WIDTH / 2,
+        orientBtnY: y0 + pillsY,
+        orientBaseX: baseX,
+        analyticsY: y0 + row1Y, analyticsH: btnH,
+        analyticsX: col1X, analyticsW: colW,
+        motionY: y0 + row1Y, motionH: btnH,
+        motionX: col2X, motionW: colW,
+        contrastY: y0 + row2Y, contrastH: btnH,
+        contrastX: col1X, contrastW: colW,
+        textY: y0 + row2Y, textH: btnH,
+        textX: col2X, textW: colW,
+        restoreY: y0 + restoreY, restoreH: btnH,
+        restoreX: modalX + 20, restoreW: modalW - 40,
+        hintY: y0 + hintY
+      };
+    }
+
     const bodyTop = 58;
     const soundLabelY = bodyTop;
     const soundCardY = soundLabelY + 16;
     const soundCardH = 34;
-    const orientLabelY = soundCardY + soundCardH + 18;
+    const soundHintY = soundCardY + soundCardH + 10;
+    // 24px gap (was 18) — the 12px hint line above used to overlap this label.
+    const orientLabelY = soundCardY + soundCardH + 24;
     const orientBtnY = orientLabelY + 14;
-    const localeLabelY = orientBtnY + btnH + 16;
-    const localeBtnY = localeLabelY + 14;
-    const analyticsY = localeBtnY + btnH + 14;
+    const analyticsY = orientBtnY + btnH + 14;
     const analyticsH = btnH;
     const motionY = analyticsY + analyticsH + 10;
     const motionH = btnH;
@@ -723,23 +768,28 @@ export class TitleScreen {
     const restoreY = textY + textH + 14;
     const restoreH = btnH;
     const hintY = restoreY + restoreH + 10;
-    const closeY = hintY + 24;
+    const closeY = hintY + 20;
     const modalH = closeY + closeH + 14;
-    const modalY = Math.max(4, (CANVAS_HEIGHT - modalH) / 2 - (IS_LANDSCAPE ? 4 : 12));
+    const modalY = Math.max(8, (canvasH - modalH) / 2 - 8);
 
     const y0 = modalY;
     return {
       modalX, modalY, modalW, modalH,
-      btnW, btnH, btnGap, baseX, closeH, closeY,
+      btnW, btnH, btnGap, baseX, closeH,
+      // ABSOLUTE y — this used to be returned relative (570) while the
+      // renderer + hit-test treated it as absolute, so CLOSE painted on top
+      // of the HIGH-CONTRAST row.
+      closeY: y0 + closeY,
       soundLabelY: y0 + soundLabelY,
       soundCardY: y0 + soundCardY,
       soundCardH,
       soundCardX: modalX + 20,
       soundCardW: modalW - 40,
+      soundHintY: y0 + soundHintY,
       orientLabelY: y0 + orientLabelY,
+      orientLabelX: CANVAS_WIDTH / 2,
       orientBtnY: y0 + orientBtnY,
-      localeLabelY: y0 + localeLabelY,
-      localeBtnY: y0 + localeBtnY,
+      orientBaseX: baseX,
       analyticsY: y0 + analyticsY,
       analyticsH,
       analyticsX: modalX + 20,
@@ -770,7 +820,6 @@ export class TitleScreen {
     const settings = this.state.state.meta.settings || {};
     const vol = Math.round((settings.volume ?? 0.6) * 100);
     const orient = settings.orientation || 'portrait';
-    const locale = settings.locale || currentLocale() || 'en';
     const analyticsOn = !!settings.analyticsOptIn;
     const reduceMotion = !!settings.reduceMotion;
     const hiContrast = !!settings.highContrastThreats;
@@ -786,29 +835,21 @@ export class TitleScreen {
       size: uiSize(12), bold: true, align: 'center', baseline: 'middle',
       family: FONT_MONO, color: IRON_PALETTE.bone
     });
-    r.drawText('tap bar to change', CANVAS_WIDTH / 2, g.soundCardY + g.soundCardH + 8, {
-      size: uiSize(9), italic: true, align: 'center',
-      family: FONT_BODY, color: IRON_PALETTE.boneDim
-    });
+    if (g.soundHintY) {
+      r.drawText('tap bar to change', CANVAS_WIDTH / 2, g.soundHintY, {
+        size: uiSize(9), italic: true, align: 'center',
+        family: FONT_BODY, color: IRON_PALETTE.boneDim
+      });
+    }
 
-    r.drawText('ORIENTATION', CANVAS_WIDTH / 2, g.orientLabelY, {
+    r.drawText('ORIENTATION', g.orientLabelX ?? CANVAS_WIDTH / 2, g.orientLabelY, {
       size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
     });
     for (let i = 0; i < 2; i++) {
       const key = i === 0 ? 'portrait' : 'landscape';
       const label = i === 0 ? 'PORTRAIT' : 'LANDSCAPE';
-      const bx = g.baseX + i * (g.btnW + g.btnGap);
+      const bx = (g.orientBaseX ?? g.baseX) + i * (g.btnW + g.btnGap);
       this._renderIronPill(r, bx, g.orientBtnY, g.btnW, g.btnH, label, orient === key);
-    }
-
-    r.drawText(t('settings.language'), CANVAS_WIDTH / 2, g.localeLabelY, {
-      size: uiSize(11), align: 'center', family: FONT_DISPLAY, color: IRON_PALETTE.brass
-    });
-    for (let i = 0; i < 2; i++) {
-      const key = i === 0 ? 'en' : 'id';
-      const label = i === 0 ? 'EN' : 'ID';
-      const bx = g.baseX + i * (g.btnW + g.btnGap);
-      this._renderIronPill(r, bx, g.localeBtnY, g.btnW, g.btnH, label, locale === key);
     }
 
     drawIronActionButton(r, g.analyticsX, g.analyticsY, g.analyticsW, g.analyticsH,
@@ -826,7 +867,7 @@ export class TitleScreen {
 
     const premium = this.meta?.isPremium?.() || this.state.state.meta?.premiumUnlocked;
     drawIronActionButton(r, g.restoreX, g.restoreY, g.restoreW, g.restoreH,
-      premium ? 'FULL DESCENT · OWNED' : 'RESTORE PURCHASES',
+      premium ? 'AD-FREE · OWNED' : 'RESTORE PURCHASES',
       { accent: premium ? IRON_PALETTE.brass : '#8a8098', fontSize: uiSize(12) });
 
     r.drawText('orientation reloads the game',
@@ -847,21 +888,9 @@ export class TitleScreen {
     if (this.modal !== 'settings') return null;
     const g = this._settingsLayout();
     for (let i = 0; i < 2; i++) {
-      const bx = g.baseX + i * (g.btnW + g.btnGap);
+      const bx = (g.orientBaseX ?? g.baseX) + i * (g.btnW + g.btnGap);
       if (x >= bx && x <= bx + g.btnW && y >= g.orientBtnY && y <= g.orientBtnY + g.btnH) {
         return i === 0 ? 'portrait' : 'landscape';
-      }
-    }
-    return null;
-  }
-
-  _settingsLocaleHitTest(x, y) {
-    if (this.modal !== 'settings') return null;
-    const g = this._settingsLayout();
-    for (let i = 0; i < 2; i++) {
-      const bx = g.baseX + i * (g.btnW + g.btnGap);
-      if (x >= bx && x <= bx + g.btnW && y >= g.localeBtnY && y <= g.localeBtnY + g.btnH) {
-        return i === 0 ? 'en' : 'id';
       }
     }
     return null;
@@ -1493,8 +1522,6 @@ export class TitleScreen {
       if (this._settingsVolumeHitTest(x, y)) return 302;
       const orient = this._settingsOrientationHitTest(x, y);
       if (orient) return orient === 'portrait' ? 300 : 301;
-      const locale = this._settingsLocaleHitTest(x, y);
-      if (locale) return locale === 'en' ? 304 : 305;
       const g = this._settingsGeometry();
       if (x >= g.analyticsX && x <= g.analyticsX + g.analyticsW
           && y >= g.analyticsY && y <= g.analyticsY + g.analyticsH) return 306;

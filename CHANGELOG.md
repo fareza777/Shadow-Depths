@@ -5,6 +5,27 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ---
 
+## [0.2.7] — 2026-08-11 — Performance & Polish
+
+### Fixed
+
+- **Lag:** the in-game UI layer was re-rendered from scratch every frame
+  (`_uiCacheKey()` was never wired in). It is now composited once per turn
+  into a cached offscreen layer and blitted 1:1 on unchanged frames.
+- **Death/Victory screens:** narrative footer lines (tips, teaser, build
+  summary) no longer truncate mid-sentence — text word-wraps to 2–3 lines
+  and the panel height adapts to its content. Epitaph wraps too.
+- **Settings:** CLOSE button no longer overlaps the HIGH-CONTRAST row
+  (relative-vs-absolute Y bug); fixed hint/label overlap; added a compact
+  two-column landscape layout.
+
+### Changed
+
+- **English-only build.** Removed the Indonesian locale and the LANGUAGE
+  toggle from Settings; legacy `locale: 'id'` saves fall back to English.
+
+---
+
 ## [0.1.0] — 2026-05-24 — Foundation
 
 First playable foundation. Game runs end-to-end on desktop and mobile browsers.

@@ -42,7 +42,8 @@ const DEFAULT_META = Object.freeze({
     highContrastThreats: false,
     textScale: 1
   },
-  // Play Store one-time unlock (Full Descent).
+  // Play Store one-time unlock. Pre-0.3.0 this meant "floors 11+ unlocked";
+  // it now means "ads removed". Field names kept so old saves stay valid.
   premiumUnlocked: false,
   premiumUnlockedAt: null,
   premiumSource: null,
@@ -225,7 +226,7 @@ export class MetaProgress {
     this.bus?.emit('settings:changed', { key, value });
   }
 
-  /** True when the one-time Full Descent unlock is owned. */
+  /** True when the one-time ad-free unlock is owned. */
   isPremium() {
     return !!this._state.premiumUnlocked;
   }
@@ -245,10 +246,6 @@ export class MetaProgress {
       at: this._state.premiumUnlockedAt
     });
     return true;
-  }
-
-  freeFloorCap() {
-    return this.balance?.monetization?.freeFloorCap ?? 10;
   }
 
   // --- unlocks --------------------------------------------------------

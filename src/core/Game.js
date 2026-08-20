@@ -136,15 +136,6 @@ export class Game {
     const snapshot = this._loadRunSnapshot();
     if (!snapshot) return;
 
-    // Freemium: block resume into paid floors until unlock.
-    const floorIndex = snapshot.floorIndex || 0;
-    const mode = snapshot.mode || 'normal';
-    if (this.billing && !this.billing.canAccessFloorIndex(floorIndex, mode)) {
-      this.paywall?.show('continue');
-      this.bus.once('paywall:unlocked', () => this.continueRun());
-      return;
-    }
-
     const scene = this._sceneFactories.game({
       bus: this.bus,
       state: this.state,

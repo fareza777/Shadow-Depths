@@ -375,7 +375,16 @@ export class GameScene {
     if (!this.renderer) this.renderer = renderer;
     if (!this.controls) this.controls = new MobileControls({ bus: this.bus });
     if (!this.quickUse) this.quickUse = new QuickUseBar({ bus: this.bus });
-    this._renderUIUncached(renderer);
+    // Turn-based UI: the whole layer is static between player actions, so
+    // composite it into a cached offscreen and blit 1:1 on unchanged frames
+    // instead of rebuilding HUD gradients / control plates every rAF.
+    const cacheKey = this._uiCacheKey();
+    if (cacheKey) {
+      renderer.drawCachedScreenLayerOnce('game-ui', cacheKey,
+        () => this._renderUIUncached(renderer));
+    } else {
+      this._renderUIUncached(renderer);
+    }
   }
 
   _renderUIUncached(renderer) {
@@ -446,30 +455,52 @@ export class GameScene {
     if (!this.floor || !this.player) return null;
     if (this._floorBanner || this._lootToast) return null;
     if (this.tutorial?.open || this.inventoryUI?.open || this.vigil?.open
-        || this.skillPicker?.open || this.pause?.open || this.crafting?.open
-        || this.floorEvents?.open) return null;
+        || this.skillPicker?.open || this.skillsModal?.open || this.pause?.open
+        || this.crafting?.open || this.floorEvents?.open || this.paywall?.open) return null;
     const hpPct = this.player.stats.hpMax ? this.player.stats.hp / this.player.stats.hpMax : 1;
     if (hpPct <= 0.35) return null;
-    const inv = this.player.inventory?.slots?.map((item) =>
+    // Button press flashes (~120ms) are time-based — stay uncached while one
+    // is visible so the glow doesn't freeze mid-press.
+    if (this.controls?.hasActivePress?.()) return null;
+    if (this.quickUse && this.quickUse._pressed >= 0) return null;
+    const p = this.player;
+    const inv = p.inventory?.slots?.map((item) =>
       item ? `${item.id}:${item.count || 1}:${item.def?.affixes ? JSON.stringify(item.def.affixes) : ''}` : '-'
     ).join(',');
-    const statuses = (this.player.statusEffects || [])
+    const statuses = (p.statusEffects || [])
       .map((s) => `${s.id}:${s.value ?? ''}:${s.duration ?? ''}`).join(',');
     const boss = this.floor.enemies?.().find((e) =>
       !e.isDead && (e.defId?.startsWith('boss_') || e.defId?.startsWith('subboss_')));
     const itemKeys = Array.from(this.floor.items?.keys?.() || []).join(';');
+    // Message strip: alpha is flat 1 while a message is fresh, then fades over
+    // its last ~1s. Only during that fade window do we need time in the key
+    // (10 buckets/sec → 10 repaints/sec instead of 60, and only ~1s long).
+    let msgKey = '0';
+    const log = this.hud?.messageLog;
+    if (log && log.entries.length) {
+      const tail = log.entries.slice(-3);
+      const nowT = log._t || 0;
+      const fading = tail.some((e) => {
+        const age = nowT - e.t;
+        return age >= 4.0 && age < 5.2;
+      });
+      msgKey = `${log.entries.length}:${tail[tail.length - 1].t}${fading ? `:${Math.floor(nowT * 10)}` : ''}`;
+    }
     return [
-      'game-ui', Layout.canvasW, Layout.canvasH,
+      Layout.canvasW, Layout.canvasH,
       this.mode, this.dungeon.currentIndex, this.dungeon.totalFloors,
-      this.player.x, this.player.y,
-      this.player.stats.hp, this.player.stats.hpMax,
-      this.player.xp, this.player.level, this.player.gold,
-      this.player.rangedFocus, this.player.rangedFocusMax,
-      this.player.reviveCharges, this.player.weapon?.id || '',
+      p.x, p.y,
+      p.stats.hp, p.stats.hpMax,
+      p.xp, p.level, p.gold,
+      p.rangedFocus, p.rangedFocusMax,
+      p.reviveCharges, p.spellCooldown || 0,
+      p.weapon?.id || '', p.armor?.id || '', p.helm?.id || '',
+      p.legs?.id || '', p.ring?.id || '', p.necklace?.id || '',
       this.floor.renderRevision || 0, this.floor.entityRevision || 0,
       this.floor.definition?.type || '', this.floor.definition?.specialEnemyId || '',
       boss ? `${boss.defId}:${boss.stats.hp}:${boss.stats.hpMax}` : '',
-      statuses, inv, itemKeys
+      this.state?.state?.meta?.settings?.textScale || 1,
+      statuses, inv, itemKeys, msgKey
     ].join('|');
   }
 
@@ -1647,7 +1678,7 @@ export class GameScene {
     return 'teach_default';
   }
 
-  /** Tease the next biome after free-cap deaths (Full Descent funnel). */
+  /** Tease the next biome on mid-run deaths, to pull the player back in. */
   _biomeTeaser(player) {
     const floor = (player.runStats?.floorsCleared || 0) + 1;
     if (floor < 8 || floor > 12) return null;
