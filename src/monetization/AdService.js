@@ -32,11 +32,15 @@ export class AdService {
     this._interstitialLoaded = false;
     this._rewardedLoaded = false;
     this._descentsSinceAd = 0;
+    this._lastInterstitialAt = 0;
     this._revivesUsedThisRun = 0;
+    this._canRequestAds = false;
+    this._consentInfo = null;
     this._lastError = '';
 
     this.bus?.on?.('billing:unlocked', () => { this.removeAllAds(); });
-    this.bus?.on?.('run:started', () => {
+    this.bus?.on?.('run:started', (payload = {}) => {
+      if (payload.revived) return;
       this._revivesUsedThisRun = 0;
       this._descentsSinceAd = 0;
     });
@@ -55,12 +59,17 @@ export class AdService {
 
   get lastError() { return this._lastError; }
 
+  /** True only after UMP confirms that the SDK may request an ad. */
+  get canRequestAds() { return this._canRequestAds; }
+
   async init() {
     if (this._ready || this.adsDisabled) return;
+    if (this._consentInfo && !this._canRequestAds) return;
     try {
       const mod = await import('@capacitor-community/admob');
-      this._admob = mod.AdMob;
-      await this._requestConsent(mod);
+      if (!this._admob) this._admob = mod.AdMob;
+      if (!this._consentInfo) await this._requestConsent(mod);
+      if (!this._canRequestAds) return;
       await this._admob.initialize({
         initializeForTesting: this.config.testMode,
         testingDevices: this.config.testingDevices || []
@@ -89,11 +98,23 @@ export class AdService {
     try {
       const info = await this._admob.requestConsentInfo();
       const REQUIRED = mod.AdmobConsentStatus?.REQUIRED || 'REQUIRED';
+      let resolvedInfo = info;
       if (info?.isConsentFormAvailable && info?.status === REQUIRED) {
-        await this._admob.showConsentForm();
+        const formResult = await this._admob.showConsentForm();
+        if (formResult && typeof formResult.canRequestAds === 'boolean') {
+          resolvedInfo = formResult;
+        } else {
+          resolvedInfo = await this._admob.requestConsentInfo();
+        }
       }
+      this._consentInfo = resolvedInfo || { canRequestAds: false };
+      this._canRequestAds = this._consentInfo.canRequestAds === true;
+      return this._consentInfo;
     } catch (err) {
+      this._consentInfo = { canRequestAds: false };
+      this._canRequestAds = false;
       console.warn(LOG.CORE, 'AdMob consent step skipped:', err?.message || err);
+      return this._consentInfo;
     }
   }
 
@@ -106,7 +127,7 @@ export class AdService {
   async showBanner() {
     if (this.adsDisabled || this._bannerVisible) return;
     if (!this._ready) await this.init();
-    if (!this._admob) return;
+    if (!this._admob || !this._ready) return;
     try {
       const mod = await import('@capacitor-community/admob');
       this._reserveBannerStrip(this.config.bannerHeightDp);
@@ -126,14 +147,21 @@ export class AdService {
   }
 
   async hideBanner() {
-    if (!this._bannerVisible || !this._admob) return;
-    try {
-      await this._admob.hideBanner();
-    } catch (err) {
-      console.warn(LOG.CORE, 'hideBanner failed:', err);
+    if (this._bannerVisible && this._admob) {
+      try {
+        await this._admob.hideBanner();
+      } catch (err) {
+        console.warn(LOG.CORE, 'hideBanner failed:', err);
+      }
     }
     this._bannerVisible = false;
     this._reserveBannerStrip(0);
+  }
+
+  /** Route a scene transition to a safe banner placement or a hidden strip. */
+  async onSceneChanged(sceneName) {
+    const eligible = this.config.eligibleScenes?.includes?.(sceneName);
+    return eligible ? this.showBanner() : this.hideBanner();
   }
 
   /**
@@ -172,11 +200,16 @@ export class AdService {
   async onDescend(floorIndex) {
     if (this.adsDisabled) return false;
     if ((floorIndex || 0) < this.config.interstitialMinFloorIndex) return false;
+    const now = Date.now();
+    if (this._lastInterstitialAt > 0
+      && now - this._lastInterstitialAt < this.config.interstitialCooldownMs) {
+      return false;
+    }
     this._descentsSinceAd += 1;
     if (this._descentsSinceAd < this.config.interstitialEveryNFloors) return false;
 
     if (!this._ready) await this.init();
-    if (!this._admob) return false;
+    if (!this._admob || !this._ready) return false;
     if (!this._interstitialLoaded) await this._preloadInterstitial();
     if (!this._interstitialLoaded) return false;
 
@@ -184,6 +217,7 @@ export class AdService {
     try {
       await this._admob.showInterstitial();
       this._interstitialLoaded = false;
+      this._lastInterstitialAt = Date.now();
       this._preloadInterstitial();
       return true;
     } catch (err) {
@@ -211,6 +245,7 @@ export class AdService {
   /** True when a revive offer should appear on the death screen. */
   canOfferRevive() {
     if (this.adsDisabled) return false;
+    if (this._consentInfo && !this._canRequestAds) return false;
     return this._revivesUsedThisRun < this.config.rewardedRevivePerRun;
   }
 
@@ -225,14 +260,16 @@ export class AdService {
   async showRewardedRevive() {
     if (!this.canOfferRevive()) return false;
     if (!this._ready) await this.init();
-    if (!this._admob) return false;
+    if (!this._admob || !this._ready) return false;
     if (!this._rewardedLoaded) await this._preloadRewarded();
     if (!this._rewardedLoaded) return false;
     try {
       const reward = await this._admob.showRewardVideoAd();
       this._rewardedLoaded = false;
       this._preloadRewarded();
-      const earned = !!reward && reward.type !== undefined;
+      const earned = typeof reward?.type === 'string'
+        ? reward.type.trim().length > 0
+        : !!reward?.type;
       if (earned) this._revivesUsedThisRun += 1;
       return earned;
     } catch (err) {
