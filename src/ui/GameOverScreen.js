@@ -1,5 +1,5 @@
 /**
- * GameOverScreen — death epitaph + run stats + restart.
+ * GameOverScreen — death epitaph + run stats + restart/title/rewarded revive.
  *
  * Quick restart (per Pillar 3): pressing any confirm/move/tap routes back
  * into a new run with 1 input. Friction here kills retention.
@@ -36,16 +36,37 @@ const LAYOUT = IS_LANDSCAPE
 
 export class GameOverScreen {
   /**
-   * @param {{ bus:object, summary:object }} deps
+   * @param {{ bus:object, summary:object, adService?:object }} deps
    */
-  constructor({ bus, summary }) {
+  constructor({ bus, summary, adService = null }) {
     this.bus = bus;
     this.summary = summary || {};
+    this.adService = adService;
     this.selected = 0; // 0 = restart, 1 = title
+    this._busy = false;
+    this._reviveStatus = '';
     this._layoutCache = null;
   }
 
-  enter() { this.selected = 0; }
+  enter() {
+    this.selected = 0;
+    this._busy = false;
+    this._reviveStatus = '';
+    this._layoutCache = null;
+  }
+
+  _canOfferRevive() {
+    if (!this.summary.died || !this.summary.canOfferRevive || !this.summary.reviveSnapshot) {
+      return false;
+    }
+    if (!this.adService) return false;
+    try {
+      return typeof this.adService.canOfferRevive !== 'function'
+        || this.adService.canOfferRevive();
+    } catch {
+      return false;
+    }
+  }
 
   /** Truncate with an ellipsis until the text fits maxW. */
   _fit(r, text, maxW, opts) {
@@ -103,7 +124,7 @@ export class GameOverScreen {
    */
   _layout(r) {
     const ch = Layout.canvasH || CANVAS_HEIGHT;
-    const key = `${Layout.canvasW}x${ch}|${uiSize(10)}`;
+    const key = `${Layout.canvasW}x${ch}|${uiSize(10)}|${this._canOfferRevive()}|${this._reviveStatus}`;
     if (this._layoutCache && this._layoutCache.key === key) return this._layoutCache.value;
 
     const s = this.summary;
@@ -189,6 +210,7 @@ export class GameOverScreen {
 
     const showUnlockCta = s.showUnlockCta
       || (!s.premiumUnlocked && (s.floorReached ?? ((s.floorsCleared || 0) + 1)) < 100);
+    const canOfferRevive = this._canOfferRevive();
     const ctaH = IS_LANDSCAPE ? 14 : 18;
     const { btnW, btnH, btnGap } = LAYOUT;
 
@@ -198,7 +220,8 @@ export class GameOverScreen {
     const divGap = IS_LANDSCAPE ? 12 : 16;
     const headerH = LAYOUT.killedY + (killedLines.length - 1) * killedGap
       + divGap + 10 + cardH + 10;
-    const chrome = (showUnlockCta ? ctaH + 6 : 8) + btnH + 20;
+    const chrome = (showUnlockCta ? ctaH + 6 : 8)
+      + (canOfferRevive ? btnH + 8 : 0) + btnH + 20;
     const footHeight = () => foot.reduce((acc, e) => {
       const lineH = e.opts.size + 4;
       let h = 0;
@@ -229,10 +252,14 @@ export class GameOverScreen {
       { x: startX, y: by, w: btnW, h: btnH },
       { x: startX + btnW + btnGap, y: by, w: btnW, h: btnH }
     ];
+    const revive = canOfferRevive
+      ? { x: x + 18, y: by - btnH - 8, w: w - 36, h: btnH }
+      : null;
 
     const value = {
       panel, killedLines, killedOpts, killedGap, killedY0, divY,
-      cardY, cardH, foot, showUnlockCta, ctaH, maxTextW, btns
+      cardY, cardH, foot, showUnlockCta, ctaH, maxTextW, btns, revive,
+      canOfferRevive
     };
     this._layoutCache = { key, value };
     return value;
@@ -355,7 +382,17 @@ export class GameOverScreen {
         family: FONT_BODY, color: IRON_PALETTE.brass
       };
       r.drawText(this._fit(r, t('gameover.unlock_cta'), L.maxTextW, ctaOpts),
-        CANVAS_WIDTH / 2, L.btns[0].y - L.ctaH, ctaOpts);
+        CANVAS_WIDTH / 2, (L.revive?.y || L.btns[0].y) - L.ctaH, ctaOpts);
+    }
+
+    if (L.revive) {
+      drawIronActionButton(r, L.revive.x, L.revive.y, L.revive.w, L.revive.h,
+        this._busy ? 'LOADING…' : (this._reviveStatus || 'WATCH AD · REVIVE'), {
+          accent: COLOR.textHeal,
+          pressed: this.selected === 2,
+          glyph: '▶',
+          fontSize: 11
+        });
     }
 
     drawIronActionButton(r, L.btns[0].x, L.btns[0].y, L.btns[0].w, L.btns[0].h,
@@ -376,7 +413,9 @@ export class GameOverScreen {
 
   handleInput(action) {
     if (action.type === 'move') {
-      if (action.dx === -1) this.selected = 0;
+      if (action.dy === -1 && this._canOfferRevive()) this.selected = 2;
+      else if (action.dy === 1 && this.selected === 2) this.selected = 0;
+      else if (action.dx === -1) this.selected = 0;
       else if (action.dx === 1) this.selected = 1;
     } else if (action.type === 'confirm') {
       this._activate(this.selected);
@@ -387,13 +426,39 @@ export class GameOverScreen {
     }
   }
 
-  _activate(idx) {
+  async _activate(idx) {
+    if (idx === 2) {
+      if (this._busy || !this._canOfferRevive()) return;
+      this._busy = true;
+      this._reviveStatus = 'LOADING…';
+      this._layoutCache = null;
+      try {
+        const rewarded = typeof this.adService.showRewardedRevive === 'function'
+          && await this.adService.showRewardedRevive();
+        if (rewarded) {
+          this.bus.emit('request:reviveRun', { snapshot: this.summary.reviveSnapshot });
+        } else {
+          this._reviveStatus = 'REWARD UNAVAILABLE';
+        }
+      } catch {
+        this._reviveStatus = 'REWARD UNAVAILABLE';
+      } finally {
+        this._busy = false;
+        this._layoutCache = null;
+      }
+      return;
+    }
     if (idx === 0) this.bus.emit('request:newRun', {});
     else this.bus.emit('request:quitToTitle', {});
   }
 
   /** Hit-test for tap input. */
   hitTest(x, y) {
+    const layout = this._layoutCache?.value;
+    if (layout?.revive) {
+      const b = layout.revive;
+      if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return 2;
+    }
     const btns = this._buttonRects();
     for (let i = 0; i < btns.length; i++) {
       const b = btns[i];

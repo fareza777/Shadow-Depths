@@ -49,12 +49,23 @@ export class Game {
     this.content = deps.content || null;
     /** @type {object} */
     this.balance = deps.balance || DEFAULT_BALANCE;
+    this._pendingRunOver = null;
 
     // Game-level event wiring — scene transitions etc.
-    this.bus.on('request:newRun', (opts) => this.newRun(opts || {}));
-    this.bus.on('request:startRunNow', (opts) => this.newRun({ ...(opts || {}), skipIntro: true }));
+    this.bus.on('request:newRun', (opts) => {
+      this._finalizePendingRunOver();
+      this.newRun(opts || {});
+    });
+    this.bus.on('request:startRunNow', (opts) => {
+      this._finalizePendingRunOver();
+      this.newRun({ ...(opts || {}), skipIntro: true });
+    });
     this.bus.on('request:continueRun', () => this.continueRun());
-    this.bus.on('request:quitToTitle', () => this.quitToTitle());
+    this.bus.on('request:quitToTitle', () => {
+      this._finalizePendingRunOver();
+      this.quitToTitle();
+    });
+    this.bus.on('request:reviveRun', (payload) => this._revivePendingRun(payload || {}));
     this.bus.on('run:over', (summary) => this._onRunOver(summary));
     this.bus.on('run:victory', (summary) => this._onRunVictory(summary));
     this.bus.on('billing:unlocked', () => {
@@ -168,6 +179,72 @@ export class Game {
   }
 
   _onRunOver(summary) {
+    if (this._pendingRunOver) return;
+    const canRevive = !!summary?.died
+      && !!summary?.canOfferRevive
+      && !!summary?.reviveSnapshot;
+    if (canRevive) {
+      const pending = { ...summary };
+      if (typeof this.meta?.computeScore === 'function') {
+        pending.score = this.meta.computeScore({ ...pending, died: true });
+      }
+      pending.coinsEarned = pending.coinsEarned || 0;
+      pending.isNewHighScore = false;
+      pending.unlocked = pending.unlocked || [];
+      this._pendingRunOver = pending;
+      this.save.clearRun?.();
+      this.state.setRun(null);
+      this._showGameOver(pending);
+      return;
+    }
+    this._recordRunOver(summary);
+  }
+
+  _finalizePendingRunOver() {
+    if (!this._pendingRunOver) return false;
+    const summary = this._pendingRunOver;
+    this._pendingRunOver = null;
+    this._recordRunOver(summary);
+    return true;
+  }
+
+  _revivePendingRun({ snapshot } = {}) {
+    const pending = this._pendingRunOver;
+    if (!pending || !snapshot || snapshot !== pending.reviveSnapshot) return false;
+    this._pendingRunOver = null;
+    const scene = this._sceneFactories.game({
+      bus: this.bus,
+      state: this.state,
+      saveManager: this.save,
+      content: this.content,
+      balance: this.balance,
+      seed: snapshot.seed,
+      mode: snapshot.mode || 'normal',
+      heroKind: snapshot.heroKind,
+      resumeSnapshot: snapshot,
+      reviveAfterReward: true
+    });
+    this.state.setScene('game');
+    this.scenes.switch('game', scene, {
+      resumeSnapshot: snapshot,
+      reviveAfterReward: true
+    });
+    this.bus.emit('run:started', { revived: true, mode: snapshot.mode || 'normal' });
+    return true;
+  }
+
+  _showGameOver(summary) {
+    const scene = this._sceneFactories.gameover({
+      bus: this.bus,
+      state: this.state,
+      content: this.content,
+      summary
+    });
+    this.state.setScene('gameover');
+    this.scenes.switch('gameover', scene, summary);
+  }
+
+  _recordRunOver(summary) {
     this.save.clearRun?.();
     this.state.setRun(null);
     // recordRun mutates the COPY it receives (sets score, coinsEarned,
@@ -184,14 +261,7 @@ export class Game {
       unlocked: result.unlocked,
       dailyNewBest: !!summaryForRecord.dailyNewBest
     };
-    const scene = this._sceneFactories.gameover({
-      bus: this.bus,
-      state: this.state,
-      content: this.content,
-      summary: enriched
-    });
-    this.state.setScene('gameover');
-    this.scenes.switch('gameover', scene, enriched);
+    this._showGameOver(enriched);
   }
 
   _onRunVictory(summary) {

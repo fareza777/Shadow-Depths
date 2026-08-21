@@ -115,6 +115,7 @@ export class GameScene {
     this.billing = deps.billingService || null;
     this.paywall = deps.paywallOverlay || null;
     this.ads = deps.adService || null;
+    this.reviveAfterReward = !!deps.reviveAfterReward;
     this.lighting = deps.lighting;
     this.renderer = deps.renderer || null; // optional; used for tap→tile
     this.save = deps.saveManager || null;
@@ -227,6 +228,7 @@ export class GameScene {
       heroOverrides: heroStatOverrides(this.heroKind)
     });
     this._restorePlayerSnapshot(this.player, snapshot.player || {});
+    if (this.reviveAfterReward) this._prepareRevivedPlayer();
     this._fixWornDaggerStats();
     this.player.snapRender();
     floor.addEntity(this.player);
@@ -245,6 +247,19 @@ export class GameScene {
     });
     this._emitFloorEntered(floorIndex, floor);
     this._saveRun();
+  }
+
+  /** Restore a pre-death save and clear lethal state before play resumes. */
+  _prepareRevivedPlayer() {
+    if (!this.player) return;
+    this.player.isDead = false;
+    this.player.statusEffects = [];
+    this.player.runStats = {
+      ...this.player.runStats,
+      killedBy: null
+    };
+    this.player.stats.hp = Math.max(1, Math.ceil((this.player.stats.hpMax || 1) * 0.5));
+    this.bus.emit('player:revived', { entity: this.player, source: 'rewarded_ad' });
   }
 
   /** Close singleton modals so a new run cannot inherit a soft-lock. */
@@ -1624,6 +1639,13 @@ export class GameScene {
   _endRun(victory) {
     this._runEnded = true;
     this._cancelPendingRunSave();
+    let reviveSnapshot = null;
+    if (!victory) {
+      try {
+        const saved = this.save?.loadRun?.();
+        if (saved && !saved._tampered && typeof saved.seed === 'number') reviveSnapshot = saved;
+      } catch { /* revive is optional; death flow must still finalize */ }
+    }
     this.save?.clearRun?.();
     const p = this.player;
     const skillPool = (this.content?.skills?.skills) || [];
@@ -1653,7 +1675,9 @@ export class GameScene {
       teachLine: victory ? null : this._teachLine(p),
       floorReached,
       premiumUnlocked,
-      showUnlockCta: !victory && !premiumUnlocked && floorReached < 100
+      showUnlockCta: !victory && !premiumUnlocked && floorReached < 100,
+      reviveSnapshot,
+      canOfferRevive: !victory && !!reviveSnapshot && !!this.ads?.canOfferRevive?.()
     };
     if (victory) this.bus.emit('run:victory', summary);
     else this.bus.emit('run:over', summary);
