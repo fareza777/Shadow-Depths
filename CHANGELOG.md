@@ -5,6 +5,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), [Semantic Vers
 
 ---
 
+## [0.2.8] — 2026-08-21 — Free-with-ads monetization
+
+### Added
+
+- All 100 floors are free to play with consent-safe AdMob banners, natural-break
+  interstitials, and one rewarded revive offer per run.
+- New one-time `remove_ads` purchase (base price US$4.99) disables every ad.
+- Existing `full_descent_unlock` buyers remain permanently ad-free through restore.
+- Release preparation validates the five AdMob identifiers, writes `app-ads.txt`,
+  and refuses missing or sample IDs before an AAB can be produced.
+
+### Changed
+
+- Game-over now holds a safe snapshot until restart/title is chosen or a rewarded
+  ad grants an exactly-once revive; runs are not double-recorded.
+- Privacy policy, Play Console checklist, ASO captions, screenshots, and promo
+  videos now describe the free-with-ads model and Google consent disclosures.
+
+### Fixed
+
+- Banner placement is limited to title, pause, game-over, and victory scenes; the
+  canvas reserves the native banner strip and recalculates touch layout on hide/show.
+
+---
+
 ## [0.2.7] — 2026-08-11 — Performance & Polish
 
 ### Fixed
