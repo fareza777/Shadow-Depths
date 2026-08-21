@@ -18,6 +18,7 @@
     "android:sync": "npm run build && cap sync android",
     "android:open": "cap open android",
     "android:assets": "node scripts/generate-android-assets.mjs",
+    "android:admob:debug": "node scripts/prepare-admob-release.mjs --debug",
     "android:bundle": "powershell -ExecutionPolicy Bypass -File scripts/build-release-aab.ps1",
     "android:bundle:full": "powershell -ExecutionPolicy Bypass -File scripts/setup-and-build-aab.ps1",
     "playstore:prep": "npm run build && cap sync android"

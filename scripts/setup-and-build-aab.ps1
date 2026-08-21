@@ -5,6 +5,14 @@ $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
 if (-not $env:NODE_OPTIONS) { $env:NODE_OPTIONS = '--use-system-ca' }
 
+Write-Host 'Validating AdMob release identifiers...'
+node scripts/prepare-admob-release.mjs --release
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$env:VITE_ADMOB_APP_ID = $env:ADMOB_APP_ID
+$env:VITE_ADMOB_BANNER_ID = $env:ADMOB_BANNER_ID
+$env:VITE_ADMOB_INTERSTITIAL_ID = $env:ADMOB_INTERSTITIAL_ID
+$env:VITE_ADMOB_REWARDED_ID = $env:ADMOB_REWARDED_ID
+
 $Tools = Join-Path $Root '.tools'
 $JdkDir = Join-Path $Tools 'jdk-21'
 # Avoid spaces in SDK path — sdkmanager/Gradle break on paths like "Game Playstore".

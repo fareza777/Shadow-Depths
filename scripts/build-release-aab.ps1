@@ -4,6 +4,14 @@ $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
 Set-Location $Root
 
+Write-Host 'Validating AdMob release identifiers...'
+node scripts/prepare-admob-release.mjs --release
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$env:VITE_ADMOB_APP_ID = $env:ADMOB_APP_ID
+$env:VITE_ADMOB_BANNER_ID = $env:ADMOB_BANNER_ID
+$env:VITE_ADMOB_INTERSTITIAL_ID = $env:ADMOB_INTERSTITIAL_ID
+$env:VITE_ADMOB_REWARDED_ID = $env:ADMOB_REWARDED_ID
+
 if (-not (Test-Path 'android\keystore.properties')) {
   Write-Host 'Missing android\keystore.properties — copy from android\keystore.properties.example' -ForegroundColor Red
   exit 1

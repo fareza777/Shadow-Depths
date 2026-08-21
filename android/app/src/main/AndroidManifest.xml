@@ -28,14 +28,13 @@
           this is missing or malformed, so it is required even in builds that
           never show an ad.
 
-          This is Google's public SAMPLE App ID: it serves test ads and earns
-          nothing. Replace it with the real one from AdMob (Apps -> your app ->
-          App settings -> App ID) before shipping, and keep it in sync with
-          monetization.ads.unitIds in data/balance.json.
+          Debug builds use Google's public SAMPLE App ID. The release
+          preparation script replaces the resource with the live App ID from
+          ADMOB_APP_ID; no account identifier is committed to this repository.
         -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="@string/admob_app_id" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -50,4 +49,5 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="com.android.vending.BILLING" />
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
 </manifest>
