@@ -39,7 +39,7 @@ SHOTS = [
     ("Screenshot_2026-07-13-07-13-20-379_com.shadowdepths.game.jpg",
      "Fill your satchel with relics"),
     ("Screenshot_2026-07-13-07-13-54-402_com.shadowdepths.game.jpg",
-     "Free 10 floors — unlock all 100 forever"),
+     "All 100 floors free · optional ad-free upgrade"),
     ("Screenshot_2026-07-13-07-14-12-929_com.shadowdepths.game.jpg",
      "Vault bosses telegraph their slam"),
 ]
@@ -214,7 +214,7 @@ def compose(shot_path: Path, caption: str, index: int) -> Path:
     draw_phone_frame(base, shot, (phone_x, phone_y, phone_w, phone_h))
 
     # Footer hint
-    draw.text((W // 2, H - 42), "Free floors 1–10  ·  One-time Full Descent unlock",
+    draw.text((W // 2, H - 42), "All 100 floors free  ·  Optional Remove Ads",
               font=sub_f, fill=BRASS_DIM, anchor="mt")
 
     out = OUT / f"play-shot-{index:02d}.png"

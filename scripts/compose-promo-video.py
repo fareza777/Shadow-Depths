@@ -46,7 +46,7 @@ SCENES = [
     ("shot", "Screenshot_2026-07-13-07-13-08-235_com.shadowdepths.game.jpg", "Loot forgotten crypts", 3.6),
     ("shot", "Screenshot_2026-07-13-07-13-14-737_com.shadowdepths.game.jpg", "Forge your loadout", 3.6),
     ("shot", "Screenshot_2026-07-13-07-13-54-402_com.shadowdepths.game.jpg", "Permanent upgrades", 3.6),
-    ("end", None, "Free floors 1-10", 4.2),
+    ("end", None, "All 100 floors free · optional ad-free upgrade", 4.2),
 ]
 
 XFADE = 0.55  # seconds between scenes
@@ -227,9 +227,9 @@ def make_end_card() -> Image.Image:
 
     # Benefit chips
     chips = [
-        "Free floors 1-10",
-        "100-floor Full Descent",
-        "One-time unlock · no ads",
+        "All 100 floors free",
+        "Turn-based roguelike",
+        "One-time Remove Ads · no ads",
     ]
     cy = 640
     for text in chips:
@@ -352,7 +352,7 @@ def make_shot_card(shot_name: str, caption: str, seed: int) -> Image.Image:
         cy += 58
 
     draw.text((tx, cy + 24), "100 floors · permadeath · torchlight", font=font(22, italic=True), fill=BRASS, anchor="lt")
-    draw.text((tx, 980), "Free to start  ·  One-time Full Descent", font=font(20), fill=BRASS_DIM, anchor="lt")
+    draw.text((tx, 980), "Free with ads  ·  Optional Remove Ads", font=font(20), fill=BRASS_DIM, anchor="lt")
 
     base = vignette(base, 0.42)
     return film_grain(base, 9, seed=seed)

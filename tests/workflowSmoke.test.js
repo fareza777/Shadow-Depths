@@ -58,6 +58,17 @@ describe('workflow smoke: descent pipeline', () => {
     expect(source).not.toContain('.then(() => adService.showBanner())');
   });
 
+  it('keeps privacy and Play Store copy aligned with free-with-ads monetization', () => {
+    const privacy = readFileSync(new URL('../public/privacy.html', import.meta.url), 'utf8');
+    const playStore = readFileSync(new URL('../docs/PLAYSTORE.md', import.meta.url), 'utf8');
+    expect(privacy).toMatch(/AdMob|Google Mobile Ads/i);
+    expect(privacy).toMatch(/consent|personalized|non-personalized/i);
+    expect(playStore).toMatch(/Contains ads.*Yes/i);
+    expect(playStore).toMatch(/US\$4\.99/);
+    expect(playStore).toMatch(/100 floors.*free/i);
+    expect(playStore).not.toMatch(/declare \*\*no ads\*\*/i);
+  });
+
   it('title → death → victory strings stay localized', () => {
     setLocale('id');
     expect(t('title.newrun')).toMatch(/PERTUALANGAN|DESCENT|BARU/i);

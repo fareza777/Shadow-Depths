@@ -1,140 +1,120 @@
 # Google Play Store — release checklist
 
 Shadow Depths ships as a **Capacitor Android App Bundle (`.aab`)**.  
-App ID: `com.shadowdepths.game` · Display name: **Shadow Depths** · Version: **0.2.6**
+App ID: `com.shadowdepths.game` · Display name: **Shadow Depths** · Version: **0.2.8**
 
-## Monetization model (v0.2)
+## Monetization model
 
-| Tier | Access |
+| Offer | Access |
 |------|--------|
-| **Free** | Floors **1–10** (first biome + floor-10 boss) + tutorial + meta shop |
-| **Full Descent** | One-time IAP unlocks **all 100 floors** forever (no ads, no subscription) |
+| **Free with ads** | All **100 floors** are playable without an account or purchase. Banner, interstitial, and optional rewarded-revive ads support the free game. |
+| **Remove Ads** | New one-time, non-consumable product `remove_ads`; base price **US$4.99** (Play localises the final price). It permanently removes every ad. |
+| **Legacy restore** | `full_descent_unlock` is restore-only. Existing owners keep permanent ad-free access; do not remove or rename this entitlement. |
 
-- **Play Console product ID:** `full_descent_unlock` (managed / non-consumable)
-- **Suggested price (ID):** Rp 29.000 (set live price in Play Console)
-- In-app: title menu **FULL DESCENT**, paywall on descend past floor 10, Settings → Restore purchases
+- New product in Play Console: `remove_ads` (one-time / non-consumable), price **US$4.99**.
+- Test both a fresh account and an account that owns `full_descent_unlock`; the latter must never request or display ads.
+- Restore purchases from Settings before the first ad placement is allowed.
 
 ## Quick commands (Windows)
 
 ```powershell
-# 1. Generate launcher/splash sources (once, or after art change)
+# Generate launcher/splash sources (once, or after art change)
 node scripts/generate-android-assets.mjs
-# Optional: npx @capacitor/assets generate --android
-# Feature graphic (1024×500) + phone screenshots are still uploaded manually
-# in Play Console → Store listing.
 
-# Fonts are self-hosted under public/fonts/ (no Google CDN at runtime).
-
-# 2. First-time signing setup
-Copy-Item android\keystore.properties.example android\keystore.properties
-keytool -genkey -v -keystore android\release.keystore -alias shadow-depths -keyalg RSA -keysize 2048 -validity 10000
-# Edit android\keystore.properties with your passwords
-
-# 3. Build upload artifact
-.\scripts\build-release-aab.ps1
-# Output: release\app-release.aab  (copy of signed bundle)
-```
-
-Debug APK for device testing:
-
-```powershell
+# Local debug preparation — Google's sample IDs only
+npm run android:admob:debug
 npm run android:sync
 cd android
 .\gradlew.bat assembleDebug
 # android\app\build\outputs\apk\debug\app-debug.apk
-# also copied to: release\Shadow-Depths-debug.apk
+
+# Production release (requires the five ADMOB_* environment variables)
+$env:ADMOB_APP_ID = 'ca-app-pub-<your-publisher>~<app-suffix>'
+$env:ADMOB_BANNER_ID = 'ca-app-pub-<your-publisher>/<banner-suffix>'
+$env:ADMOB_INTERSTITIAL_ID = 'ca-app-pub-<your-publisher>/<interstitial-suffix>'
+$env:ADMOB_REWARDED_ID = 'ca-app-pub-<your-publisher>/<rewarded-suffix>'
+$env:ADMOB_PUBLISHER_ID = 'pub-<your-16-digit-publisher-id>'
+.\scripts\build-release-aab.ps1
+# Output: release\app-release.aab
 ```
 
-## Play Console setup (one-time)
+The release script refuses missing, malformed, or Google sample IDs. It writes the
+same App ID to Android resources, the unit IDs to the Vite build, and the publisher
+line to `https://shadow-depths.vercel.app/app-ads.txt`. Never commit account IDs,
+keystores, or passwords.
 
-1. [Google Play Console](https://play.google.com/console) → **Create app**
-2. **App access:** full access (no login)
-3. **Ads:** declare **no ads**
-4. **Content rating:** IARC questionnaire (fantasy violence)
-5. **Target audience:** 13+ recommended
-6. **Data safety:**
-   - Data collected: **No** personal data by default (local saves only)
-   - Optional: if player opts in to anonymous analytics in Settings, declare
-     **App activity** / analytics as collected + optional (not required to play)
-   - Purchases: processed by Google Play (declare in-app purchases)
-   - Data shared: **No** (unless you later send analytics to a third-party endpoint — update this form then)
-7. **Privacy policy URL:**  
-   `https://shadow-depths.vercel.app/privacy.html`
-8. **Monetize → Products → In-app products:**
-   - Create `full_descent_unlock` (one-time / non-consumable)
-   - Activate for Internal testing track before production
-9. **Store listing assets:**
-   - App icon: 512×512 PNG → `store-assets/app-icon-512.png` (also `release/play-store/`)
-   - Feature graphic: 1024×500 PNG → `store-assets/feature-graphic-1024x500.png`
-   - Phone screenshots (8 captioned, 1080×1920): `store-assets/play-screenshots/play-shot-01.png` … `play-shot-08.png` (JPG copies also available)
-   - Regenerate captions/frames: `python scripts/compose-play-screenshots.py`
-   - Short description (80 chars)
-   - Full description (4000 chars) — mention free 10 floors + one-time unlock
+## Play Console setup
 
-Upload on **Store listings → Graphics**:
-```
-store-assets/app-icon-512.png
-store-assets/feature-graphic-1024x500.png
-store-assets/play-screenshots/play-shot-01.png   # … through play-shot-08.png
+1. [Google Play Console](https://play.google.com/console) → **Create app**.
+2. **App access:** full access (no login required).
+3. **Contains ads:** **Yes**. The AdMob SDK and interstitial/banner placements make this declaration mandatory.
+4. **Content rating:** complete the IARC questionnaire (dark fantasy and fantasy violence).
+5. **Target audience:** 13+ recommended; confirm the audience and Families answers match the current app.
+6. **Data safety:** disclose the Google Mobile Ads SDK categories currently shown in the SDK disclosure (app/ad interactions, diagnostics, device/account identifiers, and IP/general-location estimation where applicable). Disclose optional anonymous analytics separately, and mark it optional only if the runtime opt-in remains off by default. Recheck this form whenever the SDK or endpoint changes.
+7. **Privacy policy URL:** `https://shadow-depths.vercel.app/privacy.html`
+8. **Developer website:** `https://github.com/fareza777/Shadow-Depths`
+9. **AdMob verification:** host `app-ads.txt` at `https://shadow-depths.vercel.app/app-ads.txt` after the real publisher ID is supplied; verify it in AdMob before production.
+10. **Monetize → Products → In-app products:** create and activate `remove_ads` as a one-time non-consumable at US$4.99. Keep `full_descent_unlock` active for restore testing but do not market it as the new offer.
+
+## Store listing copy
+
+### Short description (≤80 characters)
+
+```text
+100-floor turn-based roguelike. Free with ads; optional ad-free upgrade.
 ```
 
-**Promotional video (YouTube URL in Play Console):**
-```
-store-assets/promo/shadow-depths-trailer.mp4           # 1920×1080 ~25s — upload to YouTube
-store-assets/promo/shadow-depths-trailer-portrait.mp4  # 1080×1920 — Shorts / Reels / social
-```
-- Regenerate: `python scripts/compose-promo-video.py`
-- Play Console → Store listing → **Promotional video** → paste the YouTube link (not the MP4 file)
-- Suggested YouTube title: `Shadow Depths — Official Trailer`
-- Visibility: Public or Unlisted both work for Play Store
+### Full description draft
 
-**Screenshot captions (EN listing):**
-1. Begin your melancholic descent (title)
-2. Choose a vigil — eight dark heroes
-3. Fight turn by turn in torchlight
-4. Loot rare tomes from forgotten crypts
-5. Equip gear and grow stronger
-6. Fill your satchel with relics
-7. Spend coins on permanent upgrades
-8. Learn the depths with a guided tutorial
+```text
+Descend into Shadow Depths, a turn-based roguelike where every tile is a decision.
 
+Explore all 100 floors for free. Read enemy intent, manage torchlight, find relics,
+craft gear, choose skills, and survive permadeath in a melancholic dark-fantasy crypt.
 
-### Suggested short description
+The free game is supported by occasional banners and natural-break interstitials.
+You can also watch one optional rewarded ad per run to revive from a safe checkpoint.
+Remove Ads is a one-time US$4.99 purchase that disables every ad forever. Players who
+owned the retired Full Descent product keep their permanent ad-free entitlement.
 
-```
-Descend the crypts. Turn-based roguelike. Free 10 floors — unlock the full 100.
+No account is required. Progress is stored locally, purchases restore through Google
+Play, and consent choices are handled by Google's privacy form when required.
 ```
 
-## Versioning
+## Store listing assets
 
-- `versionName` comes from `package.json` (`0.2.0`)
-- `versionCode` is computed: `major*10000 + minor*100 + patch` → `0.2.0` = **200**
-- Bump `package.json` version before each Play upload
+- App icon: 512×512 PNG → `store-assets/app-icon-512.png`.
+- Feature graphic: 1024×500 PNG → `store-assets/feature-graphic-1024x500.png`.
+- Phone screenshots (8 captioned, 1080×1920): `store-assets/play-screenshots/play-shot-01.png` … `play-shot-08.png` (JPG copies are also available).
+- Regenerate captions: `python scripts/compose-play-screenshots.py`.
+- Captions must say all floors are free and the ad-free upgrade is optional; never promise an ad-free experience to every player.
 
-## Testing before production
+**Promotional video:**
 
-1. Install debug APK on a physical phone (USB debugging)
-2. Play free floors 1–10; confirm paywall on descend to 11
-3. On licensed tester account: purchase / restore Full Descent
-4. Verify Continue blocked for deep saves until unlock
-5. Upload **Internal testing** AAB → invite testers → then Production
+```text
+store-assets/promo/shadow-depths-trailer.mp4
+store-assets/promo/shadow-depths-trailer-portrait.mp4
+```
 
-## Files you must NOT commit
+Regenerate with `python scripts/compose-promo-video.py`, upload the finished video to
+YouTube, and paste the YouTube URL into Play Console → Store listing → Promotional video.
+
+## Versioning and test gate
+
+- `versionName` comes from `package.json` (`0.2.8`).
+- `versionCode` is computed as `major*10000 + minor*100 + patch`, so `0.2.8` = **208**.
+- Test a fresh install: all 100 floors remain open, banners appear only on title/pause/game-over/victory, interstitials occur at natural floor breaks, and the rewarded revive is limited to once per run.
+- Test `remove_ads`: purchase, relaunch, restore, and verify banner/interstitial/rewarded requests stop immediately.
+- Test a licensed legacy account: restore `full_descent_unlock` and verify the same ad-free behavior.
+- Upload the signed AAB to **Internal testing** first, inspect Play pre-launch reports, then promote to production.
+
+## Files that must not be committed
 
 | File | Reason |
 |------|--------|
 | `android/release.keystore` | signing secret |
 | `android/keystore.properties` | passwords |
 | `android/local.properties` | machine-specific SDK path |
-
-## Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| `npm install` SSL error | `set NODE_OPTIONS=--use-system-ca` then retry |
-| Gradle SDK not found | Set `ANDROID_HOME`, open once in Android Studio |
-| White screen on launch | `npm run android:sync` after `npm run build` |
-| Signing failed | Check `keystore.properties` paths are relative to `android/` |
-| IAP “item unavailable” | Product ID must be `full_descent_unlock` and **Active** in Play Console; app must be installed from Play (internal track) |
+| `public/app-ads.txt` before real publisher ID | prevents publishing a fake account line |
 
 See also: [ANDROID.md](./ANDROID.md)
