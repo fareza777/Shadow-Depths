@@ -139,7 +139,22 @@ export const DEFAULT_BALANCE = Object.freeze({
     productId: 'remove_ads',
     entitlementIds: ['remove_ads', 'full_descent_unlock'],
     // Display-only fallback; live price comes from Play Billing.
-    fallbackPriceLabel: 'Rp 29.000'
+    fallbackPriceLabel: 'US$4.99',
+    ads: {
+      enabled: true,
+      testMode: false,
+      bannerHeightDp: 50,
+      interstitialEveryNFloors: 3,
+      interstitialMinFloorIndex: 3,
+      eligibleScenes: ['title', 'pause', 'gameover', 'victory'],
+      interstitialCooldownMs: 90000,
+      rewardedRevivePerRun: 1,
+      unitIds: {
+        banner: '',
+        interstitial: '',
+        rewarded: ''
+      }
+    }
   }
 });
 

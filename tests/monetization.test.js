@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { BillingService } from '../src/monetization/BillingService.js';
-import { PRODUCT_REMOVE_ADS, PRODUCT_FULL_DESCENT } from '../src/monetization/products.js';
+import {
+  FALLBACK_PRICE_LABEL,
+  PRODUCT_REMOVE_ADS,
+  PRODUCT_FULL_DESCENT
+} from '../src/monetization/products.js';
 
 function makeMeta(premium = false) {
   const state = {
@@ -46,6 +50,10 @@ describe('free-to-play access', () => {
 });
 
 describe('ad-free entitlement', () => {
+  it('uses the US$4.99 fallback price when Play Billing is unavailable', () => {
+    expect(FALLBACK_PRICE_LABEL).toBe('US$4.99');
+  });
+
   it('shows ads until the removal is bought', () => {
     expect(makeBilling(false).adsRemoved()).toBe(false);
     expect(makeBilling(true).adsRemoved()).toBe(true);
