@@ -3,6 +3,7 @@
  * Catches regressions that unit tests on isolated modules miss.
  */
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { Dungeon } from '../src/world/Dungeon.js';
 import { RNG } from '../src/core/RNG.js';
 import { PRODUCT_FULL_DESCENT, FALLBACK_PRICE_LABEL } from '../src/monetization/products.js';
@@ -46,7 +47,15 @@ describe('workflow smoke: descent pipeline', () => {
     expect(balanceData.monetization?.model).toBe('free_with_ads');
     expect(balanceData.monetization?.entitlementIds).toContain('full_descent_unlock');
     expect(balanceData.monetization?.freeFloorCap).toBeUndefined();
-    expect(FALLBACK_PRICE_LABEL).toMatch(/Rp/);
+    expect(FALLBACK_PRICE_LABEL).toBe('US$4.99');
+  });
+
+  it('routes scene changes through AdService instead of showing a boot-global banner', () => {
+    const source = readFileSync(new URL('../src/main.js', import.meta.url), 'utf8');
+    expect(source).toContain("bus.on('scene:switched'");
+    expect(source).toContain('adService.onSceneChanged(to)');
+    expect(source).toContain('gameover: (deps) => new GameOverScreen({ ...deps, adService })');
+    expect(source).not.toContain('.then(() => adService.showBanner())');
   });
 
   it('title → death → victory strings stay localized', () => {

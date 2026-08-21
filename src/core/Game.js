@@ -128,6 +128,7 @@ export class Game {
     });
     this.state.setScene('game');
     this.scenes.switch('game', scene, opts);
+    this.bus.emit('run:started', { revived: false, mode, heroKind: opts.heroKind });
   }
 
   /** Resume the last in-progress run if storage has a valid snapshot. */
@@ -148,6 +149,7 @@ export class Game {
     });
     this.state.setScene('game');
     this.scenes.switch('game', scene, { resumeSnapshot: snapshot });
+    this.bus.emit('run:started', { revived: false, mode: snapshot.mode || 'normal' });
   }
 
   /** Drop the player back to the title screen. */

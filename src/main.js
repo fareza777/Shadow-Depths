@@ -184,11 +184,16 @@ async function bootstrap() {
   // restores a prior purchase, so it must settle before ads start: an owner
   // reinstalling should never see a banner flash before the entitlement lands.
   const adService = new AdService({ billing: billingService, eventBus: bus, balance });
+  bus.on('scene:switched', ({ to }) => {
+    void adService.onSceneChanged(to).catch((err) => {
+      console.warn(LOG.CORE, 'ads scene placement:', err);
+    });
+  });
   billingService.init()
     .catch((err) => console.warn(LOG.CORE, 'billing init:', err))
     .finally(() => {
       adService.init()
-        .then(() => adService.showBanner())
+        .then(() => adService.onSceneChanged(sceneManager.currentName || 'title'))
         .catch((err) => console.warn(LOG.CORE, 'ads init:', err));
     });
 
@@ -284,7 +289,7 @@ async function bootstrap() {
       craftingPanel, floorEventPanel, tutorial,
       metaProgress, billingService, paywallOverlay, adService
     }),
-    gameover: (deps) => new GameOverScreen(deps),
+    gameover: (deps) => new GameOverScreen({ ...deps, adService }),
     victory: (deps) => new VictoryScreen(deps)
   };
 
