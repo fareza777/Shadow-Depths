@@ -1,0 +1,17 @@
+.git
+.github
+.vercel
+.tools
+.android-sdk
+node_modules
+android
+dist
+release
+artifacts
+store-assets
+docs
+scripts
+tests
+*.aab
+*.apk
+*.log
