@@ -35,6 +35,7 @@ export class AdService {
     this._lastInterstitialAt = 0;
     this._revivesUsedThisRun = 0;
     this._canRequestAds = false;
+    this._npaRequired = false;
     this._consentInfo = null;
     this._lastError = '';
 
@@ -59,11 +60,19 @@ export class AdService {
 
   get lastError() { return this._lastError; }
 
-  /** True only after UMP confirms that the SDK may request an ad. */
+  /** True once UMP has either allowed ads or failed in a recoverable way. */
   get canRequestAds() { return this._canRequestAds; }
+
+  /**
+   * True when consent is unknown, so ad requests must be non-personalised.
+   * Passed to every ad call as `npa`.
+   */
+  get npaRequired() { return this._npaRequired; }
 
   async init() {
     if (this._ready || this.adsDisabled) return;
+    // Only a real refusal keeps us out; an unavailable verdict falls through
+    // to non-personalised ads (see _requestConsent).
     if (this._consentInfo && !this._canRequestAds) return;
     try {
       const mod = await import('@capacitor-community/admob');
@@ -90,9 +99,21 @@ export class AdService {
   }
 
   /**
-   * EU consent (UMP). Required before serving personalised ads in the EEA/UK.
-   * A failure here must not block the game, so we fall through to whatever the
-   * SDK decides on its own.
+   * EU consent (UMP).
+   *
+   * Two outcomes must be told apart, because conflating them costs every
+   * cent of revenue:
+   *
+   *   - UMP answered and said no (user declined in the EEA/UK). Respect it:
+   *     no ads at all.
+   *   - UMP could not answer — no consent form published for this app ID,
+   *     no network, SDK error. That is OUR misconfiguration, not a user
+   *     refusal, and it says nothing about whether this player needs consent
+   *     in the first place. Blocking here silently disabled ads worldwide,
+   *     including for the vast majority of players outside the EEA.
+   *
+   * On a failure we therefore proceed but force non-personalised ads, which
+   * is the setting that needs no consent anywhere.
    */
   async _requestConsent(mod) {
     try {
@@ -107,15 +128,28 @@ export class AdService {
           resolvedInfo = await this._admob.requestConsentInfo();
         }
       }
-      this._consentInfo = resolvedInfo || { canRequestAds: false };
-      this._canRequestAds = this._consentInfo.canRequestAds === true;
-      return this._consentInfo;
+      if (resolvedInfo && typeof resolvedInfo.canRequestAds === 'boolean') {
+        this._consentInfo = resolvedInfo;
+        this._canRequestAds = resolvedInfo.canRequestAds;
+        // Consent still outstanding while the SDK allows requests → NPA.
+        this._npaRequired = resolvedInfo.status === REQUIRED;
+        return this._consentInfo;
+      }
+      // No usable verdict — treat as unknown, not as refusal.
+      return this._consentUnavailable('consent info incomplete');
     } catch (err) {
-      this._consentInfo = { canRequestAds: false };
-      this._canRequestAds = false;
-      console.warn(LOG.CORE, 'AdMob consent step skipped:', err?.message || err);
-      return this._consentInfo;
+      return this._consentUnavailable(err?.message || err);
     }
+  }
+
+  /** UMP gave no usable answer: keep serving, but non-personalised only. */
+  _consentUnavailable(reason) {
+    this._consentInfo = { canRequestAds: true, status: 'UNKNOWN' };
+    this._canRequestAds = true;
+    this._npaRequired = true;
+    console.warn(LOG.CORE,
+      'AdMob consent unavailable — serving non-personalised ads:', reason);
+    return this._consentInfo;
   }
 
   // --- banner ---------------------------------------------------------
@@ -136,7 +170,8 @@ export class AdService {
         adSize: mod.BannerAdSize?.BANNER || 'BANNER',
         position: mod.BannerAdPosition?.TOP_CENTER || 'TOP_CENTER',
         margin: 0,
-        isTesting: this.config.testMode
+        isTesting: this.config.testMode,
+        npa: this._npaRequired
       });
       this._bannerVisible = true;
     } catch (err) {
@@ -183,7 +218,8 @@ export class AdService {
     try {
       await this._admob.prepareInterstitial({
         adId: this.config.unitIds.interstitial,
-        isTesting: this.config.testMode
+        isTesting: this.config.testMode,
+        npa: this._npaRequired
       });
       this._interstitialLoaded = true;
     } catch (err) {
@@ -234,7 +270,8 @@ export class AdService {
     try {
       await this._admob.prepareRewardVideoAd({
         adId: this.config.unitIds.rewarded,
-        isTesting: this.config.testMode
+        isTesting: this.config.testMode,
+        npa: this._npaRequired
       });
       this._rewardedLoaded = true;
     } catch (err) {
