@@ -111,6 +111,7 @@
       "interstitialMinFloorIndex": 3,
       "eligibleScenes": [
         "title",
+        "game",
         "pause",
         "gameover",
         "victory"
@@ -120,8 +121,13 @@
       "unitIds": {
         "banner": "",
         "interstitial": "",
-        "rewarded": ""
-      }
+        "rewarded": "",
+        "appOpen": ""
+      },
+      "bannerSize": "ADAPTIVE_BANNER",
+      "gameplayBannerSize": "BANNER",
+      "appOpenMinIntervalMs": 14400000,
+      "rewardedRerollPerRun": 2
     }
   },
   "unlocks": [

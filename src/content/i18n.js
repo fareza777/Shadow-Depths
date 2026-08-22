@@ -128,6 +128,8 @@ const EN = {
   'skills.choose':            'Choose a boon',
   'skills.choose_n':          'Choose a boon  ({n} remaining)',
   'skills.reroll':            'REROLL',
+  'skills.reroll_ad':         'REROLL  ·  WATCH AD',
+  'skills.reroll_wait':       'LOADING AD…',
   'skills.tap_hint':          'Tap a boon',
   // Tutorial
   'tutorial.skip':            'SKIP',

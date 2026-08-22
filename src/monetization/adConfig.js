@@ -14,7 +14,8 @@
 export const TEST_AD_UNITS = Object.freeze({
   banner: 'ca-app-pub-3940256099942544/6300978111',
   interstitial: 'ca-app-pub-3940256099942544/1033173712',
-  rewarded: 'ca-app-pub-3940256099942544/5224354917'
+  rewarded: 'ca-app-pub-3940256099942544/5224354917',
+  appOpen: 'ca-app-pub-3940256099942544/9257395921'
 });
 
 /** Google's sample App ID. Mirrors the value in AndroidManifest.xml. */
@@ -22,8 +23,22 @@ export const TEST_APP_ID = 'ca-app-pub-3940256099942544~3347511713';
 
 export const AD_DEFAULTS = Object.freeze({
   enabled: true,
-  /** Height reserved above the canvas so the banner never covers the HUD. */
+  /**
+   * Fallback strip height until the SDK reports the real banner size. The
+   * bannerAdSizeChanged event replaces this with the measured height, which
+   * is what keeps an adaptive banner from ever overlapping the HUD.
+   */
   bannerHeightDp: 50,
+  /** Menu scenes have room to spare — adaptive earns more than fixed 320x50. */
+  bannerSize: 'ADAPTIVE_BANNER',
+  /** In-dungeon the viewport is tight, so use the smallest standard banner. */
+  gameplayBannerSize: 'BANNER',
+  /** Scene name treated as "in a run" for banner sizing. */
+  gameplayScene: 'game',
+  /** Minimum gap between App Open ads. Never shown on a first-ever launch. */
+  appOpenMinIntervalMs: 4 * 60 * 60 * 1000,
+  /** Rewarded skill rerolls allowed per run, once the free ones are spent. */
+  rewardedRerollPerRun: 2,
   /** Show an interstitial on every Nth descent. */
   interstitialEveryNFloors: 3,
   /** Never interrupt before this floor index — keep the first minutes clean. */
@@ -96,11 +111,13 @@ export function resolveAdConfig(monetization = {}, env) {
   const banner = pick('banner');
   const interstitial = pick('interstitial');
   const rewarded = pick('rewarded');
+  const appOpen = pick('appOpen');
   // Any fallback in play means we are not on the live account — never let the
   // SDK treat these as production requests.
   const usingTestUnits = banner === TEST_AD_UNITS.banner
     || interstitial === TEST_AD_UNITS.interstitial
-    || rewarded === TEST_AD_UNITS.rewarded;
+    || rewarded === TEST_AD_UNITS.rewarded
+    || appOpen === TEST_AD_UNITS.appOpen;
   const usingTestAppId = appId === TEST_APP_ID;
   const releaseReady = validateAdIds({
     appId,
@@ -116,7 +133,7 @@ export function resolveAdConfig(monetization = {}, env) {
     ...raw,
     appId,
     publisherId,
-    unitIds: { banner, interstitial, rewarded },
+    unitIds: { banner, interstitial, rewarded, appOpen },
     eligibleScenes: Array.isArray(raw.eligibleScenes)
       ? [...raw.eligibleScenes]
       : [...AD_DEFAULTS.eligibleScenes],

@@ -27,10 +27,12 @@ export class SkillPickerUI {
    * @param {{ bus: object, content: object, rng: object, metaProgress?: object }} deps
    *   content.skills.skills = the pool. rng = RunRNG fork.
    */
-  constructor({ bus, content, rng, metaProgress }) {
+  constructor({ bus, content, rng, metaProgress, adService = null }) {
     this.bus = bus;
     this.content = content;
     this.meta = metaProgress || null;
+    /** Optional: enables the watch-an-ad reroll once free ones run out. */
+    this.ads = adService;
     // Skill draws don't need to be reproducible per-seed — fresh entropy
     // each session is fine. A non-seeded RNG keeps draws varied between
     // identical-seed runs (otherwise every "seed 12345" run picks the same
@@ -45,6 +47,8 @@ export class SkillPickerUI {
     this.choices = [];
     /** Free skill rerolls remaining for the current pick (1 per level-up). */
     this.rerollsLeft = 0;
+    /** True while a rewarded ad is loading/playing, so taps do not stack. */
+    this._adBusy = false;
 
     bus.on('entity:leveledUp', ({ entity, levels }) => {
       if (entity?.kind !== 'player') return;
@@ -79,11 +83,17 @@ export class SkillPickerUI {
   handleCanvasTap(x, y) {
     if (!this.open) return false;
     const rr = this._rerollRect();
-    if (this.rerollsLeft > 0
-      && x >= rr.x && x <= rr.x + rr.w && y >= rr.y && y <= rr.y + rr.h) {
+    const onReroll = x >= rr.x && x <= rr.x + rr.w && y >= rr.y && y <= rr.y + rr.h;
+    if (onReroll && this.rerollsLeft > 0) {
       this._reroll();
       return true;
     }
+    if (onReroll && this._canWatchForReroll()) {
+      void this._rerollByAd();
+      return true;
+    }
+    // Swallow the tap while the ad is in flight so it cannot pick a card.
+    if (onReroll && this._adBusy) return true;
     for (let i = 0; i < this.choices.length; i++) {
       const cy = FIRST_CARD_Y + i * (CARD_H + CARD_GAP);
       const cx = (CANVAS_WIDTH - CARD_W) / 2;
@@ -164,15 +174,49 @@ export class SkillPickerUI {
 
   /** One free redraw of the current 3 cards without spending a pending pick. */
   _reroll() {
-    if (this.rerollsLeft <= 0 || !this.player) return;
+    if (this.rerollsLeft <= 0) return;
+    if (!this._redrawChoices()) return;
+    this.rerollsLeft -= 1;
+    this.bus.emit('skill:rerolled', { remaining: this.rerollsLeft });
+  }
+
+  /** Redraw the 3 cards. Returns false when the pool cannot supply any. */
+  _redrawChoices() {
+    if (!this.player) return false;
     const pool = (this.content.skills && this.content.skills.skills) || [];
     const owned = new Set(this.player.skills || []);
     const available = pool.filter((s) =>
       !owned.has(s.id) && (!s.hero || s.hero === this.player.heroKind));
-    if (available.length === 0) return;
+    if (available.length === 0) return false;
     this.choices = this._weightedDraw(available, 3);
-    this.rerollsLeft -= 1;
-    this.bus.emit('skill:rerolled', { remaining: this.rerollsLeft });
+    return true;
+  }
+
+  /** True when the free rerolls are gone but an ad can buy one more. */
+  _canWatchForReroll() {
+    return this.rerollsLeft <= 0
+      && !this._adBusy
+      && !!this.ads?.canOfferReroll?.();
+  }
+
+  /**
+   * Trade a rewarded ad for one extra redraw. The cards only change when the
+   * SDK confirms the reward, so quitting the video costs the player nothing
+   * and gains them nothing.
+   */
+  async _rerollByAd() {
+    if (!this._canWatchForReroll()) return;
+    this._adBusy = true;
+    try {
+      const earned = await this.ads.showRewardedReroll();
+      if (earned && this._redrawChoices()) {
+        this.bus.emit('skill:rerolled', { remaining: this.rerollsLeft, source: 'ad' });
+      }
+    } catch (err) {
+      console.warn('[SkillPicker] rewarded reroll failed:', err);
+    } finally {
+      this._adBusy = false;
+    }
   }
 
   /** Pick `n` distinct skills weighted by rarity (rarer → less frequent). */
@@ -289,13 +333,16 @@ export class SkillPickerUI {
         size: uiSize(10), color: IRON_PALETTE.boneDim, family: FONT_BODY
       });
     }
-    if (this.rerollsLeft > 0) {
+    if (this.rerollsLeft > 0 || this._adBusy || this._canWatchForReroll()) {
       const rr = this._rerollRect();
-      const label = this.rerollsLeft > 1
-        ? `${t('skills.reroll')}  ·  ${this.rerollsLeft}`
-        : t('skills.reroll');
+      let label;
+      if (this._adBusy) label = t('skills.reroll_wait');
+      else if (this.rerollsLeft > 1) label = `${t('skills.reroll')}  ·  ${this.rerollsLeft}`;
+      else if (this.rerollsLeft === 1) label = t('skills.reroll');
+      else label = t('skills.reroll_ad');
       drawIronActionButton(r, rr.x, rr.y, rr.w, rr.h, label, {
-        accent: IRON_PALETTE.brass, fontSize: uiSize(12)
+        accent: this.rerollsLeft > 0 ? IRON_PALETTE.brass : IRON_PALETTE.boneDim,
+        fontSize: uiSize(12)
       });
     }
   }

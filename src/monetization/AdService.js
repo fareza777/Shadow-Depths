@@ -16,6 +16,7 @@ import { LOG } from '../config/constants.js';
 import { resolveAdConfig } from './adConfig.js';
 
 const BANNER_RESERVE_VAR = '--ad-banner-reserve';
+const APP_OPEN_KEY = 'shadowdepths_last_app_open';
 
 export class AdService {
   /**
@@ -34,6 +35,10 @@ export class AdService {
     this._descentsSinceAd = 0;
     this._lastInterstitialAt = 0;
     this._revivesUsedThisRun = 0;
+    this._rerollsUsedThisRun = 0;
+    this._appOpenLoaded = false;
+    this._bannerSizeKey = null;
+    this._sizeListener = null;
     this._canRequestAds = false;
     this._npaRequired = false;
     this._consentInfo = null;
@@ -43,8 +48,10 @@ export class AdService {
     this.bus?.on?.('run:started', (payload = {}) => {
       if (payload.revived) return;
       this._revivesUsedThisRun = 0;
+      this._rerollsUsedThisRun = 0;
       this._descentsSinceAd = 0;
     });
+    this.bus?.on?.('app:foreground', () => { void this.onAppForeground(); });
   }
 
   get isNative() {
@@ -89,8 +96,10 @@ export class AdService {
           'AdMob on TEST units — no revenue. Set monetization.ads.unitIds in balance.json.');
       }
       // Warm the cached formats so the first interstitial / revive is instant.
+      this._attachBannerSizeListener(mod);
       this._preloadInterstitial();
       this._preloadRewarded();
+      this._preloadAppOpen();
     } catch (err) {
       this._lastError = err?.message || String(err);
       console.warn(LOG.CORE, 'AdMob init failed — running ad-free:', err);
@@ -158,16 +167,30 @@ export class AdService {
    * then showing, means the canvas has already shrunk by the time the native
    * view appears — it can never land on top of the HUD or the controls.
    */
-  async showBanner() {
-    if (this.adsDisabled || this._bannerVisible) return;
+  /**
+   * @param {string} [sceneName] drives the ad size: the dungeon gets the
+   *   smallest standard banner so the viewport barely moves, menus get an
+   *   adaptive one, which fills the width and earns appreciably more.
+   */
+  async showBanner(sceneName) {
+    if (this.adsDisabled) return;
+    const wanted = this._bannerSizeFor(sceneName);
+    // Re-showing costs an impression and a reload, so only a real size change
+    // (dungeon <-> menu) tears the banner down; menu-to-menu leaves it alone.
+    if (this._bannerVisible && wanted === this._bannerSizeKey) return;
     if (!this._ready) await this.init();
     if (!this._admob || !this._ready) return;
+    if (this._bannerVisible) await this.hideBanner();
     try {
       const mod = await import('@capacitor-community/admob');
+      const adSize = mod.BannerAdSize?.[wanted] || wanted || 'ADAPTIVE_BANNER';
+      this._bannerSizeKey = wanted;
+      // Reserve the fallback height up front; bannerAdSizeChanged corrects it
+      // to the real measurement as soon as the SDK lays the banner out.
       this._reserveBannerStrip(this.config.bannerHeightDp);
       await this._admob.showBanner({
         adId: this.config.unitIds.banner,
-        adSize: mod.BannerAdSize?.BANNER || 'BANNER',
+        adSize,
         position: mod.BannerAdPosition?.TOP_CENTER || 'TOP_CENTER',
         margin: 0,
         isTesting: this.config.testMode,
@@ -177,7 +200,33 @@ export class AdService {
     } catch (err) {
       this._lastError = err?.message || String(err);
       console.warn(LOG.CORE, 'showBanner failed:', err);
+      this._bannerSizeKey = null;
       this._reserveBannerStrip(0);
+    }
+  }
+
+  /** Smallest standard banner in the dungeon; adaptive anywhere with room. */
+  _bannerSizeFor(sceneName) {
+    return sceneName === this.config.gameplayScene
+      ? this.config.gameplayBannerSize
+      : this.config.bannerSize;
+  }
+
+  /**
+   * Track the banner's real height. An adaptive banner is whatever tall the
+   * SDK decides, so a hardcoded strip would either waste space or — much
+   * worse — let the ad sit over the HUD.
+   */
+  async _attachBannerSizeListener(mod) {
+    if (this._sizeListener || !this._admob?.addListener) return;
+    try {
+      const evt = mod.BannerAdPluginEvents?.SizeChanged || 'bannerAdSizeChanged';
+      this._sizeListener = await this._admob.addListener(evt, (info) => {
+        const h = Number(info?.height) || 0;
+        if (h > 0 && this._bannerVisible) this._reserveBannerStrip(h);
+      });
+    } catch (err) {
+      console.warn(LOG.CORE, 'banner size listener failed:', err?.message || err);
     }
   }
 
@@ -190,13 +239,14 @@ export class AdService {
       }
     }
     this._bannerVisible = false;
+    this._bannerSizeKey = null;
     this._reserveBannerStrip(0);
   }
 
   /** Route a scene transition to a safe banner placement or a hidden strip. */
   async onSceneChanged(sceneName) {
     const eligible = this.config.eligibleScenes?.includes?.(sceneName);
-    return eligible ? this.showBanner() : this.hideBanner();
+    return eligible ? this.showBanner(sceneName) : this.hideBanner();
   }
 
   /**
@@ -254,12 +304,88 @@ export class AdService {
       await this._admob.showInterstitial();
       this._interstitialLoaded = false;
       this._lastInterstitialAt = Date.now();
+      // Coming back from this must not trigger an App Open ad on top of it.
+      this._markAppOpenShown(Date.now());
       this._preloadInterstitial();
       return true;
     } catch (err) {
       this._lastError = err?.message || String(err);
       console.warn(LOG.CORE, 'showInterstitial failed:', err);
       this._interstitialLoaded = false;
+      return false;
+    }
+  }
+
+  // --- app open -------------------------------------------------------
+  /** The plugin names this loadAppOpen; older builds used prepareAppOpen. */
+  _appOpenLoader() {
+    if (typeof this._admob?.loadAppOpen === 'function') return this._admob.loadAppOpen;
+    if (typeof this._admob?.prepareAppOpen === 'function') return this._admob.prepareAppOpen;
+    return null;
+  }
+
+  async _preloadAppOpen() {
+    if (this.adsDisabled || !this._admob || this._appOpenLoaded) return;
+    const load = this._appOpenLoader();
+    if (!load) return;
+    try {
+      await load.call(this._admob, {
+        adId: this.config.unitIds.appOpen,
+        isTesting: this.config.testMode,
+        npa: this._npaRequired
+      });
+      this._appOpenLoaded = true;
+    } catch (err) {
+      console.warn(LOG.CORE, 'loadAppOpen failed:', err?.message || err);
+    }
+  }
+
+  _lastAppOpenAt() {
+    try {
+      const raw = localStorage.getItem(APP_OPEN_KEY);
+      return raw ? Number(raw) || 0 : 0;
+    } catch { return 0; }
+  }
+
+  _markAppOpenShown(at) {
+    try { localStorage.setItem(APP_OPEN_KEY, String(at)); } catch { /* ignore */ }
+  }
+
+  /**
+   * Show an App Open ad when the player returns to the game.
+   *
+   * Never fires on a first-ever launch: that run only seeds the timestamp, so
+   * a brand-new player reaches the title screen with nothing in the way.
+   * Afterwards it is capped to one per `appOpenMinIntervalMs`.
+   *
+   * @returns {Promise<boolean>} true if an ad was shown
+   */
+  async onAppForeground() {
+    if (this.adsDisabled) return false;
+    const now = Date.now();
+    const last = this._lastAppOpenAt();
+    if (!last) {
+      this._markAppOpenShown(now);
+      return false;
+    }
+    if (now - last < this.config.appOpenMinIntervalMs) return false;
+
+    if (!this._ready) await this.init();
+    if (!this._admob || !this._ready) return false;
+    if (typeof this._admob.showAppOpen !== 'function') return false;
+    if (!this._appOpenLoader()) return false;
+    if (!this._appOpenLoaded) await this._preloadAppOpen();
+    if (!this._appOpenLoaded) return false;
+    try {
+      await this._admob.showAppOpen();
+      this._appOpenLoaded = false;
+      this._markAppOpenShown(Date.now());
+      this._preloadAppOpen();
+      return true;
+    } catch (err) {
+      this._lastError = err?.message || String(err);
+      console.warn(LOG.CORE, 'showAppOpen failed:', err);
+      this._appOpenLoaded = false;
       return false;
     }
   }
@@ -296,6 +422,38 @@ export class AdService {
    */
   async showRewardedRevive() {
     if (!this.canOfferRevive()) return false;
+    const earned = await this._playRewarded();
+    if (earned) this._revivesUsedThisRun += 1;
+    return earned;
+  }
+
+  /** True when a "watch for one more reroll" offer should appear. */
+  canOfferReroll() {
+    if (this.adsDisabled) return false;
+    if (this._consentInfo && !this._canRequestAds) return false;
+    return this._rerollsUsedThisRun < this.config.rewardedRerollPerRun;
+  }
+
+  /** Rewarded rerolls already spent this run. */
+  get rerollsUsedThisRun() { return this._rerollsUsedThisRun; }
+
+  /**
+   * Play the rewarded ad for one extra skill reroll. Offered only after the
+   * free rerolls are spent, so it adds a choice instead of taking one away.
+   * @returns {Promise<boolean>}
+   */
+  async showRewardedReroll() {
+    if (!this.canOfferReroll()) return false;
+    const earned = await this._playRewarded();
+    if (earned) this._rerollsUsedThisRun += 1;
+    return earned;
+  }
+
+  /**
+   * Shared rewarded playback. Resolves true only on a confirmed reward, so
+   * backing out of the video never pays out.
+   */
+  async _playRewarded() {
     if (!this._ready) await this.init();
     if (!this._admob || !this._ready) return false;
     if (!this._rewardedLoaded) await this._preloadRewarded();
@@ -303,12 +461,12 @@ export class AdService {
     try {
       const reward = await this._admob.showRewardVideoAd();
       this._rewardedLoaded = false;
+      // Same guard as the interstitial: no App Open ad chasing this one.
+      this._markAppOpenShown(Date.now());
       this._preloadRewarded();
-      const earned = typeof reward?.type === 'string'
+      return typeof reward?.type === 'string'
         ? reward.type.trim().length > 0
         : !!reward?.type;
-      if (earned) this._revivesUsedThisRun += 1;
-      return earned;
     } catch (err) {
       this._lastError = err?.message || String(err);
       console.warn(LOG.CORE, 'showRewardVideoAd failed:', err);
@@ -321,6 +479,7 @@ export class AdService {
   async removeAllAds() {
     this._interstitialLoaded = false;
     this._rewardedLoaded = false;
+    this._appOpenLoaded = false;
     if (!this._admob) {
       this._reserveBannerStrip(0);
       return;
