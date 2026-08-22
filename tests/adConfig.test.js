@@ -27,10 +27,26 @@ describe('release monetization contract', () => {
       banner: 'ca-app-pub-1234567890123456/1234567890',
       interstitial: 'ca-app-pub-1234567890123456/1234567891',
       rewarded: 'ca-app-pub-1234567890123456/1234567892',
+      appOpen: 'ca-app-pub-1234567890123456/1234567893',
       publisherId: 'pub-1234567890123456',
       release: true
     });
     expect(result).toEqual({ ok: true, errors: [] });
+  });
+
+  it('blocks a release that still has the sample app open unit', () => {
+    // usingTestUnits keys off appOpen too, so a miss here would force
+    // isTesting on every format and quietly ship zero-revenue ads.
+    const result = validateAdIds({
+      appId: 'ca-app-pub-1234567890123456~1234567890',
+      banner: 'ca-app-pub-1234567890123456/1234567890',
+      interstitial: 'ca-app-pub-1234567890123456/1234567891',
+      rewarded: 'ca-app-pub-1234567890123456/1234567892',
+      appOpen: TEST_AD_UNITS.appOpen,
+      publisherId: 'pub-1234567890123456',
+      release: true
+    });
+    expect(result.ok).toBe(false);
   });
 
   it('rejects sample IDs for a release build', () => {

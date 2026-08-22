@@ -30,6 +30,7 @@ function envIds() {
     banner: process.env.ADMOB_BANNER_ID || '',
     interstitial: process.env.ADMOB_INTERSTITIAL_ID || '',
     rewarded: process.env.ADMOB_REWARDED_ID || '',
+    appOpen: process.env.ADMOB_APP_OPEN_ID || '',
     publisherId: process.env.ADMOB_PUBLISHER_ID || ''
   };
 }

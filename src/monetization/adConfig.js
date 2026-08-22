@@ -69,6 +69,7 @@ export function validateAdIds({
   banner,
   interstitial,
   rewarded,
+  appOpen,
   publisherId,
   release = false
 } = {}) {
@@ -81,8 +82,13 @@ export function validateAdIds({
   if (release && !unitOk(banner)) errors.push('AdMob banner unit ID is missing or malformed');
   if (release && !unitOk(interstitial)) errors.push('AdMob interstitial unit ID is missing or malformed');
   if (release && !unitOk(rewarded)) errors.push('AdMob rewarded unit ID is missing or malformed');
+  // appOpen is checked like the rest: leaving it on a sample unit flips
+  // usingTestUnits, which forces isTesting on EVERY format. A release that
+  // passed this gate while appOpen was still a sample would ship real-looking
+  // ads that earn nothing.
+  if (release && !unitOk(appOpen)) errors.push('AdMob app open unit ID is missing or malformed');
   if (release && !publisherOk) errors.push('AdMob publisher ID is missing or malformed');
-  if (release && [appId, banner, interstitial, rewarded].some(isGoogleSampleId)) {
+  if (release && [appId, banner, interstitial, rewarded, appOpen].some(isGoogleSampleId)) {
     errors.push('Google sample ad IDs are debug-only');
   }
 
