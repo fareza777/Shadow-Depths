@@ -47,7 +47,7 @@ describe('workflow smoke: descent pipeline', () => {
     expect(balanceData.monetization?.model).toBe('free_with_ads');
     expect(balanceData.monetization?.entitlementIds).toContain('full_descent_unlock');
     expect(balanceData.monetization?.freeFloorCap).toBeUndefined();
-    expect(FALLBACK_PRICE_LABEL).toBe('US$4.99');
+    expect(FALLBACK_PRICE_LABEL).toBe('Rp 88.000');
   });
 
   it('routes scene changes through AdService instead of showing a boot-global banner', () => {
@@ -64,7 +64,7 @@ describe('workflow smoke: descent pipeline', () => {
     expect(privacy).toMatch(/AdMob|Google Mobile Ads/i);
     expect(privacy).toMatch(/consent|personalized|non-personalized/i);
     expect(playStore).toMatch(/Contains ads.*Yes/i);
-    expect(playStore).toMatch(/US\$4\.99/);
+    expect(playStore).toMatch(/Rp 88\.000/);
     expect(playStore).toMatch(/100 floors.*free/i);
     expect(playStore).not.toMatch(/declare \*\*no ads\*\*/i);
   });

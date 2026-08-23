@@ -11,6 +11,8 @@ $env:VITE_ADMOB_APP_ID = $env:ADMOB_APP_ID
 $env:VITE_ADMOB_BANNER_ID = $env:ADMOB_BANNER_ID
 $env:VITE_ADMOB_INTERSTITIAL_ID = $env:ADMOB_INTERSTITIAL_ID
 $env:VITE_ADMOB_REWARDED_ID = $env:ADMOB_REWARDED_ID
+$env:VITE_ADMOB_APP_OPEN_ID = $env:ADMOB_APP_OPEN_ID
+$env:VITE_ADMOB_PUBLISHER_ID = $env:ADMOB_PUBLISHER_ID
 
 if (-not (Test-Path 'android\keystore.properties')) {
   Write-Host 'Missing android\keystore.properties — copy from android\keystore.properties.example' -ForegroundColor Red

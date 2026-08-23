@@ -36,4 +36,4 @@ export const PRODUCTS = Object.freeze({
 });
 
 /** Default display price when the store catalog is unavailable (web / offline). */
-export const FALLBACK_PRICE_LABEL = 'US$4.99';
+export const FALLBACK_PRICE_LABEL = 'Rp 88.000';

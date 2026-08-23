@@ -50,8 +50,8 @@ describe('free-to-play access', () => {
 });
 
 describe('ad-free entitlement', () => {
-  it('uses the US$4.99 fallback price when Play Billing is unavailable', () => {
-    expect(FALLBACK_PRICE_LABEL).toBe('US$4.99');
+  it('uses the live Indonesian fallback price when Play Billing is unavailable', () => {
+    expect(FALLBACK_PRICE_LABEL).toBe('Rp 88.000');
   });
 
   it('shows ads until the removal is bought', () => {

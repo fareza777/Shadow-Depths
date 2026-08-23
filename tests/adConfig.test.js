@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import balanceData from '../data/balance.json';
+import { DEFAULT_BALANCE } from '../src/config/balance.js';
 import { FALLBACK_PRICE_LABEL, PRODUCT_FULL_DESCENT, PRODUCT_REMOVE_ADS } from '../src/monetization/products.js';
 import {
   resolveAdConfig,
@@ -8,10 +10,34 @@ import {
 } from '../src/monetization/adConfig.js';
 
 describe('release monetization contract', () => {
-  it('offers Remove Ads at the US$4.99 base price and keeps the legacy id', async () => {
+  it('uses the live Indonesian fallback price and keeps the legacy id', () => {
     expect(PRODUCT_REMOVE_ADS).toBe('remove_ads');
     expect(PRODUCT_FULL_DESCENT).toBe('full_descent_unlock');
-    expect(FALLBACK_PRICE_LABEL).toBe('US$4.99');
+    expect(FALLBACK_PRICE_LABEL).toBe('Rp 88.000');
+    expect(balanceData.monetization.fallbackPriceLabel).toBe('Rp 88.000');
+    expect(DEFAULT_BALANCE.monetization.fallbackPriceLabel).toBe('Rp 88.000');
+  });
+
+  it('resolves all four live AdMob units without test mode', () => {
+    const cfg = resolveAdConfig(balanceData.monetization, {});
+    expect({
+      appId: cfg.appId,
+      publisherId: cfg.publisherId,
+      unitIds: cfg.unitIds,
+      testMode: cfg.testMode,
+      releaseReady: cfg.releaseReady
+    }).toEqual({
+      appId: 'ca-app-pub-6279186647593327~2428101171',
+      publisherId: 'pub-6279186647593327',
+      unitIds: {
+        banner: 'ca-app-pub-6279186647593327/3358039467',
+        interstitial: 'ca-app-pub-6279186647593327/2966167545',
+        rewarded: 'ca-app-pub-6279186647593327/1905306669',
+        appOpen: 'ca-app-pub-6279186647593327/1218378122'
+      },
+      testMode: false,
+      releaseReady: true
+    });
   });
 
   it('uses test units only when live environment IDs are absent', () => {

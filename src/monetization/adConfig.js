@@ -130,6 +130,7 @@ export function resolveAdConfig(monetization = {}, env) {
     banner,
     interstitial,
     rewarded,
+    appOpen,
     publisherId,
     release: true
   }).ok;

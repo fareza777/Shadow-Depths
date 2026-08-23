@@ -139,7 +139,7 @@ export const DEFAULT_BALANCE = Object.freeze({
     productId: 'remove_ads',
     entitlementIds: ['remove_ads', 'full_descent_unlock'],
     // Display-only fallback; live price comes from Play Billing.
-    fallbackPriceLabel: 'US$4.99',
+    fallbackPriceLabel: 'Rp 88.000',
     ads: {
       enabled: true,
       testMode: false,
@@ -152,7 +152,8 @@ export const DEFAULT_BALANCE = Object.freeze({
       unitIds: {
         banner: '',
         interstitial: '',
-        rewarded: ''
+        rewarded: '',
+        appOpen: ''
       }
     }
   }

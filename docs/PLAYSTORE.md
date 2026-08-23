@@ -8,10 +8,10 @@ App ID: `com.shadowdepths.game` · Display name: **Shadow Depths** · Version: *
 | Offer | Access |
 |------|--------|
 | **Free with ads** | All **100 floors** are playable without an account or purchase. Banner, interstitial, and optional rewarded-revive ads support the free game. |
-| **Remove Ads** | New one-time, non-consumable product `remove_ads`; base price **US$4.99** (Play localises the final price). It permanently removes every ad. |
+| **Remove Ads** | New one-time, non-consumable product `remove_ads`; live fallback price **Rp 88.000**. It permanently removes every ad. |
 | **Legacy restore** | `full_descent_unlock` is restore-only. Existing owners keep permanent ad-free access; do not remove or rename this entitlement. |
 
-- New product in Play Console: `remove_ads` (one-time / non-consumable), price **US$4.99**.
+- New product in Play Console: `remove_ads` (one-time / non-consumable), live price **Rp 88.000**.
 - Test both a fresh account and an account that owns `full_descent_unlock`; the latter must never request or display ads.
 - Restore purchases from Settings before the first ad placement is allowed.
 
@@ -28,11 +28,12 @@ cd android
 .\gradlew.bat assembleDebug
 # android\app\build\outputs\apk\debug\app-debug.apk
 
-# Production release (requires the five ADMOB_* environment variables)
+# Production release (requires the six ADMOB_* environment variables)
 $env:ADMOB_APP_ID = 'ca-app-pub-<your-publisher>~<app-suffix>'
 $env:ADMOB_BANNER_ID = 'ca-app-pub-<your-publisher>/<banner-suffix>'
 $env:ADMOB_INTERSTITIAL_ID = 'ca-app-pub-<your-publisher>/<interstitial-suffix>'
 $env:ADMOB_REWARDED_ID = 'ca-app-pub-<your-publisher>/<rewarded-suffix>'
+$env:ADMOB_APP_OPEN_ID = 'ca-app-pub-<your-publisher>/<app-open-suffix>'
 $env:ADMOB_PUBLISHER_ID = 'pub-<your-16-digit-publisher-id>'
 .\scripts\build-release-aab.ps1
 # Output: release\app-release.aab
@@ -40,8 +41,8 @@ $env:ADMOB_PUBLISHER_ID = 'pub-<your-16-digit-publisher-id>'
 
 The release script refuses missing, malformed, or Google sample IDs. It writes the
 same App ID to Android resources, the unit IDs to the Vite build, and the publisher
-line to `https://shadow-depths.vercel.app/app-ads.txt`. Never commit account IDs,
-keystores, or passwords.
+line to `https://shadow-depths.vercel.app/app-ads.txt`. AdMob app and unit IDs are
+public identifiers; never commit keystores or passwords.
 
 ## Play Console setup
 
@@ -52,9 +53,9 @@ keystores, or passwords.
 5. **Target audience:** 13+ recommended; confirm the audience and Families answers match the current app.
 6. **Data safety:** disclose the Google Mobile Ads SDK categories currently shown in the SDK disclosure (app/ad interactions, diagnostics, device/account identifiers, and IP/general-location estimation where applicable). Disclose optional anonymous analytics separately, and mark it optional only if the runtime opt-in remains off by default. Recheck this form whenever the SDK or endpoint changes.
 7. **Privacy policy URL:** `https://shadow-depths.vercel.app/privacy.html`
-8. **Developer website:** `https://github.com/fareza777/Shadow-Depths`
+8. **Developer website:** `https://shadow-depths.vercel.app`
 9. **AdMob verification:** host `app-ads.txt` at `https://shadow-depths.vercel.app/app-ads.txt` after the real publisher ID is supplied; verify it in AdMob before production.
-10. **Monetize → Products → In-app products:** create and activate `remove_ads` as a one-time non-consumable at US$4.99. Keep `full_descent_unlock` active for restore testing but do not market it as the new offer.
+10. **Monetize → Products → In-app products:** create and activate `remove_ads` as a one-time non-consumable at Rp 88.000. Keep `full_descent_unlock` active for restore testing but do not market it as the new offer.
 
 ## Store listing copy
 
@@ -74,7 +75,7 @@ craft gear, choose skills, and survive permadeath in a melancholic dark-fantasy 
 
 The free game is supported by occasional banners and natural-break interstitials.
 You can also watch one optional rewarded ad per run to revive from a safe checkpoint.
-Remove Ads is a one-time US$4.99 purchase that disables every ad forever. Players who
+Remove Ads is a one-time Rp 88.000 purchase that disables every ad forever. Players who
 owned the retired Full Descent product keep their permanent ad-free entitlement.
 
 No account is required. Progress is stored locally, purchases restore through Google

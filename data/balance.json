@@ -102,10 +102,12 @@
       "remove_ads",
       "full_descent_unlock"
     ],
-    "fallbackPriceLabel": "US$4.99",
+    "fallbackPriceLabel": "Rp 88.000",
     "ads": {
       "enabled": true,
       "testMode": false,
+      "appId": "ca-app-pub-6279186647593327~2428101171",
+      "publisherId": "pub-6279186647593327",
       "bannerHeightDp": 50,
       "interstitialEveryNFloors": 3,
       "interstitialMinFloorIndex": 3,
@@ -119,10 +121,10 @@
       "interstitialCooldownMs": 90000,
       "rewardedRevivePerRun": 1,
       "unitIds": {
-        "banner": "",
-        "interstitial": "",
-        "rewarded": "",
-        "appOpen": ""
+        "banner": "ca-app-pub-6279186647593327/3358039467",
+        "interstitial": "ca-app-pub-6279186647593327/2966167545",
+        "rewarded": "ca-app-pub-6279186647593327/1905306669",
+        "appOpen": "ca-app-pub-6279186647593327/1218378122"
       },
       "bannerSize": "ADAPTIVE_BANNER",
       "gameplayBannerSize": "BANNER",
