@@ -8,7 +8,7 @@ describe('Android release checklist', () => {
     const gradle = readFileSync(new URL('../android/app/capacitor.build.gradle', import.meta.url), 'utf8');
     const listing = readFileSync(new URL('../docs/PLAYSTORE.md', import.meta.url), 'utf8');
 
-    expect(packageJson.version).toBe('0.2.8');
+    expect(packageJson.version).toBe('0.2.9');
     expect(manifest).toContain('android:value="@string/admob_app_id"');
     expect(manifest).toContain('com.google.android.gms.permission.AD_ID');
     expect(gradle).toContain("project(':capacitor-community-admob')");

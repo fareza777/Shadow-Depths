@@ -1,7 +1,7 @@
 # Google Play Store — release checklist
 
 Shadow Depths ships as a **Capacitor Android App Bundle (`.aab`)**.  
-App ID: `com.shadowdepths.game` · Display name: **Shadow Depths** · Version: **0.2.8**
+App ID: `com.shadowdepths.game` · Display name: **Shadow Depths** · Version: **0.2.9**
 
 ## Monetization model
 
@@ -102,8 +102,8 @@ YouTube, and paste the YouTube URL into Play Console → Store listing → Promo
 
 ## Versioning and test gate
 
-- `versionName` comes from `package.json` (`0.2.8`).
-- `versionCode` is computed as `major*10000 + minor*100 + patch`, so `0.2.8` = **208**.
+- `versionName` comes from `package.json` (`0.2.9`).
+- `versionCode` is computed as `major*10000 + minor*100 + patch`, so `0.2.9` = **209**.
 - Test a fresh install: all 100 floors remain open, banners appear only on title/pause/game-over/victory, interstitials occur at natural floor breaks, and the rewarded revive is limited to once per run.
 - Test `remove_ads`: purchase, relaunch, restore, and verify banner/interstitial/rewarded requests stop immediately.
 - Test a licensed legacy account: restore `full_descent_unlock` and verify the same ad-free behavior.
