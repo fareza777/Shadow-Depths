@@ -266,6 +266,51 @@
       "guaranteedPrefix": "arcane",
       "tierBoost": 1,
       "floorMin": 18
+    },
+    {
+      "id": "forge_bear_plate",
+      "name": "Beat the Bear Plate",
+      "description": "Forge chips hammered flat — armour that carries its own weight.",
+      "floorMin": 41,
+      "inputs": [
+        {
+          "materialId": "iron_chip",
+          "count": 3
+        }
+      ],
+      "baseSlot": "armor",
+      "guaranteedSuffix": "of_the_bear",
+      "tierBoost": 1
+    },
+    {
+      "id": "temper_pyre_blade",
+      "name": "Temper in Sun Glass",
+      "description": "Sand that remembered the sun — the edge keeps burning.",
+      "floorMin": 51,
+      "inputs": [
+        {
+          "materialId": "sun_glass",
+          "count": 3
+        }
+      ],
+      "baseSlot": "weapon",
+      "guaranteedSuffix": "of_the_pyre",
+      "tierBoost": 2
+    },
+    {
+      "id": "set_sanctuary_sigil",
+      "name": "Set the Mirror Sigil",
+      "description": "Three shards, one reflection — a sigil that mends you between steps.",
+      "floorMin": 61,
+      "inputs": [
+        {
+          "materialId": "mirror_shard",
+          "count": 3
+        }
+      ],
+      "baseSlot": "necklace",
+      "guaranteedSuffix": "of_sanctuary",
+      "tierBoost": 2
     }
   ]
 }

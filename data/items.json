@@ -474,7 +474,7 @@
     "spriteKey": "helm_hood",
     "slot": "helm",
     "stats": {
-      "def": 1,
+      "def": 2,
       "dex": 2
     },
     "lore": "Worn by those who preferred not to be seen praying.",
@@ -520,7 +520,7 @@
     "spriteKey": "helm_circlet",
     "slot": "helm",
     "stats": {
-      "def": 1,
+      "def": 3,
       "dex": 3,
       "critBonus": 0.05
     },
@@ -2195,7 +2195,7 @@
     "spriteKey": "helm_cloth",
     "slot": "helm",
     "stats": {
-      "def": 1,
+      "def": 3,
       "dex": 1
     },
     "lore": "Soft cloth sewn with watcher knots.",
@@ -2254,7 +2254,7 @@
     "spriteKey": "helm_iron",
     "slot": "helm",
     "stats": {
-      "def": 3
+      "def": 5
     },
     "lore": "Its mouth slit is shaped like a locked gate.",
     "floorMin": 68,
@@ -2297,7 +2297,7 @@
     "spriteKey": "helm_cloth",
     "slot": "helm",
     "stats": {
-      "def": 2,
+      "def": 6,
       "critBonus": 0.04
     },
     "lore": "A saint wore it once. The stain disagrees.",
@@ -3383,7 +3383,7 @@
     "spriteKey": "helm_cloth",
     "slot": "helm",
     "stats": {
-      "def": 1,
+      "def": 2,
       "dex": 2
     },
     "lore": "The cloth crackles when you breathe.",
@@ -3398,7 +3398,7 @@
     "spriteKey": "helm_crown",
     "slot": "helm",
     "stats": {
-      "def": 2,
+      "def": 3,
       "atk": 1
     },
     "lore": "Every thorn points inward first.",
@@ -3413,7 +3413,7 @@
     "spriteKey": "helm_iron",
     "slot": "helm",
     "stats": {
-      "def": 3
+      "def": 4
     },
     "lore": "A faceplate with no patience.",
     "floorMin": 44,
@@ -3427,7 +3427,7 @@
     "spriteKey": "helm_cloth",
     "slot": "helm",
     "stats": {
-      "def": 1,
+      "def": 4,
       "dex": 2,
       "critBonus": 0.04
     },
@@ -3443,7 +3443,7 @@
     "spriteKey": "helm_circlet",
     "slot": "helm",
     "stats": {
-      "def": 2,
+      "def": 5,
       "critBonus": 0.08
     },
     "lore": "It lets you see the angle of regret.",
@@ -3458,7 +3458,7 @@
     "spriteKey": "helm_crown",
     "slot": "helm",
     "stats": {
-      "def": 3,
+      "def": 6,
       "hpMaxBonus": 8
     },
     "lore": "A crown dragged from a sunken nave.",
@@ -3473,7 +3473,7 @@
     "spriteKey": "helm_cloth",
     "slot": "helm",
     "stats": {
-      "def": 2,
+      "def": 7,
       "dex": 3,
       "critBonus": 0.06
     },
@@ -4462,5 +4462,17 @@
     "lore": "A coin for the final ferryman.",
     "floorMin": 99,
     "spawnWeight": 1
+  },
+  "vault_key": {
+    "id": "vault_key",
+    "name": "Vault Key",
+    "type": "key",
+    "rarity": "uncommon",
+    "spriteKey": "material_iron_chip",
+    "stackable": true,
+    "maxStack": 9,
+    "lore": "Warm from the hand that carried it. It fits one door on this floor.",
+    "floorMin": 99,
+    "spawnWeight": 0
   }
 }
