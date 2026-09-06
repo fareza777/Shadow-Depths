@@ -42,14 +42,20 @@ export class TutorialOverlay {
   }
 
   show(show = true) {
+    const wasOpen = this.open;
     this._variant = show === 'keeper' ? 'keeper' : 'firstRun';
     this.open = !!show;
     this._step = 0;
+    // AdService listens: a banner must never sit over the tutorial's top bar.
+    if (this.open && !wasOpen) this.bus?.emit?.('tutorial:opened', {});
+    else if (!this.open && wasOpen) this.bus?.emit?.('tutorial:closed', {});
   }
 
   hide() {
+    const wasOpen = this.open;
     this.open = false;
     if (this.meta) this.meta.setSetting('showTutorial', false);
+    if (wasOpen) this.bus?.emit?.('tutorial:closed', {});
   }
 
   render(renderer) {

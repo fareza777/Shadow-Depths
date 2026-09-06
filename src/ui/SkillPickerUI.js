@@ -16,6 +16,15 @@ import {
 } from './ironPanel.js';
 import { t } from '../content/i18n.js';
 
+/**
+ * How long the picker ignores resolving input after it opens.
+ *
+ * The modal covers the whole canvas, so its cards and reroll button land where
+ * the D-pad and action column sat a frame earlier. Levelling up mid-fight drops
+ * it under a thumb that is already moving.
+ */
+export const OPEN_GRACE_MS = 350;
+
 const CARD_W = 360;
 const CARD_H = 76;
 const CARD_GAP = 12;
@@ -47,6 +56,12 @@ export class SkillPickerUI {
     this.choices = [];
     /** Free skill rerolls remaining for the current pick (1 per level-up). */
     this.rerollsLeft = 0;
+    /** Highlighted card. D-pad browses; only confirm commits. */
+    this.selected = 0;
+    /** Last skill actually taken — exposed for tests and telemetry. */
+    this.lastPicked = null;
+    /** Timestamp of the last open, for the input grace window. */
+    this._openedAt = 0;
     /** True while a rewarded ad is loading/playing, so taps do not stack. */
     this._adBusy = false;
 
@@ -79,9 +94,16 @@ export class SkillPickerUI {
     };
   }
 
-  /** Touch / mouse tap — tap anywhere picks (card hit = that card). */
+  /** True while a just-opened picker should swallow resolving input. */
+  _inGrace() {
+    return Date.now() - this._openedAt < OPEN_GRACE_MS;
+  }
+
+  /** Touch / mouse tap — only a hit on a card or the reroll button counts. */
   handleCanvasTap(x, y) {
     if (!this.open) return false;
+    // Consume it regardless: the world underneath must not receive the tap.
+    if (this._inGrace()) return true;
     const rr = this._rerollRect();
     const onReroll = x >= rr.x && x <= rr.x + rr.w && y >= rr.y && y <= rr.y + rr.h;
     if (onReroll && this.rerollsLeft > 0) {
@@ -98,44 +120,64 @@ export class SkillPickerUI {
       const cy = FIRST_CARD_Y + i * (CARD_H + CARD_GAP);
       const cx = (CANVAS_WIDTH - CARD_W) / 2;
       if (x >= cx && x <= cx + CARD_W && y >= cy && y <= cy + CARD_H) {
+        this.selected = i;
         this._pick(this.choices[i]);
         return true;
       }
     }
-    this._pickFirstOrHide();
+    // A tap on empty space used to take skill #1. Now it does nothing.
     return true;
   }
 
-  /** D-pad / keys while level-up — never soft-lock; always resolve a pick. */
+  /**
+   * D-pad / keys while level-up. Directions browse, confirm commits.
+   *
+   * Every one of these cases used to call _pickFirstOrHide(), so a single
+   * D-pad nudge mid-fight silently took skill #1. Escape still resolves, which
+   * is what keeps the modal from ever soft-locking a run.
+   */
   handleInput(action) {
     if (!this.open) return false;
+    const count = this.choices.length;
     switch (action.type) {
       case 'useSlot':
-        if (typeof action.index === 'number' &&
-            action.index >= 0 && action.index < this.choices.length) {
-          this._pick(this.choices[action.index]);
-        } else {
-          this._pickFirstOrHide();
+        if (typeof action.index === 'number' && action.index >= 0 && action.index < count) {
+          this.selected = action.index;
+          if (!this._inGrace()) this._pick(this.choices[action.index]);
         }
         return true;
+      case 'move': {
+        if (count === 0) return true;
+        const step = action.dy || action.dx || 0;
+        this.selected = (this.selected + step + count) % count;
+        return true;
+      }
       case 'wait':
-        // Wait key = free reroll once
-        if (this.rerollsLeft > 0) {
-          this._reroll();
-          return true;
-        }
-        this._pickFirstOrHide();
+        // Wait key = free reroll. Out of rerolls is a no-op, not a pick.
+        if (this._inGrace()) return true;
+        if (this.rerollsLeft > 0) this._reroll();
         return true;
-      case 'move':
       case 'confirm':
       case 'pickup':
+        if (this._inGrace()) return true;
+        this._pickSelected();
+        return true;
       case 'menu':
       case 'escape':
-        this._pickFirstOrHide();
+        // Deliberate exit: resolve with whatever is highlighted so a queued
+        // level-up can never trap the player in the modal.
+        if (this._inGrace()) return true;
+        this._pickSelected();
         return true;
       default:
         return true;
     }
+  }
+
+  _pickSelected() {
+    const skill = this.choices[this.selected] || this.choices[0];
+    if (skill) this._pick(skill);
+    else this.hide();
   }
 
   _pickFirstOrHide() {
@@ -169,6 +211,8 @@ export class SkillPickerUI {
     this.choices = this._weightedDraw(available, 3);
     const bonus = this.meta?.upgradeLevel?.('skill_reroll_plus') || 0;
     this.rerollsLeft = 1 + bonus;
+    this.selected = 0;
+    this._openedAt = Date.now();
     this.open = true;
   }
 
@@ -235,6 +279,7 @@ export class SkillPickerUI {
 
   _pick(skill) {
     if (!skill || !this.player) return;
+    this.lastPicked = skill.id;
     this.player.applySkill(skill.id, skill);
     // Recompute emergent tag synergies from the full owned set.
     const pool = (this.content.skills && this.content.skills.skills) || [];
@@ -296,11 +341,18 @@ export class SkillPickerUI {
       const skill = this.choices[i];
       const cy = FIRST_CARD_Y + i * (CARD_H + CARD_GAP);
       const accent = rarityColor(skill.rarity);
+      const isSelected = i === this.selected;
       drawIronPlate(ctx, cx, cy, CARD_W, CARD_H, { rivets: false });
       ctx.save();
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 2;
+      // The D-pad browses now, so the highlighted card has to be obvious.
+      ctx.strokeStyle = isSelected ? IRON_PALETTE.brass : accent;
+      ctx.lineWidth = isSelected ? 3 : 2;
       ctx.strokeRect(cx + 1, cy + 1, CARD_W - 2, CARD_H - 2);
+      if (isSelected) {
+        ctx.globalAlpha = 0.14;
+        ctx.fillStyle = IRON_PALETTE.brass;
+        ctx.fillRect(cx + 2, cy + 2, CARD_W - 4, CARD_H - 4);
+      }
       ctx.restore();
       // Rarity-tinted icon plate on the left, then text shifted past it.
       drawSkillIcon(r, cx + 12, cy + 18, 40, skill, accent);

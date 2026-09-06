@@ -43,8 +43,16 @@ export class AdService {
     this._npaRequired = false;
     this._consentInfo = null;
     this._lastError = '';
+    /**
+     * Hard suppression, independent of scene config. The tutorial is an
+     * overlay inside the "game" scene, so filtering by scene name only
+     * shields it as a side effect.
+     */
+    this._bannerSuppressed = false;
 
     this.bus?.on?.('billing:unlocked', () => { this.removeAllAds(); });
+    this.bus?.on?.('tutorial:opened', () => { this.setBannerSuppressed(true); });
+    this.bus?.on?.('tutorial:closed', () => { this.setBannerSuppressed(false); });
     this.bus?.on?.('run:started', (payload = {}) => {
       if (payload.revived) return;
       this._revivesUsedThisRun = 0;
@@ -243,10 +251,26 @@ export class AdService {
     this._reserveBannerStrip(0);
   }
 
+  /** True when a banner may show on this scene right now. */
+  _bannerAllowedFor(sceneName) {
+    return !this._bannerSuppressed
+      && !!this.config.eligibleScenes?.includes?.(sceneName);
+  }
+
+  /** Force the banner down (and back) regardless of the current scene. */
+  setBannerSuppressed(on) {
+    const next = !!on;
+    if (this._bannerSuppressed === next) return;
+    this._bannerSuppressed = next;
+    void this.onSceneChanged(this._bannerScene);
+  }
+
   /** Route a scene transition to a safe banner placement or a hidden strip. */
   async onSceneChanged(sceneName) {
-    const eligible = this.config.eligibleScenes?.includes?.(sceneName);
-    return eligible ? this.showBanner(sceneName) : this.hideBanner();
+    if (sceneName) this._bannerScene = sceneName;
+    return this._bannerAllowedFor(this._bannerScene)
+      ? this.showBanner(this._bannerScene)
+      : this.hideBanner();
   }
 
   /**
