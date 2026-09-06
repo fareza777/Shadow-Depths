@@ -48,6 +48,9 @@ export function spawnFloorEntities(floor, spawns, deps) {
         if (!affixes.length && s.forceElite) affixes = forcedEliteAffixes(eliteRng, depthIdx);
         if (affixes.length) makeElite(enemy, affixes, depthIdx);
       }
+      // The generator marks one spawn as the floor's keybearer; carry that
+      // through so GameScene can drop the vault key where it dies.
+      if (s.carriesKey) enemy.carriesKey = true;
       enemy.snapRender();
       floor.addEntity(enemy);
     } catch (err) {

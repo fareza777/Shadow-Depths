@@ -29,18 +29,29 @@ export class Tile {
     this.ambient = null;
     /** Secret door: a WALL that opens to a hidden cache when found. */
     this.secret = null;
+    /**
+     * Locked vault door: `{ locked: boolean }` on a TILE.DOOR. Absent on
+     * ordinary doors — the secret-cache reveal makes a plain DOOR and must
+     * keep behaving as an open doorway.
+     */
+    this.door = null;
     /** Cosmetic room/wall dressing: { kind, wall }. Never affects gameplay. */
     this.decor = null;
   }
 
-  /** Does this tile block movement? Includes walls, voids, closed doors. */
-  isBlocking() {
-    return this.type === TILE.WALL || this.type === TILE.VOID;
+  /** True while this is a door that still needs its key. */
+  isLockedDoor() {
+    return this.type === TILE.DOOR && !!this.door?.locked;
   }
 
-  /** Does this tile block line-of-sight? */
+  /** Does this tile block movement? Includes walls, voids, locked doors. */
+  isBlocking() {
+    return this.type === TILE.WALL || this.type === TILE.VOID || this.isLockedDoor();
+  }
+
+  /** Does this tile block line-of-sight? A locked door hides its vault. */
   blocksSight() {
-    return this.type === TILE.WALL || this.type === TILE.VOID;
+    return this.type === TILE.WALL || this.type === TILE.VOID || this.isLockedDoor();
   }
 
   /** True if an entity can stand on this tile (still subject to entity collision). */
@@ -48,6 +59,7 @@ export class Tile {
     // A solid interactable (merchant stall, shrine idol) occupies the tile —
     // it's a structure you use from an adjacent tile, never stand on.
     if (this.interact?.solid && !this.interact.used) return false;
+    if (this.isLockedDoor()) return false;
     return this.type === TILE.FLOOR
         || this.type === TILE.DOOR
         || this.type === TILE.STAIRS_DOWN

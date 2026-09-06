@@ -111,6 +111,7 @@ export class DungeonGenerator {
     // 5b. Maybe hide a secret cache behind a breakable wall (optional loot).
     if (!floorDef.tutorial) {
       this._placeSecretCache(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, itemDefs);
+      this._placeLockedVault(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, itemDefs);
     }
 
     // 6. Maybe turn one room into an arena set-piece (guards + reward).
@@ -565,6 +566,75 @@ export class DungeonGenerator {
         }
         floor.secretCache = { x: px, y: py, wall: { x: wx, y: wy } };
         return; // one cache per floor
+      }
+    }
+  }
+
+  /**
+   * Seal a one-tile vault behind a LOCKED door and give the key to an enemy
+   * already standing on this floor.
+   *
+   * Deliberately built on the same shape as _placeSecretCache: the pocket is
+   * carved out of VOID and walled in, so the door can only ever seal a dead
+   * end. A locked door on the critical path would strand the run if the
+   * keybearer died somewhere unreachable — the geometry, not a rule, is what
+   * keeps the floor completable.
+   */
+  _placeLockedVault(floor, rooms, spawnRoom, floorDef, floorIndex, spawns, itemDefs) {
+    if (floorDef.type === 'forge') return;
+    const enemies = spawns.enemies || [];
+    if (enemies.length === 0) return;              // nobody to carry the key
+    if (!this.rng.chance(this.balance.dungeon.lockedVaultChance ?? 0.35)) return;
+
+    const DIRS = [[0, -1], [0, 1], [-1, 0], [1, 0]];
+    const inB = (x, y) => x >= 1 && y >= 1 && x < floor.width - 1 && y < floor.height - 1;
+    const isType = (x, y, t) => floor.inBounds(x, y) && floor.tiles[y][x].type === t;
+
+    for (const room of this.rng.shuffle(rooms.slice())) {
+      const fx = room.x + this.rng.randInt(0, room.w - 1);
+      const fy = room.y + this.rng.randInt(0, room.h - 1);
+      for (const [dx, dy] of this.rng.shuffle(DIRS.slice())) {
+        const wx = fx + dx, wy = fy + dy;          // becomes the locked door
+        const px = fx + 2 * dx, py = fy + 2 * dy;  // the vault
+        if (!inB(px, py)) continue;
+        if (!isType(fx, fy, TILE.FLOOR)) continue;
+        if (!isType(wx, wy, TILE.WALL)) continue;
+        if (!isType(px, py, TILE.VOID)) continue;
+        if (!isType(px + dx, py + dy, TILE.VOID)) continue;
+        if (floor.tiles[wy][wx].secret) continue;  // never share with a cache
+
+        floor.setTile(px, py, TILE.FLOOR);
+        for (let ny = py - 1; ny <= py + 1; ny++) {
+          for (let nx = px - 1; nx <= px + 1; nx++) {
+            if (nx === wx && ny === wy) continue;   // keep the doorway
+            if (nx === px && ny === py) continue;
+            if (isType(nx, ny, TILE.VOID)) floor.setTile(nx, ny, TILE.WALL);
+          }
+        }
+        floor.setTile(wx, wy, TILE.DOOR);
+        floor.tiles[wy][wx].door = { locked: true };
+
+        // The key rides on an enemy that already exists, so the floor never
+        // gains a spawn just to hold it.
+        this.rng.pick(enemies).carriesKey = true;
+
+        // Rolled a little deeper than the secret cache: this one costs a hunt
+        // rather than a walk past the right wall.
+        const floorNum = floorIndex + 1;
+        const gearPool = Object.values(itemDefs).filter(
+          (d) => d.slot && (d.floorMin ?? 1) <= floorNum
+        );
+        if (gearPool.length) {
+          const weighted = gearPool.map((d) => ({ value: d.id, weight: d.spawnWeight || 1 }));
+          const defId = this.rng.weightedPick(weighted);
+          const baseDef = itemDefs[defId];
+          const entry = { x: px, y: py, defId };
+          const affixes = baseDef ? rollItemAffixes(baseDef, floorNum + 8, this.rng) : null;
+          if (affixes) entry.affixes = affixes;
+          spawns.items.push(entry);
+        }
+        floor.lockedVault = { x: px, y: py, door: { x: wx, y: wy } };
+        return; // one vault per floor
       }
     }
   }

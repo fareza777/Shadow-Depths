@@ -575,7 +575,9 @@ export class Renderer {
             break;
           case TILE.DOOR:
             if (useBiome) drawBiomeFloorCached(ctx, tx, ty, TILE_SIZE, x, y, biomeId, Layout.dpr);
-            this.sprites.draw('tile_door', ctx, tx, ty, opts);
+            // A locked vault door reads as a sealed slab, so the player can
+            // tell at a glance that it still needs the floor's key.
+            this.sprites.draw(t.door?.locked ? 'tile_door_locked' : 'tile_door', ctx, tx, ty, opts);
             break;
           default: break;
         }

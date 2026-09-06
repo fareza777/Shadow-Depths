@@ -79,6 +79,9 @@ export const DEFAULT_BALANCE = Object.freeze({
     arenaChance: 0.25,
     // Chance a floor hides a secret loot cache behind a breakable wall.
     secretCacheChance: 0.4,
+    // Chance a floor also seals a key-locked vault. Lower than the secret
+    // cache: it costs a hunt, so it should read as a find, not a chore.
+    lockedVaultChance: 0.35,
     // One micro-event per normal floor (shrine, trap room, merchant, …).
     floorEventChance: 0.92,
     vaultEventChance: 0.5,

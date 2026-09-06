@@ -885,6 +885,7 @@ export class GameScene {
       if (!this.floor) return;
       if (entity?.kind === 'enemy') {
         this._maybeDropMaterial(entity);
+        this._dropVaultKey(entity);
         this.floor.removeEntity(entity);
       }
     });
@@ -1120,6 +1121,46 @@ export class GameScene {
     if (item) this.floor.addItem(enemy.x, enemy.y, item);
   }
 
+  /**
+   * The floor's keybearer drops its key where it falls. Guaranteed rather
+   * than rolled: the vault is sealed behind a locked door, so a missed drop
+   * would leave loot visible on the minimap and permanently unreachable.
+   */
+  _dropVaultKey(enemy) {
+    if (!enemy?.carriesKey || !this.floor || !this.itemFactory) return;
+    enemy.carriesKey = false;
+    const key = this.itemFactory.create('vault_key', 1);
+    if (!key) return;
+    this.floor.addItem(enemy.x, enemy.y, key);
+    this.bus.emit('floor:keyDropped', { x: enemy.x, y: enemy.y, from: enemy.name });
+  }
+
+  /**
+   * Bump a locked door. Spends one Vault Key and a turn; without a key the
+   * step is refused and the player is told why rather than silently blocked.
+   * @returns {boolean} true when the bump was consumed by the door
+   */
+  _tryOpenLockedDoor(x, y) {
+    const tile = this.floor?.tileAt(x, y);
+    if (!tile?.isLockedDoor?.()) return false;
+    const slot = this.player.inventory.findSlotOf('vault_key');
+    if (slot < 0) {
+      this.bus.emit('log:message', {
+        text: 'The lock holds. Something on this floor carries its key.',
+        kind: 'warn'
+      });
+      return true;
+    }
+    this.player.inventory.takeOne(slot);
+    tile.door.locked = false;
+    this.floor.touchRender?.();
+    this.pathfinding?.invalidate?.();
+    this.bus.emit('floor:vaultOpened', { x, y });
+    this.bus.emit('log:message', { text: 'The key turns. The vault gives.', kind: 'good' });
+    this._endPlayerTurn(true);
+    return true;
+  }
+
   // --- player actions -------------------------------------------------
   _playerMove(dx, dy) {
     markHeroMoved(this.player);
@@ -1129,6 +1170,7 @@ export class GameScene {
       this._attackEnemyAt(nx, ny);
       return;
     }
+    if (this._tryOpenLockedDoor(nx, ny)) return;
     if (this.floor.isPassable(nx, ny)) {
       this.combat.execute({ type: 'move', to: { x: nx, y: ny } },
         this.player, { floor: this.floor, player: this.player });

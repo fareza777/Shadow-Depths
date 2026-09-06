@@ -503,6 +503,45 @@ export function drawDoorTile(ctx, x, y, s, opts = {}) {
   }
 }
 
+/**
+ * A vault door still waiting on its key: the same jamb as an open doorway,
+ * but the gap is banded iron with a brass lockplate instead of darkness, so
+ * "sealed" reads at a glance without a legend.
+ */
+export function drawLockedDoorTile(ctx, x, y, s, opts = {}) {
+  drawFloorTile(ctx, x, y, s, { ...opts, dim: opts.dim });
+  const dim = !!opts.dim;
+  const u = s / 32;
+  const stone = dim ? '#3a3448' : '#524c5c';
+  const stoneHi = dim ? '#4a4554' : '#6e6678';
+  const iron = dim ? '#2e2a34' : '#45404e';
+  const ironHi = dim ? '#3c3744' : '#5b5566';
+  const brass = dim ? '#8a7048' : '#d4be7a';
+
+  // Same jamb as the open door so the two read as one family.
+  p(ctx, x, y, s, [
+    [2, 4, 7, 24, stone], [23, 4, 7, 24, stone],
+    [3, 3, 6, 3, stoneHi], [23, 3, 6, 3, stoneHi]
+  ]);
+
+  // Slab filling the opening, with plank banding.
+  fillRect(ctx, x + 9 * u, y + 5 * u, 14 * u, 24 * u, iron);
+  p(ctx, x, y, s, [
+    [9, 10, 14, 1, ironHi],
+    [9, 18, 14, 1, ironHi],
+    [9, 25, 14, 1, ironHi]
+  ]);
+
+  // Brass arch, lockplate and keyhole.
+  p(ctx, x, y, s, [
+    [10, 4, 12, 2, brass],
+    [14, 15, 4, 5, brass],
+    [15, 16, 2, 2, dim ? '#1a1620' : '#120e18'],
+    [15, 18, 2, 2, dim ? '#1a1620' : '#120e18']
+  ]);
+  if (!dim) fillRect(ctx, x + 15 * u, y + 15 * u, 1 * u, 1 * u, '#ffffff55');
+}
+
 /** @returns {Record<string, function>} */
 export function buildDungeonTileSprites() {
   return {
@@ -511,6 +550,7 @@ export function buildDungeonTileSprites() {
     tile_void: (ctx, x, y, s, o) => drawVoidTile(ctx, x, y, s, o),
     tile_stairs_down: (ctx, x, y, s, o) => drawStairsDownTile(ctx, x, y, s, o),
     tile_stairs_up: (ctx, x, y, s, o) => drawStairsUpTile(ctx, x, y, s, o),
-    tile_door: (ctx, x, y, s, o) => drawDoorTile(ctx, x, y, s, o)
+    tile_door: (ctx, x, y, s, o) => drawDoorTile(ctx, x, y, s, o),
+    tile_door_locked: (ctx, x, y, s, o) => drawLockedDoorTile(ctx, x, y, s, o)
   };
 }

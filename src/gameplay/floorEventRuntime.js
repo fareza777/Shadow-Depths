@@ -273,10 +273,14 @@ export function serializeEventTiles(floor) {
   for (let y = 0; y < floor.height; y++) {
     for (let x = 0; x < floor.width; x++) {
       const t = floor.tiles[y][x];
-      if (!t.interact && !t.ambient && !t.hazard) continue;
+      if (!t.interact && !t.ambient && !t.hazard && !t.door && !t.secret) continue;
       const entry = { x, y };
       if (t.interact) entry.interact = { ...t.interact };
       if (t.ambient) entry.ambient = { ...t.ambient };
+      // A door the player already paid a key for must not re-lock on reload:
+      // the floor is rebuilt from its seed and the key is long spent.
+      if (t.door) entry.door = { ...t.door };
+      if (t.secret) entry.secret = { ...t.secret };
       if (t.hazard) {
         entry.hazard = {
           type: t.hazard.type,
@@ -297,5 +301,7 @@ export function restoreEventTiles(floor, tiles = []) {
     if (e.interact) t.interact = { ...e.interact };
     if (e.ambient) t.ambient = { ...e.ambient };
     if (e.hazard) t.hazard = { ...e.hazard };
+    if (e.door) t.door = { ...e.door };
+    if (e.secret) t.secret = { ...e.secret };
   }
 }
