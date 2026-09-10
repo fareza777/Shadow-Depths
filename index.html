@@ -82,6 +82,29 @@
       #ui-layer > * {
         pointer-events: auto;
       }
+      /* PixelPicked verification badge: visible on the public web build
+         without covering the game's primary HUD or touch controls. */
+      #pixelpicked-badge {
+        position: fixed;
+        left: max(12px, var(--sal));
+        bottom: calc(12px + var(--sab));
+        z-index: 9000;
+        display: block;
+        width: min(250px, calc(100vw - 24px));
+        opacity: 0.9;
+        filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.55));
+        transition: opacity 160ms ease, transform 160ms ease;
+      }
+      #pixelpicked-badge:hover,
+      #pixelpicked-badge:focus-visible {
+        opacity: 1;
+        transform: translateY(-2px);
+      }
+      #pixelpicked-badge img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
       .hidden {
         display: none !important;
       }
@@ -362,6 +385,20 @@
         <span style="font-family:'Inconsolata',monospace">.</span>
       </span>
     </div>
+    <a
+      id="pixelpicked-badge"
+      href="https://pixelpicked.com/game/65VpXzxQ5MY/shadow-depths/"
+      target="_blank"
+      rel="noopener"
+      aria-label="Approved on PixelPicked"
+    >
+      <img
+        src="https://api.pixelpicked.com/api/badges/65VpXzxQ5MY/live.png?theme=dark"
+        width="250"
+        height="54"
+        alt="Approved on PixelPicked"
+      />
+    </a>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
