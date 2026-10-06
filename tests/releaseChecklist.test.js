@@ -10,7 +10,7 @@ describe('Android release checklist', () => {
     const listing = readFileSync(new URL('../docs/PLAYSTORE.md', import.meta.url), 'utf8');
 
     const packageLock = JSON.parse(readFileSync(new URL('../package-lock.json', import.meta.url), 'utf8'));
-    expect(packageJson.version).toBe('0.2.15');
+    expect(packageJson.version).toBe('0.2.16');
     expect(packageLock.version).toBe(packageJson.version);
     expect(packageLock.packages[''].version).toBe(packageJson.version);
     expect(manifest).toContain('android:value="@string/admob_app_id"');

@@ -70,7 +70,9 @@ export class SkillPickerUI {
       this.player = entity;
       this.pending += Math.max(1, levels || 1);
       if (!this.open) this._present();
-      this._notifySelectionChanged();
+      // XP-item consumption and kill rewards may still be settling on this
+      // stack. The world save must include those before persisting the offer.
+      this._notifySelectionChanged(this.player, { deferSave: true });
     });
     bus.on('scene:switched', ({ to }) => {
       if (to !== 'game') this.hide();
@@ -95,9 +97,9 @@ export class SkillPickerUI {
     };
   }
 
-  /** Consumers can synchronously save the finalized offer and entitlement. */
-  _notifySelectionChanged(entity = this.player) {
-    if (entity) this.bus.emit('skill:selectionChanged', { entity });
+  /** Standalone mutations are finalized; new level-up offers need settlement. */
+  _notifySelectionChanged(entity = this.player, { deferSave = false } = {}) {
+    if (entity) this.bus.emit('skill:selectionChanged', deferSave ? { entity, deferSave: true } : { entity });
   }
 
   /** Restore after the scene's modal reset and after the player's owned skills. */

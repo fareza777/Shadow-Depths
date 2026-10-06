@@ -10,15 +10,16 @@ import { Floor } from '../src/world/Floor.js';
 import { OPEN_GRACE_MS, SkillPickerUI } from '../src/ui/SkillPickerUI.js';
 import items from '../data/items.json';
 import skills from '../data/skills.json';
+import enemies from '../data/enemies.json';
 
 const CONTENT = {
-  items, enemies: {}, floors: { floors: [] },
+  items, enemies, floors: { floors: [] },
   skills: { skills: ['quickened', 'sharpened', 'tempered', 'hardened', 'studious']
     .map((id) => skills.skills.find((skill) => skill.id === id)) }
 };
 const scenes = [];
 
-function session({ snapshot, rerollBonus = 0, ads = null } = {}) {
+function session({ snapshot, rerollBonus = 0, ads = null, seed = 42 } = {}) {
   const bus = new EventBus();
   const writes = [];
   const picker = new SkillPickerUI({
@@ -28,15 +29,18 @@ function session({ snapshot, rerollBonus = 0, ads = null } = {}) {
   // Only storage, display, and floor generation are boundary doubles. Entry,
   // input routing, the picker, player, floor, and persistence all stay real.
   const scene = new GameScene({
-    bus, balance: DEFAULT_BALANCE, content: CONTENT, seed: 42, skillPicker: picker,
+    bus, balance: DEFAULT_BALANCE, content: CONTENT, seed, skillPicker: picker,
     state: { state: { time: 0, meta: {} }, setRun() {}, patch() {} },
     lighting: { compute() {} }, hud: {}, minimap: {},
     inventoryUI: { open: false, hide() {} }, mobileControls: {}, quickUseBar: {},
     saveManager: { saveRun(value) { writes.push(JSON.parse(JSON.stringify(value))); } },
     resumeSnapshot: snapshot
   });
-  const floor = new Floor(0, { index: 0 }, 42);
-  floor.setTile(5, 5, TILE.FLOOR);
+  const floor = new Floor(0, { index: 0 }, seed);
+  for (const x of [5, 6]) {
+    floor.setTile(x, 5, TILE.FLOOR);
+    floor.tileAt(x, 5).visible = true;
+  }
   const entry = { floor, spawns: { player: { x: 5, y: 5 }, enemies: [], items: [] } };
   scene.dungeon = {
     currentIndex: 0, totalFloors: 100,
@@ -171,6 +175,71 @@ describe('skill selection persistence event contract', () => {
 });
 
 describe('GameScene immediately saves skill mutations', () => {
+  it('settles XP-item consumption before saving a newly offered skill', () => {
+    const run = session();
+    vi.advanceTimersByTime(600);
+    const tome = run.scene.itemFactory.create('tome_of_wisdom');
+    run.scene.player.inventory.add(tome);
+    const slot = run.scene.player.inventory.slots.findIndex((item) => item?.id === tome.id);
+    const writesBefore = run.writes.length;
+    const levelUpWrites = [];
+    run.bus.on('entity:leveledUp', () => levelUpWrites.push(run.writes.length));
+
+    run.scene._playerUseSlot(slot);
+    run.scene._cancelPendingRunSave(); // Simulate process loss before the debounce.
+
+    expect(levelUpWrites).toEqual([writesBefore]);
+    expect(run.writes).toHaveLength(writesBefore + 1);
+    const saved = run.writes.at(-1);
+    expect(saved.player.inventory.some((item) => item?.id === 'tome_of_wisdom')).toBe(false);
+    expect(saved.player.level).toBe(2);
+    expect(saved.player.xp).toBe(0);
+    expect(saved.player.runStats.xpGained).toBe(50);
+    expect(saved.player.runStats.itemsUsed).toBe(1);
+    expect(saved.player.runStats.turnsUsed).toBe(1);
+    expect(saved.player.skillPicker.pending).toBe(1);
+    const resumed = session({ snapshot: saved });
+    expect(resumed.scene.player.inventory.slots.some((item) => item?.id === 'tome_of_wisdom')).toBe(false);
+    expect(resumed.picker.toSnapshot()).toEqual(saved.player.skillPicker);
+  });
+
+  it('settles trigger XP, kill rewards and a vault key before saving a level-up', () => {
+    const run = session({ seed: 3 });
+    vi.advanceTimersByTime(600);
+    run.scene.player.equip(run.scene.itemFactory.fromSnapshot({
+      id: 'worn_dagger', count: 1, affixes: { prefix: 'voidtouched', suffix: null }
+    }));
+    run.scene.player.xp = run.scene.player.xpToNext() - 5;
+    const enemy = run.scene._createEnemy('goblin_scout', { x: 6, y: 5 }, run.scene.floor);
+    enemy.stats.hp = 1;
+    enemy.carriesKey = true;
+    run.scene.floor.addEntity(enemy);
+    const writesBefore = run.writes.length;
+    const levelUpWrites = [];
+    run.bus.on('entity:leveledUp', () => levelUpWrites.push(run.writes.length));
+
+    run.scene._playerMove(1, 0);
+    run.scene._cancelPendingRunSave();
+
+    expect(levelUpWrites).toEqual([writesBefore]);
+    expect(run.writes).toHaveLength(writesBefore + 1);
+    const saved = run.writes.at(-1);
+    expect(saved.player.level).toBe(2);
+    expect(saved.player.xp).toBe(8);
+    expect(saved.player.gold).toBe(3);
+    expect(saved.player.runStats.enemiesDefeated).toBe(1);
+    expect(saved.player.runStats.turnsUsed).toBe(1);
+    expect(saved.floor.enemies).toEqual([]);
+    expect(saved.floor.items.flatMap((pile) => pile.stack).map((item) => item.id)).toEqual(['vault_key']);
+    expect(saved.player.skillPicker.pending).toBe(1);
+    const resumed = session({ snapshot: saved, seed: 3 });
+    expect(resumed.scene.player.gold).toBe(3);
+    expect(resumed.scene.player.xp).toBe(8);
+    expect(resumed.scene.floor.enemies()).toEqual([]);
+    expect([...resumed.scene.floor.items.values()].flat().map((item) => item.id)).toEqual(['vault_key']);
+    expect(resumed.picker.toSnapshot()).toEqual(saved.player.skillPicker);
+  });
+
   it('persists a reroll after the earlier turn save has settled, without an explicit flush', () => {
     const run = session();
     offer(run);

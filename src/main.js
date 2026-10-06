@@ -381,7 +381,7 @@ async function wireNativeLifecycle({ bus, gameLoop, sceneManager, audio, paywall
       const topmost = [
         scene?.paywall, paywallOverlay, scene?.tutorial, scene?.floorEvents,
         scene?.crafting, scene?.pause, scene?.skillPicker, scene?.skillsModal,
-        scene?.vigil, scene?.inventoryUI
+        scene?.vigil, scene?.inventoryUI, scene?.characterSelect
       ].find((overlay) => overlay?.open);
       if (topmost === scene?.skillPicker && topmost?.pending > 0) {
         // Keyboard Escape may commit a choice. Android Back must consume no

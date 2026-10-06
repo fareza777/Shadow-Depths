@@ -150,6 +150,7 @@ export class GameScene {
     this._forgeOffers = {};
     this._forgeUsed = {};
     this._processingTurn = false;
+    this._skillOfferSavePending = false;
     this._runEnded = false;
     this._busHandlers = [];
     this.runPersistence = new RunPersistence(this);
@@ -341,10 +342,16 @@ export class GameScene {
   }
 
   _wirePresentationEvents() {
-    this._listen('skill:selectionChanged', ({ entity }) => {
+    this._listen('skill:selectionChanged', ({ entity, deferSave }) => {
       if (entity !== this.player) return;
-      // Choices happen outside world turns. Persist only after the picker has
-      // finalized its next offer/pending count, so process loss cannot undo it.
+      if (deferSave) {
+        // Initial offers can arrive inside an unfinished item/kill action.
+        // The next settled world save flushes both its rewards and the offer.
+        this._skillOfferSavePending = true;
+        return;
+      }
+      // Standalone picks/rerolls have already finalized their entitlement.
+      this._skillOfferSavePending = false;
       this._saveRun({ immediate: true });
     });
     this._listen('item:pickedUp', ({ item }) => {
@@ -1566,7 +1573,8 @@ export class GameScene {
     beginPlayerTurnPassives(this.player);
 
     if (this.player.stats.hp < this.player.stats.hpMax) this.floor.clearedWithoutDamage = false;
-    this._saveRun();
+    this._saveRun({ immediate: this._skillOfferSavePending });
+    this._skillOfferSavePending = false;
   }
 
   /** Show next-turn intent icons without re-running behavior AI (avoids Heavy counter drift). */

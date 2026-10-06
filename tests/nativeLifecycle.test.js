@@ -84,6 +84,23 @@ afterEach(() => {
 // Allow that setup under parallel-worker CPU contention without changing
 // the project's timeout or weakening any native behavior assertions.
 describe('native Back routing through the booted composition', { timeout: 30_000 }, () => {
+  it.each(['normal', 'daily'])('closes the real %s character picker before minimizing title', async (mode) => {
+    const { game } = await boot();
+    game.bus.emit('request:quitToTitle', {});
+    const title = game.scenes.current;
+    game.bus.emit('request:openCharacterSelect', { mode });
+    expect(title.characterSelect.open).toBe(true);
+    expect(title.modal).toBe(null);
+
+    await native.listeners.get('backButton')({ canGoBack: false });
+
+    expect(title.characterSelect.open).toBe(false);
+    expect(game.scenes.currentName).toBe('title');
+    expect(native.minimized).toBe(0);
+    await native.listeners.get('backButton')({ canGoBack: false });
+    expect(native.minimized).toBe(1);
+  });
+
   it.each(['crafting', 'floorEvents', 'vigil', 'skillsModal', 'paywall', 'inventoryUI', 'pause', 'skillPicker'])(
     'routes Back from %s to scene escape instead of quitting', async (overlay) => {
       const { game } = await boot();
