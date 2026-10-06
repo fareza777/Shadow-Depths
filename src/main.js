@@ -16,7 +16,13 @@ import { perfMeter } from './debug/PerfMeter.js';
 // Native Play builds must never show the perf overlay (Capacitor hostname
 // is localhost, which used to auto-enable it).
 try {
-  if (Capacitor.isNativePlatform()) perfMeter.setEnabled(false);
+  if (Capacitor.isNativePlatform()) {
+    perfMeter.setEnabled(false);
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.add('capacitor-native');
+      document.getElementById('pixelpicked-badge')?.remove();
+    }
+  }
 } catch { /* ignore */ }
 
 // Boot splash: keep briefly so the reveal isn't jarring. Native builds use a
@@ -183,7 +189,13 @@ async function bootstrap() {
   // Fire-and-forget store init (restore + price fetch on native). This also
   // restores a prior purchase, so it must settle before ads start: an owner
   // reinstalling should never see a banner flash before the entitlement lands.
-  const adService = new AdService({ billing: billingService, eventBus: bus, balance });
+  const adService = new AdService({
+    billing: billingService, eventBus: bus, balance,
+    getSceneContext: () => ({
+      name: sceneManager.currentName || 'loading',
+      paused: !!sceneManager.current?.pause?.open
+    })
+  });
   bus.on('scene:switched', ({ to }) => {
     void adService.onSceneChanged(to).catch((err) => {
       console.warn(LOG.CORE, 'ads scene placement:', err);
@@ -319,10 +331,6 @@ async function bootstrap() {
   // Mark unused locals as intentionally retained (suppress lint noise).
   void _input; void mobileControls; void particles; void cameraShake;
 
-  if (Capacitor.isNativePlatform()) {
-    document.documentElement.classList.add('capacitor-native');
-  }
-
   // Android hardware back + background pause (Play Store hygiene).
   await wireNativeLifecycle({ bus, gameLoop, sceneManager, audio, paywallOverlay });
 
@@ -342,7 +350,10 @@ async function wireNativeLifecycle({ bus, gameLoop, sceneManager, audio, paywall
   if (!Capacitor.isNativePlatform()) return;
   try {
     const { App } = await import('@capacitor/app');
+    let active = true;
     App.addListener('appStateChange', ({ isActive }) => {
+      if (active === !!isActive) return;
+      active = !!isActive;
       if (isActive) {
         gameLoop.resumeRendering?.();
         try { audio?.resume?.(); } catch { /* optional */ }
@@ -366,14 +377,23 @@ async function wireNativeLifecycle({ bus, gameLoop, sceneManager, audio, paywall
     App.addListener('backButton', async ({ canGoBack }) => {
       void canGoBack;
       const scene = sceneManager.current;
-      if (paywallOverlay?.open) {
-        paywallOverlay.hide();
+      // Match the scene's render/input order, from the top overlay downward.
+      const topmost = [
+        scene?.paywall, paywallOverlay, scene?.tutorial, scene?.floorEvents,
+        scene?.crafting, scene?.pause, scene?.skillPicker, scene?.skillsModal,
+        scene?.vigil, scene?.inventoryUI
+      ].find((overlay) => overlay?.open);
+      if (topmost === scene?.skillPicker && topmost?.pending > 0) {
+        // Keyboard Escape may commit a choice. Android Back must consume no
+        // pick, reroll or world action; keep the pending offer on screen.
         return;
       }
-      // Close in-scene overlays first (pause / inventory / settings).
-      if (scene?.pause?.open || scene?.inventoryUI?.open || scene?.settingsOpen
-          || scene?.modal || scene?.skillPicker?.open || scene?.craftUI?.open) {
-        scene.handleInput?.({ type: 'escape' });
+      if (topmost || scene?.settingsOpen || scene?.modal) {
+        if (typeof scene?.handleInput === 'function') {
+          scene.handleInput({ type: 'escape' });
+        } else {
+          topmost?.hide?.();
+        }
         return;
       }
       const name = sceneManager.currentName;

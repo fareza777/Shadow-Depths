@@ -19,7 +19,7 @@
 import {
   TILE, TILE_SIZE, LOG, COLOR, FONT_DISPLAY, FONT_BODY, FONT_MONO, uiSize
 } from '../config/constants.js';
-import { Layout } from '../config/layoutMetrics.js';
+import { Layout, reduceMotionEnabled } from '../config/layoutMetrics.js';
 import { enemyCombatScale } from '../config/balance.js';
 import { Player } from '../entities/Player.js';
 import { heroDef } from '../rendering/heroSprites.js';
@@ -245,7 +245,7 @@ export class GameScene {
       hp: this.player.stats.hp,
       savedAt: snapshot.savedAt || Date.now()
     });
-    this._emitFloorEntered(floorIndex, floor);
+    this._emitFloorEntered(floorIndex, floor, { resume: true });
     this._saveRun();
   }
 
@@ -272,10 +272,16 @@ export class GameScene {
     this.paywall?.hide();
   }
 
-  _emitFloorEntered(index, floor) {
+  _emitFloorEntered(index, floor, { resume = false } = {}) {
     const def = floor?.definition || {};
-    resetFloorModifiers(this.player);
     this._floorBanner = this._buildFloorBanner(index, def);
+    // Continue presents the existing floor without paying entry rewards or
+    // erasing the saved shrine/curse modifiers a second time.
+    if (resume) {
+      if (def.type === 'forge') this._ensureForgeOffers(index);
+      return;
+    }
+    resetFloorModifiers(this.player);
     const kinds = def.microEventKinds || (def.microEventKind ? [def.microEventKind] : []);
     if (kinds.length && (floor.microEvents?.length || floor.microEvent)) {
       const labels = kinds.map((k) => EVENT_LABELS[k] || k).join(', ');
@@ -335,6 +341,12 @@ export class GameScene {
   }
 
   _wirePresentationEvents() {
+    this._listen('skill:selectionChanged', ({ entity }) => {
+      if (entity !== this.player) return;
+      // Choices happen outside world turns. Persist only after the picker has
+      // finalized its next offer/pending count, so process loss cannot undo it.
+      this._saveRun({ immediate: true });
+    });
     this._listen('item:pickedUp', ({ item }) => {
       if (!item) return;
       this._lootToast = {
@@ -373,6 +385,10 @@ export class GameScene {
   renderWorld(renderer) {
     if (!this.floor || !this.player) return;
     if (!this.renderer) this.renderer = renderer;
+    const now = performance.now();
+    const dt = this._lastRenderTime ? Math.min((now - this._lastRenderTime) / 1000, 1 / 15) : 0;
+    this._lastRenderTime = now;
+    renderer.updateEntityPositions(this.floor, dt);
     renderer.setCameraFor(this.player.renderX, this.player.renderY);
     perfMeter.measure('worldFloor', () => renderer.drawFloor(this.floor, this.player));
     perfMeter.measure('groundItems', () => renderer.drawGroundItems(this.floor));
@@ -380,9 +396,6 @@ export class GameScene {
       const hi = !!this.state?.state?.meta?.settings?.highContrastThreats;
       renderer.drawTelegraphs(this.floor, this.player, { highContrast: hi });
     });
-    const now = performance.now();
-    const dt = this._lastRenderTime ? (now - this._lastRenderTime) / 1000 : 0;
-    this._lastRenderTime = now;
     renderer.drawEntities(this.floor, dt, this.player);
   }
 
@@ -391,19 +404,24 @@ export class GameScene {
     if (!this.renderer) this.renderer = renderer;
     if (!this.controls) this.controls = new MobileControls({ bus: this.bus });
     if (!this.quickUse) this.quickUse = new QuickUseBar({ bus: this.bus });
-    // Turn-based UI: the whole layer is static between player actions, so
-    // composite it into a cached offscreen and blit 1:1 on unchanged frames
-    // instead of rebuilding HUD gradients / control plates every rAF.
+    // Keep the static HUD/control plates cached even when temporary overlays
+    // animate. Low HP, loot and floor banners must not repaint the full HUD.
     const cacheKey = this._uiCacheKey();
     if (cacheKey) {
       renderer.drawCachedScreenLayerOnce('game-ui', cacheKey,
-        () => this._renderUIUncached(renderer));
+        () => this._renderUIBase(renderer));
     } else {
-      this._renderUIUncached(renderer);
+      this._renderUIBase(renderer);
     }
+    this._renderUIOverlays(renderer);
   }
 
   _renderUIUncached(renderer) {
+    this._renderUIBase(renderer);
+    this._renderUIOverlays(renderer);
+  }
+
+  _renderUIBase(renderer) {
     perfMeter.measure('uiHud', () => {
       try {
         this.hud.render(renderer, {
@@ -449,7 +467,9 @@ export class GameScene {
       perfMeter.measure('uiMinimap', () => this._renderControlBandContent(renderer));
       perfMeter.measure('uiControls', () => this.controls.renderControls(renderer));
     }
+  }
 
+  _renderUIOverlays(renderer) {
     perfMeter.measure('uiOverlays', () => {
       this._renderBossBar(renderer);
       this._renderLootToast(renderer);
@@ -469,12 +489,9 @@ export class GameScene {
 
   _uiCacheKey() {
     if (!this.floor || !this.player) return null;
-    if (this._floorBanner || this._lootToast) return null;
     if (this.tutorial?.open || this.inventoryUI?.open || this.vigil?.open
         || this.skillPicker?.open || this.skillsModal?.open || this.pause?.open
         || this.crafting?.open || this.floorEvents?.open || this.paywall?.open) return null;
-    const hpPct = this.player.stats.hpMax ? this.player.stats.hp / this.player.stats.hpMax : 1;
-    if (hpPct <= 0.35) return null;
     // Button press flashes (~120ms) are time-based — stay uncached while one
     // is visible so the glow doesn't freeze mid-press.
     if (this.controls?.hasActivePress?.()) return null;
@@ -485,6 +502,11 @@ export class GameScene {
     ).join(',');
     const statuses = (p.statusEffects || [])
       .map((s) => `${s.id}:${s.value ?? ''}:${s.duration ?? ''}`).join(',');
+    const equipment = ['weapon', 'armor', 'helm', 'legs', 'ring', 'necklace']
+      .map(slot => {
+        const item = p[slot];
+        return item ? `${item.id}:${item.name}:${JSON.stringify(item.def?.affixes || null)}` : '-';
+      }).join(',');
     const boss = this.floor.enemies?.().find((e) =>
       !e.isDead && (e.defId?.startsWith('boss_') || e.defId?.startsWith('subboss_')));
     const itemKeys = Array.from(this.floor.items?.keys?.() || []).join(';');
@@ -503,20 +525,22 @@ export class GameScene {
       msgKey = `${log.entries.length}:${tail[tail.length - 1].t}${fading ? `:${Math.floor(nowT * 10)}` : ''}`;
     }
     return [
-      Layout.canvasW, Layout.canvasH,
+      Layout.canvasW, Layout.canvasH, Layout.hud, Layout.control, Layout.sideW,
       this.mode, this.dungeon.currentIndex, this.dungeon.totalFloors,
       p.x, p.y,
       p.stats.hp, p.stats.hpMax,
       p.xp, p.level, p.gold,
       p.rangedFocus, p.rangedFocusMax,
       p.reviveCharges, p.spellCooldown || 0,
-      p.weapon?.id || '', p.armor?.id || '', p.helm?.id || '',
-      p.legs?.id || '', p.ring?.id || '', p.necklace?.id || '',
+      p.totalAtk(), p.totalDef(), p.totalDex(), p.critChance(),
+      p.effectiveRange(), p.magicPower, p.torchRadius, p.skills.join(','), equipment,
+      this.minimap?.visible !== false, !!this._forgeUsed[this.dungeon.currentIndex],
+      this.floor.seed, this.floor.index, this.floor.visibilityRevision || 0,
       this.floor.renderRevision || 0, this.floor.entityRevision || 0,
       this.floor.definition?.type || '', this.floor.definition?.specialEnemyId || '',
       boss ? `${boss.defId}:${boss.stats.hp}:${boss.stats.hpMax}` : '',
       this.state?.state?.meta?.settings?.textScale || 1,
-      statuses, inv, itemKeys, msgKey
+      statuses, inv, itemKeys, msgKey, !!this._floorBanner
     ].join('|');
   }
 
@@ -586,7 +610,7 @@ export class GameScene {
       family: FONT_BODY, color: COLOR.textMuted
     });
     if (b.boss || b.subboss) {
-      const pulse = 0.55 + Math.sin(age * 0.012) * 0.25;
+      const pulse = reduceMotionEnabled() ? 0.55 : 0.55 + Math.sin(age * 0.012) * 0.25;
       ctx.globalAlpha = alpha * pulse;
       ctx.strokeStyle = b.accent;
       ctx.lineWidth = 1;
@@ -641,7 +665,8 @@ export class GameScene {
     }
     const item = this._lootToast.item;
     const alpha = Math.min(1, age / 180, (this._lootToast.duration - age) / 260);
-    const y = Math.round(Layout.hud + 26 + Math.sin(age * 0.006) * 2);
+    const bob = reduceMotionEnabled() ? 0 : Math.sin(age * 0.006) * 2;
+    const y = Math.round(Layout.hud + 26 + bob);
     const w = Math.min(Layout.canvasW - 44, 330);
     const h = 62;
     const x = (Layout.canvasW - w) / 2;
@@ -673,7 +698,7 @@ export class GameScene {
   _renderDangerVignette(r) {
     const hpPct = this.player?.stats?.hpMax ? this.player.stats.hp / this.player.stats.hpMax : 1;
     if (hpPct > 0.35) return;
-    const pulse = 0.38 + Math.sin(performance.now() * 0.012) * 0.12;
+    const pulse = reduceMotionEnabled() ? 0.38 : 0.38 + Math.sin(performance.now() * 0.012) * 0.12;
     const alpha = (0.35 - hpPct) * 0.9 + pulse * 0.18;
     const ctx = r.ctx;
     ctx.save();
@@ -681,13 +706,17 @@ export class GameScene {
     ctx.strokeStyle = '#b83838';
     ctx.lineWidth = 10;
     ctx.strokeRect(5, 5, Layout.canvasW - 10, Layout.canvasH - 10);
-    const g = ctx.createRadialGradient(
-      Layout.canvasW / 2, Layout.canvasH / 2, Layout.canvasW * 0.24,
-      Layout.canvasW / 2, Layout.canvasH / 2, Layout.canvasW * 0.76
-    );
-    g.addColorStop(0, 'transparent');
-    g.addColorStop(1, '#8a1010');
-    ctx.fillStyle = g;
+    const cache = this._dangerGradientCache;
+    if (!cache || cache.ctx !== ctx || cache.w !== Layout.canvasW || cache.h !== Layout.canvasH) {
+      const gradient = ctx.createRadialGradient(
+        Layout.canvasW / 2, Layout.canvasH / 2, Layout.canvasW * 0.24,
+        Layout.canvasW / 2, Layout.canvasH / 2, Layout.canvasW * 0.76
+      );
+      gradient.addColorStop(0, 'transparent');
+      gradient.addColorStop(1, '#8a1010');
+      this._dangerGradientCache = { ctx, w: Layout.canvasW, h: Layout.canvasH, gradient };
+    }
+    ctx.fillStyle = this._dangerGradientCache.gradient;
     ctx.fillRect(0, 0, Layout.canvasW, Layout.canvasH);
     ctx.restore();
   }
@@ -920,8 +949,9 @@ export class GameScene {
     this.bus.emit('floor:hazardSprung', { entity, hazard: hz, x, y, label: meta.label });
     if (meta.status && !entity.isDead) StatusEffects.apply(entity, meta.status, this.bus);
     if (entity.isDead) {
-      if (entity.kind === 'player') entity.runStats.killedBy = meta.label;
-      this.bus.emit('entity:died', { entity, killer: { name: meta.label } });
+      this.combat._handleDeath(entity, { name: meta.label, kind: 'hazard' }, {
+        floor: this.floor, floorIndex: depth
+      });
     }
   }
 
@@ -997,6 +1027,9 @@ export class GameScene {
         targetItem
       });
       if (result.ok && result.item) {
+        if (result.overflow > 0) {
+          this.floor.addItem(this.player.x, this.player.y, result.item.clone(result.overflow));
+        }
         this.bus.emit('item:crafted', { item: result.item });
         this._forgeUsed[this.dungeon.currentIndex] = true;
         this.crafting.hide();
@@ -1047,6 +1080,7 @@ export class GameScene {
   }
 
   _useFloorInteract(x, y, tile) {
+    if (this._consumeIncapacitatedTurn()) return;
     const interact = tile?.interact;
     if (!interact || interact.used) return;
     const kind = interact.kind;
@@ -1085,7 +1119,13 @@ export class GameScene {
     this.floorEvents.show({
       ...cfg,
       onPick: (id) => {
-        cfg.onPick?.(id);
+        if (cfg.onPick?.(id) === false) return;
+        if (this.player.isDead) {
+          const label = cfg.options?.find(option => option.id === id)?.label || EVENT_LABELS[kind] || kind;
+          this.combat._handleDeath(this.player, { name: label, kind: 'offering' }, {
+            floor: this.floor, floorIndex: this.dungeon.currentIndex
+          });
+        }
         markInteractUsed(this.floor, x, y);
         this._saveRun();
         this._endPlayerTurn(true);
@@ -1163,6 +1203,7 @@ export class GameScene {
 
   // --- player actions -------------------------------------------------
   _playerMove(dx, dy) {
+    if (this._consumeIncapacitatedTurn()) return;
     markHeroMoved(this.player);
     const nx = this.player.x + dx, ny = this.player.y + dy;
     const target = this.floor.entityAt(nx, ny);
@@ -1180,6 +1221,7 @@ export class GameScene {
   }
 
   _attackEnemyAt(tx, ty) {
+    if (this._consumeIncapacitatedTurn()) return;
     const ent = this.floor.entityAt(tx, ty);
     if (!ent || ent.kind !== 'enemy' || ent.isDead) return;
     this.combat.execute(
@@ -1195,6 +1237,7 @@ export class GameScene {
    * enemy in range with line of sight. No-op if no valid target.
    */
   _playerAimAttack() {
+    if (this._consumeIncapacitatedTurn()) return;
     const target = MobileControls.computeAimTarget(this.player, this.floor);
     if (!target) return;
     const range = typeof this.player.effectiveRange === 'function'
@@ -1220,6 +1263,7 @@ export class GameScene {
   }
 
   _playerCastSpell() {
+    if (this._consumeIncapacitatedTurn()) return;
     if (this.spells.cast(this.heroKind)) this._endPlayerTurn(true);
   }
 
@@ -1294,6 +1338,7 @@ export class GameScene {
   }
 
   _playerPickup() {
+    if (this._consumeIncapacitatedTurn()) return;
     const stack = this.floor.itemsAt(this.player.x, this.player.y);
     if (stack.length === 0) {
       const interact = findInteractAt(this.floor, this.player.x, this.player.y)
@@ -1308,23 +1353,25 @@ export class GameScene {
     const item = stack[stack.length - 1];
     if (item.type === 'material') {
       this.player.addMaterial(item.id, item.count || 1);
-      this.floor.takeItemAt(this.player.x, this.player.y);
+      this.floor.takeItemAt(this.player.x, this.player.y, item);
       this.bus.emit('item:pickedUp', { item, by: this.player, material: true });
       this._endPlayerTurn(true);
       return;
     }
     const { added, overflow } = this.player.inventory.add(item);
+    const pickedUp = added && overflow > 0 ? item.clone(item.count - overflow) : item;
     if (!added || overflow > 0) {
       if (!added) { this.bus.emit('inventory:full'); return; }
       item.count = overflow; // leave the rest on the ground
     } else {
-      this.floor.takeItemAt(this.player.x, this.player.y);
+      this.floor.takeItemAt(this.player.x, this.player.y, item);
     }
-    this.bus.emit('item:pickedUp', { item, by: this.player });
+    this.bus.emit('item:pickedUp', { item: pickedUp, by: this.player });
     this._endPlayerTurn(true);
   }
 
   _playerDescend() {
+    if (this._consumeIncapacitatedTurn()) return;
     const t = this.floor.tileAt(this.player.x, this.player.y);
     if (!t || t.type !== TILE.STAIRS_DOWN) return;
 
@@ -1363,6 +1410,7 @@ export class GameScene {
   }
 
   _playerUseSlot(index) {
+    if (this._consumeIncapacitatedTurn()) return;
     const item = this.player.inventory.getSlot(index);
     if (!item) return;
     // Equip is a free action.
@@ -1388,6 +1436,7 @@ export class GameScene {
   }
 
   _playerTapTile(tx, ty) {
+    if (this._consumeIncapacitatedTurn()) return;
     const dxRaw = tx - this.player.x;
     const dyRaw = ty - this.player.y;
     const targetEnemy = this.floor.entityAt(tx, ty);
@@ -1474,6 +1523,12 @@ export class GameScene {
   }
 
   // --- turn management -----------------------------------------------
+  _consumeIncapacitatedTurn() {
+    if (!StatusEffects.shouldSkipTurn(this.player)) return false;
+    this._endPlayerTurn(true);
+    return true;
+  }
+
   _endPlayerTurn(actionTaken) {
     if (!actionTaken) return;
     if (this._processingTurn) return;
@@ -1493,7 +1548,7 @@ export class GameScene {
     tickTriggerCooldowns(this.player);
     // Passive skill tick (Second Wind regen, future passives).
     if (typeof this.player.passiveTurnTick === 'function') this.player.passiveTurnTick();
-    this.combat.tickEntity(this.player);
+    this.combat.tickEntity(this.player, { floor: this.floor, floorIndex: this.dungeon.currentIndex });
     if (this.player.isDead) { this._endRun(false); return; }
     applyBiomeTurnTick(this.player, this.floor, this.bus);
     if (this.player.isDead) { this._endRun(false); return; }
@@ -1506,6 +1561,7 @@ export class GameScene {
     this.lighting.compute(this.floor, this.player, effectiveTorchRadius(this.player));
     this._revealNearbyHazards();
     tickAmbientHazard(this);
+    if (this.player.isDead) { this._endRun(false); return; }
     this._refreshEnemyIntents();
     beginPlayerTurnPassives(this.player);
 
@@ -1523,6 +1579,7 @@ export class GameScene {
   }
 
   _peekEnemyIntent(enemy) {
+    if (StatusEffects.shouldSkipTurn(enemy)) return { type: 'wait' };
     const ctx = {
       floor: this.floor,
       player: this.player,

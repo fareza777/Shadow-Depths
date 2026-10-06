@@ -39,6 +39,7 @@ export class GameLoop {
     // whole world; a ragged 40–55fps reads as stutter. Prefer a steady 30fps
     // on lean/mobile builds, then lift to 60 only when work stays cheap.
     this._lastWorkTs = 0;
+    this._lastRenderTs = 0;
     this._frameEma = 16;
     this._preferSteady30 = prefersLeanCombatFx();
     this._targetMs = this._preferSteady30 ? 1000 / 30 : 1000 / 60;
@@ -51,6 +52,7 @@ export class GameLoop {
     this._paused = false;
     this._lastTs = performance.now();
     this._lastWorkTs = 0;
+    this._lastRenderTs = 0;
     this._rafId = requestAnimationFrame(this._loop);
     console.log(LOG.CORE, 'GameLoop started');
   }
@@ -83,6 +85,7 @@ export class GameLoop {
     this._paused = false;
     this._lastTs = performance.now();
     this._lastWorkTs = 0;
+    this._lastRenderTs = 0;
     this._rafId = requestAnimationFrame(this._loop);
     this._bus.emit('loop:resumed', {});
     console.log(LOG.CORE, 'GameLoop resumed');
@@ -91,15 +94,20 @@ export class GameLoop {
   _loop(ts) {
     if (!this._running || this._paused) return;
 
-    // Skip this rAF if we're ahead of the target interval (~1.5ms slack).
+    // Carry the schedule's residual across refresh callbacks. Resetting the
+    // deadline to ts on each rendered frame caps 90Hz displays at 45fps.
     const since = this._lastWorkTs ? ts - this._lastWorkTs : this._targetMs;
-    if (since < this._targetMs - 1.5) {
+    if (since < this._targetMs - 0.5) {
       this._rafId = requestAnimationFrame(this._loop);
       return;
     }
-    this._lastWorkTs = ts;
+    this._lastWorkTs = this._lastWorkTs
+      ? this._lastWorkTs + Math.max(1, Math.floor((since + 0.5) / this._targetMs)) * this._targetMs
+      : ts;
+    const elapsed = this._lastRenderTs ? ts - this._lastRenderTs : this._targetMs;
+    this._lastRenderTs = ts;
     this._lastTs = ts;
-    const dt = Math.min(since / 1000, this._maxDt);
+    const dt = Math.min(Math.max(0, elapsed) / 1000, this._maxDt);
     this._accumDt += dt;
 
     this._state.state.time += dt;

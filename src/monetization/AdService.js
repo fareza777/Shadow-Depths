@@ -17,15 +17,23 @@ import { resolveAdConfig } from './adConfig.js';
 
 const BANNER_RESERVE_VAR = '--ad-banner-reserve';
 const APP_OPEN_KEY = 'shadowdepths_last_app_open';
+const FULLSCREEN_EVENTS = {
+  appOpen: ['appOpenAdClosed', 'appOpenAdFailedToShow'],
+  interstitial: ['interstitialAdDismissed', 'interstitialAdFailedToShow'],
+  rewarded: ['onRewardedVideoAdDismissed', 'onRewardedVideoAdFailedToShow']
+};
 
 export class AdService {
   /**
-   * @param {{ billing:object, eventBus:object, balance?:object }} deps
+   * @param {{ billing:object, eventBus:object, balance?:object, getSceneContext?:Function }} deps
    */
-  constructor({ billing, eventBus, balance }) {
+  constructor({ billing, eventBus, balance, getSceneContext }) {
     this.billing = billing;
     this.bus = eventBus;
     this.config = resolveAdConfig(balance?.monetization);
+    this._getSceneContext = getSceneContext;
+    this._sceneName = 'loading';
+    this._fullscreenAd = null;
 
     this._admob = null;
     this._ready = false;
@@ -60,6 +68,7 @@ export class AdService {
       this._descentsSinceAd = 0;
     });
     this.bus?.on?.('app:foreground', () => { void this.onAppForeground(); });
+    this.bus?.on?.('scene:switched', ({ to }) => { this._sceneName = to; });
   }
 
   get isNative() {
@@ -267,6 +276,7 @@ export class AdService {
 
   /** Route a scene transition to a safe banner placement or a hidden strip. */
   async onSceneChanged(sceneName) {
+    if (sceneName) this._sceneName = sceneName;
     if (sceneName) this._bannerScene = sceneName;
     return this._bannerAllowedFor(this._bannerScene)
       ? this.showBanner(this._bannerScene)
@@ -284,6 +294,67 @@ export class AdService {
       document.documentElement.style.setProperty(BANNER_RESERVE_VAR, `${dp || 0}px`);
       window.dispatchEvent(new Event('resize'));
     } catch { /* non-DOM context */ }
+  }
+
+  _fullscreenAllowed() {
+    return !this.adsDisabled && (!this._consentInfo || this._canRequestAds);
+  }
+
+  _appOpenAllowed() {
+    try {
+      const context = this._getSceneContext?.() || { name: this._sceneName };
+      return ['loading', 'title', 'pause'].includes(context.name)
+        || (context.name === this.config.gameplayScene && context.paused === true);
+    } catch { return false; }
+  }
+
+  /** Reserve before init/load, so every fullscreen format shares one guard. */
+  async _withFullscreen(kind, play) {
+    if (this._fullscreenAd || !this._fullscreenAllowed()) return false;
+    this._fullscreenAd = kind;
+    try {
+      return await play();
+    } finally {
+      this._fullscreenAd = null;
+    }
+  }
+
+  /**
+   * Android interstitial promises resolve on show; rewarded promises resolve
+   * on reward (and may never resolve on cancel). Keep the guard until the
+   * native dismissal/failure event, not merely the show promise's resolution.
+   */
+  async _showFullscreen(kind, show) {
+    const handles = [];
+    let value;
+    let finish;
+    const ended = new Promise((resolve) => { finish = resolve; });
+    const hasEvents = typeof this._admob.addListener === 'function';
+    try {
+      if (hasEvents) {
+        const [closed, failed] = FULLSCREEN_EVENTS[kind];
+        handles.push(await this._admob.addListener(closed, () => finish({ failed: false })));
+        handles.push(await this._admob.addListener(failed, (error) => finish({ failed: true, error })));
+      }
+      // Listener registration also yields: the player may have left the
+      // loading/title/pause screen, or purchased ad removal in the meantime.
+      if (!this._fullscreenAllowed() || (kind === 'appOpen' && !this._appOpenAllowed())) {
+        return { shown: false };
+      }
+      if (kind !== 'appOpen') this._markAppOpenShown(Date.now());
+      const playback = Promise.resolve(show()).then((result) => { value = result; });
+      if (hasEvents) {
+        const outcome = await Promise.race([ended, playback.then(() => ended)]);
+        if (outcome.failed) throw new Error(outcome.error?.message || `${kind} failed to show`);
+      } else {
+        await playback;
+      }
+      return { shown: true, value };
+    } finally {
+      for (const handle of handles) {
+        try { await handle?.remove?.(); } catch { /* optional SDK cleanup */ }
+      }
+    }
   }
 
   // --- interstitial ---------------------------------------------------
@@ -308,7 +379,7 @@ export class AdService {
    * @returns {Promise<boolean>} true if an ad was shown
    */
   async onDescend(floorIndex) {
-    if (this.adsDisabled) return false;
+    if (!this._fullscreenAllowed() || this._fullscreenAd) return false;
     if ((floorIndex || 0) < this.config.interstitialMinFloorIndex) return false;
     const now = Date.now();
     if (this._lastInterstitialAt > 0
@@ -318,26 +389,29 @@ export class AdService {
     this._descentsSinceAd += 1;
     if (this._descentsSinceAd < this.config.interstitialEveryNFloors) return false;
 
-    if (!this._ready) await this.init();
-    if (!this._admob || !this._ready) return false;
-    if (!this._interstitialLoaded) await this._preloadInterstitial();
-    if (!this._interstitialLoaded) return false;
+    return this._withFullscreen('interstitial', async () => {
+      try {
+        if (!this._ready) await this.init();
+        if (!this._admob || !this._ready || !this._fullscreenAllowed()) return false;
+        if (!this._interstitialLoaded) await this._preloadInterstitial();
+        if (!this._interstitialLoaded) return false;
 
-    this._descentsSinceAd = 0;
-    try {
-      await this._admob.showInterstitial();
-      this._interstitialLoaded = false;
-      this._lastInterstitialAt = Date.now();
-      // Coming back from this must not trigger an App Open ad on top of it.
-      this._markAppOpenShown(Date.now());
-      this._preloadInterstitial();
-      return true;
-    } catch (err) {
-      this._lastError = err?.message || String(err);
-      console.warn(LOG.CORE, 'showInterstitial failed:', err);
-      this._interstitialLoaded = false;
-      return false;
-    }
+        this._descentsSinceAd = 0;
+        const ad = await this._showFullscreen('interstitial', () => this._admob.showInterstitial());
+        if (!ad.shown) return false;
+        this._interstitialLoaded = false;
+        this._lastInterstitialAt = Date.now();
+        // Coming back from this must not trigger an App Open ad on top of it.
+        this._markAppOpenShown(Date.now());
+        this._preloadInterstitial();
+        return true;
+      } catch (err) {
+        this._lastError = err?.message || String(err);
+        console.warn(LOG.CORE, 'showInterstitial failed:', err);
+        this._interstitialLoaded = false;
+        return false;
+      }
+    });
   }
 
   // --- app open -------------------------------------------------------
@@ -385,7 +459,7 @@ export class AdService {
    * @returns {Promise<boolean>} true if an ad was shown
    */
   async onAppForeground() {
-    if (this.adsDisabled) return false;
+    if (!this._fullscreenAllowed() || !this._appOpenAllowed() || this._fullscreenAd) return false;
     const now = Date.now();
     const last = this._lastAppOpenAt();
     if (!last) {
@@ -394,24 +468,27 @@ export class AdService {
     }
     if (now - last < this.config.appOpenMinIntervalMs) return false;
 
-    if (!this._ready) await this.init();
-    if (!this._admob || !this._ready) return false;
-    if (typeof this._admob.showAppOpen !== 'function') return false;
-    if (!this._appOpenLoader()) return false;
-    if (!this._appOpenLoaded) await this._preloadAppOpen();
-    if (!this._appOpenLoaded) return false;
-    try {
-      await this._admob.showAppOpen();
-      this._appOpenLoaded = false;
-      this._markAppOpenShown(Date.now());
-      this._preloadAppOpen();
-      return true;
-    } catch (err) {
-      this._lastError = err?.message || String(err);
-      console.warn(LOG.CORE, 'showAppOpen failed:', err);
-      this._appOpenLoaded = false;
-      return false;
-    }
+    return this._withFullscreen('appOpen', async () => {
+      try {
+        if (!this._ready) await this.init();
+        if (!this._admob || !this._ready || !this._fullscreenAllowed() || !this._appOpenAllowed()) return false;
+        if (typeof this._admob.showAppOpen !== 'function') return false;
+        if (!this._appOpenLoader()) return false;
+        if (!this._appOpenLoaded) await this._preloadAppOpen();
+        if (!this._appOpenLoaded) return false;
+        const ad = await this._showFullscreen('appOpen', () => this._admob.showAppOpen());
+        if (!ad.shown) return false;
+        this._appOpenLoaded = false;
+        this._markAppOpenShown(Date.now());
+        this._preloadAppOpen();
+        return true;
+      } catch (err) {
+        this._lastError = err?.message || String(err);
+        console.warn(LOG.CORE, 'showAppOpen failed:', err);
+        this._appOpenLoaded = false;
+        return false;
+      }
+    });
   }
 
   // --- rewarded revive ------------------------------------------------
@@ -478,25 +555,29 @@ export class AdService {
    * backing out of the video never pays out.
    */
   async _playRewarded() {
-    if (!this._ready) await this.init();
-    if (!this._admob || !this._ready) return false;
-    if (!this._rewardedLoaded) await this._preloadRewarded();
-    if (!this._rewardedLoaded) return false;
-    try {
-      const reward = await this._admob.showRewardVideoAd();
-      this._rewardedLoaded = false;
-      // Same guard as the interstitial: no App Open ad chasing this one.
-      this._markAppOpenShown(Date.now());
-      this._preloadRewarded();
-      return typeof reward?.type === 'string'
-        ? reward.type.trim().length > 0
-        : !!reward?.type;
-    } catch (err) {
-      this._lastError = err?.message || String(err);
-      console.warn(LOG.CORE, 'showRewardVideoAd failed:', err);
-      this._rewardedLoaded = false;
-      return false;
-    }
+    return this._withFullscreen('rewarded', async () => {
+      try {
+        if (!this._ready) await this.init();
+        if (!this._admob || !this._ready || !this._fullscreenAllowed()) return false;
+        if (!this._rewardedLoaded) await this._preloadRewarded();
+        if (!this._rewardedLoaded) return false;
+        const ad = await this._showFullscreen('rewarded', () => this._admob.showRewardVideoAd());
+        if (!ad.shown) return false;
+        const reward = ad.value;
+        this._rewardedLoaded = false;
+        // Same guard as the interstitial: no App Open ad chasing this one.
+        this._markAppOpenShown(Date.now());
+        this._preloadRewarded();
+        return typeof reward?.type === 'string'
+          ? reward.type.trim().length > 0
+          : !!reward?.type;
+      } catch (err) {
+        this._lastError = err?.message || String(err);
+        console.warn(LOG.CORE, 'showRewardVideoAd failed:', err);
+        this._rewardedLoaded = false;
+        return false;
+      }
+    });
   }
 
   /** Tear every ad down — called the moment the removal is purchased. */

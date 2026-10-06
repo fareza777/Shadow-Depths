@@ -47,6 +47,25 @@ describe('release monetization contract', () => {
     expect(cfg.releaseReady).toBe(false);
   });
 
+  it('honors the app-open override used by the Android build scripts', () => {
+    const cfg = resolveAdConfig(balanceData.monetization, {
+      VITE_ADMOB_APP_OPEN_ID: TEST_AD_UNITS.appOpen
+    });
+    expect(cfg.unitIds.appOpen).toBe(TEST_AD_UNITS.appOpen);
+    expect(cfg.testMode).toBe(true);
+  });
+
+  it('prefers the canonical app-open override while accepting the legacy name', () => {
+    const legacy = 'ca-app-pub-1234567890123456/1234567893';
+    expect(resolveAdConfig(balanceData.monetization, {
+      VITE_ADMOB_APPOPEN_ID: legacy
+    }).unitIds.appOpen).toBe(legacy);
+    expect(resolveAdConfig(balanceData.monetization, {
+      VITE_ADMOB_APP_OPEN_ID: TEST_AD_UNITS.appOpen,
+      VITE_ADMOB_APPOPEN_ID: legacy
+    }).unitIds.appOpen).toBe(TEST_AD_UNITS.appOpen);
+  });
+
   it('accepts complete non-sample release IDs', () => {
     const result = validateAdIds({
       appId: 'ca-app-pub-1234567890123456~1234567890',

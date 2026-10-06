@@ -107,33 +107,47 @@ function buildLorePanel(interact, ctx) {
 
 function applyShrine(id, ctx) {
   const opt = SHRINE_OPTIONS.find((o) => o.id === id);
-  if (!opt) return;
+  if (!opt) return false;
   opt.apply(ctx.player, ctx);
   ctx.bus.emit('floor:event', { message: opt.label });
+  return true;
 }
 
 function buyMerchant(id, ctx) {
   const ware = MERCHANT_WARES.find((w) => w.id === id);
   const floorNum = (ctx.floor?.definition?.index ?? 0) + 1;
-  if (!ware || ctx.player.gold < ware.cost) return;
-  if ((ware.floorMin ?? 1) > floorNum) return;
-  if (!ctx.itemDefs?.[ware.id]) return;
-  ctx.player.gold -= ware.cost;
+  if (!ware || ctx.player.gold < ware.cost) return false;
+  if ((ware.floorMin ?? 1) > floorNum) return false;
+  if (!ctx.itemDefs?.[ware.id]) return false;
   const item = ctx.itemFactory.create(ware.id, 1);
-  if (item && ctx.player.inventory.add(item)) {
-    ctx.bus.emit('item:pickedUp', { item, by: ctx.player });
-    ctx.bus.emit('floor:event', { message: `Bought ${ware.label}.` });
-  } else {
-    ctx.player.gold += ware.cost;
+  if (!item) {
     ctx.bus.emit('inventory:full');
+    return false;
   }
+  const inventory = ctx.player.inventory;
+  const before = inventory.slots.map((slot) => ({ slot, count: slot?.count }));
+  const { added, overflow } = inventory.add(item);
+  if (!added || overflow > 0) {
+    // A purchase must fit in full; undo any stacking before rejecting it.
+    before.forEach(({ slot, count }, index) => {
+      inventory.slots[index] = slot;
+      if (slot) slot.count = count;
+    });
+    ctx.bus.emit('inventory:full');
+    return false;
+  }
+  ctx.player.gold -= ware.cost;
+  ctx.bus.emit('item:pickedUp', { item, by: ctx.player });
+  ctx.bus.emit('floor:event', { message: `Bought ${ware.label}.` });
+  return true;
 }
 
 function applyAltar(id, ctx) {
   const opt = ALTAR_OPTIONS.find((o) => o.id === id);
-  if (!opt || !opt.canApply(ctx.player)) return;
-  opt.apply(ctx.player, ctx);
+  if (!opt || !opt.canApply(ctx.player)) return false;
+  if (opt.apply(ctx.player, ctx) === false) return false;
   ctx.bus.emit('floor:event', { message: opt.label });
+  return true;
 }
 
 export function applyRestAlcove(player, bus) {
@@ -165,12 +179,14 @@ export function applyMysteryChest(ctx) {
   } else {
     bus.emit('floor:event', { message: 'The chest yields its treasure.' });
   }
-  if (player.inventory.add(item)) {
-    bus.emit('item:pickedUp', { item, by: player });
+  const { added, overflow } = player.inventory.add(item);
+  if (added) {
+    const pickedUp = overflow > 0 ? item.clone(item.count - overflow) : item;
+    bus.emit('item:pickedUp', { item: pickedUp, by: player });
     if (item.def && meta) identify(item.id, meta);
-  } else {
-    const spot = { x: player.x, y: player.y };
-    floor.addItem(spot.x, spot.y, item);
+  }
+  if (overflow > 0) {
+    floor.addItem(player.x, player.y, item.clone(overflow));
     bus.emit('floor:event', { message: 'Your pack is full — it falls at your feet.' });
   }
 }
@@ -233,8 +249,9 @@ export function tickAmbientHazard(scene) {
     StatusEffects.apply(scene.player, meta.status, scene.bus);
   }
   if (scene.player.isDead) {
-    scene.player.runStats.killedBy = meta.label;
-    scene.bus.emit('entity:died', { entity: scene.player, killer: { name: meta.label } });
+    scene.combat._handleDeath(scene.player, { name: meta.label, kind: 'hazard' }, {
+      floor: scene.floor, floorIndex: depth
+    });
   } else {
     scene.bus.emit('floor:event', { message: `${meta.label} — the zone sears you.` });
   }

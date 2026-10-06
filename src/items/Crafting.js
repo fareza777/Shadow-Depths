@@ -17,7 +17,7 @@
  *   listRecipes()
  *   chooseForgeOffers(rng, floorLevel, count)
  *   canCraft(player, recipe) → { ok, missing? }
- *   craft(player, recipe, ctx) → { ok, item?, reason? }
+ *   craft(player, recipe, ctx) → { ok, item?, overflow?, reason? }
  *
  * Uses the existing affix generator + RNG so crafted items are
  * distributionally consistent with floor drops.
@@ -146,9 +146,19 @@ export function canCraft(player, recipe) {
  * Returns true if all consumed cleanly.
  */
 function consumeInputs(player, recipe) {
+  const materials = { ...player.materials };
+  const before = player.inventory.slots.map((slot) => ({ slot, count: slot?.count }));
+  const rollback = () => {
+    if (player.materials) Object.assign(player.materials, materials);
+    before.forEach(({ slot, count }, index) => {
+      player.inventory.slots[index] = slot;
+      if (slot) slot.count = count;
+    });
+    return false;
+  };
   for (const input of recipe.inputs || []) {
     if (typeof player.consumeMaterial === 'function') {
-      if (!player.consumeMaterial(input.materialId, input.count)) return false;
+      if (!player.consumeMaterial(input.materialId, input.count)) return rollback();
       continue;
     }
     let remaining = input.count;
@@ -156,7 +166,7 @@ function consumeInputs(player, recipe) {
       const slotIdx = player.inventory.slots.findIndex(
         (s) => s && s.id === input.materialId
       );
-      if (slotIdx < 0) return false;
+      if (slotIdx < 0) return rollback();
       const item = player.inventory.slots[slotIdx];
       const take = Math.min(remaining, item.count || 1);
       item.count -= take;
@@ -181,15 +191,16 @@ function pickBase(recipe, itemDefs, rng) {
 }
 
 /**
- * Execute a recipe. Materials are consumed up-front; the resulting
- * synthesized def is wrapped in an Item and added to inventory.
+ * Execute a recipe after validating and constructing its output, then consume
+ * inputs atomically. Successful crafts return a numeric overflow count; the
+ * caller must place that many units of the returned item on the ground.
  *
  * @param {object} player
  * @param {object} recipe
  * @param {{ itemDefs, rng, floorLevel, targetItem? }} ctx
  *   targetItem only used for operation:'reroll' — the item whose affixes
  *   are stripped and re-rolled.
- * @returns {{ ok:boolean, item?:object, reason?:string }}
+ * @returns {{ ok:boolean, item?:object, overflow?:number, reason?:string }}
  */
 export function craft(player, recipe, ctx) {
   if (!recipe) return { ok: false, reason: 'no recipe' };
@@ -201,23 +212,21 @@ export function craft(player, recipe, ctx) {
     const target = ctx?.targetItem;
     if (!target) return { ok: false, reason: 'no target item' };
     if (!target.def?.slot) return { ok: false, reason: 'not equipment' };
-    if (!consumeInputs(player, recipe)) {
-      return { ok: false, reason: 'consume failed' };
-    }
     // Strip + re-roll. Use base def (without affixes) as the seed.
     const baseId = target.def.id;
     const baseDef = ctx.itemDefs?.[baseId];
     if (!baseDef) return { ok: false, reason: 'lost base' };
     const fresh = rollItemAffixes(baseDef, ctx.floorLevel || 1, ctx.rng);
     const newDef = fresh ? synthesizeDef(baseDef, fresh) : baseDef;
+    const rerolled = new Item(newDef, target.count || 1);
+    if (!consumeInputs(player, recipe)) {
+      return { ok: false, reason: 'consume failed' };
+    }
     // Mutate in place so the equipped slot reference stays valid.
-    Object.assign(target, new Item(newDef, target.count || 1));
-    return { ok: true, item: target };
+    Object.assign(target, rerolled);
+    return { ok: true, item: target, overflow: 0 };
   }
 
-  if (!consumeInputs(player, recipe)) {
-    return { ok: false, reason: 'consume failed' };
-  }
   const baseDef = pickBase(recipe, ctx.itemDefs, ctx.rng);
   if (!baseDef) return { ok: false, reason: 'no base item matches slot' };
 
@@ -230,8 +239,11 @@ export function craft(player, recipe, ctx) {
   };
   const def = synthesizeDef(baseDef, affixes);
   const item = new Item(def, 1);
+  if (!consumeInputs(player, recipe)) {
+    return { ok: false, reason: 'consume failed' };
+  }
 
   // Try to put into inventory; if full, leave it for the caller to handle.
-  const overflow = player.inventory.add(item);
+  const { overflow } = player.inventory.add(item);
   return { ok: true, item, overflow };
 }

@@ -1,6 +1,7 @@
 import { syncFloorMicroEventLegacy } from '../gameplay/floorEvents.js';
 import { serializeEventTiles, restoreEventTiles } from '../gameplay/floorEventRuntime.js';
 import { computeSynergyMods, skillsById } from '../gameplay/skillSynergy.js';
+import { heroDef } from '../rendering/heroSprites.js';
 import { perfMeter } from '../debug/PerfMeter.js';
 
 /**
@@ -88,7 +89,7 @@ export class RunPersistence {
   }
 
   playerSnapshot() {
-    const { player } = this.scene;
+    const { player, skillPicker } = this.scene;
     const itemSnap = (item) => {
       if (!item) return null;
       const s = { id: item.id, count: item.count || 1 };
@@ -114,6 +115,8 @@ export class RunPersistence {
       runStats: { ...player.runStats },
       reviveCharges: player.reviveCharges,
       skills: [...player.skills],
+      skillPicker: skillPicker?.toSnapshot?.() || null,
+      torchRadius: player.torchRadius,
       xpMultiplier: player.xpMultiplier,
       skillLifesteal: player.skillLifesteal,
       damageReduction: player.damageReduction,
@@ -152,9 +155,21 @@ export class RunPersistence {
     }
     const enemies = floor.enemies().map((e) => ({
       defId: e.defId,
+      name: e.name,
       x: e.x,
       y: e.y,
       stats: { ...e.stats },
+      carriesKey: !!e.carriesKey,
+      elite: e.elite ? {
+        ...e.elite,
+        affixes: [...e.elite.affixes],
+        names: [...e.elite.names]
+      } : null,
+      evaBonus: e.evaBonus || 0,
+      accBonus: e.accBonus || 0,
+      onHitPlayer: (e.onHitPlayer || []).map((effect) => ({ ...effect })),
+      xpReward: e.xpReward,
+      goldDrop: [...e.goldDrop],
       statusEffects: e.statusEffects.map((s) => ({ ...s })),
       rolledGold: e._rolledGold || 0,
       behaviorState: e.behavior?._counter !== undefined ? { counter: e.behavior._counter } : null
@@ -190,10 +205,23 @@ export class RunPersistence {
     player.runStats = { ...player.runStats, ...(snap.runStats || {}) };
     player.reviveCharges = snap.reviveCharges || 0;
     player.skills = Array.isArray(snap.skills) ? [...snap.skills] : [];
+    const pool = scene.content?.skills?.skills || [];
+    const definitions = skillsById(pool);
+    if (Number.isFinite(snap.torchRadius)) {
+      player.torchRadius = snap.torchRadius;
+    } else {
+      // Legacy saves already contain the other skill effects. Recover only
+      // permanent torch bonuses, starting from the hero base on every restore.
+      const bonus = [...new Set(player.skills)].reduce((total, id) => {
+        if (id === 'torchbearer' || id === 'pilgrim_ember') return total + 1;
+        const torch = definitions[id]?.effect?.torch;
+        return total + (Number.isFinite(torch) ? torch : 0);
+      }, 0);
+      player.torchRadius = (heroDef(player.heroKind)?.stats?.torchRadius ?? 5) + bonus;
+    }
     // Rebuild emergent skill-tag synergies from the restored skill set.
     if (typeof player.setSynergyMods === 'function') {
-      const pool = (scene.content?.skills?.skills) || [];
-      player.setSynergyMods(computeSynergyMods(player.skills, skillsById(pool)).mods);
+      player.setSynergyMods(computeSynergyMods(player.skills, definitions).mods);
     }
     player.xpMultiplier = snap.xpMultiplier ?? 1;
     player.skillLifesteal = snap.skillLifesteal || 0;
@@ -223,6 +251,7 @@ export class RunPersistence {
     player.legs = make(eq.legs);
     player.necklace = make(eq.necklace);
     player.ring = make(eq.ring);
+    scene.skillPicker?.restoreSnapshot?.(snap.skillPicker, player);
   }
 
   restoreFloorSnapshot(floor, snap = {}) {
@@ -254,6 +283,24 @@ export class RunPersistence {
       const enemy = scene._createEnemy(enemySnap.defId, { x: enemySnap.x, y: enemySnap.y }, floor);
       if (!enemy) continue;
       enemy.stats = { ...enemy.stats, ...(enemySnap.stats || {}) };
+      enemy.carriesKey = !!enemySnap.carriesKey;
+      // Stats and rewards already include elite promotion. Restore the saved
+      // values directly; makeElite would multiply them again on every resume.
+      if (enemySnap.name !== undefined) enemy.name = enemySnap.name;
+      if (enemySnap.elite) {
+        enemy.elite = {
+          ...enemySnap.elite,
+          affixes: [...enemySnap.elite.affixes],
+          names: [...enemySnap.elite.names]
+        };
+      }
+      if (enemySnap.evaBonus !== undefined) enemy.evaBonus = enemySnap.evaBonus;
+      if (enemySnap.accBonus !== undefined) enemy.accBonus = enemySnap.accBonus;
+      if (Array.isArray(enemySnap.onHitPlayer)) {
+        enemy.onHitPlayer = enemySnap.onHitPlayer.map((effect) => ({ ...effect }));
+      }
+      if (enemySnap.xpReward !== undefined) enemy.xpReward = enemySnap.xpReward;
+      if (Array.isArray(enemySnap.goldDrop)) enemy.goldDrop = [...enemySnap.goldDrop];
       enemy.statusEffects = Array.isArray(enemySnap.statusEffects)
         ? enemySnap.statusEffects.map((e) => ({ ...e }))
         : [];

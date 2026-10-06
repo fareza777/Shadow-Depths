@@ -1,6 +1,6 @@
 {
   "name": "shadow-depths",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "description": "Shadow Depths — a turn-based roguelike dark fantasy. Foundation build (v0.1).",
   "type": "module",
   "private": true,
@@ -19,6 +19,7 @@
     "android:open": "cap open android",
     "android:assets": "node scripts/generate-android-assets.mjs",
     "android:admob:debug": "node scripts/prepare-admob-release.mjs --debug",
+    "android:apk:test": "powershell -ExecutionPolicy Bypass -File scripts/build-test-apk.ps1",
     "android:bundle": "powershell -ExecutionPolicy Bypass -File scripts/build-release-aab.ps1",
     "android:bundle:full": "powershell -ExecutionPolicy Bypass -File scripts/setup-and-build-aab.ps1",
     "playstore:prep": "npm run build && cap sync android"

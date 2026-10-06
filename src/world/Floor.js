@@ -162,11 +162,13 @@ export class Floor {
     return this.items.get(Floor._key(x, y)) || [];
   }
 
-  takeItemAt(x, y) {
+  takeItemAt(x, y, item = null) {
     const key = Floor._key(x, y);
     const list = this.items.get(key);
     if (!list || list.length === 0) return null;
-    const taken = list.shift();
+    const index = item ? list.indexOf(item) : 0;
+    if (index < 0) return null;
+    const [taken] = list.splice(index, 1);
     if (list.length === 0) this.items.delete(key);
     return taken;
   }

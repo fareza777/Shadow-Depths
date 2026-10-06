@@ -187,6 +187,7 @@ export class Renderer {
 
   // --- main entry -----------------------------------------------------
   render(sceneManager, _stateStore) {
+    this._leanCombatFx = prefersLeanCombatFx();
     const now = performance.now();
     const dt = this._lastTime ? (now - this._lastTime) / 1000 : 0;
     this._lastTime = now;
@@ -399,13 +400,15 @@ export class Renderer {
       ].join('|');
       let cache = this._floorLayerCache;
       if (!cache || cache.floor !== floor || cache.key !== key
-          || cache.canvas.width !== width || cache.canvas.height !== height) {
-        const canvas = (typeof document !== 'undefined')
+          || cache.canvas.width < width || cache.canvas.height < height) {
+        const canvas = cache?.canvas || ((typeof document !== 'undefined')
           ? document.createElement('canvas')
-          : new OffscreenCanvas(width, height);
-        canvas.width = width;
-        canvas.height = height;
+          : new OffscreenCanvas(width, height));
+        if (canvas.width < width) canvas.width = width;
+        if (canvas.height < height) canvas.height = height;
         const cctx = canvas.getContext('2d', { alpha: true });
+        cctx.setTransform(1, 0, 0, 1, 0, 0);
+        cctx.clearRect(0, 0, canvas.width, canvas.height);
         cctx.imageSmoothingEnabled = true;
         cctx.translate(-sx, -sy);
         perfMeter.measure('floorLayer', () => {
@@ -493,13 +496,15 @@ export class Renderer {
     ].join('|');
     let cache = this._tileBaseCache;
     if (!cache || cache.floor !== floor || cache.key !== key
-        || cache.canvas.width !== width || cache.canvas.height !== height) {
-      const canvas = (typeof document !== 'undefined')
+        || cache.canvas.width < width || cache.canvas.height < height) {
+      const canvas = cache?.canvas || ((typeof document !== 'undefined')
         ? document.createElement('canvas')
-        : new OffscreenCanvas(width, height);
-      canvas.width = width;
-      canvas.height = height;
+        : new OffscreenCanvas(width, height));
+      if (canvas.width < width) canvas.width = width;
+      if (canvas.height < height) canvas.height = height;
       const cctx = canvas.getContext('2d', { alpha: true });
+      cctx.setTransform(1, 0, 0, 1, 0, 0);
+      cctx.clearRect(0, 0, canvas.width, canvas.height);
       cctx.imageSmoothingEnabled = true;
       cctx.translate(-sx, -sy);
       perfMeter.measure('tileCache', () => this._paintTileBase(cctx, floor, x0, y0, x1, y1));
@@ -866,8 +871,7 @@ export class Renderer {
    * @param {import('../world/Floor.js').Floor} floor
    * @param {number} dt seconds since last frame
    */
-  drawEntities(floor, dt, player = null) {
-    const ctx = this.ctx;
+  updateEntityPositions(floor, dt) {
     const speed = 1000 / TIMING.moveTween;
     for (const e of floor.entities.values()) {
       const dx = e.x - e.renderX;
@@ -876,7 +880,10 @@ export class Renderer {
       e.renderX += clampMove(dx, maxStep);
       e.renderY += clampMove(dy, maxStep);
     }
+  }
 
+  drawEntities(floor, dt, player = null) {
+    const ctx = this.ctx;
     const cam = this._camera;
     ctx.save();
     ctx.beginPath();

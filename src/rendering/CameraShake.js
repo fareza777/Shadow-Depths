@@ -7,6 +7,7 @@
  * Intensity unit: pixels of max displacement.
  */
 import { TIMING } from '../config/constants.js';
+import { reduceMotionEnabled } from '../config/layoutMetrics.js';
 
 export class CameraShake {
   constructor() {
@@ -20,6 +21,7 @@ export class CameraShake {
    * @param {number} [durationMs] defaults to TIMING.cameraShakeShort
    */
   trigger(intensity, durationMs = TIMING.cameraShakeShort) {
+    if (reduceMotionEnabled()) { this.reset(); return; }
     // Additive so successive shakes feel meatier without clipping.
     if (intensity > this._intensity) this._intensity = intensity;
     else this._intensity += intensity * 0.4;
@@ -45,6 +47,7 @@ export class CameraShake {
 
   /** Random offset for this frame. */
   offset() {
+    if (reduceMotionEnabled()) { this.reset(); return { x: 0, y: 0 }; }
     const i = this._currentIntensity();
     if (i <= 0) return { x: 0, y: 0 };
     return {

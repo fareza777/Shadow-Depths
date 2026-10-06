@@ -70,6 +70,7 @@ export class SkillPickerUI {
       this.player = entity;
       this.pending += Math.max(1, levels || 1);
       if (!this.open) this._present();
+      this._notifySelectionChanged();
     });
     bus.on('scene:switched', ({ to }) => {
       if (to !== 'game') this.hide();
@@ -82,6 +83,52 @@ export class SkillPickerUI {
     this.choices = [];
     this.pending = 0;
     this.rerollsLeft = 0;
+  }
+
+  /** Save unresolved level-ups and the exact offer, without rolling new cards. */
+  toSnapshot() {
+    return {
+      pending: this.pending,
+      choices: this.choices.map((skill) => skill.id),
+      rerollsLeft: this.rerollsLeft,
+      selected: this.selected
+    };
+  }
+
+  /** Consumers can synchronously save the finalized offer and entitlement. */
+  _notifySelectionChanged(entity = this.player) {
+    if (entity) this.bus.emit('skill:selectionChanged', { entity });
+  }
+
+  /** Restore after the scene's modal reset and after the player's owned skills. */
+  restoreSnapshot(snapshot, player) {
+    this.hide();
+    this.player = player || null;
+    this.selected = 0;
+    this.lastPicked = null;
+    this._adBusy = false;
+    if (!player || !Number.isInteger(snapshot?.pending) || snapshot.pending <= 0) return;
+
+    this.pending = snapshot.pending;
+    const pool = this.content.skills?.skills || [];
+    const owned = new Set(player.skills || []);
+    const available = new Map(pool.filter((skill) =>
+      !owned.has(skill.id) && (!skill.hero || skill.hero === player.heroKind)
+    ).map((skill) => [skill.id, skill]));
+    const ids = Array.isArray(snapshot.choices) ? snapshot.choices : [];
+    this.choices = [...new Set(ids)].map((id) => available.get(id)).filter(Boolean);
+    if (this.choices.length === 0) {
+      // Removed content must not discard a still-usable level-up entitlement.
+      this._present();
+    } else {
+      this.open = true;
+      this._openedAt = Date.now();
+    }
+    if (!this.open) return;
+    this.rerollsLeft = Number.isInteger(snapshot.rerollsLeft)
+      ? Math.max(0, snapshot.rerollsLeft) : 0;
+    const selected = Number.isInteger(snapshot.selected) ? snapshot.selected : 0;
+    this.selected = Math.max(0, Math.min(this.choices.length - 1, selected));
   }
 
   _rerollRect() {
@@ -142,14 +189,20 @@ export class SkillPickerUI {
     switch (action.type) {
       case 'useSlot':
         if (typeof action.index === 'number' && action.index >= 0 && action.index < count) {
+          const changed = this.selected !== action.index;
           this.selected = action.index;
           if (!this._inGrace()) this._pick(this.choices[action.index]);
+          else if (changed) this._notifySelectionChanged();
         }
         return true;
       case 'move': {
         if (count === 0) return true;
         const step = action.dy || action.dx || 0;
-        this.selected = (this.selected + step + count) % count;
+        const selected = (this.selected + step + count) % count;
+        if (selected !== this.selected) {
+          this.selected = selected;
+          this._notifySelectionChanged();
+        }
         return true;
       }
       case 'wait':
@@ -222,6 +275,7 @@ export class SkillPickerUI {
     if (!this._redrawChoices()) return;
     this.rerollsLeft -= 1;
     this.bus.emit('skill:rerolled', { remaining: this.rerollsLeft });
+    this._notifySelectionChanged();
   }
 
   /** Redraw the 3 cards. Returns false when the pool cannot supply any. */
@@ -255,6 +309,7 @@ export class SkillPickerUI {
       const earned = await this.ads.showRewardedReroll();
       if (earned && this._redrawChoices()) {
         this.bus.emit('skill:rerolled', { remaining: this.rerollsLeft, source: 'ad' });
+        this._notifySelectionChanged();
       }
     } catch (err) {
       console.warn('[SkillPicker] rewarded reroll failed:', err);
@@ -279,6 +334,7 @@ export class SkillPickerUI {
 
   _pick(skill) {
     if (!skill || !this.player) return;
+    const entity = this.player;
     this.lastPicked = skill.id;
     this.player.applySkill(skill.id, skill);
     // Recompute emergent tag synergies from the full owned set.
@@ -294,6 +350,7 @@ export class SkillPickerUI {
     } else {
       this.hide();
     }
+    this._notifySelectionChanged(entity);
   }
 
   // --- render --------------------------------------------------------

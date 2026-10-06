@@ -58,9 +58,13 @@ export function runEnemyTurns({
     acted += 1;
     try {
       tickTriggerCooldowns(enemy);
-      const action = enemy.decide(ctx);
-      combat.execute(action, enemy, ctx);
-      combat.tickEntity(enemy);
+      if (enemy.isStunned?.()) {
+        enemy.intent = { type: 'wait' };
+      } else {
+        const action = enemy.decide(ctx);
+        combat.execute(action, enemy, ctx);
+      }
+      combat.tickEntity(enemy, ctx);
     } catch (err) {
       console.error(LOG.CORE, `enemy turn failed (${enemy.defId}):`, err);
     }

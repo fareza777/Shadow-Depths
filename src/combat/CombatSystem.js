@@ -72,10 +72,14 @@ export class CombatSystem {
     if (e.kind === 'player' && typeof e.totalDef === 'function') return e.totalDef();
     return e.stats.def + e.modifierDef();
   }
+  _dex(e) {
+    if (e.kind === 'player' && typeof e.totalDex === 'function') return e.totalDex();
+    return Math.max(0, (e.stats.dex || 0) + (e.modifierDex?.() || 0));
+  }
   _critChance(e) {
     if (e.kind === 'player' && typeof e.critChance === 'function') return e.critChance();
     const c = this.balance.combat;
-    return Math.min(0.95, c.baseCritChance + e.stats.dex * c.critPerDex);
+    return Math.min(0.95, c.baseCritChance + this._dex(e) * c.critPerDex);
   }
 
   /**
@@ -89,11 +93,11 @@ export class CombatSystem {
     const c = this.balance.combat;
     let acc = (c.baseHit ?? 0.95) + (attacker.accBonus || 0);
     if (attacker.kind === 'player' && typeof attacker.totalDex === 'function') {
-      acc += attacker.totalDex() * (c.accPerDex || 0);
+      acc += this._dex(attacker) * (c.accPerDex || 0);
     }
     let eva = defender.evaBonus || 0;
     if (defender.kind === 'player') {
-      const dex = (typeof defender.totalDex === 'function' ? defender.totalDex() : defender.stats.dex) || 0;
+      const dex = this._dex(defender);
       eva += Math.min(c.dodgeCap || 0, dex * (c.dodgePerDex || 0));
     }
     return Math.max(0.4, Math.min(0.99, acc - eva));
@@ -104,10 +108,12 @@ export class CombatSystem {
    * @param {object} action  { type, ... }
    * @param {object} actor
    * @param {object} ctx { floor, player }
-   * @returns {boolean} true if a turn was consumed (action succeeded)
+   * @returns {boolean} true if a turn was consumed (including a skipped turn)
    */
   execute(action, actor, ctx) {
     if (!action) return false;
+    // The caller owns turn-end ticks, including when a status blocks the action.
+    if (actor.isStunned?.()) return true;
     switch (action.type) {
       case 'move':   return this._doMove(actor, action.to, ctx);
       case 'attack': return this._doMelee(actor, action.target, ctx, action.meta);
@@ -396,12 +402,12 @@ export class CombatSystem {
    * Tick all status effects on an entity, emit damage events for DoTs, and
    * check for death.
    */
-  tickEntity(entity) {
+  tickEntity(entity, ctx = {}) {
     if (!entity || entity.isDead) return;
     const delta = entity.tickStatusEffects();
     if (delta < 0) {
       this.bus.emit('entity:damaged', { entity, amount: -delta, source: 'status', isCrit: false });
-      if (entity.isDead) this._handleDeath(entity, { name: 'poison', kind: 'status' });
+      if (entity.isDead) this._handleDeath(entity, { name: 'poison', kind: 'status' }, ctx);
     }
   }
 }

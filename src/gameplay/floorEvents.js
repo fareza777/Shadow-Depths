@@ -119,10 +119,9 @@ export const ALTAR_OPTIONS = [
     detail: 'Spend 2× any material · restore all focus',
     canApply: (p) => totalMaterials(p) >= 2,
     apply: (player) => {
-      const id = firstMaterialId(player);
-      if (!id) return;
-      player.addMaterial(id, -2);
+      if (!consumeMaterialPayment(player)) return false;
       player.rangedFocus = player.rangedFocusMax ?? 3;
+      return true;
     }
   }
 ];
@@ -228,14 +227,21 @@ function totalMaterials(player) {
   return Object.values(player.materials || {}).reduce((a, n) => a + n, 0);
 }
 
-function firstMaterialId(player) {
-  for (const [id, n] of Object.entries(player.materials || {})) {
-    if (n >= 2) return id;
+function consumeMaterialPayment(player) {
+  const entries = Object.entries(player.materials || {}).filter(([, n]) => n >= 1);
+  const single = entries.find(([, n]) => n >= 2);
+  if (!single && entries.length < 2) return false;
+  const payment = single
+    ? [[single[0], 2]]
+    : entries.slice(0, 2).map(([id]) => [id, 1]);
+  const before = { ...player.materials };
+  for (const [id, count] of payment) {
+    if (!player.consumeMaterial(id, count)) {
+      Object.assign(player.materials, before);
+      return false;
+    }
   }
-  for (const [id, n] of Object.entries(player.materials || {})) {
-    if (n >= 1) return id;
-  }
-  return null;
+  return true;
 }
 
 export function roomKey(room) {

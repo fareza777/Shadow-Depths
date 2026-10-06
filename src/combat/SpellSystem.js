@@ -2,6 +2,7 @@ import { HERO_SPELLS } from '../config/heroSpells.js';
 import { hollowSiphonHeal, SPELL_TUNING } from '../config/spellBalance.js';
 import { hasLineOfSight } from '../entities/behaviors/RangedBehavior.js';
 import { onHeroSpellHit } from '../gameplay/heroPassives.js';
+import { StatusEffects } from './StatusEffects.js';
 
 const TARGETED_SPELLS = new Set(['hollow', 'inquisitor', 'bladedancer', 'echobinder']);
 /** Heals / self-buffs only fire when a living foe is nearby (no safe-room spam). */
@@ -64,7 +65,7 @@ export class SpellSystem {
       );
       const healed = healAmt > 0 ? player.heal(healAmt) : 0;
       if (healed > 0) this.bus.emit('entity:healed', { entity: player, amount: healed, source: 'spell' });
-      player.applyStatus({ id: 'def_buff', value: 2 + Math.floor(power / 4), duration: 3 });
+      StatusEffects.apply(player, { status: 'def_buff', value: 2 + Math.floor(power / 4), duration: 3 }, this.bus);
       fx = { ...fx, center: { x: player.x, y: player.y }, radius: 1.4 };
       used = true;
     } else if (kind === 'hollow') {
@@ -90,7 +91,7 @@ export class SpellSystem {
         SPELL_TUNING.reaver.aoe(player.totalAtk()) + Math.floor(power / 2),
         state.name
       ) > 0;
-      if (used) player.applyStatus({ id: 'atk_buff', value: 1, duration: 2 });
+      if (used) StatusEffects.apply(player, { status: 'atk_buff', value: 1, duration: 2 }, this.bus);
       fx = { ...fx, center: { x: player.x, y: player.y }, radius: state.radius || 2 };
     } else if (kind === 'pilgrim') {
       const radius = (state.radius || 3) + Math.floor(power / 3);
@@ -103,7 +104,7 @@ export class SpellSystem {
       used = true;
     } else if (kind === 'warden') {
       player.statusEffects = player.statusEffects.filter((e) => e.id !== 'poison');
-      player.applyStatus({ id: 'def_buff', value: 4 + Math.floor(power / 3), duration: 3 });
+      StatusEffects.apply(player, { status: 'def_buff', value: 4 + Math.floor(power / 3), duration: 3 }, this.bus);
       const slowed = this._statusEnemiesInRadius(player.x, player.y, 2, {
         status: 'slow', value: 2, duration: 2
       });
@@ -120,7 +121,7 @@ export class SpellSystem {
           state.name
         );
       }
-      if (total > 0) player.applyStatus({ id: 'atk_buff', value: 1, duration: 2 });
+      if (total > 0) StatusEffects.apply(player, { status: 'atk_buff', value: 1, duration: 2 }, this.bus);
       fx = { ...fx, target: { x: target.x, y: target.y }, strikes };
       used = total > 0;
     } else if (kind === 'echobinder') {
@@ -135,11 +136,11 @@ export class SpellSystem {
       const frozen = this._statusEnemiesInRadius(target.x, target.y, radius, {
         status: 'freeze', value: 1, duration: tun.freezeTurns || 2
       });
-      player.applyStatus({
-        id: 'def_buff',
+      StatusEffects.apply(player, {
+        status: 'def_buff',
         value: tun.wardDef || 2,
         duration: tun.wardTurns || 3
-      });
+      }, this.bus);
       fx = { ...fx, center: { x: target.x, y: target.y }, radius, frozen };
       used = total > 0 || frozen > 0;
     }
@@ -216,10 +217,7 @@ export class SpellSystem {
       if (e.isDead) continue;
       const dist = Math.abs(e.x - cx) + Math.abs(e.y - cy);
       if (dist > radius) continue;
-      if (e.applyStatus(spec)) {
-        this.bus.emit('entity:status', { entity: e, status: spec.status });
-        count++;
-      }
+      if (StatusEffects.apply(e, spec, this.bus)) count++;
     }
     return count;
   }

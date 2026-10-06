@@ -73,7 +73,13 @@ class PerfMeter {
   }
 
   add(name, ms) {
-    if (!this.enabled || !this.frame) return;
+    if (!this.enabled) return;
+    // Input turns and idle/background save flushes run outside rAF.
+    if (!this.frame) {
+      this.ema[name] = this.ema[name] == null ? ms : this.ema[name] + (ms - this.ema[name]) * 0.18;
+      this.max[name] = Math.max(this.max[name] || 0, ms);
+      return;
+    }
     this.frame.sections[name] = (this.frame.sections[name] || 0) + ms;
   }
 

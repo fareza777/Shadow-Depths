@@ -108,7 +108,9 @@ export function resolveAdConfig(monetization = {}, env) {
   const rawValue = (key) => typeof raw[key] === 'string' ? raw[key].trim() : '';
   const pickPublic = (envKey, rawKey) => envValue(envKey) || rawValue(rawKey);
   const pick = (key) => {
-    const envId = envValue(`VITE_ADMOB_${key.toUpperCase()}_ID`);
+    const envId = key === 'appOpen'
+      ? envValue('VITE_ADMOB_APP_OPEN_ID') || envValue('VITE_ADMOB_APPOPEN_ID')
+      : envValue(`VITE_ADMOB_${key.toUpperCase()}_ID`);
     const jsonId = typeof ids[key] === 'string' ? ids[key].trim() : '';
     return envId || jsonId || TEST_AD_UNITS[key];
   };

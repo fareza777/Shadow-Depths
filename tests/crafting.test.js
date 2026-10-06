@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { loadRecipes, getRecipe, canCraft, craft, chooseForgeOffers } from '../src/items/Crafting.js';
 import { Item } from '../src/items/Item.js';
+import { Inventory } from '../src/items/Inventory.js';
 
 loadRecipes({
   recipes: [
@@ -26,27 +27,9 @@ const ITEM_DEFS = {
 };
 
 function fakeInventory(stacks = []) {
-  const size = 20;
-  const slots = new Array(size).fill(null);
-  for (let i = 0; i < stacks.length; i++) slots[i] = stacks[i];
-  return {
-    size, slots,
-    add(item) {
-      // Try to stack first.
-      if (item.stackable) {
-        for (const s of this.slots) {
-          if (s && s.id === item.id) {
-            const room = (s.maxStack || 99) - s.count;
-            if (room >= item.count) { s.count += item.count; return 0; }
-          }
-        }
-      }
-      const idx = this.slots.findIndex((s) => s === null);
-      if (idx < 0) return item.count;
-      this.slots[idx] = item;
-      return 0;
-    }
-  };
+  const inventory = new Inventory(20);
+  for (const item of stacks) inventory.add(item);
+  return inventory;
 }
 
 function fakeRng() {

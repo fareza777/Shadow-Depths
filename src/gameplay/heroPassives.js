@@ -2,6 +2,8 @@
  * Per-hero passive traits (always on, no extra button).
  * CombatSystem / GameScene / SpellSystem call these hooks.
  */
+import { StatusEffects } from '../combat/StatusEffects.js';
+
 export const HERO_ROLES = {
   vigil: 'Tank',
   warden: 'Tank',
@@ -133,9 +135,7 @@ export function effectiveTorchRadius(player) {
 /** Echobinder: apply slow after spell damage (freeze handled in SpellSystem). */
 export function onHeroSpellHit(player, target, bus) {
   if (!player || player.heroKind !== 'echobinder' || !target || target.isDead) return;
-  if (target.applyStatus?.({ status: 'slow', value: 2, duration: 2 })) {
-    bus?.emit('entity:status', { entity: target, status: 'slow' });
-  }
+  StatusEffects.apply(target, { status: 'slow', value: 2, duration: 2 }, bus);
 }
 
 /** Pilgrim: small heal when changing floors. */

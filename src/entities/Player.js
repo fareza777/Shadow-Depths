@@ -418,13 +418,14 @@ export class Player extends Entity {
   }
   totalDex() {
     // dex bonus already folded into this.stats.dex at equip() time.
-    return this.stats.dex + (this.synergyMods.dex || 0);
+    return Math.max(0, this.stats.dex + this.modifierDex() + (this.synergyMods.dex || 0));
   }
   critChance() {
     const c = this.balance.combat;
+    const dex = Math.max(0, this.stats.dex + this.modifierDex());
     let bonus = 0;
     for (const p of this.equippedPieces()) bonus += (p.stats?.critBonus || 0);
-    return Math.min(0.95, c.baseCritChance + this.stats.dex * c.critPerDex + bonus
+    return Math.min(0.95, c.baseCritChance + dex * c.critPerDex + bonus
       + this.critSkillBonus + passiveCritBonus(this) + floorCritBonus(this)
       + (this.synergyMods.critBonus || 0));
   }

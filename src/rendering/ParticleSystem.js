@@ -329,6 +329,11 @@ export class ParticleSystem {
   /** @param {number} dt seconds */
   update(dt) {
     const list = this._particles;
+    this._leanCombatFx = prefersLeanCombatFx();
+    this._maxParticles = this._leanCombatFx ? 48 : DEFAULT_MAX_PARTICLES;
+    if (list.length > this._maxParticles) {
+      list.splice(0, list.length - this._maxParticles);
+    }
     let write = 0;
     for (let i = 0; i < list.length; i++) {
       const p = list[i];
